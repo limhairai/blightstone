@@ -1,7 +1,7 @@
 "use client"
 
 // Inspired by react-hot-toast library
-import * as React from "react"
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
 
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
@@ -56,6 +56,15 @@ interface State {
 }
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
+let memoryState: State = { toasts: [] }
+const listeners: Array<(state: State) => void> = []
+
+function dispatch(action: Action) {
+  memoryState = reducer(memoryState, action)
+  listeners.forEach((listener) => {
+    listener(memoryState)
+  })
+}
 
 const addToRemoveQueue = (toastId: string, duration: number) => {
   if (toastTimeouts.has(toastId)) {
@@ -123,50 +132,69 @@ export const reducer = (state: State, action: Action): State => {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
       }
+    default:
+      return state
   }
 }
 
-const listeners: Array<(state: State) => void> = []
-
-let memoryState: State = { toasts: [] }
-
-function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action)
-  listeners.forEach((listener) => {
-    listener(memoryState)
-  })
-}
-
+// --- React Context Section ---
 interface ToastContextType {
   toasts: ToasterToast[]
   addToast: (toast: Omit<ToasterToast, "id">) => void
   removeToast: (id: string) => void
+  // If you want to expose dispatch directly (less common for simple context consumers)
+  // dispatch: (action: Action) => void;
 }
 
-const ToastContext = React.createContext<ToastContextType | undefined>(undefined)
+const ToastContext = createContext<ToastContextType | undefined>(undefined)
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [toasts, setToasts] = React.useState<ToasterToast[]>([])
+export const ToastProvider = ({ children }: { children: ReactNode }) => {
+  const [currentToasts, setCurrentToasts] = useState<ToasterToast[]>(memoryState.toasts)
 
-  const addToast = React.useCallback((toast: Omit<ToasterToast, "id">) => {
+  useEffect(() => {
+    const listener = (newState: State) => {
+      setCurrentToasts(newState.toasts)
+    }
+    listeners.push(listener)
+    // Sync with initial memoryState in case it was populated before provider mounted
+    setCurrentToasts(memoryState.toasts)
+    return () => {
+      const index = listeners.indexOf(listener)
+      if (index > -1) {
+        listeners.splice(index, 1)
+      }
+    }
+  }, []) // Empty dependency array means this runs once on mount and cleans up on unmount
+
+  const addToast = useCallback((toast: Omit<ToasterToast, "id">) => {
     const id = genId()
-    setToasts((prev) => [...prev, { ...toast, id, open: true }])
-
+    const newToast = { ...toast, id, open: true }
+    dispatch({ type: "ADD_TOAST", toast: newToast }) // This updates memoryState and listeners will update currentToasts
     if (toast.duration) {
       addToRemoveQueue(id, toast.duration)
     }
   }, [])
 
-  const removeToast = React.useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id))
+  const removeToast = useCallback((id: string) => {
+    dispatch({ type: "REMOVE_TOAST", toastId: id }) // This updates memoryState and listeners will update currentToasts
   }, [])
 
-  return <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>
+  const contextValue = {
+    toasts: currentToasts, // Use the state synced with memoryState
+    addToast,
+    removeToast,
+  }
+
+  return (
+    <ToastContext.Provider value={contextValue}>
+      {children}
+    </ToastContext.Provider>
+  )
 }
 
-export function useToast() {
-  const context = React.useContext(ToastContext)
-  if (!context) {
+export const useToast = () => {
+  const context = useContext(ToastContext)
+  if (context === undefined) {
     throw new Error("useToast must be used within a ToastProvider")
   }
   return context
