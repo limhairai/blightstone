@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 6% 97%;
+    --foreground: 240 10% 15%;
+    --card: 240 6% 99%;
+    --card-foreground: 240 10% 15%;
+    --popover: 240 6% 99%;
+    --popover-foreground: 240 10% 15%;
+    --primary: 262 60% 65%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 6% 94%;
+    --secondary-foreground: 240 10% 20%;
+    --muted: 240 6% 92%;
+    --muted-foreground: 240 5% 45%;
+    --accent: 240 6% 94%;
+    --accent-foreground: 240 10% 20%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 6% 88%;
+    --input: 240 6% 88%;
+    --ring: 262 60% 65%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 240 6% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 6% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 262 60% 80%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 12%;
+    --muted-foreground: 240 5% 65%;
+    --accent: 240 4% 12%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 15%;
+    --input: 240 4% 15%;
+    --ring: 262 60% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Brand Gradients */
+  .bg-gradient-brand {
+    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+  }
+
+  .text-gradient-brand {
+    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .gradient-button {
+    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    color: black !important;
+  }
+
+  /* Airwallex-style Cards */
+  .airwallex-card {
+    background-color: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease;
+  }
+
+  .dark .airwallex-card {
+    background-color: #111111;
+    border-color: #222222;
+  }
+
+  .airwallex-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Tab Active State */
+  .tab-active {
+    position: relative;
+    color: hsl(var(--foreground));
+  }
+
+  .tab-active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+  }
+
+  /* Status Colors */
+  .status-active {
+    background-color: rgba(124, 58, 237, 0.1);
+    color: #7c3aed;
+    border-color: rgba(124, 58, 237, 0.2);
+  }
+
+  .dark .status-active {
+    background-color: rgba(124, 58, 237, 0.15);
+    color: #a78bfa;
+    border-color: rgba(124, 58, 237, 0.3);
+  }
+
+  .status-pending {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.2);
+  }
+
+  .dark .status-pending {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border-color: rgba(245, 158, 11, 0.3);
+  }
+
+  .status-failed {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+
+  .dark .status-failed {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+  }
+}
+
+@layer utilities {
+  /* Utility Classes */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-gradient {
+    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Make gradient buttons have black text */
+  .bg-gradient-to-r.from-\[\#b4a0ff\].to-\[\#ffb4a0\] {
+    color: black !important;
+  }
+}

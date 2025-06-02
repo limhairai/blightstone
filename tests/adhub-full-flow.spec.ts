@@ -1,0 +1,184 @@
+import { test, expect, Page, BrowserContext } from '@playwright/test';
+import { execSync } from 'child_process'; // Only if using for direct emulator commands from test, less ideal
+
+const FRONTEND_URL = 'http://localhost:3000'; // Should match baseURL in playwright.config.ts
+
+// Helper to clear browser storage for the current context
+async function clearBrowserStorage(context: BrowserContext, page: Page) {
+  // It's more reliable to navigate to the baseURL before clearing for that origin
+  if (page.url() === 'about:blank' || !page.url().startsWith(FRONTEND_URL)) {
+    await page.goto(FRONTEND_URL, { waitUntil: 'domcontentloaded', timeout: 10000 });
+  }
+  await context.clearCookies();
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+  console.log('Browser storage cleared (cookies, localStorage, sessionStorage).');
+}
+
+test.describe('AdHub Full User Flow: Registration and Onboarding', () => {
+  
+  test.beforeEach(async ({ page, context }) => {
+    console.log('--- Test: BeforeEach - Clearing browser storage ---');
+    await clearBrowserStorage(context, page);
+    console.log('--- Test: BeforeEach - Done ---');
+  });
+
+  test('New user registration, onboarding, and dashboard access', async ({ page }) => {
+    const timestamp = Date.now();
+    const uniqueEmail = `testuser_${timestamp}@example.com`;
+    const password = 'Password123!';
+    const userName = `Test User ${timestamp}`;
+    const orgName = `TestOrg_${timestamp}`;
+    const projectName = `TestProject_${timestamp}`;
+    const projectDomain = `test${timestamp}.com`;
+    const projectWebsite = `https://${projectDomain}`;
+    const adSpendAmount = '5000';
+    const supportHandle = 'my-test-workspace.slack.com';
+
+    // Step 1: Navigate to Register Page
+    console.log(`Navigating to /register`);
+    await page.goto('/register', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await expect(page).toHaveURL(`${FRONTEND_URL}/register`);
+    console.log('On Register Page');
+
+    // Step 2: Fill and Submit Registration Form
+    console.log(`Filling registration form for ${uniqueEmail}`);
+    await page.locator('input#name').fill(userName);
+    await page.locator('input#email').fill(uniqueEmail);
+    await page.locator('input#password').fill(password);
+    await page.locator('input#confirmPassword').fill(password);
+    await page.locator('input#terms').check();
+    
+    const createAccountButton = page.getByRole('button', { name: 'Create account' });
+    await expect(createAccountButton).toBeEnabled({ timeout: 10000 });
+    
+    console.log('Submitting registration form...');
+    await createAccountButton.click();
+
+    // Step 3: Verify Navigation to Onboarding
+    console.log('Waiting for navigation to onboarding...');
+    await page.waitForURL('**/onboarding', { timeout: 25000 }); 
+    await expect(page).toHaveURL(`${FRONTEND_URL}/onboarding`);
+    console.log('On Onboarding Page');
+    // await expect(page.getByText("Account created!")).toBeVisible({ timeout: 10000 }); // Toast might be missed due to navigation
+
+    // Step 4: Fill Onboarding Form
+    console.log('Filling onboarding form - Step 1 (Org & Project)...');
+    
+    const orgNameInput = page.getByPlaceholder('Acme Inc.');
+    await expect(orgNameInput).toBeVisible({ timeout: 20000 });
+    await orgNameInput.fill(orgName);
+    
+    const projectNameInput = page.getByPlaceholder('My E-Commerce Store');
+    await expect(projectNameInput).toBeVisible({ timeout: 10000 });
+    await projectNameInput.fill(projectName);
+
+    const domainInput = page.getByPlaceholder('e.g. store.com').first();
+    await expect(domainInput).toBeVisible({ timeout: 10000 });
+    await domainInput.fill(projectDomain);
+
+    const websiteInput = page.getByPlaceholder('https://example.com');
+    await expect(websiteInput).toBeVisible({ timeout: 10000 });
+    await websiteInput.fill(projectWebsite);
+    
+    await page.getByRole('button', { name: 'Continue' }).first().click();
+    console.log('Onboarding Step 1 submitted.');
+
+    // Step 2 of Onboarding (Ad Spend)
+    console.log('Filling onboarding form - Step 2 (Ad Spend)...');
+    // Wait for a distinctive element of Step 2 to be visible
+    await expect(page.getByText('Monthly advertising budget')).toBeVisible({ timeout: 15000 });
+
+    // Click the dropdown trigger for Monthly advertising budget
+    // This selector might need adjustment. Often it's a button or a div with a specific role/class.
+    // If it's a custom select, page.getByRole('combobox') might work, or a more specific selector.
+    // For now, assuming a button or interactive element near the label.
+    await page.locator('//label[text()="Monthly advertising budget"]/following-sibling::button').first().click(); // Example XPath, likely needs refinement
+    // Or, if it's a shadcn/ui Select, it might be page.getByRole('combobox').click();
+    
+    // Click the desired option from the dropdown that appears
+    // This also needs a precise selector. Using getByRole('option') is good if applicable.
+    await page.getByRole('option', { name: '$1,000 - $5,000' }).click(); // Example option
+    console.log('Selected monthly ad spend.');
+
+    // Check some platforms
+    await page.getByLabel('Facebook').check();
+    await page.getByLabel('Google Ads').check();
+    console.log('Selected ad platforms.');
+
+    await page.getByRole('button', { name: 'Continue' }).first().click(); // Assuming Step 2 also uses 'Continue'
+    console.log('Onboarding Step 2 submitted.');
+
+    // Step 3 of Onboarding (Support Channel)
+    console.log('Filling onboarding form - Step 3 (Support Channel)...');
+    
+    await expect(page.getByText('Set up support channel')).toBeVisible({ timeout: 15000 });
+
+    // Assuming Slack is selected by default.
+    const slackUrlInput = page.getByPlaceholder('your-workspace.slack.com');
+    await expect(slackUrlInput).toBeVisible({ timeout: 10000 }); 
+    await slackUrlInput.fill(supportHandle);
+    console.log('Filled Slack Workspace URL.');
+
+    // Click the "Connect Slack" button
+    const connectSlackButton = page.getByRole('button', { name: 'Connect Slack' });
+    await expect(connectSlackButton).toBeVisible({ timeout: 5000 });
+    await connectSlackButton.click();
+    console.log('Clicked Connect Slack button.');
+
+    // Add a small pause or wait for a visual cue that connection was successful/attempted
+    // For example, wait for the "Connect Slack" button to be disabled or change text, or for a success message.
+    // If there's no immediate visual change, a short timeout might be necessary, but it's less robust.
+    // await page.waitForTimeout(1000); // Use sparingly, prefer explicit waits.
+    // Or, wait for the "Complete Setup" button to become enabled if it was disabled before Slack connect.
+    const completeSetupButton = page.getByRole('button', { name: 'Complete Setup' });
+    await expect(completeSetupButton).toBeEnabled({ timeout: 10000 }); // Wait for it to be enabled
+    
+    console.log('Submitting onboarding form (final step by clicking "Complete Setup")...');
+    const orgCreationPromise = page.waitForResponse(
+      resp => resp.url().includes('/api/proxy/v1/organizations') && resp.request().method() === 'POST',
+      { timeout: 20000 }
+    );
+    const projectCreationPromise = page.waitForResponse(
+      resp => resp.url().includes('/api/proxy/v1/projects') && resp.request().method() === 'POST',
+      { timeout: 20000 }
+    );
+    await completeSetupButton.click(); 
+
+    console.log('Waiting for organization creation API response...');
+    const orgResponse = await orgCreationPromise;
+    expect(orgResponse.ok(), `Org creation failed with status ${orgResponse.status()}: ${await orgResponse.text()}`).toBe(true);
+    const orgData = await orgResponse.json();
+    expect(orgData.name).toBe(orgName);
+    console.log('Organization creation successful via API.');
+
+    console.log('Waiting for project creation API response...');
+    const projectResponse = await projectCreationPromise;
+    expect(projectResponse.ok(), `Project creation failed with status ${projectResponse.status()}: ${await projectResponse.text()}`).toBe(true);
+    console.log('Project creation successful via API.');
+
+    // Step 5: Verify Navigation to Dashboard
+    console.log('Waiting for navigation to dashboard...');
+    await page.waitForURL('**/dashboard', { timeout: 25000 });
+    await expect(page).toHaveURL(`${FRONTEND_URL}/dashboard`);
+    console.log('On Dashboard Page (may be blank for now)');
+
+    // Step 6: Basic Dashboard Check - Focus on URL and no immediate client-side errors
+    // Further content assertions will be added once dashboard data loading is fixed.
+    const pageErrorEvents: Error[] = [];
+    page.on('pageerror', error => {
+        console.error(`[Playwright Page Error on Dashboard] ${error.message}`);
+        pageErrorEvents.push(error);
+    });
+
+    // Wait for a moment to see if any async operations on dashboard settle or throw errors
+    await page.waitForTimeout(2000); // Give it 2 seconds to settle
+
+    expect(pageErrorEvents.length, `Dashboard page threw ${pageErrorEvents.length} client-side JavaScript errors. First error: ${pageErrorEvents[0]?.message}`).toBe(0);
+    console.log('Dashboard loaded without immediate client-side JavaScript errors.');
+
+    console.log('Test script part completed. Manual verification of Firestore needed for user/org/project data.');
+  });
+}); 
