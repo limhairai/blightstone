@@ -1,14 +1,20 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
+node_modules/
 **/node_modules/
+frontend/node_modules/
+backend/venv/
 
 # next.js
-/.next/
-/out/
+.next/
+out/
+**/.next/
+**/out/
 
 # production
-/build
+build/
+**/build/
 
 # debug
 npm-debug.log*
@@ -18,17 +24,34 @@ yarn-error.log*
 
 # env files
 .env*
+**/.env*
 
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
-next-env.d.tsnode_modules/
-.next/
+next-env.d.ts
 
 # service account key
 ad-hub-d1c0a-firebase-adminsdk-fbsvc-3a91ccbce3.json
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+**/.DS_Store
+
+# Test
+test-results/
+playwright-report/
+coverage/
+
+# Large files
+*.node
+**/*.node
 
 
 
