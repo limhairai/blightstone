@@ -10,22 +10,28 @@ _firebase_app_initialized = False
 
 def initialize_firebase_admin():
     global _firebase_app_initialized
-    if not firebase_admin._apps: # Check if default app exists
+    if not firebase_admin._apps:  # Check if default app exists
         try:
-            # settings.FIREBASE_ADMIN_CREDENTIALS will be None if emulators are active (due to logic in config.py)
-            if settings.FIREBASE_ADMIN_CREDENTIALS:
-                print("[FIREBASE_INIT] Initializing Firebase Admin SDK WITH production credentials.")
+            if settings.FIREBASE_ADMIN_CREDENTIALS and settings.FIREBASE_PROJECT_ID:
+                print(f"[FIREBASE_INIT] Initializing Firebase Admin SDK WITH production/staging credentials for project: {settings.FIREBASE_PROJECT_ID}.")
                 cred = credentials.Certificate(settings.FIREBASE_ADMIN_CREDENTIALS)
-                firebase_admin.initialize_app(cred)
+                firebase_admin.initialize_app(cred, {
+                    'projectId': settings.FIREBASE_PROJECT_ID,
+                })
+            elif os.environ.get("FIRESTORE_EMULATOR_HOST") or os.environ.get("FIREBASE_AUTH_EMULATOR_HOST"):
+                print("[FIREBASE_INIT] Initializing Firebase Admin SDK for EMULATOR usage (no explicit credentials, project ID from emulators or default).")
+                # For emulators, project ID can often be inferred or is a default like '(emulator)'
+                # If a specific project ID is needed for emulators, it should be set in emulator environment or Firebase CLI config
+                firebase_admin.initialize_app()
             else:
-                # No credentials provided (likely using emulators, or an error in loading them for prod).
-                # For emulators, initializing without credentials works if emulator env vars are set.
-                print("[FIREBASE_INIT] Initializing Firebase Admin SDK WITHOUT explicit credentials (expected for emulators or if production creds are missing).")
-                firebase_admin.initialize_app() # Initialize without specific creds; uses GOOGLE_APPLICATION_CREDENTIALS or emulators if env vars are set.
-            
+                print("[FIREBASE_INIT] WARNING: Firebase Admin SDK not initialized. Production/staging credentials or emulator environment variables are missing.")
+                _firebase_app_initialized = False
+                return # Exit if no valid configuration
+
             _firebase_app_initialized = True
             current_app = firebase_admin.get_app()
             print(f"[FIREBASE_INIT] Firebase Admin SDK initialized. App name: {current_app.name}, Project ID from app: {current_app.project_id}")
+
         except Exception as e:
             print(f"[FIREBASE_INIT] ERROR initializing Firebase Admin SDK: {e}")
             _firebase_app_initialized = False # Ensure it's marked as not initialized on error

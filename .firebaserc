@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "ad-hub-d1c0a"
+    "default": "adhubprod1",
+    "prod": "adhubprod1",
+    "staging": "adhubstaging"
   }
 }

@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     
     # Firebase Configuration
     FIREBASE_ADMIN_CREDENTIALS: Optional[Dict[str, Any]] = FIREBASE_ADMIN_CREDENTIALS
+    FIREBASE_PROJECT_ID: Optional[str] = os.environ.get("FIREBASE_PROJECT_ID")
     
     # Meta API
     META_APP_ID: Optional[str] = os.environ.get("META_APP_ID")
