@@ -35,6 +35,7 @@ next-env.d.ts
 
 # service account key
 ad-hub-d1c0a-firebase-adminsdk-fbsvc-3a91ccbce3.json
+*-firebase-adminsdk-*.json
 
 # IDE
 .idea/
