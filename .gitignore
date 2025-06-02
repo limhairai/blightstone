@@ -43,6 +43,10 @@ ad-hub-d1c0a-firebase-adminsdk-fbsvc-3a91ccbce3.json
 # OS
 .DS_Store
 **/.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*~
 
 # Test
 test-results/
@@ -52,6 +56,14 @@ coverage/
 # Large files
 *.node
 **/*.node
+
+# firebase
+.emulator_pid
+firebase_emulator_*
+firestore-debug.log
+
+# General Logs
+*.log
 
 
 
