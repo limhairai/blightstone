@@ -10,7 +10,7 @@ import { AdminProvider } from "@/contexts/AdminContext"
 import { TeamSettingsProvider } from "@/contexts/TeamSettingsContext"
 import { WalletProvider } from "@/contexts/WalletContext"
 import { OrganizationProvider, useOrganization } from "@/contexts/organization-context"
-import AppShell from '@/components/app-shell'
+import { AppShell } from '@/components/app-shell'
 import { Loader } from "@/components/Loader"
 import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"

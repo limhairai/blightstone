@@ -145,6 +145,8 @@ interface ToastContextType {
 
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined)
 
+const Provider = ToastContext.Provider;
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToasterToast[]>([])
 
@@ -161,7 +163,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
-  return <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>
+  return <Provider value={{ toasts, addToast, removeToast }}>{children}</Provider>
 }
 
 export function useToast() {
