@@ -157,7 +157,7 @@ export function BatchApplicationForm({ onSubmit, loading, initialData }: BatchAp
 
           {/* Individual Account Forms - ONLY NAME, LANDING PAGE URL, AND FACEBOOK PAGE URL */}
           {accounts.map((account, index) => (
-            <div key={account.id} className="bg-[#1A1A1A] border border-[#2C2C2E] rounded-lg p-4 space-y-4">
+            <div key={account.id ?? `new-${index}`} className="bg-[#1A1A1A] border border-[#2C2C2E] rounded-lg p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium">Account #{index + 1}</h4>
                 {accounts.length > 1 && (
@@ -165,7 +165,8 @@ export function BatchApplicationForm({ onSubmit, loading, initialData }: BatchAp
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeAccount(account.id)}
+                    onClick={() => typeof account.id === 'number' && removeAccount(account.id)}
+                    disabled={typeof account.id !== 'number'}
                     className="h-8 w-8 p-0 text-[#ff8080]"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -176,45 +177,45 @@ export function BatchApplicationForm({ onSubmit, loading, initialData }: BatchAp
               <div className="space-y-4">
                 {/* Account Name */}
                 <div className="space-y-2">
-                  <Label htmlFor={`account-name-${account.id}`} className="text-[#E0E0E0]">
+                  <Label htmlFor={`account-name-${account.id ?? index}`} className="text-[#E0E0E0]">
                     Account Name
                   </Label>
                   <Input
-                    id={`account-name-${account.id}`}
+                    id={`account-name-${account.id ?? index}`}
                     placeholder="Enter a name for this ad account"
                     className="bg-[#1C1C1E] border-[#2C2C2E] focus:border-[#b4a0ff] focus:ring-[#b4a0ff]/20"
                     value={account.name}
-                    onChange={(e) => updateAccount(account.id, "name", e.target.value)}
+                    onChange={(e) => typeof account.id === 'number' && updateAccount(account.id, "name", e.target.value)}
                     required
                   />
                 </div>
 
                 {/* Landing Page URL */}
                 <div className="space-y-2">
-                  <Label htmlFor={`landing-page-url-${account.id}`} className="text-[#E0E0E0]">
+                  <Label htmlFor={`landing-page-url-${account.id ?? index}`} className="text-[#E0E0E0]">
                     Landing Page URL
                   </Label>
                   <Input
-                    id={`landing-page-url-${account.id}`}
+                    id={`landing-page-url-${account.id ?? index}`}
                     placeholder="https://example.com"
                     className="bg-[#1C1C1E] border-[#2C2C2E] focus:border-[#b4a0ff] focus:ring-[#b4a0ff]/20"
                     value={account.landingPageUrl}
-                    onChange={(e) => updateAccount(account.id, "landingPageUrl", e.target.value)}
+                    onChange={(e) => typeof account.id === 'number' && updateAccount(account.id, "landingPageUrl", e.target.value)}
                     required
                   />
                 </div>
 
                 {/* Facebook Page URL */}
                 <div className="space-y-2">
-                  <Label htmlFor={`facebook-page-url-${account.id}`} className="text-[#E0E0E0]">
+                  <Label htmlFor={`facebook-page-url-${account.id ?? index}`} className="text-[#E0E0E0]">
                     Facebook Page URL
                   </Label>
                   <Input
-                    id={`facebook-page-url-${account.id}`}
+                    id={`facebook-page-url-${account.id ?? index}`}
                     placeholder="https://facebook.com/yourpage"
                     className="bg-[#1C1C1E] border-[#2C2C2E] focus:border-[#b4a0ff] focus:ring-[#b4a0ff]/20"
                     value={account.facebookPageUrl}
-                    onChange={(e) => updateAccount(account.id, "facebookPageUrl", e.target.value)}
+                    onChange={(e) => typeof account.id === 'number' && updateAccount(account.id, "facebookPageUrl", e.target.value)}
                     required
                   />
                 </div>
