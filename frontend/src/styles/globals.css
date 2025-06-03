@@ -4,74 +4,188 @@
 
 @layer base {
   :root {
-    --background: 240 6% 97%;
-    --foreground: 240 10% 15%;
-    --card: 240 6% 99%;
-    --card-foreground: 240 10% 15%;
-    --popover: 240 6% 99%;
-    --popover-foreground: 240 10% 15%;
-    --primary: 262 60% 65%;
+    --background: 210 17% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 250 100% 81%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 6% 94%;
-    --secondary-foreground: 240 10% 20%;
-    --muted: 240 6% 92%;
-    --muted-foreground: 240 5% 45%;
-    --accent: 240 6% 94%;
-    --accent-foreground: 240 10% 20%;
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 6% 88%;
-    --input: 240 6% 88%;
-    --ring: 262 60% 65%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 30%;
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 9% 45%;
+    --accent: 250 100% 95%;
+    --accent-foreground: 258 55% 52%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 14% 93%;
+    --input: 220 14% 93%;
+    --ring: 250 100% 81%;
+    --radius-sm: 0.25rem;
     --radius: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-full: 9999px;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 210 17% 98%;
+    --sidebar-foreground: 220 13% 30%;
+    --sidebar-primary: 258 82% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 250 100% 95%;
+    --sidebar-accent-foreground: 258 55% 52%;
+    --sidebar-border: 220 14% 93%;
+    --sidebar-ring: 250 100% 81%;
+
+    /* Status Success (Green) */
+    --status-success-background: 145 85% 98%; /* From #f0fdf4 */
+    --status-success-foreground: 145 74% 36%; /* From #16a34a */
+    --status-success-border: 145 78% 73%; /* From #86efac */
+
+    /* Status Warning (Amber) */
+    --status-warning-background: 45 100% 97%; /* From #fffbeb */
+    --status-warning-foreground: 36 93% 51%; /* From #f59e0b */
+    --status-warning-border: 45 96% 64%; /* From #fcd34d */
+
+    /* Status Error (Red) */
+    --status-error-background: 0 80% 97%; /* From #fef2f2 */
+    --status-error-foreground: 0 84% 60%; /* From #ef4444 */
+    --status-error-border: 0 92% 82%; /* From #fca5a5 */
+
+    /* Brand Colors for Gradients */
+    /* --brand-primary-main is typically var(--primary) which is 250 100% 81% */
+    --brand-secondary-main: 20 100% 81%; /* From #ffb4a0 */
+
+    /* Detailed Status Token Colors - Active (Success/Green) */
+    --status-active-dot: 145 63% 49%; /* From #22c55e */
+    --status-active-badge-background-light: 145 85% 98%; /* From #f0fdf4 */
+    --status-active-badge-foreground-light: 145 74% 36%; /* From #16a34a */
+    --status-active-badge-border-light: 145 76% 90%; /* From #dcfce7 */
+
+    /* Detailed Status Token Colors - Pending (Warning/Amber) */
+    --status-pending-dot: 36 93% 51%; /* From #f59e0b */
+    --status-pending-badge-background-light: 45 100% 97%; /* From #fffbeb */
+    --status-pending-badge-foreground-light: 32 90% 37%; /* From #b45309 */
+    --status-pending-badge-border-light: 45 93% 90%; /* From #fef3c7 */
+
+    /* Detailed Status Token Colors - Failed (Error/Red) */
+    --status-failed-dot: 0 84% 60%; /* From #ef4444 */
+    --status-failed-badge-background-light: 0 80% 97%; /* From #fef2f2 */
+    --status-failed-badge-foreground-light: 0 70% 50%; /* From #dc2626 */
+    --status-failed-badge-border-light: 0 93% 94%; /* From #fee2e2 */
+
+    /* Detailed Status Token Colors - Inactive (Neutral/Gray) */
+    --status-inactive-dot: 240 3% 46%; /* From #71717a */
+    --status-inactive-badge-background-light: 210 17% 98%; /* From #f9fafb */
+    --status-inactive-badge-foreground-light: 220 13% 30%; /* From #4b5563 */
+    --status-inactive-badge-border-light: 220 14% 93%; /* From #e5e7eb */
+
+    /* Detailed Status Token Colors - Progress */
+    --status-progress-low-foreground: 145 63% 49%; /* From #22c55e */
+    --status-progress-low-background-rgba: 34 197 94 / 0.2;
+    --status-progress-medium-foreground: 36 93% 51%; /* From #f59e0b */
+    --status-progress-medium-background-rgba: 245 158 11 / 0.2;
+    --status-progress-high-foreground: 0 84% 60%; /* From #ef4444 */
+    --status-progress-high-background-rgba: 239 68 68 / 0.2;
+    --status-progress-empty-foreground: 240 3% 46%; /* From #71717a */
+    --status-progress-empty-background-rgba: 113 113 122 / 0.2;
+
+    /* Detailed Status Token Colors - Transaction Text */
+    --transaction-positive-foreground-light: 145 74% 36%; /* From #16a34a */
+    --transaction-negative-foreground-light: 222 47% 11%; /* From #111827, same as --foreground */
   }
 
   .dark {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    --card: 240 6% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 6% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 262 60% 80%;
+    --background: 220 60% 4%;
+    --foreground: 210 17% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 17% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 17% 98%;
+    --primary: 250 100% 85%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4% 12%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 4% 12%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 12%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 4% 15%;
-    --input: 240 4% 15%;
-    --ring: 262 60% 80%;
+    --secondary: 220 27% 14%;
+    --secondary-foreground: 220 11% 84%;
+    --muted: 220 13% 20%;
+    --muted-foreground: 220 10% 66%;
+    --accent: 255 42% 34%;
+    --accent-foreground: 250 100% 85%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 250 100% 85%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 220 11% 84%;
+    --sidebar-primary: 250 100% 81%;
+    --sidebar-primary-foreground: 255 43% 30%;
+    --sidebar-accent: 255 42% 34%;
+    --sidebar-accent-foreground: 250 100% 85%;
+    --sidebar-border: 220 13% 20%;
+    --sidebar-ring: 250 100% 85%;
+
+    /* Status Success (Green) */
+    --status-success-background-rgba: 74 222 128 / 0.2; /* From #4ade80 with opacity */
+    --status-success-foreground: 145 63% 59%; /* From #4ade80 */
+    --status-success-border-rgba: 34 197 94 / 0.3; /* From #22c55e with opacity */
+
+    /* Status Warning (Amber) */
+    --status-warning-background-rgba: 245 158 11 / 0.2; /* From #f59e0b with opacity */
+    --status-warning-foreground: 45 96% 64%; /* From #fcd34d */
+    --status-warning-border-rgba: 217 119 6 / 0.3; /* From #d97706 with opacity */
+
+    /* Status Error (Red) */
+    --status-error-background-rgba: 239 68 68 / 0.2; /* From #ef4444 with opacity */
+    --status-error-foreground: 0 90% 71%; /* From #f87171 */
+    --status-error-border-rgba: 220 38 38 / 0.3; /* From #dc2626 with opacity */
+
+    /* Brand Colors for Gradients */
+    /* --brand-primary-main is typically var(--primary) which is 250 100% 85% */
+    --brand-secondary-main: 20 100% 81%; /* From #ffb4a0 */
+    
+    /* Detailed Status Token Colors - Active (Success/Green) */
+    /* --status-active-dot is inherited from :root */
+    --status-active-badge-background-dark-rgba: 22 163 74 / 0.2;
+    --status-active-badge-foreground-dark: 145 63% 59%; /* From #4ade80 */
+    --status-active-badge-border-dark-rgba: 22 163 74 / 0.5;
+
+    /* Detailed Status Token Colors - Pending (Warning/Amber) */
+    /* --status-pending-dot is inherited from :root */
+    --status-pending-badge-background-dark-rgba: 180 83 9 / 0.2;
+    --status-pending-badge-foreground-dark: 45 96% 64%; /* From #fcd34d */
+    --status-pending-badge-border-dark-rgba: 180 83 9 / 0.5;
+
+    /* Detailed Status Token Colors - Failed (Error/Red) */
+    /* --status-failed-dot is inherited from :root */
+    --status-failed-badge-background-dark-rgba: 220 38 38 / 0.2;
+    --status-failed-badge-foreground-dark: 0 90% 71%; /* From #f87171 */
+    --status-failed-badge-border-dark-rgba: 220 38 38 / 0.5;
+
+    /* Detailed Status Token Colors - Inactive (Neutral/Gray) */
+    /* --status-inactive-dot is inherited from :root */
+    --status-inactive-badge-background-dark-rgba: 75 85 99 / 0.2;
+    --status-inactive-badge-foreground-dark: 220 11% 84%; /* From #d1d5db */
+    --status-inactive-badge-border-dark-rgba: 75 85 99 / 0.5;
+
+    /* Detailed Status Token Colors - Progress (RGBA values are often mode-independent but defined for clarity) */
+    --status-progress-low-background-rgba: 34 197 94 / 0.2;
+    --status-progress-medium-background-rgba: 245 158 11 / 0.2;
+    --status-progress-high-background-rgba: 239 68 68 / 0.2;
+    --status-progress-empty-background-rgba: 113 113 122 / 0.2;
+    /* HSL foregrounds for progress are inherited from :root */
+
+    /* Detailed Status Token Colors - Transaction Text */
+    --transaction-positive-foreground-dark: 145 63% 59%; /* From #4ade80 */
+    --transaction-negative-foreground-dark: 210 17% 98%; /* From #f9fafb, same as --foreground dark */
   }
 }
 
@@ -97,42 +211,39 @@
     scrollbar-width: none;
   }
   .text-gradient {
-    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--brand-secondary-main)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
   }
-  .bg-gradient-to-r.from-\[\#b4a0ff\].to-\[\#ffb4a0\] {
-    color: black !important;
-  }
 }
 
 @layer components {
   .bg-gradient-brand {
-    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--brand-secondary-main)));
   }
   .text-gradient-brand {
-    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--brand-secondary-main)));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
   .gradient-button {
-    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--brand-secondary-main)));
     color: black !important;
   }
   .airwallex-card {
-    background-color: white;
-    border: 1px solid #f0f0f0;
-    border-radius: 0.5rem;
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
     padding: 1rem;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     transition: box-shadow 0.2s ease;
   }
   .dark .airwallex-card {
-    background-color: #111111;
-    border-color: #222222;
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--border));
   }
   .airwallex-card:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -148,36 +259,36 @@
     left: 0;
     height: 2px;
     width: 100%;
-    background: linear-gradient(to right, #b4a0ff, #ffb4a0);
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--brand-secondary-main)));
   }
   .status-active {
-    background-color: rgba(124, 58, 237, 0.1);
-    color: #7c3aed;
-    border-color: rgba(124, 58, 237, 0.2);
+    background-color: hsl(var(--status-success-background));
+    color: hsl(var(--status-success-foreground));
+    border-color: hsl(var(--status-success-border));
   }
   .dark .status-active {
-    background-color: rgba(124, 58, 237, 0.15);
-    color: #a78bfa;
-    border-color: rgba(124, 58, 237, 0.3);
+    background-color: rgba(var(--status-success-background-rgba));
+    color: hsl(var(--status-success-foreground));
+    border-color: rgba(var(--status-success-border-rgba));
   }
   .status-pending {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-    border-color: rgba(245, 158, 11, 0.2);
+    background-color: hsl(var(--status-warning-background));
+    color: hsl(var(--status-warning-foreground));
+    border-color: hsl(var(--status-warning-border));
   }
   .dark .status-pending {
-    background-color: rgba(245, 158, 11, 0.15);
-    color: #fbbf24;
-    border-color: rgba(245, 158, 11, 0.3);
+    background-color: rgba(var(--status-warning-background-rgba));
+    color: hsl(var(--status-warning-foreground));
+    border-color: rgba(var(--status-warning-border-rgba));
   }
   .status-failed {
-    background-color: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.2);
+    background-color: hsl(var(--status-error-background));
+    color: hsl(var(--status-error-foreground));
+    border-color: hsl(var(--status-error-border));
   }
   .dark .status-failed {
-    background-color: rgba(239, 68, 68, 0.15);
-    color: #f87171;
-    border-color: rgba(239, 68, 68, 0.3);
+    background-color: rgba(var(--status-error-background-rgba));
+    color: hsl(var(--status-error-foreground));
+    border-color: rgba(var(--status-error-border-rgba));
   }
 }

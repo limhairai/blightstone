@@ -1,5 +1,3 @@
-// DEPRECATED: This file is being phased out. Please use semantic Tailwind classes (e.g., bg-background, text-foreground, border-border, etc.) or CSS variables for all color and style tokens. Do not add new usages. Migrate existing usages to semantic classes.
-
 // AdHub Design Token System
 // Comprehensive design tokens for consistent UI/UX across the application
 
@@ -434,43 +432,112 @@ export const getSpacing = (size: keyof typeof spacingTokens) => {
 }
 
 export const getStatusColor = (status: keyof typeof statusTokens, mode: "light" | "dark" = "light") => {
-  return statusTokens[status][mode]
+  const tokenSet = statusTokens[status];
+  // Check if tokenSet itself and tokenSet.text are objects, and if mode is a key in tokenSet.text
+  if (
+    typeof tokenSet === 'object' &&
+    tokenSet !== null &&
+    'text' in tokenSet &&
+    typeof tokenSet.text === 'object' && // @ts-ignore
+    tokenSet.text !== null && // @ts-ignore
+    mode in tokenSet.text
+  ) {
+    // Type assertion because TypeScript still struggles with complex discriminated unions here
+    return (tokenSet.text as Record<"light" | "dark", string>)[mode];
+  }
+  // Fallback if the structure doesn't match
+  return mode === 'light' ? colorTokens.neutral[700] : colorTokens.neutral[300];
 }
 
 // Get status dot color
 export const getStatusDot = (status: "active" | "pending" | "failed" | "inactive") => {
-  return statusTokens[status].dot
+  switch (status) {
+    case "active":
+      return "bg-status-active-dot";
+    case "pending":
+      return "bg-status-pending-dot";
+    case "failed":
+      return "bg-status-failed-dot";
+    case "inactive":
+      return "bg-status-inactive-dot";
+    default:
+      return ""; // Or a default dot color class
+  }
 }
 
 // Get badge classes for a status
 export const getStatusBadgeClasses = (
   status: "active" | "pending" | "failed" | "inactive",
-  mode: "light" | "dark" = "dark",
+  mode: "light" | "dark" = "dark", // Consider changing default to 'light' or making mode required
 ) => {
-  const badgeColors = statusTokens[status].badge[mode]
-  return `bg-[${badgeColors.bg}] text-[${badgeColors.text}] border-[${badgeColors.border}]`
+  if (status === "active") {
+    if (mode === "light") {
+      return "bg-status-active-badge-bg-light text-status-active-badge-fg-light border-status-active-badge-border-light";
+    }
+    // Dark mode for active status
+    return "bg-status-active-badge-bg-dark text-status-active-badge-fg-dark border-status-active-badge-border-dark";
+  } else if (status === "pending") {
+    if (mode === "light") {
+      return "bg-status-pending-badge-bg-light text-status-pending-badge-fg-light border-status-pending-badge-border-light";
+    }
+    // Dark mode for pending status
+    return "bg-status-pending-badge-bg-dark text-status-pending-badge-fg-dark border-status-pending-badge-border-dark";
+  } else if (status === "failed") {
+    if (mode === "light") {
+      return "bg-status-failed-badge-bg-light text-status-failed-badge-fg-light border-status-failed-badge-border-light";
+    }
+    // Dark mode for failed status
+    return "bg-status-failed-badge-bg-dark text-status-failed-badge-fg-dark border-status-failed-badge-border-dark";
+  } else if (status === "inactive") {
+    if (mode === "light") {
+      return "bg-status-inactive-badge-bg-light text-status-inactive-badge-fg-light border-status-inactive-badge-border-light";
+    }
+    // Dark mode for inactive status
+    return "bg-status-inactive-badge-bg-dark text-status-inactive-badge-fg-dark border-status-inactive-badge-border-dark";
+  }
+
+  // Fallback for any unknown status, or if logic is not yet implemented
+  return ""; 
 }
 
 // Get progress color based on percentage
 export const getProgressColor = (percentage: number) => {
-  if (percentage === 0) return statusTokens.progress.empty.color
-  if (percentage < 60) return statusTokens.progress.low.color
-  if (percentage < 80) return statusTokens.progress.medium.color
-  return statusTokens.progress.high.color
+  if (percentage === 0) {
+    return {
+      fgClass: "text-status-progress-empty-fg",
+      bgClass: "bg-status-progress-empty-bg",
+    };
+  }
+  if (percentage < 60) {
+    return {
+      fgClass: "text-status-progress-low-fg",
+      bgClass: "bg-status-progress-low-bg",
+    };
+  }
+  if (percentage < 80) {
+    return {
+      fgClass: "text-status-progress-medium-fg",
+      bgClass: "bg-status-progress-medium-bg",
+    };
+  }
+  return {
+    fgClass: "text-status-progress-high-fg",
+    bgClass: "bg-status-progress-high-bg",
+  };
 }
 
 // Get transaction amount color and prefix
 export const getTransactionAmountStyle = (amount: number, mode: "light" | "dark" = "dark") => {
   if (amount > 0) {
     return {
-      color: statusTokens.transaction.positive.text[mode],
+      className: mode === "light" ? "text-status-transaction-positive-fg-light" : "text-status-transaction-positive-fg-dark",
       prefix: statusTokens.transaction.positive.prefix,
-    }
+    };
   }
   return {
-    color: statusTokens.transaction.negative.text[mode],
+    className: mode === "light" ? "text-status-transaction-negative-fg-light" : "text-status-transaction-negative-fg-dark",
     prefix: statusTokens.transaction.negative.prefix,
-  }
+  };
 }
 
 // -----------------------------------------------
