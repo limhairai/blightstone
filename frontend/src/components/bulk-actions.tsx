@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button"
 import { Download, Archive, Trash2 } from "lucide-react"
-import { colors } from "@/lib/colors"
 
 interface BulkActionsProps {
   selectedCount: number
@@ -12,7 +11,7 @@ interface BulkActionsProps {
 export function BulkActions({ selectedCount, onClearSelection }: BulkActionsProps) {
   return (
     <div
-      className={`flex items-center justify-between ${colors.cardGradient} border ${colors.cardBorder} rounded-md px-4 py-3`}
+      className="flex items-center justify-between bg-card border border-border rounded-md px-4 py-3"
     >
       <div className="flex items-center gap-2">
         <span className="text-sm">{selectedCount} accounts selected</span>
