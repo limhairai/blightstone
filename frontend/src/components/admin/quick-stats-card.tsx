@@ -1,6 +1,12 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
-export function QuickStatsCard({ org }: { org: any }) {
+interface OrgStats {
+  balance?: number;
+  spend?: number;
+  accountsCount: number;
+}
+
+export function QuickStatsCard({ org }: { org: OrgStats }) {
   return (
     <Card>
       <CardHeader>

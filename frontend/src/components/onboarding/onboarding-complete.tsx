@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
-import { CardContent } from "@/components/ui/card"
 
 interface OnboardingCompleteProps {
   organizationName: string

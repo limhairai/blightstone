@@ -2,9 +2,9 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 import useSWR from 'swr'
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "./AuthContext"
 
-interface Organization {
+export interface Organization {
   id: string
   name: string
   avatar?: string

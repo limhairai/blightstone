@@ -6,7 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, MoreHorizontal, ExternalLink, Settings, Wallet } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { AccountTopUpDialog } from "@/components/account-top-up-dialog"
+import { AccountsCardGrid } from "@/components/accounts/accounts-card-grid"
+import { AccountsTable } from "@/components/accounts/accounts-table"
+import { AccountTopUpDialog } from "@/components/wallet/account-top-up-dialog"
+import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
+import { BulkFundOperations } from "@/components/wallet/bulk-fund-operations"
 import { cn } from "@/lib/utils"
 
 // Mock data for accounts from AccountsClientPage.tsx
@@ -82,7 +86,6 @@ interface AccountData {
 }
 
 export default function AccountsClientPage() {
-  const [activeTab, setActiveTab] = useState("accounts")
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
   const [selectedAccountForTopUp, setSelectedAccountForTopUp] = useState<AccountData | null>(null);
 
@@ -138,7 +141,7 @@ export default function AccountsClientPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="accounts" className="space-y-4" onValueChange={setActiveTab}>
+      <Tabs defaultValue="accounts" className="space-y-4">
         <TabsList>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>

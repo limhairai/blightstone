@@ -3,10 +3,10 @@
 import Image from "next/image";
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ProfessionalFeaturesSection } from "@/components/professional-features-section"
-import { FAQSection } from "@/components/faq-section"
-import { AccountManagementSection } from "@/components/account-management-section"
-import { InstantFundingSection } from "@/components/instant-funding-section"
+import { ProfessionalFeaturesSection } from "@/components/landing/professional-features-section"
+import { FAQSection } from "@/components/landing/faq-section"
+import { AccountManagementSection } from "@/components/accounts/account-management-section"
+import { InstantFundingSection } from "@/components/wallet/instant-funding-section"
 
 export default function Home() {
   return (

@@ -11,7 +11,7 @@ interface UserProfile {
   preferences?: Record<string, any>;
   walletBalance?: number; 
   initial?: string; 
-  organizationName?: string; // Added for TopNavigation title
+  organizationName?: string; // Added for Topbar title
   [key: string]: any;
 }
 

@@ -1,4 +1,4 @@
-import DashboardSidebar from "@/components/dashboard-sidebar"
+import DashboardSidebar from "@/components/layout/dashboard-sidebar"
 
 import type { ReactNode } from "react"
 

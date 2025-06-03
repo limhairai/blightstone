@@ -12,6 +12,8 @@ import {
   orderBy,
   limit,
   DocumentData,
+  Query,
+  CollectionReference
 } from 'firebase/firestore';
 
 // Collection names
@@ -22,16 +24,26 @@ export const COLLECTIONS = {
   USERS: 'users',
 } as const;
 
+const checkDb = () => {
+  if (!db) {
+    const errorMsg = "Firestore (db) is not initialized. Check Firebase configuration and initialization logs.";
+    console.error(errorMsg);
+    throw new Error(errorMsg);
+  }
+};
+
 // Generic CRUD operations
 export const getDocument = async <T>(collectionName: string, docId: string): Promise<T | null> => {
-  const docRef = doc(db, collectionName, docId);
+  checkDb();
+  const docRef = doc(db!, collectionName, docId);
   const docSnap = await getDoc(docRef);
   return docSnap.exists() ? (docSnap.data() as T) : null;
 };
 
 export const getDocuments = async <T>(collectionName: string): Promise<T[]> => {
-  const querySnapshot = await getDocs(collection(db, collectionName));
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+  checkDb();
+  const querySnapshot = await getDocs(collection(db!, collectionName));
+  return querySnapshot.docs.map(docData => ({ id: docData.id, ...docData.data() } as T));
 };
 
 export const createDocument = async <T extends DocumentData>(
@@ -39,7 +51,9 @@ export const createDocument = async <T extends DocumentData>(
   data: T,
   docId?: string
 ): Promise<string> => {
-  const docRef = docId ? doc(db, collectionName, docId) : doc(collection(db, collectionName));
+  checkDb();
+  const collRef = collection(db!, collectionName);
+  const docRef = docId ? doc(collRef, docId) : doc(collRef);
   await setDoc(docRef, data);
   return docRef.id;
 };
@@ -49,12 +63,14 @@ export const updateDocument = async <T extends DocumentData>(
   docId: string,
   data: Partial<T>
 ): Promise<void> => {
-  const docRef = doc(db, collectionName, docId);
+  checkDb();
+  const docRef = doc(db!, collectionName, docId);
   await updateDoc(docRef, data as DocumentData);
 };
 
 export const deleteDocument = async (collectionName: string, docId: string): Promise<void> => {
-  const docRef = doc(db, collectionName, docId);
+  checkDb();
+  const docRef = doc(db!, collectionName, docId);
   await deleteDoc(docRef);
 };
 
@@ -65,7 +81,8 @@ export const queryDocuments = async <T>(
   orderByField?: string,
   limitCount?: number
 ): Promise<T[]> => {
-  let q = collection(db, collectionName);
+  checkDb();
+  let q: Query<DocumentData> = collection(db!, collectionName) as Query<DocumentData>;
   
   // Add where conditions
   conditions.forEach(condition => {
@@ -83,5 +100,5 @@ export const queryDocuments = async <T>(
   }
   
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+  return querySnapshot.docs.map(docData => ({ id: docData.id, ...docData.data() } as T));
 }; 

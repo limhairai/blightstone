@@ -3,8 +3,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
+// Define a type for team member entries
+interface TeamMember {
+  id: string; // Or number, depending on API response
+  name: string;
+  email: string;
+  role: string; // Consider using a union type e.g., "admin" | "member"
+  status: "active" | "invited" | string; // Allow other statuses if any
+}
+
 export function AdminOrgTeamTable({ orgId }: { orgId: string }) {
-  const [team, setTeam] = useState<any[]>([])
+  const [team, setTeam] = useState<TeamMember[]>([]) // Use specific type
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 

@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Logo } from "../logo"
+import { Logo } from "@/components/core/Logo"
 import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
 
 interface OnboardingLayoutProps {

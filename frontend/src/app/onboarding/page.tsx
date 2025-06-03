@@ -1,24 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { OnboardingLayout } from "@/components/onboarding/onboarding-layout"
 import { OrganizationForm } from "@/components/onboarding/organization-form"
 import { AdSpendForm } from "@/components/onboarding/ad-spend-form"
 import { SupportChannelSetup } from "@/components/onboarding/support-channel-setup"
 import { OnboardingComplete } from "@/components/onboarding/onboarding-complete"
 import { useRouter } from "next/navigation"
-import { useOrganization } from "@/contexts/organization-context";
-import useSWR, { mutate as swrMutate } from 'swr';
-import { Skeleton } from "@/components/ui/skeleton"
+import { useOrganization, Organization } from "@/contexts/organization-context";
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
-import { Logo } from "@/components/logo"
+import { Logo } from "@/components/core/Logo"
 import { useAuth } from '@/contexts/AuthContext'
-import { DebugLogger } from "@/components/DebugLogger"
-import { Loader } from "@/components/Loader"
+import { Loader } from "@/components/core/Loader"
+import { OnboardingFlow } from "@/components/onboarding/onboarding-flow"
+import { useOnboarding } from "@/contexts/onboarding-context"
 
-// If Organization type is not exported from context, define it here based on expected structure:
-interface OrganizationPageScoped { // Renamed to avoid conflict if OrgContextType.Organization is different
+// Define a local Organization type for this page,
+// matching the expected structure that setCurrentOrg from OrganizationContext expects.
+// This type might be redundant if Organization from context is used directly.
+interface OnboardingPageOrganization {
     id: string;
     name: string;
     avatar?: string;
@@ -26,14 +27,22 @@ interface OrganizationPageScoped { // Renamed to avoid conflict if OrgContextTyp
     planId?: string;
 }
 
-// Define a local Organization type for this page, 
-// matching the expected structure that setCurrentOrg from OrganizationContext expects.
-interface OnboardingPageOrganization {
-    id: string;
-    name: string;
-    avatar?: string;
-    role?: string;
-    planId?: string;
+// Define types for formData sections for better type safety in updateFormData
+type OrganizationFormData = { name: string };
+type ProjectFormData = { name: string; domains: string[]; websiteUrl: string };
+type AdSpendFormData = { monthly: string; platforms: string[] }; // Assuming platforms is string[]
+type SupportChannelFormData = { type: string; email: string; handle: string };
+
+type FormDataSectionData = OrganizationFormData | ProjectFormData | AdSpendFormData | SupportChannelFormData;
+
+// Interface for errors that might include a 'detail' string property
+interface ErrorWithDetail extends Error {
+  detail?: string;
+}
+
+// Type guard to check if an error object has a 'detail' string property
+function hasDetail(error: unknown): error is ErrorWithDetail {
+  return typeof error === 'object' && error !== null && 'detail' in error && typeof (error as { detail?: unknown }).detail === 'string';
 }
 
 export default function OnboardingPage() {
@@ -70,7 +79,7 @@ export default function OnboardingPage() {
   const totalSteps = 3;
   const displayStep = Math.min(step, totalSteps);
 
-  const updateFormData = (section: string, data: any) => {
+  const updateFormData = (section: string, data: Partial<FormDataSectionData>) => {
     setFormData((prev) => ({
       ...prev,
       [section as keyof typeof prev]: {
@@ -170,31 +179,32 @@ export default function OnboardingPage() {
       
       // Update OrganizationContext
       if (setCurrentOrg) {
-          const orgForContext: OnboardingPageOrganization = { 
+          const orgForContext: OnboardingPageOrganization = {
               id: newOrg.id,
               name: newOrg.name,
               avatar: newOrg.avatar || undefined,
               role: newOrg.role || "owner",
               planId: newOrg.planId || "bronze"
           };
-          // Cast to 'any' if OrgContextType.Organization is complex or not easily matched here.
-          // Ideally, OrganizationContext would export its Organization type for consumers.
-          setCurrentOrg(orgForContext as any);
+          // Attempt to use the imported Organization type for setCurrentOrg if compatible
+          // or ensure OnboardingPageOrganization matches what setCurrentOrg expects.
+          setCurrentOrg(orgForContext as Organization);
           console.log("[Onboarding] Set currentOrg to newly created org:", orgForContext);
           if (mutateOrganizationsHook) {
-            mutateOrganizationsHook(); // Call the SWR mutate function from useOrganization context
+            mutateOrganizationsHook();
             console.log("[Onboarding] Called mutate (from useOrganization) for SWR revalidation.");
           }
       }
       
       router.push('/dashboard');
       toast({ title: "Onboarding complete!", description: "Your organization and project have been created.", variant: "default" });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Onboarding handleSubmit: CATCH BLOCK error object:", error);
       let errorMessage = "An unexpected error occurred.";
-      if (error && typeof error.message === 'string') {
+      if (error instanceof Error) {
         errorMessage = error.message;
-        if (error.detail && typeof error.detail === 'string') { // Check if detail exists and is string
+        // Check for detail if it's our custom error structure from backend
+        if (hasDetail(error) && error.detail) { // Check error.detail for truthiness too
             errorMessage += `: ${error.detail}`;
         }
       } else if (typeof error === 'string') {
@@ -214,7 +224,15 @@ export default function OnboardingPage() {
 
   if (orgError) {
     console.log("[OnboardingPage] orgError is true, rendering error message:", orgError);
-    return <div className="flex min-h-screen items-center justify-center text-red-500 p-4">Error loading organization data: {typeof orgError === 'string' ? orgError : (orgError as any)?.message || JSON.stringify(orgError)}</div>;
+    let displayError = "Unknown error loading organization data.";
+    if (typeof orgError === 'string') {
+        displayError = orgError;
+    } else if (orgError instanceof Error) {
+        displayError = orgError.message;
+    } else if (typeof orgError === 'object' && orgError !== null && 'message' in orgError && typeof (orgError as { message: unknown }).message === 'string') {
+        displayError = (orgError as { message: string }).message;
+    }
+    return <div className="flex min-h-screen items-center justify-center text-red-500 p-4">Error: {displayError}</div>;
   }
 
   return (

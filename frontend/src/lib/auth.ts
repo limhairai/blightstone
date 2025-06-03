@@ -37,66 +37,42 @@ export const authOptions: NextAuthOptions = {
 };
 
 export async function signUp(email: string, password: string) {
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth as Auth, email, password);
-    const user = userCredential.user;
-    // Create user profile in backend
-    await fetch('/api/v1/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        createdAt: new Date().toISOString(),
-        role: 'user',
-      }),
-    });
-    return user;
-  } catch (error) {
-    throw error;
-  }
+  const userCredential = await createUserWithEmailAndPassword(auth as Auth, email, password);
+  const user = userCredential.user;
+  // Create user profile in backend
+  await fetch('/api/v1/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      uid: user.uid,
+      email: user.email,
+      createdAt: new Date().toISOString(),
+      role: 'user',
+    }),
+  });
+  return user;
 }
 
 export async function signIn(email: string, password: string) {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth as Auth, email, password);
-    return userCredential.user;
-  } catch (error) {
-    throw error;
-  }
+  const userCredential = await signInWithEmailAndPassword(auth as Auth, email, password);
+  return userCredential.user;
 }
 
 export async function signOutUser() {
-  try {
-    await signOut(auth as Auth);
-  } catch (error) {
-    throw error;
-  }
+  await signOut(auth as Auth);
 }
 
 export async function resetPassword(email: string) {
-  try {
-    await sendPasswordResetEmail(auth as Auth, email);
-  } catch (error) {
-    throw error;
-  }
+  await sendPasswordResetEmail(auth as Auth, email);
 }
 
 export async function updateUserProfile(user: User, data: { displayName?: string; photoURL?: string }) {
-  try {
-    await updateProfile(user, data);
-  } catch (error) {
-    throw error;
-  }
+  await updateProfile(user, data);
 }
 
 export async function getUserRole(uid: string) {
-  try {
-    const res = await fetch(`/api/v1/users/${uid}`);
-    if (!res.ok) return 'user';
-    const userData = await res.json();
-    return userData.role || 'user';
-  } catch (error) {
-    throw error;
-  }
+  const res = await fetch(`/api/v1/users/${uid}`);
+  if (!res.ok) return 'user';
+  const userData = await res.json();
+  return userData.role || 'user';
 } 

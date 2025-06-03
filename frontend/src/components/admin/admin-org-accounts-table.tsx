@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-export function AdminOrgAccountsTable({ orgId, isSuperuser }: { orgId: string, isSuperuser: boolean }) {
+export function AdminOrgAccountsTable({ _orgId, isSuperuser }: { _orgId: string, isSuperuser: boolean }) {
   const { adAccounts, loading, error } = useAdAccounts();
 
   if (!isSuperuser) return <div className="p-4 text-center text-red-500">Not authorized</div>

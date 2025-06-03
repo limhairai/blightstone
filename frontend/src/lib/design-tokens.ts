@@ -438,8 +438,8 @@ export const getStatusColor = (status: keyof typeof statusTokens, mode: "light" 
     typeof tokenSet === 'object' &&
     tokenSet !== null &&
     'text' in tokenSet &&
-    typeof tokenSet.text === 'object' && // @ts-ignore
-    tokenSet.text !== null && // @ts-ignore
+    typeof tokenSet.text === 'object' &&
+    tokenSet.text !== null &&
     mode in tokenSet.text
   ) {
     // Type assertion because TypeScript still struggles with complex discriminated unions here

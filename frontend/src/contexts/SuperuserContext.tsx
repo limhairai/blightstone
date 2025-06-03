@@ -20,29 +20,34 @@ export const SuperuserProvider = ({ children }: SuperuserProviderProps) => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSuperuserStatus = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem("adhub_token");
-        const response = await fetch("/api/v1/auth/me", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ detail: "Failed to fetch user status" }));
-          throw new Error(errorData.detail || "Failed to fetch user status");
+    if (typeof window !== 'undefined') {
+      const fetchSuperuserStatus = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          const token = localStorage.getItem("adhub_token");
+          const response = await fetch("/api/v1/auth/me", {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          });
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: "Failed to fetch user status" }));
+            throw new Error(errorData.detail || "Failed to fetch user status");
+          }
+          const data = await response.json();
+          setIsSuperuser(!!data.is_superuser);
+        } catch (err: any) {
+          setError(err.message || "An unexpected error occurred");
+          setIsSuperuser(false); // Default to not superuser on error
+        } finally {
+          setLoading(false);
         }
-        const data = await response.json();
-        setIsSuperuser(!!data.is_superuser);
-      } catch (err: any) {
-        setError(err.message || "An unexpected error occurred");
-        setIsSuperuser(false); // Default to not superuser on error
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchSuperuserStatus();
+      fetchSuperuserStatus();
+    } else {
+      setLoading(false);
+      setIsSuperuser(false);
+    }
   }, []);
 
   const value: SuperuserContextType = {

@@ -18,14 +18,14 @@ interface AdminClientAccount {
 
 // Define props interface
 interface AdminClientAccountsTableProps {
-  clientId: string
-  isSuperuser: boolean
+  _clientId: string
+  _isSuperuser: boolean
 }
 
-export function AdminClientAccountsTable({ clientId, isSuperuser }: AdminClientAccountsTableProps) {
+export function AdminClientAccountsTable({ _clientId, _isSuperuser }: AdminClientAccountsTableProps) {
   // This would come from an API in a real application
   // TODO: Use isSuperuser prop if needed for data fetching or conditional rendering
-  const [accounts, setAccounts] = useState<AdminClientAccount[]>([
+  const [accounts] = useState<AdminClientAccount[]>([
     {
       id: "acct_001",
       name: "Summer Campaign 2025",

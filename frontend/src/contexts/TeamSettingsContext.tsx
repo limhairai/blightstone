@@ -49,6 +49,8 @@ const TOP_UP_FEES = {
   platinum: 0.005,
 };
 
+type PlanKey = keyof typeof TOP_UP_FEES;
+
 export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   const { currentTeam, hasPermission } = useTeam();
   const [settings, setSettings] = useState<TeamSettings | null>(null);
@@ -64,19 +66,25 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
       headers: { Authorization: `Bearer ${localStorage.getItem('adhub_token')}` },
     })
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: any) => {
+        let planKey: PlanKey = 'bronze';
+        const rawPlan = data.subscription?.plan;
+        if (rawPlan && Object.prototype.hasOwnProperty.call(TOP_UP_FEES, rawPlan)) {
+          planKey = rawPlan as PlanKey;
+        }
+
         setSettings({
           name: data.name,
           billingEmail: data.billingEmail,
           notificationPreferences: data.notificationPreferences || { email: true, push: true },
           subscription: {
-            plan: data.subscription?.plan || 'bronze',
+            plan: planKey,
             billingPeriod: data.subscription?.billingPeriod || 'monthly',
             status: data.subscription?.status || 'inactive',
             nextBillingDate: data.subscription?.nextBillingDate ? new Date(data.subscription.nextBillingDate) : new Date(),
           },
           balance: data.balance || 0,
-          topUpFee: TOP_UP_FEES[data.subscription?.plan || 'bronze'],
+          topUpFee: TOP_UP_FEES[planKey],
           stripeCustomerId: data.stripeCustomerId,
         });
         setLoading(false);
@@ -126,15 +134,20 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
   const initiateTopUp = async (amount: number): Promise<{ clientSecret: string }> => {
     if (!currentTeam || !hasPermission('top_up_balance')) {
-      throw new Error('Not authorized');
+      throw new Error('Not authorized to top up balance.');
     }
+    if (!user) {
+      throw new Error('User not authenticated. Cannot initiate top up.');
+    }
+
     try {
       const calculation = calculateTopUp(amount);
+      const token = await user.getIdToken(true);
       const response = await fetch('/api/proxy/v1/payments/create-payment-intent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.getIdToken(true)}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           orgId: currentTeam.id,

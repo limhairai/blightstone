@@ -4,12 +4,23 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Logo } from "@/components/logo"
-import { useState, useEffect, useRef } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Logo } from "@/components/core/Logo"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from '@/contexts/AuthContext'
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
+
+// Interface for Firebase-like errors that might include a 'code' string property
+interface FirebaseError extends Error {
+  code?: string;
+}
+
+// Type guard to check if an error object has a 'code' string property
+function isFirebaseError(error: unknown): error is FirebaseError {
+  return typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code?: unknown }).code === 'string';
+}
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -23,7 +34,6 @@ export default function RegisterPage() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { signUp } = useAuth();
 
@@ -100,15 +110,28 @@ export default function RegisterPage() {
 
       toast({ title: "Account created!", description: "Welcome to AdHub. Redirecting...", variant: "default" });
       router.push("/onboarding");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Register handleSubmit: Error caught:", err);
-      if (err.code === "auth/email-already-in-use") {
-        setError("An account with this email already exists. Please log in or use a different email.");
-        toast({ title: "Email already in use", description: "An account with this email already exists. Please log in or use a different email.", variant: "destructive" });
-      } else {
-        setError(err.message || "Registration failed");
-        toast({ title: "Registration failed", description: err.message || "Registration failed", variant: "destructive" });
+      let errorMessage = "Registration failed";
+      let toastMessage = "Registration failed";
+      
+      if (isFirebaseError(err) && err.code === "auth/email-already-in-use") {
+        errorMessage = "An account with this email already exists. Please log in or use a different email.";
+        toastMessage = errorMessage;
+        toast({ title: "Email already in use", description: errorMessage, variant: "destructive" });
+      } else if (err instanceof Error) { // General Error object
+        errorMessage = err.message;
+        toastMessage = err.message;
+        toast({ title: "Registration failed", description: errorMessage, variant: "destructive" });
+      } else if (typeof err === 'string') { // String error
+        errorMessage = err;
+        toastMessage = err;
+        toast({ title: "Registration failed", description: toastMessage, variant: "destructive" });
+      } else { // Fallback for other unknown error types
+        toast({ title: "Registration failed", description: toastMessage, variant: "destructive" });
       }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
       console.log("Register handleSubmit: Finished");

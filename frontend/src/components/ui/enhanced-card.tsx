@@ -30,9 +30,11 @@ const EnhancedCardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes
 )
 EnhancedCardHeader.displayName = "EnhancedCardHeader"
 
-const EnhancedCardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h3 ref={ref} className={cn("font-semibold leading-none tracking-tight", className)} {...props} />
+const EnhancedCardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, children, ...props }, ref) => (
+    <h3 ref={ref} className={cn("font-semibold leading-none tracking-tight", className)} {...props}>
+      {children}
+    </h3>
   ),
 )
 EnhancedCardTitle.displayName = "EnhancedCardTitle"

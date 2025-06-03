@@ -34,17 +34,30 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
   // Fetch user's teams (organizations)
   useEffect(() => {
-    if (!user || !user.token) {
+    const fetchOrganizations = async () => {
+      if (!user) {
         setCurrentTeam(null);
         setLoading(false);
         return;
-    }
-    setLoading(true);
-    fetch(`/api/v1/organizations`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+      }
+      setLoading(true);
+      try {
+        const token = await user.getIdToken();
+        if (!token) {
+          setCurrentTeam(null);
+          setLoading(false);
+          setError(new Error("Could not retrieve auth token."));
+          return;
+        }
+        const res = await fetch(`/api/v1/organizations`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          // Handle non-OK responses, e.g., 401, 403, 404
+          const errorData = await res.text(); // Or res.json() if API returns JSON errors
+          throw new Error(`Failed to fetch organizations: ${res.status} ${errorData || res.statusText}`);
+        }
+        const data = await res.json();
         if (data.organizations && data.organizations.length > 0) {
           const org = data.organizations[0];
           setCurrentTeam({
@@ -53,32 +66,46 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             ownerId: org.ownerId || org.createdBy || '',
             members: {}, // Will be filled by the next effect
             createdAt: new Date(org.createdAt),
-            updatedAt: new Date(),
+            updatedAt: new Date(), // This should likely be org.updatedAt if available
           });
         } else {
           setCurrentTeam(null);
         }
+      } catch (err) {
+        setError(err as Error);
+        setCurrentTeam(null);
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        setError(err);
-        setLoading(false);
-      });
+      }
+    };
+    fetchOrganizations();
   }, [user]);
 
   // Fetch team members if currentTeamId exists
   useEffect(() => {
-    if (!user || !user.token || !currentTeamId) {
+    const fetchTeamMembers = async () => {
+      if (!user || !currentTeamId) {
         if (!currentTeamId && currentTeam && Object.keys(currentTeam.members).length > 0) {
             setCurrentTeam(prev => prev ? { ...prev, members: {} } : null);
         }
+        // No error setting here, just return if no user or team ID
         return;
-    }
-    fetch(`/api/v1/organizations/${currentTeamId}/members`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => res.json())
-      .then((members) => {
+      }
+      // No setLoading(true) here as it might cause quick flashes if this runs frequently
+      try {
+        const token = await user.getIdToken();
+        if (!token) {
+          setError(new Error("Could not retrieve auth token for team members."));
+          return;
+        }
+        const res = await fetch(`/api/v1/organizations/${currentTeamId}/members`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const errorData = await res.text();
+          throw new Error(`Failed to fetch team members: ${res.status} ${errorData || res.statusText}`);
+        }
+        const members = await res.json();
         if (Array.isArray(members)) {
           setCurrentTeam((prevTeam) =>
             prevTeam && prevTeam.id === currentTeamId
@@ -95,21 +122,37 @@ export function TeamProvider({ children }: { children: ReactNode }) {
               : prevTeam
           );
         }
-      })
-      .catch((err) => setError(err));
-  }, [user, currentTeamId, currentTeam]);
+      } catch (err) {
+        setError(err as Error);
+        // Optionally clear members on error: setCurrentTeam(prev => prev ? { ...prev, members: {} } : null);
+      }
+      // No setLoading(false) here unless there was a setLoading(true)
+    };
+    fetchTeamMembers();
+  }, [user, currentTeamId]); // Removed currentTeam from deps as members are part of it; currentTeamId covers team changes
 
   // Fetch invites for the current org
   useEffect(() => {
-    if (!user || !user.token || !currentTeamId) {
+    const fetchTeamInvites = async () => {
+      if (!user || !currentTeamId) {
         setTeamInvites([]);
         return;
-    }
-    fetch(`/api/v1/invites/${currentTeamId}`, {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => res.json())
-      .then((invites) => {
+      }
+      try {
+        const token = await user.getIdToken();
+        if (!token) {
+          setError(new Error("Could not retrieve auth token for invites."));
+          setTeamInvites([]);
+          return;
+        }
+        const res = await fetch(`/api/v1/invites/${currentTeamId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const errorData = await res.text();
+          throw new Error(`Failed to fetch invites: ${res.status} ${errorData || res.statusText}`);
+        }
+        const invites = await res.json();
         if (Array.isArray(invites)) {
           setTeamInvites(
             invites.map((invite) => ({
@@ -126,22 +169,26 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         } else {
           setTeamInvites([]);
         }
-      })
-      .catch((err) => {
-        setError(err);
+      } catch (err) {
+        setError(err as Error);
         setTeamInvites([]);
-      });
+      }
+    };
+    fetchTeamInvites();
   }, [user, currentTeamId]);
 
   const createTeam = async (name: string) => {
     if (!user) throw new Error('User not authenticated');
     setLoading(true);
+    let token;
     try {
+      token = await user.getIdToken();
+      if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/organizations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ name, adSpend: {}, supportChannel: {} }),
       });
@@ -160,12 +207,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const inviteMember = async (email: string, role: UserRole) => {
     if (!user || !currentTeam) throw new Error('Not authorized');
     setLoading(true);
+    let token;
     try {
+      token = await user.getIdToken();
+      if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/invite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ email, role, orgId: currentTeam.id }),
       });
@@ -202,12 +252,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const rejectInvite = async (inviteId: string) => {
     if (!user || !currentTeam) throw new Error('Not authorized');
     setLoading(true);
+    let token;
     try {
+      token = await user.getIdToken();
+      if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/invites/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ token: inviteId, orgId: currentTeam.id }),
       });
@@ -223,12 +276,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const updateMemberRole = async (userId: string, role: UserRole) => {
     if (!user || !currentTeam) throw new Error('Not authorized');
     setLoading(true);
+    let token;
     try {
+      token = await user.getIdToken();
+      if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/roles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ org_id: currentTeam.id, user_id: userId, role }),
       });
@@ -244,12 +300,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const removeMember = async (userId: string) => {
     if (!user || !currentTeam) throw new Error('Not authorized');
     setLoading(true);
+    let token;
     try {
+      token = await user.getIdToken();
+      if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/organizations/remove-member`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ userId, orgId: currentTeam.id }),
       });
@@ -263,16 +322,19 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const updateRolePermissions = async (role: UserRole, permissions: Permission[]) => {
-    if (!user || !currentTeam) throw new Error('Not authorized');
+    if (!user || !currentTeam) throw new Error('Not authorized or no team selected');
     setLoading(true);
+    let token;
     try {
+      token = await user.getIdToken();
+      if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/roles`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${user.token}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ org_id: currentTeam.id, user_id: user.uid, role, permissions }),
+        body: JSON.stringify({ org_id: currentTeam.id, role, permissions }),
       });
       if (!res.ok) throw new Error('Failed to update role permissions');
       setLoading(false);

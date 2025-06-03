@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { FormLabel, FormDescription, FormControl } from "@/components/ui/form"
+import { FormLabel, FormDescription } from "@/components/ui/form"
 
 interface ReferralFormProps {
   data: {

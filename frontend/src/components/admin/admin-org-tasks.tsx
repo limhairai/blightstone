@@ -4,8 +4,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+// Define a type for task entries
+interface TaskEntry {
+  id: string; // Or number, depending on API response
+  title: string;
+  assignee?: string;
+  due?: string;
+  status: "pending" | "completed" | string; // Allow other statuses if any
+}
+
 export function AdminOrgTasks({ orgId, isSuperuser }: { orgId: string, isSuperuser: boolean }) {
-  const [tasks, setTasks] = useState<any[]>([])
+  const [tasks, setTasks] = useState<TaskEntry[]>([]) // Use specific type
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [newTask, setNewTask] = useState("")

@@ -2,8 +2,20 @@
 import { useEffect, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
+// Define a type for organization transaction entries
+interface OrgTransaction {
+  id: string; // Or number, depending on API response
+  date?: string;
+  timestamp?: string | number; // Could be a string or a numerical timestamp
+  type: string;
+  grossAmount?: number;
+  fee?: number;
+  netAmount?: number;
+  status?: string;
+}
+
 export function AdminOrgTransactionsTable({ orgId, isSuperuser }: { orgId: string, isSuperuser: boolean }) {
-  const [transactions, setTransactions] = useState<any[]>([])
+  const [transactions, setTransactions] = useState<OrgTransaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [page, setPage] = useState(1)

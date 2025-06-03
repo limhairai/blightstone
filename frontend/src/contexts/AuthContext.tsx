@@ -15,7 +15,7 @@ import {
 import { useFirebase } from './FirebaseContext';
 import { useRouter } from 'next/navigation';
 import { toast } from "@/components/ui/use-toast"
-import { Loader } from "@/components/Loader";
+import { Loader } from "@/components/core/Loader";
 
 interface AuthContextType {
   user: User | null;
@@ -37,6 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Memoize signOutUser
   const signOutUser = useCallback(async () => {
+    if (!auth) {
+      console.error("Firebase auth is not initialized. Cannot sign out.");
+      // Still attempt to clear local storage and redirect as a fallback
+      localStorage.removeItem("adhub_token");
+      localStorage.removeItem("adhub_current_org");
+      router.push('/login');
+      return;
+    }
     await signOut(auth);
     localStorage.removeItem("adhub_token");
     localStorage.removeItem("adhub_current_org");
@@ -63,6 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signOutUser]); // Added signOutUser to dependency array
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false); // If auth is not available, stop loading
+      setUser(null);
+      console.error("Firebase auth is not initialized. Cannot set auth state listener.");
+      return () => {}; // Return an empty unsubscribe function
+    }
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       setLoading(false);
@@ -106,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user, signOutUser]); // Added signOutUser to dependency array
 
   const signUp = async (email: string, password: string): Promise<User> => {
+    if (!auth) throw new Error("Firebase auth is not initialized.");
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     if (!userCredential.user) {
         throw new Error("User creation failed, no user returned from Firebase.");
@@ -114,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    if (!auth) throw new Error("Firebase auth is not initialized.");
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const res = await fetch(`/api/v1/users/${userCredential.user.uid}`);
     if (!res.ok) {
@@ -123,10 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
+    if (!auth) throw new Error("Firebase auth is not initialized.");
     await sendPasswordResetEmail(auth, email);
   };
 
   const signInWithGoogle = async () => {
+    if (!auth) throw new Error("Firebase auth is not initialized.");
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
   };

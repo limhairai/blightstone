@@ -1,6 +1,6 @@
 "use client"
 
-import { TransactionHistory } from "@/components/transaction-history"
+import { TransactionHistory } from "@/components/wallet/transaction-history"
 // import { AppShell } from "@/components/app-shell"; // No longer needed here
 
 export default function TransactionsPage() {

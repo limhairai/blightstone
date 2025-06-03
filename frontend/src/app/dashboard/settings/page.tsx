@@ -73,7 +73,7 @@ export default function SettingsPage() {
   return (
     // AppShell is provided by layout.tsx
     <div className="container py-6 space-y-6 max-w-7xl">
-      {/* Removed the h1 "Settings" from here as TopNavigation in AppShell should provide it */}
+      {/* Removed the h1 "Settings" from here as Topbar in AppShell should provide it */}
       <Tabs defaultValue="organization" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="organization" className="flex items-center gap-2"><Building className="w-4 h-4" />Organization</TabsTrigger>

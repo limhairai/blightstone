@@ -22,7 +22,7 @@ interface AdminClient {
 
 export function AdminClientsList() {
   // This would come from an API in a real application
-  const [clients, setClients] = useState<AdminClient[]>([
+  const [clients] = useState<AdminClient[]>([
     {
       id: "client_001",
       name: "Acme Industries",

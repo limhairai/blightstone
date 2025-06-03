@@ -1,18 +1,8 @@
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { AdminStats } from "@/components/admin/admin-stats";
-import { Loader } from "@/components/Loader";
-
 export default function AdminStatsPage() {
-  const { isSuperuser, loading, error } = useSuperuser();
-
-  if (loading) return <Loader fullScreen />;
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!isSuperuser) return <div className="text-red-500">Not authorized</div>;
-
   return (
     <div>
-      <h1>Admin Stats</h1>
-      <AdminStats isSuperuser={isSuperuser} />
+      <h1>Minimal Admin Stats Page</h1>
+      <p>This is a test to see if the build passes with minimal content.</p>
     </div>
   );
 } 

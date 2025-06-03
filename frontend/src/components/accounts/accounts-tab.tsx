@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal } from "lucide-react"
+import { MoreHorizontal, Settings, Wallet, Filter, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -11,8 +11,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { StatusBadge } from "@/components/status-badge"
-import { StatusDot } from "@/components/status-dot"
+import { StatusBadge, type StatusType } from "@/components/core/status-badge"
+import { StatusDot } from "@/components/core/status-dot"
+import { AccountsTable } from "@/components/accounts/accounts-table"
+import { AccountsCardGrid } from "./accounts-card-grid"
+import { AccountsFilter } from "./accounts-filter"
+import { ViewToggle } from "@/components/ui/view-toggle"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CreateAdAccountDialog } from "./create-ad-account-dialog"
 
 interface Account {
   id: string
@@ -107,8 +114,8 @@ export function AccountsTab() {
                   <td className="p-3 font-mono text-xs">{account.accountId}</td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      <StatusDot status={account.status as any} />
-                      <StatusBadge status={account.status as any} size="sm" />
+                      <StatusDot status={account.status} />
+                      <StatusBadge status={account.status} size="sm" />
                     </div>
                   </td>
                   <td className="p-3 font-medium">${account.balance.toFixed(2)}</td>

@@ -28,13 +28,21 @@ proxy.on('proxyReq', (proxyReq, req, res, options) => {
 
 // Handle proxy errors
 proxy.on('error', (err, req, res) => {
-  console.error('[PROXY ERROR] Proxying error:', err); // Keep this one essential error log
-  if (res instanceof http.ServerResponse && !res.headersSent) {
-    res.writeHead(502, { 'Content-Type': 'text/plain' }); // 502 Bad Gateway is typical for proxy errors
-    res.end('Proxy error: Could not connect to backend service. Check Next.js server logs.');
-  } else if (res.socket && res.socket.destroyed === false && !res.headersSent) {
-    res.socket.end();
+  console.error('[PROXY ERROR] Proxying error:', err);
+  if (res instanceof http.ServerResponse) {
+    if (!res.headersSent) {
+      res.writeHead(502, { 'Content-Type': 'text/plain' });
+    }
+    // End the response stream if it's still writable
+    if (res.writable && !res.writableEnded) {
+        res.end('Proxy error: Could not connect to backend service.');
+    } else if (res.socket && !res.socket.destroyed) {
+        // If response not writable but socket open, destroy socket
+        res.socket.destroy();
+    }
   }
+  // If not an instance of ServerResponse, it's harder to know what to do.
+  // http-proxy might have already handled or attempted to handle it.
 });
 
 const proxyHandler = (req: NextApiRequest, res: NextApiResponse) => {

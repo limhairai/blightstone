@@ -1,6 +1,6 @@
 "use client"
 
-import { WalletDashboard } from "@/components/wallet-dashboard"
+import { WalletDashboard } from "@/components/wallet/wallet-dashboard"
 // import { AppShell } from "@/components/app-shell"; // No longer needed here
 
 export default function WalletPage() {

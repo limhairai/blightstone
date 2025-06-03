@@ -17,7 +17,7 @@ This document provides guidelines for using components consistently across the A
 The main layout component for client-facing pages.
 
 \`\`\`tsx
-import { AppLayout } from "@/components/app-layout"
+import { AppLayout } from "@/components/layout/app-layout"
 
 export default function DashboardPage() {
   return (
@@ -106,7 +106,7 @@ import {
 Use StatusBadge for displaying status information.
 
 \`\`\`tsx
-import { StatusBadge } from "@/components/status-badge"
+import { StatusBadge } from "@/components/core/status-badge"
 
 <StatusBadge status="active" />
 <StatusBadge status="pending" />
@@ -137,7 +137,7 @@ import { Label } from "@/components/ui/label"
 ### DataTable
 
 \`\`\`tsx
-import { DataTable } from "@/components/data-table"
+import { DataTable } from "@/components/core/data-table"
 
 const columns = [
   {
@@ -170,3 +170,38 @@ import { AdminRequestsTable } from "@/components/admin/admin-requests-table"
 import { AdminClientsList } from "@/components/admin/admin-clients-list"
 
 <AdminClientsList clients={clients} />
+
+**Status Components**
+
+Used to display various statuses (e.g., active, pending, error).
+
+*   `StatusDot`
+*   `StatusBadge`
+
+```tsx
+import { StatusDot } from "@/components/core/status-dot"
+import { StatusBadge } from "@/components/core/status-badge"
+
+<StatusDot status="active" />
+<StatusBadge status="pending" size="sm">Pending Review</StatusBadge>
+```
+
+**Data Table**
+
+```tsx
+import { DataTable } from "@/components/core/data-table"
+
+const columns = [
+  {
+    accessorKey: "name",
+    header: "Name",
+  },
+  {
+    accessorKey: "status",
+    header: "Status",
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
+  },
+]
+
+<DataTable columns={columns} data={data} />
+```

@@ -1,6 +1,6 @@
 "use client";
 
-import { AppShell } from "@/components/app-shell";
+import { AppShell } from "@/components/layout/app-shell";
 import type React from "react";
 
 export default function DashboardGroupLayout({

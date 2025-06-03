@@ -1,6 +1,6 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -12,9 +12,9 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app;
-let auth;
-let db;
+let app: FirebaseApp | null;
+let auth: Auth | null;
+let db: Firestore | null;
 
 // Fallback for missing env vars during development if not using emulators
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -81,9 +81,9 @@ try {
   console.error('Failed to initialize Firebase:', error);
   // Decide on more robust error handling for production if needed
   // For now, re-throw or set to null to make issues visible
-  app = null as any; // Or handle as per your app's error strategy
-  auth = null as any;
-  db = null as any;
+  app = null;
+  auth = null;
+  db = null;
 }
 
 export { app, auth, db }; 

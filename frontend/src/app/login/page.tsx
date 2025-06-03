@@ -3,13 +3,12 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Logo } from "@/components/logo"
+import { Logo } from "@/components/core/Logo"
 import { useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
-import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
-import { Loader } from "@/components/Loader"
+import { Loader } from "@/components/core/Loader"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -27,9 +26,13 @@ export default function LoginPage() {
       await signIn(email, password);
       router.push("/dashboard");
       toast({ title: "Signed in!", description: "Welcome back.", variant: "default" });
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in. Please try again.");
-      toast({ title: "Sign in failed", description: err.message || "Failed to sign in. Please try again.", variant: "destructive" });
+    } catch (err: unknown) {
+      let message = "Failed to sign in. Please try again.";
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
+      toast({ title: "Sign in failed", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -41,8 +44,14 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in with Google. Please try again.");
+      toast({ title: "Signed in with Google!", description: "Welcome back.", variant: "default" });
+    } catch (err: unknown) {
+      let message = "Failed to sign in with Google. Please try again.";
+      if (err instanceof Error) {
+        message = err.message;
+      }
+      setError(message);
+      toast({ title: "Google Sign-in failed", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }

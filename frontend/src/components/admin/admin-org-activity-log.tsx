@@ -2,8 +2,17 @@
 import { useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
+// Define a type for activity log entries
+interface ActivityEntry {
+  id: string; // Or number, depending on what your API returns for keys
+  date: string;
+  user: string;
+  action: string;
+  description: string;
+}
+
 export function AdminOrgActivityLog({ orgId, isSuperuser }: { orgId: string, isSuperuser: boolean }) {
-  const [activity, setActivity] = useState<any[]>([])
+  const [activity, setActivity] = useState<ActivityEntry[]>([]) // Use specific type
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 

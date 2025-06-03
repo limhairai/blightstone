@@ -3,8 +3,16 @@ import { useEffect, useState, useRef } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
+// Define a type for file entries
+interface FileEntry {
+  id: string;
+  name: string;
+  uploadedBy: string;
+  date: string;
+}
+
 export function AdminOrgFiles({ orgId, isSuperuser }: { orgId: string, isSuperuser: boolean }) {
-  const [files, setFiles] = useState<any[]>([])
+  const [files, setFiles] = useState<FileEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)

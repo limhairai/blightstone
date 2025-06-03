@@ -26,4 +26,6 @@ export const permissions = {
     manageOrg: false,
     // ...other permissions
   },
-}; 
+};
+
+export type Role = keyof typeof permissions; 

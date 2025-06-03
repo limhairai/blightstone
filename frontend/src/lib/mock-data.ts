@@ -384,7 +384,7 @@ export const accounts: Account[] = [
     spendLimit: "$1,500",
     dateAdded: "Apr 25, 2025",
     dateCreated: "Apr 25, 2025",
-    lastActive: null,
+    lastActive: undefined,
     hasIssues: true,
   },
   {
@@ -406,7 +406,7 @@ export const accounts: Account[] = [
     spendLimit: "$0.00",
     dateAdded: "Apr 27, 2025",
     dateCreated: "Apr 27, 2025",
-    lastActive: null,
+    lastActive: undefined,
     hasIssues: true,
   },
 ]

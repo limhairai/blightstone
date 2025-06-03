@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 
-export function QuickActions({ org }: { org: any }) {
+export function QuickActions({ _org }: { _org: unknown }) {
   return (
     <div className="flex gap-2">
       <Button variant="outline" className="bg-[#b19cd9] text-black hover:bg-[#9f84ca]">

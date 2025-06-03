@@ -4,8 +4,14 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+// Define a type for note entries
+interface NoteEntry {
+  id: string; // Or number, depending on API response
+  content: string;
+}
+
 export function AdminOrgNotes({ orgId, isSuperuser }: { orgId: string, isSuperuser: boolean }) {
-  const [notes, setNotes] = useState<any[]>([])
+  const [notes, setNotes] = useState<NoteEntry[]>([]) // Use specific type
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [newNote, setNewNote] = useState("")
@@ -63,7 +69,7 @@ export function AdminOrgNotes({ orgId, isSuperuser }: { orgId: string, isSuperus
           <Button onClick={handleAddNote} disabled={loading || !newNote.trim()}>Add</Button>
         </div>
         <ul>
-          {notes.map((note: any) => (
+          {notes.map((note: NoteEntry) => ( // Use specific type here
             <li key={note.id} className="py-2 border-b border-[#222]">{note.content}</li>
           ))}
         </ul>

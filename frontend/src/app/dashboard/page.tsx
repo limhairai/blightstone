@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useRef } from "react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   ArrowRight,
   ArrowUpRight,
@@ -10,16 +10,25 @@ import {
   MoreHorizontal,
   ArrowDownIcon,
   ArrowUpIcon,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  Users,
+  HelpCircle,
+  Filter,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { StatusBadge } from "@/components/status-badge"
-import { StatusDot } from "@/components/status-dot"
+import { StatusBadge } from "@/components/core/status-badge"
+import { StatusDot } from "@/components/core/status-dot"
+import Link from "next/link"
+
+// Define a general status type for props, compatible with StatusDot and StatusBadge for this page's context
+type StatusProp = "active" | "pending" | "completed" | "failed" | "disabled" | "archived" | "inactive";
 
 export default function DashboardPage() {
   const [timeFilter, setTimeFilter] = useState("3 Months")
-  const [activeTab, setActiveTab] = useState("balance")
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const balanceChartRef = useRef<HTMLDivElement>(null)
@@ -101,7 +110,7 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <Card className="border-border">
             <CardContent className="p-0">
-              <Tabs defaultValue="balance" className="w-full" onValueChange={setActiveTab}>
+              <Tabs defaultValue="balance" className="w-full">
                 <div className="border-b px-6 pt-6">
                   <TabsList className="bg-transparent p-0 h-auto mb-2">
                     <TabsTrigger value="balance" className="text-sm data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-[#b4a0ff] data-[state=active]:shadow-none rounded-none px-2 py-1 h-8">
@@ -237,14 +246,14 @@ export default function DashboardPage() {
                   <div key={transaction.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 rounded-md">
                     <div className="flex items-center gap-3">
                       {(() => {
-                        const getTransactionIcon = (transactionName: string, amount: number) => {
+                        const getTransactionIcon = (transactionName: string) => {
                           if (transactionName.includes("Deposit")) {
                             return (<div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-950/30 text-[#34D197]"><ArrowDownIcon className="h-4 w-4" /></div>)
                           } else {
                             return (<div className="flex items-center justify-center w-8 h-8 rounded-full bg-rose-950/30 text-[#F56565]"><ArrowUpIcon className="h-4 w-4" /></div>)
                           }
                         }
-                        return getTransactionIcon(transaction.name, transaction.amount)
+                        return getTransactionIcon(transaction.name)
                       })()}
                       <div>
                         <div className="font-medium text-sm">{transaction.name}</div>
@@ -308,8 +317,8 @@ export default function DashboardPage() {
                   <td className="p-4 align-middle">{account.adAccount}</td>
                   <td className="p-4 align-middle">
                     <div className="flex items-center gap-2">
-                      <StatusDot status={account.status.toLowerCase() as any} />
-                      <StatusBadge status={account.status.toLowerCase() as any} size="sm" />
+                      <StatusDot status={account.status.toLowerCase() as StatusProp} />
+                      <StatusBadge status={account.status.toLowerCase() as StatusProp} size="sm" />
                     </div>
                   </td>
                   <td className="p-4 align-middle font-medium">{account.balance}</td>

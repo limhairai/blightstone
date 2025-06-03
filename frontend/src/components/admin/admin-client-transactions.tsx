@@ -22,7 +22,7 @@ interface Transaction {
 
 export function AdminClientTransactions({ clientId }: { clientId: string }) {
   // This would come from an API in a real application
-  const [transactions, setTransactions] = useState<Transaction[]>([
+  const [transactions] = useState<Transaction[]>([
     {
       id: "txn_001",
       date: "Apr 28, 2025",

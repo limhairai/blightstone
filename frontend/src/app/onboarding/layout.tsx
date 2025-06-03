@@ -4,7 +4,7 @@ import { Inter } from "next/font/google"
 // No need to import globals.css here as it's handled by the root layout (src/app/layout.tsx)
 
 // Remove Providers import if AppProviders from root layout is sufficient
-// import { Providers } from "@/components/providers"
+// import { Providers } from "@/components/core/providers"
 
 const inter = Inter({ subsets: ["latin"] })
 

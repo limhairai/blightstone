@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useOrganization } from "@/contexts/organization-context";
+import { useOrganization } from "./organization-context";
 
 interface WalletContextType {
   walletBalance: number;
