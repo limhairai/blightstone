@@ -17,6 +17,7 @@ interface TopUpDialogPropsInternal {
   accountId: string
   accountName: string
   onTopUp?: (amount: number) => void
+  walletBalance: number
 }
 
 // Mock data for customer tiers and their commission rates
@@ -28,9 +29,15 @@ const CUSTOMER_TIERS = {
 }
 
 // Renamed to avoid conflict with the wrapper export
-function TopUpDialogInternal({ isOpen, onClose, accountId, accountName, onTopUp }: TopUpDialogPropsInternal) {
+function TopUpDialogInternal({
+  isOpen,
+  onClose,
+  accountId,
+  accountName,
+  onTopUp,
+  walletBalance,
+}: TopUpDialogPropsInternal) {
   // Mock data
-  const walletBalance = 5000
   const customerTier = "BASIC"
   const commissionRate = CUSTOMER_TIERS[customerTier].commissionRate
 
@@ -193,52 +200,37 @@ function TopUpDialogInternal({ isOpen, onClose, accountId, accountName, onTopUp 
 }
 
 interface AccountTopUpDialogProps {
+  isOpen: boolean
+  onClose: () => void
   accountId: string
   accountName: string
   currentBalance: string
-  children?: React.ReactNode
-  className?: string
+  onTopUp?: (amount: number) => void
 }
 
 export function AccountTopUpDialog({
+  isOpen,
+  onClose,
   accountId,
   accountName,
   currentBalance,
-  children,
-  className,
+  onTopUp,
 }: AccountTopUpDialogProps) {
-  const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false)
+  // Parse currentBalance string to number. Handle potential NaN.
+  const numericBalance = Number.parseFloat(currentBalance.replace(/[^0-9.-]+/g, "") || "0")
 
-  const handleTopUp = (amount: number) => {
-    console.log(`Topping up ${accountName} (${accountId}) with $${amount}`)
-    // In a real app, you would call an API here
+  if (!isOpen) {
+    return null
   }
 
   return (
-    <>
-      {children ? (
-        <div className={className} onClick={() => setIsTopUpDialogOpen(true)}>
-          {children}
-        </div>
-      ) : (
-        <Button
-          variant="outline"
-          size="sm"
-          className={`bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-black hover:opacity-90 ${className}`}
-          onClick={() => setIsTopUpDialogOpen(true)}
-        >
-          <Wallet className="h-4 w-4 mr-2" />
-          Top Up
-        </Button>
-      )}
-
-      <TopUpDialogInternal
-        isOpen={isTopUpDialogOpen}
-        onClose={() => setIsTopUpDialogOpen(false)}
-        accountId={accountId}
-        accountName={accountName}
-        onTopUp={handleTopUp}
-      />
-    </>
+    <TopUpDialogInternal
+      isOpen={isOpen}
+      onClose={onClose}
+      accountId={accountId}
+      accountName={accountName}
+      onTopUp={onTopUp}
+      walletBalance={numericBalance}
+    />
   )
 }
