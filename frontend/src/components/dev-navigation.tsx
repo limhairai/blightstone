@@ -93,7 +93,7 @@ export function DevNavigation() {
             {sections.map((section) => (
               <div key={section.name} className="space-y-1">
                 <div className="flex items-center gap-2 px-2 py-1 text-xs font-semibold text-white/50 uppercase tracking-wider">
-                  {icons[section.name]}
+                  {icons[section.name as keyof typeof icons]}
                   <span>{section.name}</span>
                 </div>
                 <div className="space-y-1 pl-2">
