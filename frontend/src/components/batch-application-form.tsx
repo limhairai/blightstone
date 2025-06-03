@@ -11,21 +11,36 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import type React from "react"
 
-export function BatchApplicationForm() {
+interface BatchApplicationFormProps {
+  onSubmit: (formData: { 
+    businessManagerId: string; 
+    timezone: string; 
+    accounts: Array<{ name: string; landingPageUrl: string; facebookPageUrl: string; id?: number }> 
+  }) => Promise<void>;
+  loading: boolean;
+  initialData?: { // Optional initial data for the form
+    businessManagerId?: string;
+    timezone?: string;
+    accounts?: Array<{ id?: number; name: string; landingPageUrl: string; facebookPageUrl: string; }>;
+  };
+}
+
+export function BatchApplicationForm({ onSubmit, loading, initialData }: BatchApplicationFormProps) {
   const router = useRouter()
-  const [accounts, setAccounts] = useState([
-    {
-      id: 1,
-      name: "",
-      landingPageUrl: "",
-      facebookPageUrl: "",
-    },
-  ])
-  const [loading, setLoading] = useState(false)
+  const [accounts, setAccounts] = useState(
+    initialData?.accounts || [
+      {
+        id: 1,
+        name: "",
+        landingPageUrl: "",
+        facebookPageUrl: "",
+      },
+    ]
+  )
 
   // Business Manager Details - SHARED ACROSS ALL ACCOUNTS
-  const [businessManagerId, setBusinessManagerId] = useState("")
-  const [timezone, setTimezone] = useState("")
+  const [businessManagerId, setBusinessManagerId] = useState(initialData?.businessManagerId || "")
+  const [timezone, setTimezone] = useState(initialData?.timezone || "")
 
   const addAccount = () => {
     const newId = accounts.length > 0 ? Math.max(...accounts.map((a) => a.id)) + 1 : 1
@@ -50,16 +65,16 @@ export function BatchApplicationForm() {
     setAccounts(accounts.map((account) => (account.id === id ? { ...account, [field]: value } : account)))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false)
-      router.push("/accounts")
-    }, 1500)
-  }
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Construct formData from current state
+    const formData = {
+      businessManagerId,
+      timezone,
+      accounts: accounts.map(({ id, ...rest }) => rest), // Exclude client-side id
+    };
+    await onSubmit(formData); // Call the onSubmit prop
+  };
 
   return (
     <Card className="bg-[#141414] border-[#2C2C2E] shadow-lg overflow-hidden">
@@ -77,7 +92,7 @@ export function BatchApplicationForm() {
         </div>
       </CardHeader>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleFormSubmit}>
         <CardContent className="space-y-6 pt-6">
           {/* Business Manager Details - SHARED ACROSS ALL ACCOUNTS */}
           <div className="bg-[#1A1A1A] border border-[#2C2C2E] rounded-lg p-4 space-y-4">
