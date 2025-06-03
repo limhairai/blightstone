@@ -35,6 +35,7 @@ export default function DashboardSidebar() {
   // Improved isActive logic to prevent multiple active items
   const isItemActive = (href: string) => {
     if (!mounted) return false
+    if (!pathname) return false
 
     if (href === "/dashboard") {
       // Only exact match for dashboard
