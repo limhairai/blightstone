@@ -14,6 +14,10 @@ export function AppShell({ children }: AppShellProps) {
 
   // Improved page title extraction
   const getPageTitle = () => {
+    if (!pathname) {
+      return "Dashboard"; // Return a default title if pathname is null
+    }
+
     // Map of paths to their display titles
     const pathTitles: Record<string, string> = {
       "/dashboard": "Dashboard",
