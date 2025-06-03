@@ -40,7 +40,7 @@ export function EmptyAccounts() {
           />
         </div>
 
-        <h2 className="text-2xl font-bold mb-3">You Don't Have Any Ad Accounts Yet</h2>
+        <h2 className="text-2xl font-bold mb-3">You Don&apos;t Have Any Ad Accounts Yet</h2>
         <p className="text-muted-foreground max-w-md mb-8">
           Create your first ad account to start advertising on popular platforms.
         </p>
@@ -99,7 +99,7 @@ export function EmptyAccounts() {
         <CardContent className="text-center">
           <p className="mb-2 text-lg font-semibold">You&apos;re All Set Up!</p>
           <p className="text-sm text-muted-foreground mb-4">
-            You've successfully created your first ad account.
+            You&apos;ve successfully created your first ad account.
           </p>
         </CardContent>
       </div>

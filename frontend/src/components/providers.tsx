@@ -57,59 +57,64 @@ function AuthOrgGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  useEffect(() => {
+    // Don't run redirection logic if core data is loading, user is not logged in, or there's an org error.
+    // These cases are handled by the early returns below.
+    if (authLoading || (user && orgLoading) || !user || orgError) {
+      return;
+    }
+
+    if (
+      organizations !== undefined &&
+      organizations.length === 0 &&
+      !orgLoading && // Ensure org loading is complete
+      pathname !== "/onboarding"
+    ) {
+      router.replace("/onboarding");
+    } else if (
+      organizations !== undefined &&
+      organizations.length > 0 &&
+      !orgLoading && // Ensure org loading is complete
+      (pathname === "/onboarding" || pathname === "/")
+    ) {
+      router.replace("/dashboard");
+    }
+  }, [user, organizations, orgLoading, authLoading, orgError, router, pathname]);
+
   // 1. Show loader until auth/org are resolved
   if (authLoading || (user && orgLoading)) {
     return <FullScreenLoader />;
   }
 
-  // 2. If not logged in, show public pages
+  // 2. If not logged in, show public pages (useEffect above won't run for !user)
   if (!user) {
     return <>{children}</>;
   }
 
-  // 3. Handle org error
+  // 3. Handle org error (useEffect above won't run for orgError)
   if (orgError) {
     return <ErrorScreen message="Cannot fetch organization" />;
   }
-
-  // 4. If user has no orgs, redirect to onboarding (but not if already on onboarding)
-  useEffect(() => {
-    if (
-      user &&
-      organizations !== undefined &&
-      organizations.length === 0 &&
-      !orgLoading &&
-      pathname !== "/onboarding"
-    ) {
-      router.replace("/onboarding");
-    }
-    if (
-      user &&
-      organizations !== undefined &&
-      organizations.length > 0 &&
-      !orgLoading &&
-      (pathname === "/onboarding" || pathname === "/")
-    ) {
-      router.replace("/dashboard");
-    }
-  }, [user, organizations, orgLoading, router, pathname]);
+  
+  // 4. If user has no orgs and is not on onboarding, show loader (redirect is handled by useEffect)
+  // This return is to prevent rendering children while redirect is occurring.
   if (
-    user &&
     organizations !== undefined &&
     organizations.length === 0 &&
     !orgLoading &&
     pathname !== "/onboarding"
   ) {
-    return <FullScreenLoader />;
+    return <FullScreenLoader />; // Show loader while redirecting
   }
+
+  // Similar loader for redirection to dashboard
   if (
-    user &&
     organizations !== undefined &&
     organizations.length > 0 &&
     !orgLoading &&
     (pathname === "/onboarding" || pathname === "/")
   ) {
-    return <FullScreenLoader />;
+    return <FullScreenLoader />; // Show loader while redirecting
   }
 
   // 5. If user has orgs but currentOrg is not set yet, show loader

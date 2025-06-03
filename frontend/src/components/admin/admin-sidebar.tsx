@@ -113,7 +113,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     if (currentSection) {
       setExpandedItem(currentSection.name)
     }
-  }, [pathname, navItems]) // Added navItems to dependency array
+  }, [pathname])
 
   // Toggle expanded state for items with children
   const toggleExpand = (item: string) => {

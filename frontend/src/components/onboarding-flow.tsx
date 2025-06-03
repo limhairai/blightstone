@@ -77,7 +77,7 @@ export function OnboardingFlow() {
           <div className="w-2 h-2 bg-[#34D197] rounded-full animate-pulse" />
           <span className="text-sm text-[#9f9f9f]">Welcome to AdHub</span>
         </div>
-        <h1 className="text-3xl font-bold">Let's Get You Started</h1>
+        <h1 className="text-3xl font-bold">Let&apos;s Get You Started</h1>
         <p className="text-[#9f9f9f] max-w-2xl mx-auto">
           Follow these simple steps to set up your Meta agency account management platform and start advertising.
         </p>

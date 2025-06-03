@@ -30,7 +30,7 @@ export function OnboardingComplete({ organizationName, redirectTo }: OnboardingC
 
       <div className="space-y-4 mb-6 sm:mb-8">
         <div className="bg-gradient-to-br from-[#111111] to-[#0a0a0a] border border-[#222222] p-4 sm:p-6 rounded-xl">
-          <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">What's next?</h3>
+          <h3 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">What&apos;s next?</h3>
           <ul className="space-y-3 text-left">
             <li className="flex items-start gap-2">
               <div className="rounded-full bg-[#b4a0ff]/20 p-1 mt-0.5">

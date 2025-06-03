@@ -101,7 +101,7 @@ export function PreferencesPage({ email, userName, trialEndDate }: PreferencesPa
               <div className="mb-6">
                 <h3 className="text-center font-medium mb-2">Trial ends: {trialEndDate}</h3>
                 <p className="text-xs text-center text-[#8A8A8D]">
-                  For peace of mind, we'll send you an email 24 hours before your first payment.
+                  For peace of mind, we&apos;ll send you an email 24 hours before your first payment.
                 </p>
               </div>
             )}
