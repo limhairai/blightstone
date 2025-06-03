@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from 'react';
+// Import the types from your .d.ts file if you need to use them explicitly in the component,
+// but for callback parameters, TypeScript should infer them from the updated global Window.FB types.
+// import type { FBLoginResponse, FBProfileResponse } from '@/types/facebook'; // This import is not strictly needed if TS infers correctly from global
 
 const FACEBOOK_APP_ID = '659164973596972';
 
@@ -7,7 +10,7 @@ export default function ConnectFacebookButton({
   onFbLogin,
   connected,
 }: {
-  onFbLogin: (response: any) => void;
+  onFbLogin: (response: any) => void; // Keep this as `any` for now, or create a more specific app-level type for what onFbLogin expects
   connected: boolean;
 }) {
   const [isSdkReady, setIsSdkReady] = useState(false);
@@ -54,21 +57,25 @@ export default function ConnectFacebookButton({
       console.warn("Facebook SDK not ready or window.FB not available.");
       return;
     }
-    window.FB!.login(function (response) {
-      if (response.authResponse) {
-        window.FB!.api('/me', {
+    // Types for response and profile should be inferred from facebook.d.ts
+    window.FB!.login(function (response) { // response type should be FBLoginResponse
+      if (response.authResponse && response.status === 'connected') {
+        const authResponse = response.authResponse; // for easier access
+        window.FB!.api('/me', { 
           fields: 'id,name,email',
-          access_token: response.authResponse.accessToken 
-        }, function (profile) {
+          access_token: authResponse.accessToken 
+        }, function (profile) { // profile type should be FBProfileResponse
           onFbLogin({
             id: profile.id,
             name: profile.name,
-            email: profile.email,
-            accessToken: response.authResponse.accessToken
+            email: profile.email, // email is optional in FBProfileResponse
+            accessToken: authResponse.accessToken
           });
         });
       } else {
-        onFbLogin({ status: 'unknown' });
+        // Handle cases where login was not successful or user not authorized
+        console.warn('Facebook login failed or was not authorized:', response);
+        onFbLogin({ status: response.status });
       }
     }, { scope: 'public_profile,email,ads_management,business_management' });
   };
