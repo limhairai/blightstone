@@ -129,7 +129,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     if (path === "/admin" && pathname === "/admin") {
       return true
     }
-    if (path !== "/admin" && pathname.startsWith(path)) {
+    if (path !== "/admin" && pathname && pathname.startsWith(path)) {
       return true
     }
     return false
