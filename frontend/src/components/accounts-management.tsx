@@ -9,7 +9,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Search, PlusCircle, ChevronDown, PlusIcon } from "lucide-react"
 import Link from "next/link"
-import { colors } from "@/lib/design-tokens"
+import { gradients } from "@/lib/design-system"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
@@ -242,7 +242,7 @@ export function AccountsManagement() {
             </TabsList>
 
             <Link href="/account-application">
-              <Button className={`${colors.primaryGradient} text-black hover:opacity-90`}>
+              <Button className={`${gradients.primary} text-primary-foreground hover:opacity-90`}>
                 <PlusCircle className="h-4 w-4 mr-2" />
                 Request New Account
               </Button>
@@ -250,7 +250,7 @@ export function AccountsManagement() {
           </div>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className={`${colors.cardGradient} border ${colors.cardBorder}`}>
+            <Card className={`${gradients.cardGradient} border border-border`}>
               <CardContent className="p-4">
                 <div className="flex flex-col">
                   <span className="text-sm text-[#888888]">All accounts</span>
@@ -261,7 +261,7 @@ export function AccountsManagement() {
               </CardContent>
             </Card>
 
-            <Card className={`${colors.cardGradient} border ${colors.cardBorder}`}>
+            <Card className={`${gradients.cardGradient} border border-border`}>
               <CardContent className="p-4">
                 <div className="flex flex-col">
                   <span className="text-sm text-[#888888]">Meta accounts</span>
@@ -272,7 +272,7 @@ export function AccountsManagement() {
               </CardContent>
             </Card>
 
-            <Card className={`${colors.cardGradient} border ${colors.cardBorder}`}>
+            <Card className={`${gradients.cardGradient} border border-border`}>
               <CardContent className="p-4">
                 <div className="flex flex-col">
                   <span className="text-sm text-[#888888]">TikTok accounts</span>
@@ -484,7 +484,7 @@ export function AccountsManagement() {
                           <Button
                             onClick={() => onTopUp(account.id)}
                             size="sm"
-                            className={`${colors.primaryGradient} text-black px-3 py-1 h-7 text-xs font-medium hover:opacity-90`}
+                            className={`${gradients.primary} text-primary-foreground px-3 py-1 h-7 text-xs font-medium hover:opacity-90`}
                           >
                             <PlusIcon className="h-3 w-3 mr-1" /> Top Up
                           </Button>
