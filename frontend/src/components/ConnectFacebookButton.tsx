@@ -34,21 +34,17 @@ export default function ConnectFacebookButton({
       };
     }
 
-    if (!document.getElementById('facebook-jssdk')) {
+    const scriptId = 'facebook-jssdk';
+    if (!document.getElementById(scriptId)) {
       const script = document.createElement('script');
-      script.id = 'facebook-jssdk';
+      script.id = scriptId;
       script.src = "https://connect.facebook.net/en_US/sdk.js";
       script.async = true;
       script.defer = true;
-      script.onload = () => {
-      };
       script.onerror = () => {
         console.error("Failed to load Facebook SDK script.");
       };
       document.head.appendChild(script);
-    } else if (window.FB && typeof window.FB.getUserID === 'function'){
-      setIsSdkReady(true);
-    } else if (window.fbAsyncInit && !window.FB) {
     }
 
   }, []);
