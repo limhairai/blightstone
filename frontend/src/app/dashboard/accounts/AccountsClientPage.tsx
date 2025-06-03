@@ -68,8 +68,40 @@ const accounts = [
   },
 ]
 
+// Define a type for the account data, useful for state
+interface AccountData {
+  id: string;
+  name: string;
+  project: string;
+  adAccount: string;
+  status: string;
+  balance: string;
+  spendLimit: string;
+  dateAdded: string;
+  quota: number;
+}
+
 export default function AccountsClientPage() {
   const [activeTab, setActiveTab] = useState("accounts")
+  const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
+  const [selectedAccountForTopUp, setSelectedAccountForTopUp] = useState<AccountData | null>(null);
+
+  const openTopUpDialog = (account: AccountData) => {
+    setSelectedAccountForTopUp(account);
+    setIsTopUpDialogOpen(true);
+  };
+
+  const closeTopUpDialog = () => {
+    setSelectedAccountForTopUp(null);
+    setIsTopUpDialogOpen(false);
+  };
+
+  // Optional: Define a handler if you need to do something after top-up
+  // const handleSuccessfulTopUp = (amount: number) => {
+  //   console.log(`Successfully topped up ${selectedAccountForTopUp?.name} with $${amount}`);
+  //   // You might want to refresh account data or show a notification here
+  //   closeTopUpDialog();
+  // };
 
   return (
     <div className="space-y-6">
@@ -183,17 +215,14 @@ export default function AccountsClientPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <AccountTopUpDialog
-                    accountId={account.adAccount} 
-                    accountName={account.name}
-                    currentBalance={account.balance} 
-                    className="flex-1"
+                  <Button
+                    className="flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90"
+                    size="sm"
+                    onClick={() => openTopUpDialog(account)}
                   >
-                    <Button className="flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90" size="sm">
-                      <Wallet className="h-4 w-4 mr-2" />
-                      Top Up
-                    </Button>
-                  </AccountTopUpDialog>
+                    <Wallet className="h-4 w-4 mr-2" />
+                    Top Up
+                  </Button>
                   <Button variant="outline" size="sm" className="flex-1">
                     View Details
                   </Button>
@@ -209,6 +238,17 @@ export default function AccountsClientPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {selectedAccountForTopUp && (
+        <AccountTopUpDialog
+          isOpen={isTopUpDialogOpen}
+          onClose={closeTopUpDialog}
+          accountId={selectedAccountForTopUp.adAccount}
+          accountName={selectedAccountForTopUp.name}
+          currentBalance={selectedAccountForTopUp.balance}
+          // onTopUp={handleSuccessfulTopUp} // Uncomment if you have a handler
+        />
+      )}
     </div>
   )
 } 
