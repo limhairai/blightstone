@@ -14,11 +14,21 @@ import {
   ShieldCheck,
   Menu,
   ChevronRight,
+  type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+// Define an interface for navigation items
+interface NavItem {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+  children?: NavItem[];
+  badge?: string | number;
+}
+
 // Moved navItems and bottomNavItems outside the component for stable references
-const navItems = [
+const navItems: NavItem[] = [
   {
     name: "Dashboard",
     path: "/admin",
@@ -32,10 +42,12 @@ const navItems = [
       {
         name: "All Requests",
         path: "/admin/requests",
+        icon: FileText,
       },
       {
         name: "Pending Review",
         path: "/admin/requests/pending",
+        icon: FileText,
       },
     ],
   },
@@ -47,10 +59,12 @@ const navItems = [
       {
         name: "All Clients",
         path: "/admin/clients",
+        icon: Users,
       },
       {
         name: "Active Accounts",
         path: "/admin/clients/active",
+        icon: Users,
       },
     ],
   },
@@ -62,10 +76,12 @@ const navItems = [
       {
         name: "Revenue",
         path: "/admin/finances/revenue",
+        icon: DollarSign,
       },
       {
         name: "Transactions",
         path: "/admin/finances/transactions",
+        icon: DollarSign,
       },
     ],
   },
@@ -76,7 +92,7 @@ const navItems = [
   },
 ]
 
-const bottomNavItems = [
+const bottomNavItems: NavItem[] = [
   {
     name: "Settings",
     path: "/admin/settings",
