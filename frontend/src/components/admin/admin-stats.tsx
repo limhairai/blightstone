@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
 export function AdminStats({ isSuperuser }: { isSuperuser: boolean }) {
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<Record<string, string | number | boolean> | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
