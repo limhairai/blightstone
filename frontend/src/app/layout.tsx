@@ -3,9 +3,8 @@ import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from 'next/font/google';
 import "@/styles/globals.css"; // Correct path
-import { ThemeProvider } from "@/components/theme-provider";
 // import { DevNavigation } from "@/components/dev-navigation"; // Removed import
-import AppProviders from "@/app/AppProviders";
+import { Providers } from "@/components/providers"; // Changed import path and name
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,12 +22,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AppProviders>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-            {children}
-            {/* <DevNavigation /> */}{/* Removed component instance */}
-          </ThemeProvider>
-        </AppProviders>
+        <Providers> {/* Use the comprehensive Providers component */}
+          {children}
+          {/* <DevNavigation /> */}{/* Removed component instance */}
+        </Providers>
       </body>
     </html>
   );
