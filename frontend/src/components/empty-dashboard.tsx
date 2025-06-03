@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Users, Wallet, Shield } from 'lucide-react'
-import { gradients } from "@/lib/design-tokens"
+import { gradients } from "~/lib/design-system"
 import Image from "next/image"
 
 export function EmptyDashboard() {
