@@ -1,4 +1,4 @@
-import { getUsageColor } from "@/lib/colors"
+import { getUsageCircleColorValue } from "@/lib/design-tokens"
 
 interface UsageCircleProps {
   percentage: number
@@ -11,7 +11,7 @@ export function UsageCircle({ percentage }: UsageCircleProps) {
   const offset = circumference - (percentage / 100) * circumference
 
   // Use our centralized color system
-  const circleColor = getUsageColor(percentage)
+  const circleColor = getUsageCircleColorValue(percentage)
 
   return (
     <div className="flex items-center">

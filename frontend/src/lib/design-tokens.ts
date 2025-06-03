@@ -504,27 +504,41 @@ export const getStatusBadgeClasses = (
 export const getProgressColor = (percentage: number) => {
   if (percentage === 0) {
     return {
-      fgClass: "text-status-progress-empty-fg",
-      bgClass: "bg-status-progress-empty-bg",
+      fg: "text-status-progress-empty-fg",
+      bg: "bg-status-progress-empty-bg",
     };
   }
   if (percentage < 60) {
     return {
-      fgClass: "text-status-progress-low-fg",
-      bgClass: "bg-status-progress-low-bg",
+      fg: "text-status-progress-low-fg",
+      bg: "bg-status-progress-low-bg",
     };
   }
   if (percentage < 80) {
     return {
-      fgClass: "text-status-progress-medium-fg",
-      bgClass: "bg-status-progress-medium-bg",
+      fg: "text-status-progress-medium-fg",
+      bg: "bg-status-progress-medium-bg",
     };
   }
   return {
-    fgClass: "text-status-progress-high-fg",
-    bgClass: "bg-status-progress-high-bg",
+    fg: "text-status-progress-high-fg",
+    bg: "bg-status-progress-high-bg",
   };
 }
+
+// NEW FUNCTION: Get usage circle color value (hex string)
+export const getUsageCircleColorValue = (percentage: number): string => {
+  if (percentage === 0) {
+    return statusTokens.progress.empty.color;
+  }
+  if (percentage < 60) {
+    return statusTokens.progress.low.color;
+  }
+  if (percentage < 80) { // 60-79 is medium
+    return statusTokens.progress.medium.color;
+  }
+  return statusTokens.progress.high.color; // 80+ is high
+};
 
 // Get transaction amount color and prefix
 export const getTransactionAmountStyle = (amount: number, mode: "light" | "dark" = "dark") => {
@@ -597,6 +611,7 @@ export default {
     getStatusDot,
     getStatusBadgeClasses,
     getProgressColor,
+    getUsageCircleColorValue,
     getTransactionAmountStyle,
     generateCSSVariables,
   },
