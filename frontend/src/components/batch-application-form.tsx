@@ -43,7 +43,8 @@ export function BatchApplicationForm({ onSubmit, loading, initialData }: BatchAp
   const [timezone, setTimezone] = useState(initialData?.timezone || "")
 
   const addAccount = () => {
-    const newId = accounts.length > 0 ? Math.max(...accounts.map((a) => a.id)) + 1 : 1
+    const SPREADSHEET_IDS = accounts.map((a) => a.id).filter((id) => typeof id === 'number') as number[];
+    const newId = SPREADSHEET_IDS.length > 0 ? Math.max(...SPREADSHEET_IDS) + 1 : 1;
     setAccounts([
       ...accounts,
       {
