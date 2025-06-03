@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { useTeam } from './TeamContext';
 
@@ -67,7 +67,39 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState<OnboardingStep[]>(defaultSteps);
 
-  // Check if team step is completed
+  const updateStep = useCallback(async (stepId: string, data: Partial<OnboardingStep>) => {
+    if (!user) return;
+
+    let newStepsState: OnboardingStep[] = [];
+    setSteps(prevSteps => {
+      newStepsState = prevSteps.map((step) =>
+        step.id === stepId ? { ...step, ...data } : step
+      );
+      return newStepsState;
+    });
+
+    const finalStepsForAPI = steps.map((s) => s.id === stepId ? { ...s, ...data } : s);
+
+    await fetch(`/api/v1/users/${user.uid}/onboarding`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        steps: finalStepsForAPI,
+        currentStep: finalStepsForAPI.findIndex((step) => !step.completed),
+      }),
+    });
+  }, [user, steps]);
+
+  const completeStep = useCallback(async (stepId: string) => {
+    await updateStep(stepId, { completed: true });
+    setSteps(prevSteps => {
+        const updatedSteps = prevSteps.map(s => s.id === stepId ? { ...s, completed: true } : s);
+        const nextStepIndex = updatedSteps.findIndex((step) => !step.completed);
+        setCurrentStep(nextStepIndex > -1 ? nextStepIndex : steps.length);
+        return updatedSteps;
+    });
+  }, [updateStep, steps]);
+
   useEffect(() => {
     if (currentTeam) {
       const teamStep = steps.find(step => step.id === 'team');
@@ -75,37 +107,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         completeStep('team');
       }
     }
-  }, [currentTeam]);
+  }, [currentTeam, steps, completeStep]);
 
-  const updateStep = async (stepId: string, data: Partial<OnboardingStep>) => {
+  const resetOnboarding = useCallback(async () => {
     if (!user) return;
 
-    const updatedSteps = steps.map((step) =>
-      step.id === stepId ? { ...step, ...data } : step
-    );
-    setSteps(updatedSteps);
-
-    // Update in backend
-    await fetch(`/api/v1/users/${user.uid}/onboarding`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        steps: updatedSteps,
-        currentStep: updatedSteps.findIndex((step) => !step.completed),
-      }),
-    });
-  };
-
-  const completeStep = async (stepId: string) => {
-    await updateStep(stepId, { completed: true });
-    const nextStep = steps.findIndex((step) => !step.completed);
-    setCurrentStep(nextStep);
-  };
-
-  const resetOnboarding = async () => {
-    if (!user) return;
-
-    const resetSteps = steps.map((step) => ({ ...step, completed: false }));
+    const resetSteps = defaultSteps.map((step) => ({ ...step, completed: false }));
     setSteps(resetSteps);
     setCurrentStep(0);
 
@@ -117,7 +124,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         currentStep: 0,
       }),
     });
-  };
+  }, [user]);
 
   const isOnboardingComplete = steps.every(step => !step.required || step.completed);
 

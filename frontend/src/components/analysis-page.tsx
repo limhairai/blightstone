@@ -40,7 +40,7 @@ export function AnalysisPage() {
               <span className="text-[#00FF7F] mr-2">The markets are bullish</span>
               <ArrowUpRight className="h-4 w-4 text-[#00FF7F]" />
             </div>
-            <button className="text-xs text-[#8A8A8D]">What's happening</button>
+            <button className="text-xs text-[#8A8A8D]">What&apos;s happening</button>
           </div>
 
           <h2 className="text-xl font-bold mb-4">

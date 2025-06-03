@@ -18,14 +18,11 @@ export function AccountManagementPreview() {
   useEffect(() => {
     // Ensure selectedAccount is a valid index
     if (selectedAccount < 0 || selectedAccount >= accountsData.length) {
-        // Optionally set a default or handle error, for now, just return if out of bounds
-        // This might happen if accountsData changes structure and selectedAccount is stale.
-        // For mock data, less likely to be an issue.
         if (accountsData.length > 0) setSelectedAccount(0); // Reset to first if possible
         return; 
     }
     const targetBalance = accountsData[selectedAccount].balance;
-    const currentAnimatedBalance = animatedBalance; // Capture current animated balance
+    const currentAnimatedBalance = animatedBalance; // Capture current animated balance for the animation cycle
     const diff = targetBalance - currentAnimatedBalance;
     
     if (diff === 0) return; // No change needed
@@ -48,7 +45,11 @@ export function AccountManagementPreview() {
     }, duration / steps);
 
     return () => clearInterval(timer);
-  }, [selectedAccount]); // Only re-run animation when selectedAccount changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccount, accountsData]); // animatedBalance is intentionally omitted because this effect should only re-run
+                                     // and re-calculate the animation parameters when selectedAccount changes.
+                                     // The animation itself uses the animatedBalance from the moment selectedAccount changed.
+                                     // accountsData is added as it's used to derive targetBalance.
 
   const getStatusColor = (status: string) => {
     switch (status) {

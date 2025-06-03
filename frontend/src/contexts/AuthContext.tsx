@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { 
   User,
   createUserWithEmailAndPassword,
@@ -35,6 +35,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Memoize signOutUser
+  const signOutUser = useCallback(async () => {
+    await signOut(auth);
+    localStorage.removeItem("adhub_token");
+    localStorage.removeItem("adhub_current_org");
+    router.push('/login');
+  }, [auth, router]);
+
   // Inactivity timer (30 minutes)
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -47,12 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     const events = ["mousemove", "keydown", "mousedown", "touchstart"];
     events.forEach((event) => window.addEventListener(event, resetTimer));
-    resetTimer();
+    resetTimer(); // Initialize timer on mount
     return () => {
       if (timer) clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, resetTimer));
     };
-  }, []);
+  }, [signOutUser]); // Added signOutUser to dependency array
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -73,22 +81,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkToken = async () => {
       try {
         const token = await user.getIdToken();
-        const { exp } = JSON.parse(atob(token.split('.')[1]));
-        const now = Math.floor(Date.now() / 1000);
-        if (exp < now) {
-          toast({ title: "Session expired", description: "Your session has expired. Please log in again.", variant: "destructive" });
-          signOutUser();
+        // Ensure token is valid before trying to parse
+        if (token && token.split('.').length === 3) {
+            const { exp } = JSON.parse(atob(token.split('.')[1]));
+            const now = Math.floor(Date.now() / 1000);
+            if (exp < now) {
+              toast({ title: "Session expired", description: "Your session has expired. Please log in again.", variant: "destructive" });
+              signOutUser();
+            }
+        } else {
+            // Handle invalid token structure - possibly sign out
+            toast({ title: "Invalid session", description: "Your session token is invalid. Please log in again.", variant: "destructive" });
+            signOutUser();
         }
-      } catch {
+      } catch (error) { // Explicitly catch error
+        console.error("Error checking token:", error); // Log the error
         toast({ title: "Session error", description: "Authentication error. Please log in again.", variant: "destructive" });
         signOutUser();
       }
     };
     checkToken();
-    // Optionally, check every 5 minutes
     const interval = setInterval(checkToken, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, signOutUser]); // Added signOutUser to dependency array
 
   const signUp = async (email: string, password: string): Promise<User> => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -107,13 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOutUser = async () => {
-    await signOut(auth);
-    localStorage.removeItem("adhub_token");
-    localStorage.removeItem("adhub_current_org");
-    router.push('/login');
-  };
-
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
   };
@@ -128,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signUp,
     signIn,
-    signOut: signOutUser,
+    signOut: signOutUser, // Use the memoized version
     resetPassword,
     signInWithGoogle,
   };

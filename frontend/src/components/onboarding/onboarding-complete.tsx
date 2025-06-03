@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle } from "lucide-react"
+import { CardContent } from "@/components/ui/card"
 
 interface OnboardingCompleteProps {
   organizationName: string
@@ -21,8 +22,8 @@ export function OnboardingComplete({ organizationName, redirectTo }: OnboardingC
       </div>
 
       <div className="space-y-2 mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold">Setup Complete!</h1>
-        <p className="text-xs sm:text-sm text-[#71717a]">
+        <h2 className="text-2xl font-bold mb-2">You&apos;re All Set!</h2>
+        <p className="text-muted-foreground mb-6">
           Welcome to AdHub{organizationName ? `, ${organizationName}` : ""}! Your account is now ready to use.
         </p>
       </div>

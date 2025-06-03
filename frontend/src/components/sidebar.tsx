@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -71,7 +71,7 @@ export function Sidebar({ className }: SidebarProps) {
     if (currentSection) {
       setExpandedItem(currentSection.name)
     }
-  }, [pathname])
+  }, [pathname, navItems])
 
   // Fetch superuser status on mount
   useEffect(() => {
@@ -114,8 +114,8 @@ export function Sidebar({ className }: SidebarProps) {
     return false
   }
 
-  // Main navigation items
-  const navItems = [
+  // Main navigation items - memoized
+  const navItems = useMemo(() => [
     {
       name: "Dashboard",
       path: "/dashboard",
@@ -147,10 +147,10 @@ export function Sidebar({ className }: SidebarProps) {
       path: "/settings",
       icon: Settings,
     },
-  ]
+  ], [isSuperuser]);
 
-  // Bottom navigation items
-  const bottomNavItems = [
+  // Bottom navigation items - memoized
+  const bottomNavItems = useMemo(() => [
     // Admin item - only shown to superusers
     ...(isSuperuser
       ? [
@@ -162,7 +162,7 @@ export function Sidebar({ className }: SidebarProps) {
         ]
       : []),
     // No settings/help/log out here
-  ]
+  ], [isSuperuser]);
 
   // Add useEffect to prevent body scroll when mobileMenuOpen is true
   useEffect(() => {
@@ -289,7 +289,6 @@ export function Sidebar({ className }: SidebarProps) {
                         isActive(item.path)
                           ? "bg-muted text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                        collapsed && "justify-center",
                       )}
                     >
                       <div className="flex items-center">

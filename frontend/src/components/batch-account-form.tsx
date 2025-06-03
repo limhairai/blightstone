@@ -92,7 +92,7 @@ export function BatchAccountForm({ formData, onChange }: BatchAccountFormProps) 
     const shouldUpdate =
       formData.businessManagerId !== localData.businessManagerId ||
       formData.timezone !== localData.timezone ||
-      formData.accounts.length !== localData.accounts.length
+      formData.accounts.length !== localData.accounts.length;
 
     if (shouldUpdate) {
       setLocalData({
@@ -109,9 +109,12 @@ export function BatchAccountForm({ formData, onChange }: BatchAccountFormProps) 
                   facebookPageUrl: "",
                 },
               ],
-      })
+      });
     }
-  }, [formData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]); // localData.* fields are intentionally omitted from deps. This effect syncs formData prop to localData.
+                 // Reading localData here is for comparison to prevent unnecessary updates or overwriting local state
+                 // if formData re-renders but its relevant parts haven't changed. Adding localData fields would cause an infinite loop.
 
   // Submit changes when form loses focus
   const handleBlur = () => {

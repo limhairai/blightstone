@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -121,7 +122,7 @@ export function TwoFactorSetup() {
         <form onSubmit={enable2fa} className="space-y-4">
           <div>
             <div className="mb-2">Scan this QR code with your authenticator app:</div>
-            {qr && <img src={qr} alt="2FA QR" className="mx-auto w-40 h-40" />}
+            {qr && <Image src={qr} alt="2FA QR" width={160} height={160} className="mx-auto w-40 h-40" />}
             <div className="mt-2 text-xs break-all">Or enter this code: <span className="font-mono">{secret}</span></div>
           </div>
           <Input

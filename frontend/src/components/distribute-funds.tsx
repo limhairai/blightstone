@@ -65,19 +65,23 @@ export function DistributeFunds({ walletBalance, onDistribute }: DistributeFunds
   // Handle equal distribution
   useEffect(() => {
     if (equalDistribution && distributions.length > 0) {
-      const amountValue = Number.parseFloat(amount) || 0
-      const equalAmount = (amountValue / distributions.length).toFixed(2)
-      const equalPercentage = ((Number.parseFloat(equalAmount) / amountValue) * 100).toFixed(0)
+      const amountValue = Number.parseFloat(amount) || 0;
+      const numItems = distributions.length; // distributions.length is from the deps via closure
+      const equalAmount = (amountValue / numItems).toFixed(2);
+      // Ensure amountValue and numItems are not zero for division to avoid NaN
+      const equalPercentage = (amountValue > 0 && numItems > 0)
+        ? ((Number.parseFloat(equalAmount) / amountValue) * 100).toFixed(0)
+        : "0";
 
-      setDistributions(
-        distributions.map((dist) => ({
+      setDistributions(prevDistributions => // Using functional update
+        prevDistributions.map((dist) => ({
           ...dist,
           amount: equalAmount,
           percentage: equalPercentage,
-        })),
-      )
+        }))
+      );
     }
-  }, [equalDistribution, amount, distributions.length])
+  }, [equalDistribution, amount, distributions.length]); // Dependencies remain the same
 
   // Handle adding a new distribution
   const addDistribution = () => {

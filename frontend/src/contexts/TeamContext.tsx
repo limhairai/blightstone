@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { Team, TeamInvite, UserRole, Permission, defaultRolePermissions } from '@/types/user';
 
@@ -29,9 +29,16 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Memoize currentTeam ID to prevent unnecessary effect runs if only team members change
+  const currentTeamId = useMemo(() => currentTeam?.id, [currentTeam]);
+
   // Fetch user's teams (organizations)
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.token) {
+        setCurrentTeam(null);
+        setLoading(false);
+        return;
+    }
     setLoading(true);
     fetch(`/api/v1/organizations`, {
       headers: { Authorization: `Bearer ${user.token}` },
@@ -39,13 +46,12 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       .then((res) => res.json())
       .then((data) => {
         if (data.organizations && data.organizations.length > 0) {
-          // Map backend org to Team type
           const org = data.organizations[0];
           setCurrentTeam({
             id: org.id,
             name: org.name,
             ownerId: org.ownerId || org.createdBy || '',
-            members: {}, // Will be filled below
+            members: {}, // Will be filled by the next effect
             createdAt: new Date(org.createdAt),
             updatedAt: new Date(),
           });
@@ -60,19 +66,24 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       });
   }, [user]);
 
-  // Fetch team members if currentTeam exists
+  // Fetch team members if currentTeamId exists
   useEffect(() => {
-    if (!user || !currentTeam) return;
-    fetch(`/api/v1/organizations/${currentTeam.id}/members`, {
+    if (!user || !user.token || !currentTeamId) {
+        if (!currentTeamId && currentTeam && Object.keys(currentTeam.members).length > 0) {
+            setCurrentTeam(prev => prev ? { ...prev, members: {} } : null);
+        }
+        return;
+    }
+    fetch(`/api/v1/organizations/${currentTeamId}/members`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
       .then((members) => {
         if (Array.isArray(members)) {
-          setCurrentTeam((prev) =>
-            prev
+          setCurrentTeam((prevTeam) =>
+            prevTeam && prevTeam.id === currentTeamId
               ? {
-                  ...prev,
+                  ...prevTeam,
                   members: members.reduce((acc, m) => {
                     acc[m.userId] = {
                       role: m.role,
@@ -81,17 +92,20 @@ export function TeamProvider({ children }: { children: ReactNode }) {
                     return acc;
                   }, {} as Team['members']),
                 }
-              : null
+              : prevTeam
           );
         }
       })
       .catch((err) => setError(err));
-  }, [user, currentTeam?.id]);
+  }, [user, currentTeamId, currentTeam]);
 
   // Fetch invites for the current org
   useEffect(() => {
-    if (!user || !currentTeam) return;
-    fetch(`/api/v1/invites/${currentTeam.id}`, {
+    if (!user || !user.token || !currentTeamId) {
+        setTeamInvites([]);
+        return;
+    }
+    fetch(`/api/v1/invites/${currentTeamId}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -109,10 +123,15 @@ export function TeamProvider({ children }: { children: ReactNode }) {
               expiresAt: new Date(invite.expiresAt),
             }))
           );
+        } else {
+          setTeamInvites([]);
         }
       })
-      .catch((err) => setError(err));
-  }, [user, currentTeam?.id]);
+      .catch((err) => {
+        setError(err);
+        setTeamInvites([]);
+      });
+  }, [user, currentTeamId]);
 
   const createTeam = async (name: string) => {
     if (!user) throw new Error('User not authenticated');
@@ -264,23 +283,20 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Permission checks (use currentTeam.members and defaultRolePermissions)
-  const hasPermission = (permission: Permission): boolean => {
-    if (!user || !currentTeam) return false;
-    const member = currentTeam.members[user.uid];
-    if (!member) return false;
-    const role = member.role;
-    const perms = defaultRolePermissions[role] || [];
-    return perms.includes(permission);
-  };
+  const hasPermission = useCallback((permission: Permission): boolean => {
+    if (!currentTeam || !user?.uid || !currentTeam.members[user.uid]) return false;
+    const userRole = currentTeam.members[user.uid].role;
+    const permissions = defaultRolePermissions[userRole] || [];
+    return permissions.includes(permission);
+  }, [currentTeam, user?.uid]);
 
-  const hasAnyPermission = (permissions: Permission[]): boolean => {
-    return permissions.some((p) => hasPermission(p));
-  };
+  const hasAnyPermission = useCallback((permissions: Permission[]): boolean => {
+    return permissions.some(p => hasPermission(p));
+  }, [hasPermission]);
 
-  const hasAllPermissions = (permissions: Permission[]): boolean => {
-    return permissions.every((p) => hasPermission(p));
-  };
+  const hasAllPermissions = useCallback((permissions: Permission[]): boolean => {
+    return permissions.every(p => hasPermission(p));
+  }, [hasPermission]);
 
   const value = {
     currentTeam,

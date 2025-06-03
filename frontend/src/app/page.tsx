@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image";
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ProfessionalFeaturesSection } from "@/components/professional-features-section"
@@ -22,8 +23,8 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-white/10 backdrop-blur-xl bg-black/20 supports-[backdrop-filter]:bg-black/10">
         <div className="max-w-7xl mx-auto flex h-14 items-center justify-between px-6 lg:px-8">
           <div className="flex items-center">
-            {/* Ensure adhub-logo.png is in /public */}
-            <img src="/adhub-logo.png" alt="AdHub" className="h-7 w-auto" /> 
+            {/* Using estimated dimensions for Next/Image. Adjust if necessary. */}
+            <Image src="/adhub-logo.png" alt="AdHub" width={100} height={28} className="h-7 w-auto" priority />
           </div>
           <nav className="hidden md:flex gap-6">
             <Link href="/" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
@@ -82,14 +83,14 @@ export default function Home() {
                   <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-all duration-300"></div>
                   <div className="hidden lg:block relative z-10">
                     <div className="h-[500px] overflow-hidden rounded-2xl">
-                      {/* Ensure /dashboard-wide.png is in /public */}
-                      <img src="/dashboard-wide.png" alt="AdHub Dashboard Interface" className="w-full h-auto rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
+                      {/* Using estimated dimensions and layout='responsive'. Adjust if necessary. */}
+                      <Image src="/dashboard-wide.png" alt="AdHub Dashboard Interface" width={1920} height={1080} layout="responsive" className="rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
                     </div>
                   </div>
                   <div className="lg:hidden relative z-10">
                     <div className="h-[400px] overflow-hidden rounded-2xl">
-                      {/* Ensure /dashboard-compact.png is in /public */}
-                      <img src="/dashboard-compact.png" alt="AdHub Dashboard Interface" className="w-full h-auto rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
+                      {/* Using estimated dimensions and layout='responsive'. Adjust if necessary. */}
+                      <Image src="/dashboard-compact.png" alt="AdHub Dashboard Interface" width={800} height={600} layout="responsive" className="rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
                     </div>
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent z-20 rounded-b-2xl"></div>
@@ -199,7 +200,8 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center">
-              <img src="/adhub-logo.png" alt="AdHub" className="h-7 w-auto" />
+              {/* Using estimated dimensions for Next/Image. Adjust if necessary. */}
+              <Image src="/adhub-logo.png" alt="AdHub" width={100} height={28} className="h-7 w-auto" />
             </div>
             <div className="flex flex-wrap justify-center gap-8">
               <Link href="#" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Terms</Link>

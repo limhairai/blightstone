@@ -166,10 +166,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
-  // Explicitly define the Provider component from the context
-  const Provider = ToastContext.Provider;
-
-  return <Provider value={{ toasts, addToast, removeToast }}>{children}</Provider>;
+  // Use ToastContext.Provider directly
+  return <ToastContext.Provider value={{ toasts, addToast, removeToast }}>{children}</ToastContext.Provider>;
 }
 
 export function useToast() {

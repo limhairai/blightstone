@@ -596,7 +596,7 @@ export const generateCSSVariables = (mode: "light" | "dark" = "light") => {
   }
 }
 
-export default {
+const allDesignTokens = {
   colors: colorTokens,
   typography: typographyTokens,
   spacing: spacingTokens,
@@ -615,4 +615,6 @@ export default {
     getTransactionAmountStyle,
     generateCSSVariables,
   },
-}
+};
+
+export default allDesignTokens;

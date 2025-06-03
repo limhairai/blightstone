@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { ArrowRight, Users, UserPlus, ShieldCheck } from "lucide-react"
 import Image from "next/image"
+import { CardContent } from "@/components/ui/card"
 
 export function EmptyAccounts() {
   const accountTypes = [
@@ -94,6 +95,13 @@ export function EmptyAccounts() {
             </Link>
           </Button>
         </div>
+
+        <CardContent className="text-center">
+          <p className="mb-2 text-lg font-semibold">You&apos;re All Set Up!</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            You've successfully created your first ad account.
+          </p>
+        </CardContent>
       </div>
     </div>
   )

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { FormLabel, FormDescription, FormControl } from "@/components/ui/form"
 
 interface ReferralFormProps {
   data: {
@@ -44,12 +45,13 @@ export function ReferralForm({ data, updateData, onNext, onBack }: ReferralFormP
     <Card className="border-0 shadow-none">
       <CardHeader className="pb-4">
         <CardTitle className="text-2xl">How did you hear about us?</CardTitle>
-        <CardDescription>We'd love to know how you discovered AdHub</CardDescription>
+        <CardDescription>We&apos;d love to know how you discovered AdHub</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-3">
-            <Label>How did you hear about AdHub?</Label>
+            <FormLabel>How did you hear about us?</FormLabel>
+            <FormDescription>Let us know if someone referred you or how you found AdHub. We&apos;re curious!</FormDescription>
             <RadioGroup
               value={data.source}
               onValueChange={(value) => updateData({ source: value })}

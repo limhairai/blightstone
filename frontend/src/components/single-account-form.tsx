@@ -72,6 +72,7 @@ export function SingleAccountForm({ formData, onChange }: SingleAccountFormProps
         ],
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData])
 
   // Submit changes when form loses focus

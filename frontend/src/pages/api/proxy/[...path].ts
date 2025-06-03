@@ -37,10 +37,12 @@ proxy.on('error', (err, req, res) => {
   }
 });
 
-export default (req: NextApiRequest, res: NextApiResponse) => {
+const proxyHandler = (req: NextApiRequest, res: NextApiResponse) => {
   const originalUrl = req.url; // For logging
   const rewrittenPath = originalUrl?.replace(/^\/api\/proxy/, '/api') || '';
   req.url = rewrittenPath; // This is what http-proxy will use
 
   proxy.web(req, res, {}); // Options are set on the proxy instance
-}; 
+};
+
+export default proxyHandler; 

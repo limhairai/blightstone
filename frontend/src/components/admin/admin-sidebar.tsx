@@ -17,6 +17,78 @@ import {
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
+// Moved navItems and bottomNavItems outside the component for stable references
+const navItems = [
+  {
+    name: "Dashboard",
+    path: "/admin",
+    icon: LayoutDashboard,
+  },
+  {
+    name: "Requests",
+    path: "/admin/requests",
+    icon: FileText,
+    children: [
+      {
+        name: "All Requests",
+        path: "/admin/requests",
+      },
+      {
+        name: "Pending Review",
+        path: "/admin/requests/pending",
+      },
+    ],
+  },
+  {
+    name: "Clients",
+    path: "/admin/clients",
+    icon: Users,
+    children: [
+      {
+        name: "All Clients",
+        path: "/admin/clients",
+      },
+      {
+        name: "Active Accounts",
+        path: "/admin/clients/active",
+      },
+    ],
+  },
+  {
+    name: "Finances",
+    path: "/admin/finances",
+    icon: DollarSign,
+    children: [
+      {
+        name: "Revenue",
+        path: "/admin/finances/revenue",
+      },
+      {
+        name: "Transactions",
+        path: "/admin/finances/transactions",
+      },
+    ],
+  },
+  {
+    name: "Analytics",
+    path: "/admin/analytics",
+    icon: BarChart3,
+  },
+]
+
+const bottomNavItems = [
+  {
+    name: "Settings",
+    path: "/admin/settings",
+    icon: Settings,
+  },
+  {
+    name: "Exit Admin",
+    path: "/dashboard",
+    icon: ShieldCheck,
+  },
+]
+
 interface AdminSidebarProps {
   className?: string
 }
@@ -27,77 +99,10 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
   const pathname = usePathname()
 
   // Admin navigation items
-  const navItems = [
-    {
-      name: "Dashboard",
-      path: "/admin",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Requests",
-      path: "/admin/requests",
-      icon: FileText,
-      children: [
-        {
-          name: "All Requests",
-          path: "/admin/requests",
-        },
-        {
-          name: "Pending Review",
-          path: "/admin/requests/pending",
-        },
-      ],
-    },
-    {
-      name: "Clients",
-      path: "/admin/clients",
-      icon: Users,
-      children: [
-        {
-          name: "All Clients",
-          path: "/admin/clients",
-        },
-        {
-          name: "Active Accounts",
-          path: "/admin/clients/active",
-        },
-      ],
-    },
-    {
-      name: "Finances",
-      path: "/admin/finances",
-      icon: DollarSign,
-      children: [
-        {
-          name: "Revenue",
-          path: "/admin/finances/revenue",
-        },
-        {
-          name: "Transactions",
-          path: "/admin/finances/transactions",
-        },
-      ],
-    },
-    {
-      name: "Analytics",
-      path: "/admin/analytics",
-      icon: BarChart3,
-    },
-  ]
+  // const navItems = [...] // Moved outside
 
   // Bottom navigation items
-  const bottomNavItems = [
-    {
-      name: "Settings",
-      path: "/admin/settings",
-      icon: Settings,
-    },
-    {
-      name: "Exit Admin",
-      path: "/dashboard",
-      icon: ShieldCheck,
-    },
-  ]
+  // const bottomNavItems = [...] // Moved outside
 
   // Auto-expand the section that contains the current path
   useEffect(() => {
@@ -108,7 +113,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     if (currentSection) {
       setExpandedItem(currentSection.name)
     }
-  }, [pathname])
+  }, [pathname, navItems]) // Added navItems to dependency array
 
   // Toggle expanded state for items with children
   const toggleExpand = (item: string) => {
