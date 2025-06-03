@@ -29,8 +29,8 @@ export function AccountsCardGrid({ accounts, onViewAccount }: AccountsCardGridPr
       {accounts.map((account) => (
         <Card
           key={account.id}
-          className={`${colors.cardGradient} border ${colors.cardBorder} hover:border-[#b19cd9] transition-colors`}
-        >
+          className="bg-card border border-border hover:border-primary transition-colors"
+                            >
           <CardContent className="p-5">
             <div className="flex justify-between items-start mb-4">
               <div>
