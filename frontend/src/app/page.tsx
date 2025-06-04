@@ -188,7 +188,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-black pt-32 md:pt-40 lg:pt-48 pb-40 md:pb-56 lg:pb-64 relative mt-16">
+        <section className="bg-black pt-32 md:pt-40 lg:pt-48 pb-64 md:pb-80 lg:pb-96 relative mt-16">
           <div className="relative z-10 max-w-7xl mx-auto px-6">
             <FAQSection />
           </div>
