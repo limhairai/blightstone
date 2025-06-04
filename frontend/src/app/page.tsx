@@ -188,7 +188,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-black py-32 md:py-40 lg:py-48 relative">
+        <section className="bg-black py-32 md:py-40 lg:py-48 relative mt-16">
           <div className="relative z-10 max-w-7xl mx-auto px-6">
             <FAQSection />
           </div>
