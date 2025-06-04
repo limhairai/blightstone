@@ -39,12 +39,12 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-sm text-foreground/80 hover:text-foreground hover:bg-secondary">
+              <Button variant="ghost" className="text-foreground/80 hover:text-foreground hover:bg-secondary">
                 Login
               </Button>
             </Link>
             <Link href="/register">
-              <Button size="sm" className="text-sm bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black">
+              <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black">
                 Get Started
               </Button>
             </Link>
@@ -188,7 +188,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-black py-32 md:py-40 lg:py-48 relative mt-16">
+        <section className="bg-black pt-32 md:pt-40 lg:pt-48 pb-40 md:pb-56 lg:pb-64 relative mt-16">
           <div className="relative z-10 max-w-7xl mx-auto px-6">
             <FAQSection />
           </div>

@@ -2,7 +2,7 @@ import { AccountManagementPreview } from "@/components/accounts/account-manageme
 
 export function AccountManagementSection() {
   return (
-    <div className="max-w-7xl mx-auto px-6 mb-40 lg:mb-48">
+    <div className="max-w-7xl mx-auto px-6 mb-48 lg:mb-64">
       <div className="grid lg:grid-cols-2 gap-20 items-center">
         <div className="max-w-lg">
           <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-4 py-2 text-sm text-white/80 mb-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
