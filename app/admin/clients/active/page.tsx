@@ -1,1 +1,0 @@
-import AdminLayout from "@/components/admin/admin-layout" 

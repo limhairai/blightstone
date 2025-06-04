@@ -9,6 +9,7 @@ import { Home, Settings, Users, Menu, Receipt, Wallet } from "lucide-react"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 
 const sidebarItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -112,7 +113,7 @@ export default function DashboardSidebar() {
 
           {!collapsed && (
             <div className="flex items-center">
-              <Image src="/adhub-logo.png" alt="AdHub Logo" width={100} height={30} className="h-7 w-auto" />
+              <AdHubLogo size="lg" />
             </div>
           )}
         </div>

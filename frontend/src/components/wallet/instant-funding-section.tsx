@@ -1,6 +1,6 @@
 export function InstantFundingSection() {
   return (
-    <div className="max-w-7xl mx-auto px-6 mt-48 lg:mt-64">
+    <div className="max-w-7xl mx-auto px-6 mt-40">
       <div className="grid lg:grid-cols-2 gap-20 items-center">
         <div className="lg:order-2 max-w-lg">
           <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-4 py-2 text-sm text-white/80 mb-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.05)]">

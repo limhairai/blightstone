@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Logo } from "@/components/core/Logo"
+// import { Logo } from "@/components/core/Logo"; // Remove old logo import
+import { AdHubLogo } from "@/components/core/AdHubLogo"; // Import new AdHubLogo
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from '@/contexts/AuthContext'
@@ -149,7 +150,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="px-6 py-4 md:px-8">
-        <Logo />
+        <AdHubLogo size="lg" /> {/* Replace old Logo with new AdHubLogo */}
       </div>
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">

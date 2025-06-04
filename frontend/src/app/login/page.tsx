@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Logo } from "@/components/core/Logo"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import { useState } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter } from "next/navigation"
@@ -65,7 +65,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col bg-background">
       <div className="px-6 py-4 md:px-8">
         <Link href={user ? "/dashboard" : "/"}>
-          <Logo />
+          <AdHubLogo size="lg" />
         </Link>
       </div>
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

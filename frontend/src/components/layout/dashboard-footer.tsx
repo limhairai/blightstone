@@ -1,4 +1,4 @@
-import { Logo } from "@/components/core/Logo"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import Link from "next/link"
 
 export function DashboardFooter() {
@@ -6,7 +6,7 @@ export function DashboardFooter() {
     <footer className="border-t border-border bg-background">
       <div className="container flex flex-col md:flex-row items-center md:items-start justify-between py-6 gap-4">
         <div>
-          <Logo size="small" />
+          <AdHubLogo size="sm" />
         </div>
 
         <div className="flex gap-6">

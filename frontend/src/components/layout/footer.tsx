@@ -1,4 +1,4 @@
-import { Logo } from "@/components/core/Logo"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import Link from "next/link"
 
 export function Footer() {
@@ -6,7 +6,7 @@ export function Footer() {
     <footer className="border-t border-border bg-background">
       <div className="container flex flex-col md:flex-row items-center md:items-start justify-between py-8 gap-4">
         <div>
-          <Logo linkWrapper={false} />
+          <AdHubLogo size="sm" />
         </div>
 
         <div className="flex gap-8">

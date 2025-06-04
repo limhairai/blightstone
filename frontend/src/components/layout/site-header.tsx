@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Logo } from "@/components/core/Logo"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Menu, X } from "lucide-react"
@@ -14,7 +14,9 @@ export function SiteHeader() {
   return (
     <header className="border-b border-border backdrop-blur-md bg-background/50 sticky top-0 z-50">
       <div className="container flex h-16 items-center justify-between">
-        <Logo />
+        <Link href="/">
+          <AdHubLogo size="lg" />
+        </Link>
 
         {/* Mobile menu button */}
         <button

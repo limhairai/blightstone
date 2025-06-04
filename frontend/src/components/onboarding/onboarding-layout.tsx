@@ -1,7 +1,8 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { Logo } from "@/components/core/Logo"
+import Link from "next/link"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
 
 interface OnboardingLayoutProps {
@@ -15,7 +16,9 @@ export function OnboardingLayout({ children, currentStep, totalSteps }: Onboardi
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <header className="border-b border-border bg-background backdrop-blur">
         <div className="container flex h-16 items-center">
-          <Logo href="/" />
+          <Link href="/">
+            <AdHubLogo size="lg" />
+          </Link>
           <div className="ml-auto text-sm text-muted-foreground">
             Step {currentStep} of {totalSteps}
           </div>

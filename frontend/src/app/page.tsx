@@ -7,6 +7,7 @@ import { ProfessionalFeaturesSection } from "@/components/landing/professional-f
 import { FAQSection } from "@/components/landing/faq-section"
 import { AccountManagementSection } from "@/components/accounts/account-management-section"
 import { InstantFundingSection } from "@/components/wallet/instant-funding-section"
+import { AdHubLogo } from "@/components/core/AdHubLogo";
 
 export default function Home() {
   return (
@@ -21,10 +22,9 @@ export default function Home() {
         <div className="absolute bottom-1/6 right-1/6 w-56 h-56 rounded-full bg-gradient-to-l from-[#d4b4ff]/6 to-[#ffb4a0]/6 blur-3xl animate-pulse delay-2500"></div>
       </div>
       <header className="sticky top-0 z-50 border-b border-white/10 backdrop-blur-xl bg-black/20 supports-[backdrop-filter]:bg-black/10">
-        <div className="max-w-7xl mx-auto flex h-14 items-center justify-between px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-6 lg:px-8">
           <div className="flex items-center">
-            {/* Using estimated dimensions for Next/Image. Adjust if necessary. */}
-            <Image src="/adhub-logo.png" alt="AdHub" width={100} height={28} className="h-7 w-auto" priority />
+            <AdHubLogo size="lg" />
           </div>
           <nav className="hidden md:flex gap-6">
             <Link href="/" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-colors">
@@ -188,7 +188,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="bg-black pt-32 md:pt-40 lg:pt-48 pb-64 md:pb-80 lg:pb-96 relative mt-16">
+        <section className="bg-black pt-32 md:pt-40 lg:pt-48 pb-48 relative mt-16">
           <div className="relative z-10 max-w-7xl mx-auto px-6">
             <FAQSection />
           </div>
@@ -200,8 +200,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center">
-              {/* Using estimated dimensions for Next/Image. Adjust if necessary. */}
-              <Image src="/adhub-logo.png" alt="AdHub" width={100} height={28} className="h-7 w-auto" />
+              <AdHubLogo size="lg" />
             </div>
             <div className="flex flex-wrap justify-center gap-8">
               <Link href="#" className="text-sm text-foreground/60 hover:text-foreground transition-colors">Terms</Link>

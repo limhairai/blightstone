@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Logo } from "@/components/core/Logo"
+// import { Logo } from "@/components/core/Logo"; // Remove old logo import
+import { AdHubLogo } from "@/components/core/AdHubLogo"; // Import new AdHubLogo
 import { Button } from "@/components/ui/button"
 
 export function MainNav() {
@@ -7,7 +8,9 @@ export function MainNav() {
     <nav className="border-b border-[#222] py-4">
       <div className="container max-w-7xl mx-auto px-4 flex justify-between items-center">
         <div className="flex items-center space-x-12">
-          <Logo />
+          <Link href="/">
+            <AdHubLogo size="lg" />
+          </Link>
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/features" className="text-white/80 hover:text-white transition-colors">
               Features
