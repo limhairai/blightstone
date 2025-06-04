@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Logo } from "@/components/core/Logo"; // Remove old logo import
 import { AdHubLogo } from "@/components/core/AdHubLogo"; // Import new AdHubLogo
 import { useState } from "react"
 import { useRouter } from "next/navigation"

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import { useOrganization, Organization } from "@/contexts/organization-context";
 import { toast } from "@/components/ui/use-toast"
 import Link from "next/link"
-import { Logo } from "@/components/core/Logo"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader } from "@/components/core/Loader"
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow"
@@ -240,7 +240,7 @@ export default function OnboardingPage() {
       <OnboardingLayout currentStep={displayStep} totalSteps={totalSteps}>
         <div className="px-6 py-4 md:px-8">
           <Link href={user ? "/dashboard" : "/"}>
-            <Logo />
+            <AdHubLogo size="lg" />
           </Link>
         </div>
         {loading ? (

@@ -34,7 +34,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Logo } from "@/components/core/Logo"
+import { AdHubLogo } from "@/components/core/AdHubLogo"
 import { Loader } from "@/components/core/Loader"
 import { useUser } from "@/contexts/user-context"
 import { toast } from "@/components/ui/use-toast"
@@ -191,7 +191,9 @@ export function Sidebar({ className, isOpen, setIsOpen, isAdmin }: SidebarProps)
           >
             <Menu className="h-5 w-5" />
           </button>
-          <Logo size="default" className="ml-3" linkWrapper={true} />
+          <Link href="/">
+            <AdHubLogo size="lg" className="ml-3" />
+          </Link>
         </div>
 
         {/* Mobile Slide-out Menu */}
@@ -208,7 +210,9 @@ export function Sidebar({ className, isOpen, setIsOpen, isAdmin }: SidebarProps)
             >
               <X className="h-5 w-5" />
             </button>
-            <Logo size="default" className="ml-3" linkWrapper={true} />
+            <Link href="/">
+              <AdHubLogo size="lg" className="ml-3" />
+            </Link>
           </div>
 
           <div className="px-4 py-3">
@@ -385,7 +389,9 @@ export function Sidebar({ className, isOpen, setIsOpen, isAdmin }: SidebarProps)
               <Menu className="h-6 w-6" />
             </button>
           ) : (
-            <Logo size="default" linkWrapper={true} />
+            <Link href="/">
+              <AdHubLogo size="lg" />
+            </Link>
           )}
           {isOpen && (
             <div className="ml-auto">
