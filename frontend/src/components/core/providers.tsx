@@ -1,6 +1,6 @@
 "use client"
 
-import { ThemeProvider } from "./theme-provider"
+import { ThemeProvider } from "@/components/ui/theme-provider"
 import { AuthProvider, useAuth } from "@/contexts/AuthContext"
 import { OnboardingProvider } from "@/contexts/onboarding-context"
 import { TeamProvider } from "@/contexts/TeamContext"
