@@ -11,7 +11,7 @@ import { BillingProvider } from "@/contexts/BillingContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
-import { SessionProvider } from "@/components/ui/session-provider";
+import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { OnboardingProvider } from "@/contexts/OnboardingContext";
