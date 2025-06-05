@@ -35,17 +35,20 @@ type SupportChannelFormData = { type: string; email: string; handle: string };
 
 type FormDataSectionData = OrganizationFormData | ProjectFormData | AdSpendFormData | SupportChannelFormData;
 
-// Interface for errors that might include a 'detail' string property
+// Helper function to check for 'detail' property in error objects
 interface ErrorWithDetail extends Error {
   detail?: string;
 }
 
-// Type guard to check if an error object has a 'detail' string property
+// Type guard to check if error has a 'detail' property
 function hasDetail(error: unknown): error is ErrorWithDetail {
-  return typeof error === 'object' && error !== null && 'detail' in error && typeof (error as { detail?: unknown }).detail === 'string';
+  return typeof error === 'object' && error !== null && 'detail' in error;
 }
 
 export default function OnboardingPage() {
+  const router = useRouter();
+  const { user, session } = useAuth(); // Get user and session from AuthContext
+  const { organizations, currentOrg, setCurrentOrg, loading: orgLoading, error: orgError, mutate: mutateOrganizationsHook } = useOrganization(); // Get organization related state from OrganizationContext
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
     organization: {
@@ -68,9 +71,6 @@ export default function OnboardingPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const router = useRouter()
-  const { organizations, currentOrg, setCurrentOrg, loading: orgLoading, error: orgError, mutate: mutateOrganizationsHook } = useOrganization();
-  const { user } = useAuth();
 
   console.log("[OnboardingPage] Rendering - Step:", step, "orgLoading:", orgLoading, "orgError:", orgError, "User:", !!user);
   console.log("[OnboardingPage] Organizations from context:", organizations);
@@ -103,19 +103,18 @@ export default function OnboardingPage() {
       return
     }
 
-    let token
-    try {
-      token = await user.getIdToken(true)
-    } catch (tokenError) {
-      console.error("Onboarding handleSubmit: Error fetching ID token:", tokenError)
-      setError("Could not verify user session. Please try again.")
-      setLoading(false)
-      toast({ title: "Session Error", description: "Could not verify user session.", variant: "destructive" })
-      return
+    const token = session?.access_token;
+
+    if (!token) {
+      console.error("Onboarding handleSubmit: No access token found in Supabase session.");
+      setError("Could not verify user session. Please try again.");
+      setLoading(false);
+      toast({ title: "Session Error", description: "Could not verify user session. Please try again.", variant: "destructive" });
+      return;
     }
 
     try {
-      console.log('[Onboarding] Submitting org creation with token for user:', user.uid, formData)
+      console.log('[Onboarding] Submitting org creation with token for user:', user.id, formData)
       // 1. Create organization
       const orgRes = await fetch('/api/proxy/v1/organizations', {
         method: "POST",
@@ -134,7 +133,7 @@ export default function OnboardingPage() {
         if (orgData.detail === "You already have an organization associated with your account.") {
           setError("You already have an organization. If you need to create another, please contact support.");
         } else {
-          setError(orgData.detail || "Onboarding failed");
+          setError(orgData.detail || "Onboarding failed due to an unknown reason from the server.");
         }
         setLoading(false)
         return

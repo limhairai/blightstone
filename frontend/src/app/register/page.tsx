@@ -75,59 +75,45 @@ export default function RegisterPage() {
       return;
     }
     setLoading(true);
-    console.log("Register handleSubmit: Starting");
+
     try {
-      console.log("Register handleSubmit: Calling signUp...");
-      const firebaseUser = await signUp(email, password);
-      console.log("Register handleSubmit: signUp successful, user:", firebaseUser);
+      const signUpResponse = await signUp(email, password, { data: { fullName: name } });
+      console.log("Register handleSubmit: signUp response:", signUpResponse);
 
-      if (!firebaseUser || !firebaseUser.uid) {
-        throw new Error("Failed to get Firebase UID after registration.");
+      if (signUpResponse.error) {
+        setError(signUpResponse.error.message);
+        return;
       }
-      const uid = firebaseUser.uid;
-      console.log("Register handleSubmit: UID obtained:", uid);
 
-      console.log("Register handleSubmit: Calling backend to create user profile...");
-      const backendRes = await fetch("/api/proxy/v1/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          uid,
-          email,
-          name,
-          createdAt: new Date().toISOString(),
-          role: "user",
-        }),
+      if (!signUpResponse.data?.user?.id) {
+        console.error("Register handleSubmit: Failed to get user ID after Supabase registration.", signUpResponse.data);
+        setError("Registration succeeded but failed to retrieve user details. Please try logging in.");
+        return;
+      }
+
+      toast({
+        title: "Registration successful!",
+        description: "Please check your email to verify your account before logging in.",
       });
-      console.log("Register handleSubmit: Backend response status:", backendRes.status);
 
-      if (!backendRes.ok) {
-        const errData = await backendRes.json().catch(() => ({ detail: "Failed to parse backend error response" }));
-        console.error("Register handleSubmit: Backend error data:", errData);
-        throw new Error(errData.detail || "Failed to create user in backend");
-      }
-      console.log("Register handleSubmit: Backend user profile creation successful.");
-
-      toast({ title: "Account created!", description: "Welcome to AdHub. Redirecting...", variant: "default" });
-      router.push("/onboarding");
-    } catch (err: unknown) {
-      console.error("Register handleSubmit: Error caught:", err);
+    } catch (error: any) {
+      console.error("Register handleSubmit: Error caught:", error);
       let errorMessage = "Registration failed";
       let toastMessage = "Registration failed";
       
-      if (isFirebaseError(err) && err.code === "auth/email-already-in-use") {
+      if (isFirebaseError(error) && error.code === "auth/email-already-in-use") {
         errorMessage = "An account with this email already exists. Please log in or use a different email.";
         toastMessage = errorMessage;
         toast({ title: "Email already in use", description: errorMessage, variant: "destructive" });
-      } else if (err instanceof Error) { // General Error object
-        errorMessage = err.message;
-        toastMessage = err.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        toastMessage = error.message;
         toast({ title: "Registration failed", description: errorMessage, variant: "destructive" });
-      } else if (typeof err === 'string') { // String error
-        errorMessage = err;
-        toastMessage = err;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+        toastMessage = error;
         toast({ title: "Registration failed", description: toastMessage, variant: "destructive" });
-      } else { // Fallback for other unknown error types
+      } else {
         toast({ title: "Registration failed", description: toastMessage, variant: "destructive" });
       }
 

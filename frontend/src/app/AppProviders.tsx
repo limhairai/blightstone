@@ -15,7 +15,7 @@ import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { OnboardingProvider } from "@/contexts/onboarding-context";
-import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
+// import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 
 // Define the queryClient
 const queryClient = new QueryClient();
@@ -36,7 +36,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                 <UserProvider>
                   <NotificationProvider>
                     <OnboardingProvider>
-                      <ImpersonationProvider>
+                      {/* <ImpersonationProvider> */}
                         <TeamProvider>
                           <TeamSettingsProvider>
                             <AnalyticsProvider>
@@ -53,7 +53,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
                           </TeamSettingsProvider>
                         </TeamProvider>
                         <ReactQueryDevtools initialIsOpen={false} />
-                      </ImpersonationProvider>
+                      {/* </ImpersonationProvider> */}
                     </OnboardingProvider>
                   </NotificationProvider>
                 </UserProvider>
