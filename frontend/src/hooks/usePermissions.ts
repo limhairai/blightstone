@@ -36,7 +36,7 @@ export function usePermissions() {
   const hasPermission = (permission: Permission): boolean => {
     if (!user || !currentTeam) return false;
 
-    const userRole = currentTeam.members[user.uid]?.role;
+    const userRole = currentTeam.members[user.id]?.role;
     if (!userRole) return false;
 
     return rolePermissions[userRole].includes(permission);
@@ -52,7 +52,7 @@ export function usePermissions() {
 
   const getUserRole = (): UserRole | null => {
     if (!user || !currentTeam) return null;
-    return currentTeam.members[user.uid]?.role || null;
+    return currentTeam.members[user.id]?.role || null;
   };
 
   return {

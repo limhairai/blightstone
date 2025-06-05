@@ -39,7 +39,7 @@ export function OrganizationSwitcher({
   collapsed = false,
 }: OrganizationSwitcherProps) {
   const { organizations, currentOrg, setCurrentOrg, loading: orgLoading, error: orgError, mutate: mutateOrganizations } = useOrganization();
-  const { user } = useAuth(); 
+  const { user, session } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newOrgName, setNewOrgName] = useState("");
   const [isCreatingOrg, setIsCreatingOrg] = useState(false); 
@@ -70,7 +70,15 @@ export function OrganizationSwitcher({
     setCreateOrgError("");
 
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+
+      if (!token) {
+        setCreateOrgError("Authentication token not found. Please log in again.");
+        toast({ title: "Error", description: "Authentication token not found. Please log in again.", variant: "destructive" });
+        setIsCreatingOrg(false);
+        return;
+      }
+      
       const response = await fetch("/api/proxy/v1/organizations", {
         method: "POST",
         headers: {

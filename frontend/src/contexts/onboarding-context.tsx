@@ -78,9 +78,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
       return newStepsState;
     });
 
-    const finalStepsForAPI = steps.map((s) => s.id === stepId ? { ...s, ...data } : s);
+    const finalStepsForAPI = newStepsState;
 
-    await fetch(`/api/v1/users/${user.uid}/onboarding`, {
+    await fetch(`/api/v1/users/${user.id}/onboarding`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -94,11 +94,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     await updateStep(stepId, { completed: true });
     setSteps(prevSteps => {
         const updatedSteps = prevSteps.map(s => s.id === stepId ? { ...s, completed: true } : s);
-        const nextStepIndex = updatedSteps.findIndex((step) => !step.completed);
-        setCurrentStep(nextStepIndex > -1 ? nextStepIndex : steps.length);
+        const nextStepIndex = updatedSteps.findIndex((step) => !step.completed && step.required);
+        setCurrentStep(nextStepIndex > -1 ? nextStepIndex : updatedSteps.filter(s => s.required).length);
         return updatedSteps;
     });
-  }, [updateStep, steps]);
+  }, [updateStep]);
 
   useEffect(() => {
     if (currentTeam) {
@@ -116,7 +116,7 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setSteps(resetSteps);
     setCurrentStep(0);
 
-    await fetch(`/api/v1/users/${user.uid}/onboarding`, {
+    await fetch(`/api/v1/users/${user.id}/onboarding`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

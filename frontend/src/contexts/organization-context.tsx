@@ -24,42 +24,36 @@ interface OrganizationContextType {
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined)
 
-const fetcher = (url: string, token: string) => {
+// The fetcher now expects the token as the second argument in the array passed to SWR
+const fetcher = (url: string, token: string | null | undefined) => {
+  if (!token) {
+    return Promise.reject(new Error("No token provided"));
+  }
   return fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     .then(async res => {
+      if (!res.ok) {
+        const errorInfo = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(errorInfo.detail || `Request failed with status ${res.status}`);
+      }
       const json = await res.json();
       return json;
     });
 };
 
 export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, loading: authLoading } = useAuth(); // Added session
   
-  const [token, setToken] = useState<string | null>(null);
   const [currentOrg, setCurrentOrgState] = useState<Organization | null>(null);
   const [organizations, setOrganizationsState] = useState<Organization[] | undefined>(undefined);
 
-  // Get Firebase ID token for API auth
-  useEffect(() => {
-    let isMounted = true;
-    const getToken = async () => {
-      if (user) {
-        const idToken = await user.getIdToken();
-        if (isMounted) setToken(idToken);
-      } else {
-        setToken(null);
-      }
-    };
-    getToken();
-    return () => { isMounted = false; };
-  }, [user]);
-
-  // Only fetch orgs if user and token are present
-  const shouldFetch = !!user && !!token && !authLoading;
+  // User and session?.access_token must be present to fetch, and auth should not be loading.
+  const accessToken = session?.access_token;
+  const shouldFetch = !!user && !!accessToken && !authLoading;
   
   const { data, error, isLoading, mutate } = useSWR(
-    shouldFetch ? ["/api/proxy/v1/organizations", token] : null,
-    ([url, token]) => fetcher(url, token)
+    // Pass accessToken directly in the SWR key array if shouldFetch is true
+    shouldFetch ? ["/api/proxy/v1/organizations", accessToken] : null,
+    ([url, tokenForFetcher]) => fetcher(url, tokenForFetcher) // SWR passes the key array elements as arguments
   );
 
   // Set organizations when data is fetched
@@ -73,7 +67,7 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setCurrentOrgState(null);
         localStorage.removeItem("adhub_current_org");
       }
-    } else if (data && Array.isArray(data)) {
+    } else if (data && Array.isArray(data)) { // Handle if API returns array directly
       setOrganizationsState(data);
       if (data.length > 0) {
         setCurrentOrgState(data[0]);
@@ -83,65 +77,64 @@ export const OrganizationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         localStorage.removeItem("adhub_current_org");
       }
     }
-    // Do NOT clear orgs/currentOrg here if data is undefined!
   }, [data]);
 
-  // Only clear orgs/currentOrg if user is actually logged out
+  // Clear orgs/currentOrg if user is logged out (user becomes null)
   useEffect(() => {
-    if (user === null) {
+    if (user === null) { // This indicates user is explicitly logged out
       setOrganizationsState(undefined);
       setCurrentOrgState(null);
       localStorage.removeItem("adhub_current_org");
     }
   }, [user]);
 
-  // On orgs fetch, set currentOrg from localStorage if valid, else default to first org
+  // Initialize or update currentOrg from localStorage or default to first org
   useEffect(() => {
     if (organizations === undefined || organizations.length === 0) {
       setCurrentOrgState(null);
-      localStorage.removeItem("adhub_current_org");
+      // No need to remove from localStorage here as it will be handled if organizations are empty
       return;
     }
-    // Try to get from localStorage
+
     const stored = localStorage.getItem("adhub_current_org");
-    let parsed = null;
+    let parsedOrg: Organization | null = null;
     if (stored) {
       try {
-        parsed = JSON.parse(stored);
-        if (typeof parsed !== "object" || !parsed.id) {
-          localStorage.removeItem("adhub_current_org");
-          parsed = null;
+        parsedOrg = JSON.parse(stored) as Organization;
+        if (typeof parsedOrg !== "object" || !parsedOrg.id || !organizations.find(o => o.id === parsedOrg?.id)) {
+          parsedOrg = null; // Invalid or not in current list
         }
       } catch {
-        localStorage.removeItem("adhub_current_org");
+        parsedOrg = null;
       }
     }
-    // If the stored org is in the new orgs array, use it; otherwise, use the first org
-    const found = parsed && organizations.find(o => o.id === parsed.id);
-    if (found) {
-      setCurrentOrgState(found);
-      localStorage.setItem("adhub_current_org", JSON.stringify(found));
-    } else {
-      setCurrentOrgState(organizations[0]);
-      localStorage.setItem("adhub_current_org", JSON.stringify(organizations[0]));
-    }
-  }, [organizations]);
 
-  // Sync currentOrg to localStorage
+    const orgToSet = parsedOrg || organizations[0];
+    setCurrentOrgState(orgToSet);
+    localStorage.setItem("adhub_current_org", JSON.stringify(orgToSet));
+
+  }, [organizations]); // Re-run when organizations list changes
+
+  // Sync currentOrg to localStorage when it changes by other means (e.g., direct call to setCurrentOrg)
   useEffect(() => {
     if (currentOrg) {
       localStorage.setItem("adhub_current_org", JSON.stringify(currentOrg));
+    } else {
+      // If currentOrg becomes null (e.g. last org deleted), remove from localStorage
+      localStorage.removeItem("adhub_current_org");
     }
   }, [currentOrg]);
 
-  // Set currentOrg and sync to localStorage
-  const setCurrentOrg = (org: Organization) => {
+  const setCurrentOrg = (org: Organization | null) => {
     setCurrentOrgState(org);
-    localStorage.setItem("adhub_current_org", JSON.stringify(org));
+    // localStorage update is handled by the useEffect above
   };
-
-  if (user && (authLoading || isLoading)) {
-    return null; // Providers will show loader
+  
+  // Consider what to show during authLoading or SWR isLoading
+  // For now, returning null if authLoading is true to let AppProviders handle global loading state.
+  // If isLoading for SWR is true but user is authenticated, specific loading UI might be desired here or in consuming components.
+  if (authLoading) { 
+    return null; 
   }
 
   return (

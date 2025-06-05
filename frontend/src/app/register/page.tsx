@@ -12,16 +12,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/components/ui/use-toast"
 
-// Interface for Firebase-like errors that might include a 'code' string property
-interface FirebaseError extends Error {
-  code?: string;
-}
-
-// Type guard to check if an error object has a 'code' string property
-function isFirebaseError(error: unknown): error is FirebaseError {
-  return typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code?: unknown }).code === 'string';
-}
-
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -81,13 +71,24 @@ export default function RegisterPage() {
       console.log("Register handleSubmit: signUp response:", signUpResponse);
 
       if (signUpResponse.error) {
-        setError(signUpResponse.error.message);
-        return;
+        const errorMessage = signUpResponse.error.message.toLowerCase();
+        if (errorMessage.includes("user already registered") || 
+            errorMessage.includes("email address is already in use") ||
+            errorMessage.includes("email link is invalid or has expired")) { // Common variations
+          const specificError = "An account with this email already exists. Please log in or use a different email.";
+          setError(specificError);
+          toast({ title: "Email Already in Use", description: specificError, variant: "destructive" });
+        } else {
+          setError(signUpResponse.error.message); // Default Supabase error
+          toast({ title: "Registration Failed", description: signUpResponse.error.message, variant: "destructive" });
+        }
+        return; // Stop execution if there was a sign-up error
       }
 
       if (!signUpResponse.data?.user?.id) {
         console.error("Register handleSubmit: Failed to get user ID after Supabase registration.", signUpResponse.data);
         setError("Registration succeeded but failed to retrieve user details. Please try logging in.");
+        toast({ title: "Registration Incomplete", description: "Failed to retrieve user details. Please try logging in.", variant: "destructive" });
         return;
       }
 
@@ -96,28 +97,16 @@ export default function RegisterPage() {
         description: "Please check your email to verify your account before logging in.",
       });
 
-    } catch (error: any) {
-      console.error("Register handleSubmit: Error caught:", error);
-      let errorMessage = "Registration failed";
-      let toastMessage = "Registration failed";
-      
-      if (isFirebaseError(error) && error.code === "auth/email-already-in-use") {
-        errorMessage = "An account with this email already exists. Please log in or use a different email.";
-        toastMessage = errorMessage;
-        toast({ title: "Email already in use", description: errorMessage, variant: "destructive" });
-      } else if (error instanceof Error) {
+    } catch (error: any) { // This catch block is now for truly unexpected errors not from supabase.auth.signUp directly
+      console.error("Register handleSubmit: Unexpected error caught:", error);
+      let errorMessage = "An unexpected error occurred during registration.";
+      if (error instanceof Error) {
         errorMessage = error.message;
-        toastMessage = error.message;
-        toast({ title: "Registration failed", description: errorMessage, variant: "destructive" });
       } else if (typeof error === 'string') {
         errorMessage = error;
-        toastMessage = error;
-        toast({ title: "Registration failed", description: toastMessage, variant: "destructive" });
-      } else {
-        toast({ title: "Registration failed", description: toastMessage, variant: "destructive" });
       }
-
       setError(errorMessage);
+      toast({ title: "Registration Error", description: errorMessage, variant: "destructive" });
     } finally {
       setLoading(false);
       console.log("Register handleSubmit: Finished");

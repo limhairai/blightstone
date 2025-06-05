@@ -5,8 +5,8 @@ import { useAuth } from './AuthContext';
 
 interface BillingInfo {
   customerId: string;
-  paymentMethods: any[];
-  invoices: any[];
+  paymentMethods: any[]; // Consider defining a specific type for payment methods
+  invoices: any[]; // Consider defining a specific type for invoices
   subscription: {
     plan: string;
     status: string;
@@ -21,7 +21,7 @@ interface BillingContextType {
   loading: boolean;
   error: string | null;
   fetchBilling: () => Promise<void>;
-  updatePaymentMethod: (data: any) => Promise<void>;
+  updatePaymentMethod: (data: any) => Promise<void>; // Consider specific type for data
   updateSubscription: (plan: string) => Promise<void>;
   cancelSubscription: () => Promise<void>;
 }
@@ -32,18 +32,30 @@ export const BillingProvider = ({ children }: { children: ReactNode }) => {
   const [billing, setBilling] = useState<BillingInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth(); // Added session
 
   const fetchBilling = async () => {
-    if (!user) { setLoading(false); return; }
+    if (!user) { 
+      setLoading(false); 
+      // setError("User not authenticated"); // Optional: set error if user must be present
+      return; 
+    }
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/billing', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to fetch billing info');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(errorData.detail || 'Failed to fetch billing info');
+      }
       const data = await res.json();
       setBilling(data.billing || null);
     } catch (e: any) {
@@ -52,23 +64,34 @@ export const BillingProvider = ({ children }: { children: ReactNode }) => {
     setLoading(false);
   };
 
+  // Example: Fetch billing info when user session is available
   // useEffect(() => {
-  //   if (user) fetchBilling(); // Temporarily commented out
-  // }, [user]);
+  //   if (user && session?.access_token) {
+  //     fetchBilling();
+  //   }
+  // }, [user, session]); // Re-run if user or session changes
 
   const updatePaymentMethod = async (data: any) => {
     if (!user) { setError("User not authenticated"); return; }
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/billing/payment-method', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
       });
-      if (!res.ok) throw new Error('Failed to update payment method');
-      await fetchBilling();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(errorData.detail || 'Failed to update payment method');
+      }
+      await fetchBilling(); // Refresh billing info
     } catch (e: any) {
       setError(e.message || 'Failed to update payment method');
     }
@@ -80,14 +103,22 @@ export const BillingProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/billing/subscription', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ plan }),
       });
-      if (!res.ok) throw new Error('Failed to update subscription');
-      await fetchBilling();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(errorData.detail || 'Failed to update subscription');
+      }
+      await fetchBilling(); // Refresh billing info
     } catch (e: any) {
       setError(e.message || 'Failed to update subscription');
     }
@@ -99,14 +130,22 @@ export const BillingProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/billing/subscription', {
-        method: 'PATCH',
+        method: 'PATCH', // Ensure backend handles PATCH for cancellation or use DELETE
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status: 'cancelled' }),
+        body: JSON.stringify({ status: 'cancelled' }), // Or whatever payload backend expects
       });
-      if (!res.ok) throw new Error('Failed to cancel subscription');
-      await fetchBilling();
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(errorData.detail || 'Failed to cancel subscription');
+      }
+      await fetchBilling(); // Refresh billing info
     } catch (e: any) {
       setError(e.message || 'Failed to cancel subscription');
     }

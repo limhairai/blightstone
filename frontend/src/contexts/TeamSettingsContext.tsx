@@ -56,14 +56,15 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<TeamSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   // Fetch team settings from backend
   useEffect(() => {
-    if (!currentTeam) return;
+    if (!currentTeam || !session?.access_token) return;
     setLoading(true);
+    const token = session.access_token;
     fetch(`/api/v1/organizations/${currentTeam.id}/settings`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('adhub_token')}` },
+      headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
       .then((data: any) => {
@@ -93,7 +94,7 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
         setError(err);
         setLoading(false);
       });
-  }, [currentTeam]);
+  }, [currentTeam, session]);
 
   const updateSettings = async (newSettings: Partial<TeamSettings>) => {
     if (!currentTeam || !hasPermission('manage_team_settings')) {
@@ -101,11 +102,17 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
+      const token = session?.access_token;
+      if (!token) {
+        setError(new Error("Authentication token not found. Please log in again."));
+        setLoading(false);
+        throw new Error('Authentication token not found.');
+      }
       const res = await fetch(`/api/v1/organizations/${currentTeam.id}/settings`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('adhub_token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ ...newSettings }),
       });
@@ -142,7 +149,11 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
 
     try {
       const calculation = calculateTopUp(amount);
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError(new Error("Authentication token not found. Please log in again."));
+        throw new Error('Authentication token not found.');
+      }
       const response = await fetch('/api/proxy/v1/payments/create-payment-intent', {
         method: 'POST',
         headers: {
@@ -179,11 +190,17 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
+      const token = session?.access_token;
+      if (!token) {
+        setError(new Error("Authentication token not found. Please log in again."));
+        setLoading(false);
+        throw new Error('Authentication token not found.');
+      }
       const res = await fetch(`/api/v1/organizations/${currentTeam.id}/subscription`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('adhub_token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           plan,
@@ -208,11 +225,17 @@ export function TeamSettingsProvider({ children }: { children: ReactNode }) {
     }
     setLoading(true);
     try {
+      const token = session?.access_token;
+      if (!token) {
+        setError(new Error("Authentication token not found. Please log in again."));
+        setLoading(false);
+        throw new Error('Authentication token not found.');
+      }
       const res = await fetch(`/api/v1/organizations/${currentTeam.id}/subscription`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('adhub_token')}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: 'cancelled' }),
       });

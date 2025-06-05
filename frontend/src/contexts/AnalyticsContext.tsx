@@ -21,7 +21,7 @@ export const AnalyticsProvider = ({ children }: { children: ReactNode }) => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const fetchAnalytics = async (params?: Record<string, any>) => {
     if (!user) { setLoading(false); setError("User not authenticated"); return; }
@@ -33,7 +33,12 @@ export const AnalyticsProvider = ({ children }: { children: ReactNode }) => {
         const query = new URLSearchParams(params as any).toString();
         url += `?${query}`;
       }
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,

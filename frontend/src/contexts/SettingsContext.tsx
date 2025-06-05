@@ -36,14 +36,19 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
   const [orgSettings, setOrgSettings] = useState<OrgSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const fetchSettings = async () => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/settings', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,7 +71,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/settings/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -85,7 +95,12 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const token = await user.getIdToken(true);
+      const token = session?.access_token;
+      if (!token) {
+        setError("Authentication token not found. Please log in again.");
+        setLoading(false);
+        return;
+      }
       const res = await fetch('/api/proxy/v1/settings/org', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

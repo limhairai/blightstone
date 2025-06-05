@@ -28,14 +28,19 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const fetchNotifications = async () => {
     setLoading(true);
     setError(null);
     try {
       if (user) {
-        const token = await user.getIdToken(true);
+        const token = session?.access_token;
+        if (!token) {
+          setError("Authentication token not found. Please log in again.");
+          setLoading(false);
+          return;
+        }
         const res = await fetch('/api/proxy/v1/notifications', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -60,7 +65,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       if (user) {
-        const token = await user.getIdToken(true);
+        const token = session?.access_token;
+        if (!token) {
+          setError("Authentication token not found. Please log in again.");
+          setLoading(false);
+          return;
+        }
         const res = await fetch('/api/proxy/v1/notifications/' + id + '/read', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
@@ -83,7 +93,12 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     try {
       if (user) {
-        const token = await user.getIdToken(true);
+        const token = session?.access_token;
+        if (!token) {
+          setError("Authentication token not found. Please log in again.");
+          setLoading(false);
+          return;
+        }
         const res = await fetch('/api/proxy/v1/notifications', {
           method: 'POST',
           headers: {

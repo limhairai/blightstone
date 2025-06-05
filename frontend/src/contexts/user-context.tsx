@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 // import { useAuth } from './AuthContext'; // Temporarily comment out for pure mock demo
 
 interface UserProfile {
-  uid: string;
+  id: string;
   email: string;
   displayName?: string;
   photoURL?: string;
@@ -26,7 +26,7 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 const MOCK_USER_PROFILE: UserProfile = {
-  uid: "mock-victor-uid",
+  id: "mock-victor-id",
   email: "victor@example.com",
   displayName: "Victor",
   initial: "V",

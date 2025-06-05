@@ -23,16 +23,14 @@ interface TeamContextType {
 const TeamContext = createContext<TeamContextType | null>(null);
 
 export function TeamProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [currentTeam, setCurrentTeam] = useState<Team | null>(null);
   const [teamInvites, setTeamInvites] = useState<TeamInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Memoize currentTeam ID to prevent unnecessary effect runs if only team members change
   const currentTeamId = useMemo(() => currentTeam?.id, [currentTeam]);
 
-  // Fetch user's teams (organizations)
   useEffect(() => {
     const fetchOrganizations = async () => {
       if (!user) {
@@ -42,7 +40,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       }
       setLoading(true);
       try {
-        const token = await user.getIdToken();
+        const token = session?.access_token;
         if (!token) {
           setCurrentTeam(null);
           setLoading(false);
@@ -53,8 +51,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) {
-          // Handle non-OK responses, e.g., 401, 403, 404
-          const errorData = await res.text(); // Or res.json() if API returns JSON errors
+          const errorData = await res.text();
           throw new Error(`Failed to fetch organizations: ${res.status} ${errorData || res.statusText}`);
         }
         const data = await res.json();
@@ -64,9 +61,9 @@ export function TeamProvider({ children }: { children: ReactNode }) {
             id: org.id,
             name: org.name,
             ownerId: org.ownerId || org.createdBy || '',
-            members: {}, // Will be filled by the next effect
+            members: {}, 
             createdAt: new Date(org.createdAt),
-            updatedAt: new Date(), // This should likely be org.updatedAt if available
+            updatedAt: new Date(org.updatedAt || org.createdAt), // Use updatedAt if available
           });
         } else {
           setCurrentTeam(null);
@@ -79,21 +76,18 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       }
     };
     fetchOrganizations();
-  }, [user]);
+  }, [user, session]);
 
-  // Fetch team members if currentTeamId exists
   useEffect(() => {
     const fetchTeamMembers = async () => {
       if (!user || !currentTeamId) {
         if (!currentTeamId && currentTeam && Object.keys(currentTeam.members).length > 0) {
             setCurrentTeam(prev => prev ? { ...prev, members: {} } : null);
         }
-        // No error setting here, just return if no user or team ID
         return;
       }
-      // No setLoading(true) here as it might cause quick flashes if this runs frequently
       try {
-        const token = await user.getIdToken();
+        const token = session?.access_token;
         if (!token) {
           setError(new Error("Could not retrieve auth token for team members."));
           return;
@@ -124,14 +118,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         setError(err as Error);
-        // Optionally clear members on error: setCurrentTeam(prev => prev ? { ...prev, members: {} } : null);
       }
-      // No setLoading(false) here unless there was a setLoading(true)
     };
     fetchTeamMembers();
-  }, [user, currentTeamId]); // Removed currentTeam from deps as members are part of it; currentTeamId covers team changes
+  }, [user, session, currentTeamId]);
 
-  // Fetch invites for the current org
   useEffect(() => {
     const fetchTeamInvites = async () => {
       if (!user || !currentTeamId) {
@@ -139,7 +130,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const token = await user.getIdToken();
+        const token = session?.access_token;
         if (!token) {
           setError(new Error("Could not retrieve auth token for invites."));
           setTeamInvites([]);
@@ -152,10 +143,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           const errorData = await res.text();
           throw new Error(`Failed to fetch invites: ${res.status} ${errorData || res.statusText}`);
         }
-        const invites = await res.json();
-        if (Array.isArray(invites)) {
+        const invitesData = await res.json();
+        if (Array.isArray(invitesData)) {
           setTeamInvites(
-            invites.map((invite) => ({
+            invitesData.map((invite) => ({
               id: invite.token || invite.id,
               teamId: invite.orgId,
               email: invite.email,
@@ -175,14 +166,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
       }
     };
     fetchTeamInvites();
-  }, [user, currentTeamId]);
+  }, [user, session, currentTeamId]);
 
   const createTeam = async (name: string) => {
     if (!user) throw new Error('User not authenticated');
     setLoading(true);
-    let token;
     try {
-      token = await user.getIdToken();
+      const token = session?.access_token;
       if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/organizations`, {
         method: 'POST',
@@ -190,13 +180,17 @@ export function TeamProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, adSpend: {}, supportChannel: {} }),
+        body: JSON.stringify({ name, adSpend: {}, supportChannel: {} }), // Ensure payload matches backend
       });
-      if (!res.ok) throw new Error('Failed to create team');
-      const data = await res.json();
-      // Refetch teams
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to create team');
+      }
+      // Refetch organizations to update the list and currentTeam
+      // This can be done by re-triggering the first useEffect, e.g. by invalidating user/session or calling a refetch function
+      // For now, just logging and setting loading to false
+      console.log("Team created, ideally refetch organizations");
       setLoading(false);
-      // Optionally, trigger a reload or refetch here
     } catch (err) {
       setError(err as Error);
       setLoading(false);
@@ -205,11 +199,10 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const inviteMember = async (email: string, role: UserRole) => {
-    if (!user || !currentTeam) throw new Error('Not authorized');
+    if (!user || !currentTeam) throw new Error('Not authorized or no current team');
     setLoading(true);
-    let token;
     try {
-      token = await user.getIdToken();
+      const token = session?.access_token;
       if (!token) throw new Error("Could not retrieve auth token.");
       const res = await fetch(`/api/v1/invite`, {
         method: 'POST',
@@ -219,7 +212,13 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({ email, role, orgId: currentTeam.id }),
       });
-      if (!res.ok) throw new Error('Failed to invite member');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to invite member');
+      }
+      // Refetch invites
+      // For now, just logging and setting loading to false
+      console.log("Member invited, ideally refetch invites");
       setLoading(false);
     } catch (err) {
       setError(err as Error);
@@ -232,15 +231,27 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('User not authenticated');
     setLoading(true);
     try {
-      // Accept invite endpoint expects token, name, password (simulate with user.displayName and a dummy password)
+      // The backend for accept-invite might need an auth token if the user is already logged in
+      // or it might be a public endpoint that then logs the user in / associates them.
+      // Assuming for now it might need the logged-in user's token if they are performing this action post-login.
+      const token = session?.access_token; 
+      // If this endpoint is public and handles user creation/linking, token might not be needed or used differently.
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const res = await fetch(`/api/v1/accept-invite`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token: inviteId, name: user.displayName || '', password: 'dummy-password' }),
+        headers: headers,
+        body: JSON.stringify({ token: inviteId, name: user.email, password: 'dummy-password' }), // `user.email` might be better than displayName. Password handling needs review.
       });
-      if (!res.ok) throw new Error('Failed to accept invite');
+      if (!res.ok) {
+         const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to accept invite');
+      }
+      // Refetch team members and potentially currentTeam details
+      console.log("Invite accepted, ideally refetch team members/orgs");
       setLoading(false);
     } catch (err) {
       setError(err as Error);
@@ -250,21 +261,23 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const rejectInvite = async (inviteId: string) => {
-    if (!user || !currentTeam) throw new Error('Not authorized');
+    if (!user || !currentTeam) throw new Error('Not authorized or no current team');
     setLoading(true);
-    let token;
     try {
-      token = await user.getIdToken();
+      const token = session?.access_token;
       if (!token) throw new Error("Could not retrieve auth token.");
-      const res = await fetch(`/api/v1/invites/cancel`, {
-        method: 'POST',
+      const res = await fetch(`/api/v1/invites/${inviteId}/reject`, { // Ensure this endpoint exists and matches
+        method: 'POST', // Or DELETE, depending on API design
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', // May not be needed if no body
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ token: inviteId, orgId: currentTeam.id }),
       });
-      if (!res.ok) throw new Error('Failed to reject invite');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail ||'Failed to reject invite');
+      }
+      setTeamInvites(prev => prev.filter(inv => inv.id !== inviteId));
       setLoading(false);
     } catch (err) {
       setError(err as Error);
@@ -273,22 +286,26 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateMemberRole = async (userId: string, role: UserRole) => {
-    if (!user || !currentTeam) throw new Error('Not authorized');
+  const updateMemberRole = async (userIdToUpdate: string, role: UserRole) => {
+    if (!user || !currentTeam) throw new Error('Not authorized or no current team');
     setLoading(true);
-    let token;
     try {
-      token = await user.getIdToken();
+      const token = session?.access_token;
       if (!token) throw new Error("Could not retrieve auth token.");
-      const res = await fetch(`/api/v1/roles`, {
-        method: 'POST',
+      const res = await fetch(`/api/v1/organizations/${currentTeam.id}/members/${userIdToUpdate}`, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ org_id: currentTeam.id, user_id: userId, role }),
+        body: JSON.stringify({ role }),
       });
-      if (!res.ok) throw new Error('Failed to update member role');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to update member role');
+      }
+      // Refetch team members
+      console.log("Member role updated, ideally refetch team members");
       setLoading(false);
     } catch (err) {
       setError(err as Error);
@@ -297,22 +314,24 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const removeMember = async (userId: string) => {
-    if (!user || !currentTeam) throw new Error('Not authorized');
+  const removeMember = async (userIdToRemove: string) => {
+    if (!user || !currentTeam) throw new Error('Not authorized or no current team');
     setLoading(true);
-    let token;
     try {
-      token = await user.getIdToken();
+      const token = session?.access_token;
       if (!token) throw new Error("Could not retrieve auth token.");
-      const res = await fetch(`/api/v1/organizations/remove-member`, {
-        method: 'POST',
+      const res = await fetch(`/api/v1/organizations/${currentTeam.id}/members/${userIdToRemove}`, {
+        method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ userId, orgId: currentTeam.id }),
       });
-      if (!res.ok) throw new Error('Failed to remove member');
+      if (!res.ok) {
+         const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to remove member');
+      }
+      // Refetch team members
+      console.log("Member removed, ideally refetch team members");
       setLoading(false);
     } catch (err) {
       setError(err as Error);
@@ -322,21 +341,25 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const updateRolePermissions = async (role: UserRole, permissions: Permission[]) => {
-    if (!user || !currentTeam) throw new Error('Not authorized or no team selected');
+    if (!user || !currentTeam) throw new Error('Not authorized or no current team');
     setLoading(true);
-    let token;
     try {
-      token = await user.getIdToken();
+      const token = session?.access_token;
       if (!token) throw new Error("Could not retrieve auth token.");
-      const res = await fetch(`/api/v1/roles`, {
-        method: 'POST',
+      const res = await fetch(`/api/v1/organizations/${currentTeam.id}/roles/${role}/permissions`, {
+        method: 'PUT', 
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ org_id: currentTeam.id, role, permissions }),
+        body: JSON.stringify({ permissions }),
       });
-      if (!res.ok) throw new Error('Failed to update role permissions');
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to update role permissions');
+      }
+      // Refetch team members or roles if permissions affect client-side checks significantly
+      console.log("Role permissions updated");
       setLoading(false);
     } catch (err) {
       setError(err as Error);
@@ -346,11 +369,11 @@ export function TeamProvider({ children }: { children: ReactNode }) {
   };
 
   const hasPermission = useCallback((permission: Permission): boolean => {
-    if (!currentTeam || !user?.uid || !currentTeam.members[user.uid]) return false;
-    const userRole = currentTeam.members[user.uid].role;
+    if (!currentTeam || !user?.id || !currentTeam.members[user.id]) return false;
+    const userRole = currentTeam.members[user.id].role;
     const permissions = defaultRolePermissions[userRole] || [];
     return permissions.includes(permission);
-  }, [currentTeam, user?.uid]);
+  }, [currentTeam, user?.id]);
 
   const hasAnyPermission = useCallback((permissions: Permission[]): boolean => {
     return permissions.some(p => hasPermission(p));
@@ -386,4 +409,4 @@ export function useTeam() {
     throw new Error('useTeam must be used within a TeamProvider');
   }
   return context;
-} 
+}

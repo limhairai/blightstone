@@ -16,7 +16,7 @@ export type Permission =
   | 'manage_subscription';
 
 export interface UserProfile {
-  uid: string;
+  id: string;
   email: string;
   displayName: string;
   photoURL?: string;
