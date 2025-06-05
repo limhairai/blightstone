@@ -292,3 +292,6 @@
     border-color: rgba(var(--status-error-border-rgba));
   }
 }
+
+/* Custom Pulse Animation */
+/* Removed custom-pulse keyframes and .animate-custom-pulse class */

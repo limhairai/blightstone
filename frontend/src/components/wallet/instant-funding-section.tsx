@@ -1,8 +1,20 @@
+"use client";
+
+import { useInView } from 'react-intersection-observer';
+
 export function InstantFundingSection() {
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.10,
+  });
+
   return (
-    <div className="max-w-7xl mx-auto px-6 mt-40">
+    <div 
+      ref={ref}
+      className="max-w-7xl mx-auto px-6 mt-40 overflow-hidden"
+    >
       <div className="grid lg:grid-cols-2 gap-20 items-center">
-        <div className="lg:order-2 max-w-lg">
+        <div className={`lg:order-2 max-w-lg transition-all duration-1000 ease-out transform delay-300 ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-4 py-2 text-sm text-white/80 mb-6 hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
             <span className="flex h-2 w-2 rounded-full bg-green-400 mr-3"></span>
             <span>Instant Funding</span>
@@ -29,7 +41,7 @@ export function InstantFundingSection() {
             </div>
           </div>
         </div>
-        <div className="lg:order-1 relative max-w-lg">
+        <div className={`lg:order-1 relative max-w-lg transition-all duration-1000 ease-out transform ${inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}>
           <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl group hover:shadow-[0_0_50px_rgba(180,160,255,0.15)] transition-all duration-500">
             <div className="absolute inset-0 bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 group-hover:from-[#b4a0ff]/15 group-hover:to-[#ffb4a0]/15 transition-all duration-300"></div>
             <div className="absolute inset-[1px] rounded-2xl border border-white/5"></div>

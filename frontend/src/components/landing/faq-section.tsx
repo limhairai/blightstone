@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { ChevronDown } from "lucide-react"
+import { useInView } from 'react-intersection-observer';
 
 const faqs = [
   {
@@ -38,13 +39,22 @@ const faqs = [
 
 export function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
+  const { ref, inView } = useInView({
+    triggerOnce: true,
+    threshold: 0.15,
+  });
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index)
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div 
+      ref={ref}
+      className={`max-w-4xl mx-auto transition-all duration-1000 ease-out transform ${
+        inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'
+      }`}
+    >
       <div className="text-center mb-16">
         <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
           Frequently Asked <span className="text-gradient">Questions</span>

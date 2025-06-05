@@ -1,4 +1,3 @@
-import { FirebaseProvider } from "@/contexts/FirebaseContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UserProvider } from "@/contexts/user-context";
 import { OrganizationProvider } from "@/contexts/organization-context";
@@ -10,33 +9,59 @@ import { AdAccountProvider } from "@/contexts/AdAccountContext";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { BillingProvider } from "@/contexts/BillingContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip-provider";
+import { SessionProvider } from "@/components/ui/session-provider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { OnboardingProvider } from "@/contexts/OnboardingContext";
+import { ImpersonationProvider } from "@/contexts/ImpersonationContext";
 
-export default function AppProviders({ children }: { children: React.ReactNode }) {
+// Define the queryClient
+const queryClient = new QueryClient();
+
+export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <FirebaseProvider>
-      <AuthProvider>
-        <UserProvider>
-          <OrganizationProvider>
-            <TeamProvider>
-              <TeamSettingsProvider>
-                <NotificationProvider>
-                  <AnalyticsProvider>
-                    <AdAccountProvider>
-                      <ProjectProvider>
-                        <BillingProvider>
-                          <SettingsProvider>
-                            {children}
-                          </SettingsProvider>
-                        </BillingProvider>
-                      </ProjectProvider>
-                    </AdAccountProvider>
-                  </AnalyticsProvider>
-                </NotificationProvider>
-              </TeamSettingsProvider>
-            </TeamProvider>
-          </OrganizationProvider>
-        </UserProvider>
-      </AuthProvider>
-    </FirebaseProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <TooltipProvider>
+        <SessionProvider>
+          <QueryClientProvider client={queryClient}>
+            <OrganizationProvider>
+              <AuthProvider>
+                <UserProvider>
+                  <NotificationProvider>
+                    <OnboardingProvider>
+                      <ImpersonationProvider>
+                        <TeamProvider>
+                          <TeamSettingsProvider>
+                            <AnalyticsProvider>
+                              <AdAccountProvider>
+                                <ProjectProvider>
+                                  <BillingProvider>
+                                    <SettingsProvider>
+                                      {children}
+                                    </SettingsProvider>
+                                  </BillingProvider>
+                                </ProjectProvider>
+                              </AdAccountProvider>
+                            </AnalyticsProvider>
+                          </TeamSettingsProvider>
+                        </TeamProvider>
+                        <ReactQueryDevtools initialIsOpen={false} />
+                      </ImpersonationProvider>
+                    </OnboardingProvider>
+                  </NotificationProvider>
+                </UserProvider>
+              </AuthProvider>
+            </OrganizationProvider>
+          </QueryClientProvider>
+        </SessionProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   );
 } 

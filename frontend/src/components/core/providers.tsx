@@ -1,7 +1,6 @@
 "use client"
 
 import { ThemeProvider } from "./theme-provider"
-import { FirebaseProvider } from "@/contexts/FirebaseContext"
 import { AuthProvider, useAuth } from "@/contexts/AuthContext"
 import { OnboardingProvider } from "@/contexts/onboarding-context"
 import { TeamProvider } from "@/contexts/TeamContext"
@@ -16,6 +15,9 @@ import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
 import { UserProvider } from "@/contexts/user-context"
 import { NotificationProvider } from "@/contexts/NotificationContext"
+import { TooltipProvider } from "@radix-ui/react-tooltip"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 
 // PageTitle Context
 const PageTitleContext = createContext<{
@@ -140,20 +142,22 @@ function AuthOrgGate({ children }: { children: React.ReactNode }) {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-      <FirebaseProvider>
-        <AuthProvider>
-          <OrganizationProvider>
-            <UserProvider>
-              <NotificationProvider>
-                <PageTitleProvider>
-                  <AuthOrgGate>{children}</AuthOrgGate>
-                </PageTitleProvider>
-              </NotificationProvider>
-            </UserProvider>
-          </OrganizationProvider>
-        </AuthProvider>
-      </FirebaseProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <TooltipProvider>
+        <QueryClientProvider client={new QueryClient()}>
+          <AuthProvider>
+            <OrganizationProvider>
+              <UserProvider>
+                <NotificationProvider>
+                  <PageTitleProvider>
+                    <AuthOrgGate>{children}</AuthOrgGate>
+                  </PageTitleProvider>
+                </NotificationProvider>
+              </UserProvider>
+            </OrganizationProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </TooltipProvider>
     </ThemeProvider>
   );
 } 

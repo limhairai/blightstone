@@ -94,8 +94,8 @@ export function AccountManagementPreview() {
             </div>
           </div>
           <div className="flex gap-4 pt-2">
-            <Button size="sm" className="flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90">Top Up</Button>
-            <Button size="sm" variant="outline" className="flex-1 border-white/20 text-white hover:bg-white/10">View Details</Button>
+            <Button size="default" className="flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90">Top Up</Button>
+            <Button size="default" variant="outline" className="flex-1 border-white/20 text-white hover:bg-white/10">View Details</Button>
           </div>
         </div>
       </div>
