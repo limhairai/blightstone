@@ -18,25 +18,4 @@ services:
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: "https://adhub.tech,https://www.adhub.tech"
-    
-  # Staging Backend  
-  - type: web
-    name: adhub-backend-staging
-    env: python
-    region: oregon
-    plan: starter
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --forwarded-allow-ips '*'
-    envVars:
-      - key: ENVIRONMENT
-        value: staging
-      - key: SUPABASE_URL
-        value: https://xewhfrwuzkfbnpwtdxuf.supabase.co
-      - key: SUPABASE_SERVICE_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2hmcnd1emtmYm5wd3RkeHVmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA2MDc0MCwiZXhwIjoyMDY0NjM2NzQwfQ.uiDOEgNu2sbG9ZinYDBDfew2eXw_gIItZL9CuV7k_TE
-      - key: JWT_SECRET_KEY
-        generateValue: true
-      - key: CORS_ORIGINS
-        value: "https://staging.adhub.tech" 
+        value: "https://adhub.tech,https://www.adhub.tech,https://staging.adhub.tech" 
