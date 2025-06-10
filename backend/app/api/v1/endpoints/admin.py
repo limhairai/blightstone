@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.core.firebase import get_firestore
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 from app.core.security import get_current_user, require_superuser
 from app.schemas.user import UserRead as User
 import logging
@@ -10,7 +10,7 @@ logger = logging.getLogger("adhub_app")
 @router.get("/stats")
 async def get_admin_stats(current_user: User = Depends(require_superuser)):
     try:
-        db = get_firestore()
+        # db = get_firestore()
         pending_requests = db.collection("requests").where("status", "==", "pending").stream()
         total_clients = db.collection("users").where("role", "==", "client").stream()
         active_ad_accounts = db.collection("adAccounts").where("status", "==", "active").stream()
@@ -35,7 +35,7 @@ async def get_admin_stats(current_user: User = Depends(require_superuser)):
 @router.get("/clients")
 async def get_admin_clients(current_user: User = Depends(require_superuser)):
     try:
-        db = get_firestore()
+        # db = get_firestore()
         users = db.collection("users").where("role", "==", "client").stream()
         clients = []
         for user in users:
@@ -51,7 +51,7 @@ async def get_admin_clients(current_user: User = Depends(require_superuser)):
 @router.get("/requests")
 async def get_admin_requests(current_user: User = Depends(require_superuser)):
     try:
-        db = get_firestore()
+        # db = get_firestore()
         reqs = db.collection("requests").stream()
         requests = []
         for req in reqs:
@@ -67,7 +67,7 @@ async def get_admin_requests(current_user: User = Depends(require_superuser)):
 @router.get("/organizations")
 async def get_admin_organizations(current_user: User = Depends(require_superuser)):
     try:
-        db = get_firestore()
+        # db = get_firestore()
         orgs = db.collection("organizations").stream()
         organizations = []
         for org in orgs:
@@ -83,7 +83,7 @@ async def get_admin_organizations(current_user: User = Depends(require_superuser
 @router.get("/transactions")
 async def get_admin_transactions(current_user: User = Depends(require_superuser)):
     try:
-        db = get_firestore()
+        # db = get_firestore()
         txs = db.collection("transactions").stream()
         transactions = []
         for tx in txs:
@@ -99,7 +99,7 @@ async def get_admin_transactions(current_user: User = Depends(require_superuser)
 @router.get("/activity")
 async def get_admin_activity(current_user: User = Depends(require_superuser)):
     try:
-        db = get_firestore()
+        # db = get_firestore()
         logs = db.collection("audit_logs").order_by("timestamp", direction="DESCENDING").limit(100).stream()
         activity = []
         for log in logs:

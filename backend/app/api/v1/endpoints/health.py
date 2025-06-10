@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-from app.core.firebase import get_firestore
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 from datetime import datetime
 from typing import Dict, Any
 
@@ -10,17 +10,17 @@ async def health_check() -> Dict[str, Any]:
     """Check the health of the application and its dependencies."""
     try:
         # Check Firestore connection
-        db = get_firestore()
-        db.collection("health").document("check").set({
-            "timestamp": datetime.utcnow(),
-            "status": "ok"
-        })
+        # db = get_firestore()
+        # db.collection("health").document("check").set({
+        #     "timestamp": datetime.utcnow(),
+        #     "status": "ok"
+        # })
         
         return {
             "status": "healthy",
             "timestamp": datetime.utcnow().isoformat(),
             "dependencies": {
-                "firestore": "connected",
+                "firestore": "disconnected",
                 "api": "operational"
             }
         }

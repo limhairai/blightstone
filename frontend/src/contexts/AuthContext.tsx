@@ -42,38 +42,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Main effect for listening to auth changes
   useEffect(() => {
-    // Immediately try to get the current session and user when the app loads
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Attempt to get the session on initial load.
+    // This helps in quickly updating UI if a session exists,
+    // but onAuthStateChange will be the final authority and will set loading to false.
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      // Only set if still in the initial loading phase driven by onAuthStateChange
+      if (loading) {
+        setSession(initialSession);
+        setUser(initialSession?.user ?? null);
+      }
+    }).catch(error => {
+      console.error("Error fetching initial session:", error);
+      // If getSession fails, we still rely on onAuthStateChange to set the correct state.
+      // If it's a critical error and onAuthStateChange might not fire,
+      // we might need to set loading to false here to prevent infinite loading.
+      // However, onAuthStateChange usually fires with SIGNED_OUT in such cases.
     });
 
+    // onAuthStateChange is the authoritative source for auth state.
+    // The first event fired will determine the initial authenticated state.
     const { data: authSubscriptionData } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: AuthSession | null) => {
-        console.log("Supabase auth event:", event, session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-
-        // Handle specific events if needed
-        if (event === 'PASSWORD_RECOVERY') {
-          // User has followed password recovery link, might want to redirect them or show a message
-          // Often handled by redirecting to a page that allows password update
-        }
-        if (event === 'USER_UPDATED') {
-          // User metadata might have changed
-          setUser(session?.user ?? null); 
-        }
+      (event: AuthChangeEvent, currentSession: AuthSession | null) => {
+        // console.log("Supabase auth event:", event, currentSession);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        setLoading(false); // This is the point where the auth state is considered resolved.
       }
     );
 
     return () => {
       authSubscriptionData?.subscription?.unsubscribe();
     };
-  }, []);
+  }, []); // Run only once on mount
 
   // Sign out function
   const signOut = useCallback(async () => {

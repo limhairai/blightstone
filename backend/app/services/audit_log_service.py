@@ -1,5 +1,5 @@
 from app.models.audit_log import AuditLog
-from app.core.firebase import get_firestore
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 
 def log_audit_event(user_id, org_id, action, before_state=None, after_state=None, ip=None, details=None):
     db = get_firestore()

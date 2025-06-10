@@ -13,6 +13,406 @@ export interface PricingPlan {
   popular?: boolean
 }
 
+// Organization data structure
+export interface MockOrganization {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  memberSince: string
+  avatar?: string
+  // Complete organization data
+  email: string
+  phone: string
+  address: {
+    street: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+  }
+  billing: {
+    nextPayment: string
+    billingCycle: "monthly" | "annual"
+    paymentMethod: {
+      type: "credit_card" | "bank_transfer" | "paypal"
+      last4: string
+      brand: string
+      expiryMonth: number
+      expiryYear: number
+    }
+    billingHistory: Array<{
+      id: string
+      date: string
+      amount: number
+      status: "paid" | "pending" | "failed"
+      description: string
+    }>
+  }
+  limits: {
+    businesses: number
+    adAccounts: number
+    teamMembers: number
+    monthlySpend: number
+  }
+  usage: {
+    businesses: number
+    adAccounts: number
+    teamMembers: number
+    monthlySpend: number
+  }
+  teamMembers: Array<{
+    id: string
+    name: string
+    email: string
+    role: "owner" | "admin" | "member" | "viewer"
+    avatar?: string
+    joinedDate: string
+    lastActive: string
+    permissions: string[]
+  }>
+  apiKeys: Array<{
+    id: string
+    name: string
+    key: string
+    createdDate: string
+    lastUsed?: string
+    permissions: string[]
+  }>
+  webhooks: Array<{
+    id: string
+    url: string
+    events: string[]
+    status: "active" | "inactive"
+    createdDate: string
+  }>
+  notifications: {
+    email: boolean
+    sms: boolean
+    webhook: boolean
+    lowBalance: boolean
+    accountIssues: boolean
+    weeklyReports: boolean
+  }
+}
+
+// Centralized organization data - multiple organizations for demo
+export const MOCK_ORGANIZATIONS: MockOrganization[] = [
+  {
+    id: "org_VrfbN6vMc2MCvaZELhfJ",
+    name: "Startup Project",
+    slug: "startup-project",
+    plan: "Silver",
+    memberSince: "January 2025",
+    email: "admin@startupproject.com",
+    phone: "+1 (555) 123-4567",
+    address: {
+      street: "123 Innovation Drive",
+      city: "San Francisco",
+      state: "CA",
+      zipCode: "94105",
+      country: "United States"
+    },
+    billing: {
+      nextPayment: "Mar 4, 2025",
+      billingCycle: "monthly",
+      paymentMethod: {
+        type: "credit_card",
+        last4: "4242",
+        brand: "Visa",
+        expiryMonth: 12,
+        expiryYear: 2026
+      },
+      billingHistory: [
+        {
+          id: "inv_001",
+          date: "Feb 4, 2025",
+          amount: 299,
+          status: "paid",
+          description: "Silver Plan - Monthly"
+        },
+        {
+          id: "inv_002", 
+          date: "Jan 4, 2025",
+          amount: 299,
+          status: "paid",
+          description: "Silver Plan - Monthly"
+        },
+        {
+          id: "inv_003",
+          date: "Dec 4, 2024",
+          amount: 299,
+          status: "paid",
+          description: "Silver Plan - Monthly"
+        }
+      ]
+    },
+    limits: {
+      businesses: 5,
+      adAccounts: 50,
+      teamMembers: 10,
+      monthlySpend: 30000
+    },
+    usage: {
+      businesses: 3,
+      adAccounts: 5,
+      teamMembers: 4,
+      monthlySpend: 12450
+    },
+    teamMembers: [
+      {
+        id: "user_001",
+        name: "John Smith",
+        email: "john@startupproject.com",
+        role: "owner",
+        joinedDate: "January 2025",
+        lastActive: "2 hours ago",
+        permissions: ["all"]
+      },
+      {
+        id: "user_002", 
+        name: "Sarah Johnson",
+        email: "sarah@startupproject.com",
+        role: "admin",
+        joinedDate: "January 2025",
+        lastActive: "1 day ago",
+        permissions: ["manage_businesses", "manage_accounts", "view_billing"]
+      },
+      {
+        id: "user_003",
+        name: "Mike Chen",
+        email: "mike@startupproject.com", 
+        role: "member",
+        joinedDate: "February 2025",
+        lastActive: "3 hours ago",
+        permissions: ["manage_accounts", "view_reports"]
+      },
+      {
+        id: "user_004",
+        name: "Lisa Rodriguez",
+        email: "lisa@startupproject.com",
+        role: "viewer",
+        joinedDate: "February 2025", 
+        lastActive: "1 week ago",
+        permissions: ["view_reports"]
+      }
+    ],
+    apiKeys: [
+      {
+        id: "key_001",
+        name: "Production API Key",
+        key: "sk_live_51H7...",
+        createdDate: "Jan 15, 2025",
+        lastUsed: "2 hours ago",
+        permissions: ["read", "write"]
+      },
+      {
+        id: "key_002",
+        name: "Analytics Integration",
+        key: "sk_test_51H7...",
+        createdDate: "Feb 1, 2025",
+        lastUsed: "1 day ago", 
+        permissions: ["read"]
+      }
+    ],
+    webhooks: [
+      {
+        id: "wh_001",
+        url: "https://api.startupproject.com/webhooks/adhub",
+        events: ["account.created", "transaction.completed", "balance.low"],
+        status: "active",
+        createdDate: "Jan 20, 2025"
+      }
+    ],
+    notifications: {
+      email: true,
+      sms: false,
+      webhook: true,
+      lowBalance: true,
+      accountIssues: true,
+      weeklyReports: true
+    }
+  },
+  {
+    id: "org_PersonalAccount123",
+    name: "Personal Account",
+    slug: "personal-account",
+    plan: "Bronze",
+    memberSince: "March 2024",
+    email: "personal@example.com",
+    phone: "+1 (555) 987-6543",
+    address: {
+      street: "456 Personal St",
+      city: "Austin",
+      state: "TX",
+      zipCode: "73301",
+      country: "United States"
+    },
+    billing: {
+      nextPayment: "Mar 10, 2025",
+      billingCycle: "monthly",
+      paymentMethod: {
+        type: "credit_card",
+        last4: "1234",
+        brand: "Mastercard",
+        expiryMonth: 8,
+        expiryYear: 2027
+      },
+      billingHistory: [
+        {
+          id: "inv_p001",
+          date: "Feb 10, 2025",
+          amount: 99,
+          status: "paid",
+          description: "Bronze Plan - Monthly"
+        }
+      ]
+    },
+    limits: {
+      businesses: 2,
+      adAccounts: 20,
+      teamMembers: 3,
+      monthlySpend: 10000
+    },
+    usage: {
+      businesses: 1,
+      adAccounts: 1,
+      teamMembers: 1,
+      monthlySpend: 2500
+    },
+    teamMembers: [
+      {
+        id: "user_p001",
+        name: "Alex Johnson",
+        email: "personal@example.com",
+        role: "owner",
+        joinedDate: "March 2024",
+        lastActive: "1 hour ago",
+        permissions: ["all"]
+      }
+    ],
+    apiKeys: [],
+    webhooks: [],
+    notifications: {
+      email: true,
+      sms: true,
+      webhook: false,
+      lowBalance: true,
+      accountIssues: true,
+      weeklyReports: false
+    }
+  },
+  {
+    id: "org_AcmeCorp456",
+    name: "Acme Corporation",
+    slug: "acme-corporation",
+    plan: "Gold",
+    memberSince: "June 2023",
+    avatar: "/placeholder.svg?height=32&width=32&text=AC",
+    email: "admin@acmecorp.com",
+    phone: "+1 (555) 111-2222",
+    address: {
+      street: "789 Corporate Blvd",
+      city: "New York",
+      state: "NY",
+      zipCode: "10001",
+      country: "United States"
+    },
+    billing: {
+      nextPayment: "Mar 1, 2025",
+      billingCycle: "annual",
+      paymentMethod: {
+        type: "bank_transfer",
+        last4: "5678",
+        brand: "Bank Transfer",
+        expiryMonth: 0,
+        expiryYear: 0
+      },
+      billingHistory: [
+        {
+          id: "inv_a001",
+          date: "Mar 1, 2024",
+          amount: 5988,
+          status: "paid",
+          description: "Gold Plan - Annual"
+        }
+      ]
+    },
+    limits: {
+      businesses: 10,
+      adAccounts: 100,
+      teamMembers: 25,
+      monthlySpend: 100000
+    },
+    usage: {
+      businesses: 3,
+      adAccounts: 5,
+      teamMembers: 2,
+      monthlySpend: 45000
+    },
+    teamMembers: [
+      {
+        id: "user_a001",
+        name: "Robert Smith",
+        email: "robert@acmecorp.com",
+        role: "owner",
+        joinedDate: "June 2023",
+        lastActive: "30 minutes ago",
+        permissions: ["all"]
+      },
+      {
+        id: "user_a002",
+        name: "Emily Davis",
+        email: "emily@acmecorp.com",
+        role: "admin",
+        joinedDate: "August 2023",
+        lastActive: "2 hours ago",
+        permissions: ["manage_businesses", "manage_accounts", "view_billing"]
+      }
+    ],
+    apiKeys: [
+      {
+        id: "key_a001",
+        name: "Production API",
+        key: "sk_live_acme...",
+        createdDate: "Jun 15, 2023",
+        lastUsed: "1 hour ago",
+        permissions: ["read", "write"]
+      }
+    ],
+    webhooks: [
+      {
+        id: "wh_a001",
+        url: "https://api.acmecorp.com/webhooks",
+        events: ["account.created", "transaction.completed"],
+        status: "active",
+        createdDate: "Jul 1, 2023"
+      }
+    ],
+    notifications: {
+      email: true,
+      sms: false,
+      webhook: true,
+      lowBalance: true,
+      accountIssues: true,
+      weeklyReports: true
+    }
+  }
+]
+
+// Default organization (first one for backwards compatibility)
+export const MOCK_ORGANIZATION: MockOrganization = MOCK_ORGANIZATIONS[0]
+
+// Avatar utilities for consistent placeholder styling
+export const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
 // Mock pricing plans data
 export const pricingPlans: PricingPlan[] = [
   {
@@ -425,11 +825,6 @@ export const calculateTotalByType = (type: string): number => {
   }, 0)
 }
 
-export const getRecentTransactions = (limit = 5, type?: "deposit" | "withdrawal" | "transfer") => {
-  const filteredTransactions = type ? mockTransactions.filter((tx) => tx.type === type) : mockTransactions
-  return filteredTransactions.slice(0, limit)
-}
-
 export const getAccountById = (id: string) => {
   return accounts.find((account) => account.id === id)
 }
@@ -469,8 +864,8 @@ export function getAdAccountQuota(planId: string): number | 'unlimited' {
   return 1;
 }
 
-// Project type and mock projects
-export interface Project {
+// Business type and mock businesses
+export interface Business {
   id: string
   name: string
   domains: string[]
@@ -478,8 +873,875 @@ export interface Project {
   complianceNotes?: string
 }
 
-export const projects: Project[] = [
-  { id: "proj1", name: "My E-Commerce Store", domains: ["store.com"], status: "approved" },
-  { id: "proj2", name: "Blog Network", domains: ["blog.com"], status: "pending" },
-  { id: "proj3", name: "Affiliate Platform", domains: ["affiliate.com"], status: "approved" },
+export const businesses: Business[] = [
+  { id: "biz1", name: "My E-Commerce Store", domains: ["store.com"], status: "approved" },
+  { id: "biz2", name: "Blog Network", domains: ["blog.com"], status: "pending" },
+  { id: "biz3", name: "Affiliate Platform", domains: ["affiliate.com"], status: "approved" },
 ]
+
+// Centralized mock data for consistent values across the application
+
+export interface MockTransaction {
+  id: number
+  name: string
+  amount: number
+  type: "spend" | "deposit" | "withdrawal"
+  date: string
+  account: string
+  timestamp: Date
+}
+
+export interface MockAccount {
+  id: number
+  name: string
+  business: string
+  adAccount: string
+  status: "active" | "pending" | "paused" | "error" | "inactive"
+  balance: number
+  spendLimit: number
+  dateAdded: string
+  quota: number
+  spent: number
+  platform: "Meta" | "Google" | "TikTok" | "LinkedIn"
+  timezone?: string
+}
+
+export interface MockBusiness {
+  id: string
+  name: string
+  status: "active" | "pending" | "suspended" | "rejected"
+  dateCreated: string
+  accountsCount: number
+  totalBalance: number
+  totalSpend: number
+  monthlyQuota: number
+  industry: string
+  website?: string
+  description?: string
+  logo?: string
+  bmId?: string // Business Manager ID - only for active/suspended businesses
+  domains?: Array<{ domain: string; verified: boolean }>
+}
+
+export interface MockChartData {
+  date: string
+  value: number
+}
+
+// Core financial data - this is the source of truth
+export const MOCK_FINANCIAL_DATA = {
+  // Main wallet balance (shown in topbar and wallet page)
+  walletBalance: 45231.89,
+  
+  // Total ad spend this month
+  monthlyAdSpend: 12450.00,
+  
+  // Available credit limit
+  creditLimit: 50000.00,
+  
+  // Growth percentage this month
+  monthlyGrowth: 12.5,
+}
+
+// Organization-specific financial data
+export const MOCK_FINANCIAL_DATA_BY_ORG: Record<string, typeof MOCK_FINANCIAL_DATA> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": { // Startup Project
+    walletBalance: 45231.89,
+    monthlyAdSpend: 12450.00,
+    creditLimit: 50000.00,
+    monthlyGrowth: 12.5,
+  },
+  "org_PersonalAccount123": { // Personal Account
+    walletBalance: 2850.00,
+    monthlyAdSpend: 890.00,
+    creditLimit: 10000.00,
+    monthlyGrowth: 8.2,
+  },
+  "org_AcmeCorp456": { // Acme Corporation
+    walletBalance: 125000.00,
+    monthlyAdSpend: 45000.00,
+    creditLimit: 200000.00,
+    monthlyGrowth: 15.8,
+  }
+}
+
+// Application constants - centralized configuration
+export const APP_CONSTANTS = {
+  // Pagination
+  DEFAULT_PAGE_SIZE: 10,
+  PAGE_SIZE_OPTIONS: [5, 10, 20, 50],
+  
+  // Limits
+  MAX_BUSINESSES_PER_ORG: 20,
+  MAX_ACCOUNTS_PER_BUSINESS: 50,
+  MAX_TEAM_MEMBERS: 50,
+  
+  // Commission rates by tier
+  COMMISSION_RATES: {
+    FREE: 0.05,
+    BASIC: 0.03,
+    PRO: 0.02,
+    ENTERPRISE: 0.01,
+  },
+  
+  // Default amounts for quick actions
+  QUICK_TOP_UP_AMOUNTS: [50, 100, 500, 1000],
+  QUICK_WITHDRAW_AMOUNTS: [100, 500, 1000, 2000],
+  
+  // Time filter options
+  TIME_FILTER_OPTIONS: [
+    { value: "1 Week", label: "1 Week", days: 7 },
+    { value: "1 Month", label: "1 Month", days: 30 },
+    { value: "3 Months", label: "3 Months", days: 90 },
+    { value: "1 Year", label: "1 Year", days: 365 },
+    { value: "This Week", label: "This Week", days: 7 },
+  ],
+  
+  // Status options
+  ACCOUNT_STATUSES: ["active", "pending", "inactive", "suspended"],
+  BUSINESS_STATUSES: ["active", "pending", "suspended"],
+  TRANSACTION_STATUSES: ["completed", "pending", "failed"],
+  
+  // Platform options
+  AD_PLATFORMS: ["Meta", "Google", "TikTok", "Snapchat", "Twitter"],
+  
+  // Industry options
+  INDUSTRIES: [
+    "Technology",
+    "E-commerce", 
+    "Healthcare",
+    "Finance",
+    "Education",
+    "Real Estate",
+    "Food & Beverage",
+    "Fashion",
+    "Travel",
+    "Entertainment"
+  ],
+}
+
+// Mock businesses data - organized by organization
+export const MOCK_BUSINESSES: MockBusiness[] = [
+  // Businesses for Startup Project (org_VrfbN6vMc2MCvaZELhfJ)
+  {
+    id: "1",
+    name: "TechFlow Solutions",
+    status: "active",
+    dateCreated: "Feb 15, 2024",
+    accountsCount: 2,
+    totalBalance: 6700.0,
+    totalSpend: 7850,
+    monthlyQuota: 35000,
+    industry: "Technology",
+    website: "https://techflow.com",
+    description: "Leading software development and consulting company",
+    logo: "/placeholder.svg?height=40&width=40&text=TF",
+    bmId: "1234567890123456",
+    domains: [
+      { domain: "techflow.com", verified: true },
+      { domain: "techflow.io", verified: false },
+    ],
+  },
+  {
+    id: "2",
+    name: "Digital Marketing Co",
+    status: "active",
+    dateCreated: "Jan 28, 2024",
+    accountsCount: 2,
+    totalBalance: 1200.0,
+    totalSpend: 2250,
+    monthlyQuota: 11000,
+    industry: "Marketing",
+    website: "https://digitalmarketing.co",
+    description: "Full-service digital marketing agency",
+    logo: "/placeholder.svg?height=40&width=40&text=DM",
+    bmId: "2345678901234567",
+    domains: [{ domain: "digitalmarketing.co", verified: true }],
+  },
+  {
+    id: "3",
+    name: "StartupHub Inc",
+    status: "pending",
+    dateCreated: "Mar 5, 2024",
+    accountsCount: 1,
+    totalBalance: 800.0,
+    totalSpend: 1200,
+    monthlyQuota: 5000,
+    industry: "Startup Incubator",
+    website: "https://startuphub.inc",
+    description: "Startup incubator and venture capital firm",
+    logo: "/placeholder.svg?height=40&width=40&text=SH",
+    domains: [{ domain: "startuphub.inc", verified: false }],
+  },
+]
+
+// Businesses for other organizations (these would be loaded when switching orgs)
+export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": MOCK_BUSINESSES, // Startup Project
+  "org_PersonalAccount123": [
+    {
+      id: "p1",
+      name: "Personal Projects",
+      status: "active",
+      dateCreated: "Apr 1, 2024",
+      accountsCount: 1, // Matches the 1 account in MOCK_ACCOUNTS_BY_ORG
+      totalBalance: 500.0, // Matches the account balance
+      totalSpend: 800,
+      monthlyQuota: 2000,
+      industry: "Personal",
+      website: "https://personal.example.com",
+      description: "Personal side projects and experiments",
+      logo: "/placeholder.svg?height=40&width=40&text=PP",
+      bmId: "9876543210987654",
+      domains: [{ domain: "personal.example.com", verified: true }],
+    }
+  ],
+  "org_AcmeCorp456": [
+    {
+      id: "a1",
+      name: "Acme Marketing",
+      status: "active",
+      dateCreated: "Jun 15, 2023",
+      accountsCount: 2, // 2 accounts: Enterprise Marketing Campaign + Brand Awareness - Marketing
+      totalBalance: 23500.0, // 15000 + 8500
+      totalSpend: 45000,
+      monthlyQuota: 80000,
+      industry: "Marketing",
+      website: "https://marketing.acmecorp.com",
+      description: "Enterprise marketing division",
+      logo: "/placeholder.svg?height=40&width=40&text=AM",
+      bmId: "1111222233334444",
+      domains: [
+        { domain: "marketing.acmecorp.com", verified: true },
+        { domain: "ads.acmecorp.com", verified: true }
+      ],
+    },
+    {
+      id: "a2",
+      name: "Acme Sales",
+      status: "active",
+      dateCreated: "Jul 20, 2023",
+      accountsCount: 1, // 1 account: Lead Generation - Sales
+      totalBalance: 12000.0, // Matches the account balance
+      totalSpend: 22000,
+      monthlyQuota: 40000,
+      industry: "Sales",
+      website: "https://sales.acmecorp.com",
+      description: "Sales and lead generation campaigns",
+      logo: "/placeholder.svg?height=40&width=40&text=AS",
+      bmId: "5555666677778888",
+      domains: [{ domain: "sales.acmecorp.com", verified: true }],
+    },
+    {
+      id: "a3",
+      name: "Acme Enterprise",
+      status: "active",
+      dateCreated: "Aug 10, 2023",
+      accountsCount: 2, // 2 accounts: B2B Campaigns - Enterprise + Product Launch - Enterprise
+      totalBalance: 23000.0, // 18000 + 5000
+      totalSpend: 35000,
+      monthlyQuota: 60000,
+      industry: "Enterprise",
+      website: "https://enterprise.acmecorp.com",
+      description: "Enterprise solutions and B2B marketing",
+      logo: "/placeholder.svg?height=40&width=40&text=AE",
+      bmId: "9999000011112222",
+      domains: [{ domain: "enterprise.acmecorp.com", verified: true }],
+    }
+  ]
+}
+
+// Mock accounts data - updated to match businesses
+export const MOCK_ACCOUNTS: MockAccount[] = [
+  {
+    id: 1,
+    name: "Primary Campaign Account",
+    business: "TechFlow Solutions",
+    adAccount: "1234567890123456",
+    status: "active",
+    balance: 2500.0,
+    spendLimit: 5000.0,
+    dateAdded: "Mar 15, 2024",
+    quota: 15000,
+    spent: 2250,
+    platform: "Meta",
+    timezone: "America/New_York",
+  },
+  {
+    id: 2,
+    name: "Brand Awareness Account",
+    business: "Digital Marketing Co",
+    adAccount: "2345678901234567",
+    status: "pending",
+    balance: 1200.0,
+    spendLimit: 3000.0,
+    dateAdded: "Mar 12, 2024",
+    quota: 8000,
+    spent: 1800,
+    platform: "Google",
+    timezone: "America/Los_Angeles",
+  },
+  {
+    id: 3,
+    name: "E-commerce Campaigns",
+    business: "TechFlow Solutions",
+    adAccount: "3456789012345678",
+    status: "active",
+    balance: 4200.0,
+    spendLimit: 8000.0,
+    dateAdded: "Mar 10, 2024",
+    quota: 20000,
+    spent: 5600,
+    platform: "Meta",
+    timezone: "America/New_York",
+  },
+  {
+    id: 4,
+    name: "Lead Generation",
+    business: "StartupHub Inc",
+    adAccount: "4567890123456789",
+    status: "paused",
+    balance: 800.0,
+    spendLimit: 2000.0,
+    dateAdded: "Mar 8, 2024",
+    quota: 5000,
+    spent: 1200,
+    platform: "LinkedIn",
+    timezone: "America/Chicago",
+  },
+  {
+    id: 5,
+    name: "Social Media Boost",
+    business: "Digital Marketing Co",
+    adAccount: "5678901234567890",
+    status: "error",
+    balance: 0.0,
+    spendLimit: 1500.0,
+    dateAdded: "Mar 5, 2024",
+    quota: 3000,
+    spent: 450,
+    platform: "TikTok",
+    timezone: "America/Los_Angeles",
+  },
+]
+
+// Organization-specific accounts data
+export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": MOCK_ACCOUNTS, // Startup Project (existing accounts)
+  "org_PersonalAccount123": [ // Personal Account
+    {
+      id: 101,
+      name: "Personal Blog Ads",
+      business: "Personal Projects",
+      adAccount: "9876543210987654",
+      status: "active",
+      balance: 500.0,
+      spendLimit: 1000.0,
+      dateAdded: "Apr 1, 2024",
+      quota: 2000,
+      spent: 800,
+      platform: "Meta",
+      timezone: "America/New_York",
+    }
+  ],
+  "org_AcmeCorp456": [ // Acme Corporation
+    {
+      id: 201,
+      name: "Enterprise Marketing Campaign",
+      business: "Acme Marketing",
+      adAccount: "1111222233334444",
+      status: "active",
+      balance: 15000.0,
+      spendLimit: 25000.0,
+      dateAdded: "Jun 15, 2023",
+      quota: 50000,
+      spent: 35000,
+      platform: "Meta",
+      timezone: "America/New_York",
+    },
+    {
+      id: 202,
+      name: "Brand Awareness - Marketing",
+      business: "Acme Marketing",
+      adAccount: "1111222233334445",
+      status: "active",
+      balance: 8500.0,
+      spendLimit: 15000.0,
+      dateAdded: "Jul 1, 2023",
+      quota: 30000,
+      spent: 22000,
+      platform: "Google",
+      timezone: "America/New_York",
+    },
+    {
+      id: 203,
+      name: "Lead Generation - Sales",
+      business: "Acme Sales",
+      adAccount: "5555666677778888",
+      status: "active",
+      balance: 12000.0,
+      spendLimit: 20000.0,
+      dateAdded: "Jul 20, 2023",
+      quota: 40000,
+      spent: 28000,
+      platform: "LinkedIn",
+      timezone: "America/New_York",
+    },
+    {
+      id: 204,
+      name: "B2B Campaigns - Enterprise",
+      business: "Acme Enterprise",
+      adAccount: "9999000011112222",
+      status: "active",
+      balance: 18000.0,
+      spendLimit: 30000.0,
+      dateAdded: "Aug 10, 2023",
+      quota: 60000,
+      spent: 42000,
+      platform: "Meta",
+      timezone: "America/New_York",
+    },
+    {
+      id: 205,
+      name: "Product Launch - Enterprise",
+      business: "Acme Enterprise",
+      adAccount: "9999000011112223",
+      status: "pending",
+      balance: 5000.0,
+      spendLimit: 10000.0,
+      dateAdded: "Dec 1, 2023",
+      quota: 20000,
+      spent: 0,
+      platform: "TikTok",
+      timezone: "America/New_York",
+    }
+  ]
+}
+
+// Mock transactions data (most recent first)
+export const MOCK_TRANSACTIONS: MockTransaction[] = [
+  {
+    id: 1,
+    name: "Ad Spend",
+    amount: -251.77, // Negative for outgoing money (ad spend)
+    type: "spend",
+    date: "Ad Account Top-up",
+    account: "Primary Ad Account",
+    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+  },
+  {
+    id: 2,
+    name: "Ad Spend", 
+    amount: -531.45,
+    type: "spend",
+    date: "Ad Account Top-up",
+    account: "Secondary Ad Account",
+    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
+  },
+  {
+    id: 3,
+    name: "Ad Spend",
+    amount: -213.52,
+    type: "spend", 
+    date: "Ad Account Top-up",
+    account: "Campaign Ad Account",
+    timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+  },
+  {
+    id: 4,
+    name: "Wallet",
+    amount: 5000.00, // Positive for deposits (money coming in)
+    type: "deposit",
+    date: "Deposit",
+    account: "Main Wallet",
+    timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+  },
+  {
+    id: 5,
+    name: "Ad Spend",
+    amount: -146.96,
+    type: "spend",
+    date: "Ad Account Top-up", 
+    account: "Promotions Ad Account",
+    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+  },
+  {
+    id: 6,
+    name: "Ad Spend",
+    amount: -892.33,
+    type: "spend",
+    date: "Campaign Funding",
+    account: "Main Ad Account",
+    timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+  },
+  {
+    id: 7,
+    name: "Wallet",
+    amount: 10000.00,
+    type: "deposit", 
+    date: "Credit Card Payment",
+    account: "Main Wallet",
+    timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
+  },
+  {
+    id: 8,
+    name: "Ad Spend",
+    amount: -500.00,
+    type: "spend",
+    date: "Top up - Credit Card",
+    account: "Main Wallet",
+    timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+  },
+]
+
+// Organization-specific transactions data
+export const MOCK_TRANSACTIONS_BY_ORG: Record<string, MockTransaction[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": MOCK_TRANSACTIONS, // Startup Project (existing transactions)
+  "org_PersonalAccount123": [ // Personal Account
+    {
+      id: 101,
+      name: "Ad Spend",
+      amount: -45.50,
+      type: "spend",
+      date: "Ad Account Top-up",
+      account: "Personal Blog Ads",
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+    },
+    {
+      id: 102,
+      name: "Wallet",
+      amount: 500.00,
+      type: "deposit",
+      date: "Credit Card Payment",
+      account: "Main Wallet",
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    },
+    {
+      id: 103,
+      name: "Ad Spend",
+      amount: -125.75,
+      type: "spend",
+      date: "Ad Account Top-up",
+      account: "Personal Blog Ads",
+      timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+    }
+  ],
+  "org_AcmeCorp456": [ // Acme Corporation
+    {
+      id: 201,
+      name: "Ad Spend",
+      amount: -2500.00,
+      type: "spend",
+      date: "Enterprise Campaign",
+      account: "Enterprise Marketing Campaign",
+      timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+    },
+    {
+      id: 202,
+      name: "Ad Spend",
+      amount: -1800.00,
+      type: "spend",
+      date: "Brand Campaign",
+      account: "Brand Awareness - Marketing",
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+    },
+    {
+      id: 203,
+      name: "Ad Spend",
+      amount: -950.00,
+      type: "spend",
+      date: "Lead Generation",
+      account: "Lead Generation - Sales",
+      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+    },
+    {
+      id: 204,
+      name: "Wallet",
+      amount: 50000.00,
+      type: "deposit",
+      date: "Bank Transfer",
+      account: "Main Wallet",
+      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+    },
+    {
+      id: 205,
+      name: "Ad Spend",
+      amount: -3200.00,
+      type: "spend",
+      date: "B2B Campaign",
+      account: "B2B Campaigns - Enterprise",
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    },
+    {
+      id: 206,
+      name: "Ad Spend",
+      amount: -1500.00,
+      type: "spend",
+      date: "Marketing Campaign",
+      account: "Enterprise Marketing Campaign",
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+    }
+  ]
+}
+
+// Mock chart data for balance over time
+export const MOCK_BALANCE_DATA: MockChartData[] = [
+  { date: "Feb 23", value: 35000 },
+  { date: "Mar 10", value: 38500 },
+  { date: "Mar 25", value: 36800 },
+  { date: "Apr 09", value: 41200 },
+  { date: "Apr 24", value: 43900 },
+  { date: "May 09", value: MOCK_FINANCIAL_DATA.walletBalance }, // Current balance
+]
+
+// Mock chart data for spending over time
+export const MOCK_SPEND_DATA: MockChartData[] = [
+  { date: "Feb 23", value: 8500 },
+  { date: "Mar 10", value: 9200 },
+  { date: "Mar 25", value: 7800 },
+  { date: "Apr 09", value: 10500 },
+  { date: "Apr 24", value: 11200 },
+  { date: "May 09", value: MOCK_FINANCIAL_DATA.monthlyAdSpend },
+]
+
+// Helper functions
+export const formatCurrency = (amount: number | undefined): string => {
+  if (amount === undefined || amount === null || isNaN(amount)) {
+    return "0.00"
+  }
+  return amount.toLocaleString('en-US', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  })
+}
+
+export const formatRelativeTime = (timestamp: Date): string => {
+  const now = new Date()
+  const diffMs = now.getTime() - timestamp.getTime()
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffHours / 24)
+  
+  if (diffHours < 1) {
+    return "Just now"
+  } else if (diffHours < 24) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+  } else if (diffDays < 7) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+  } else {
+    const diffWeeks = Math.floor(diffDays / 7)
+    return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`
+  }
+}
+
+// Calculate derived values
+export const getTotalAccountsBalance = (): number => {
+  return MOCK_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
+}
+
+export const getActiveAccountsCount = (): number => {
+  return MOCK_ACCOUNTS.filter(account => account.status === "active").length
+}
+
+export const getTotalSpentThisMonth = (): number => {
+  const thisMonth = new Date().getMonth()
+  return MOCK_TRANSACTIONS
+    .filter(t => t.type === "spend" && t.timestamp.getMonth() === thisMonth)
+    .reduce((total, t) => total + t.amount, 0)
+}
+
+export const getRecentTransactions = (limit: number = 5): MockTransaction[] => {
+  return MOCK_TRANSACTIONS
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, limit)
+}
+
+// Data validation and consistency checks
+export const validateMockData = () => {
+  const errors: string[] = []
+  
+  // Check that business names in accounts match business names in businesses
+  const businessNames = new Set(MOCK_BUSINESSES.map(b => b.name))
+  const accountBusinessNames = new Set(MOCK_ACCOUNTS.map(a => a.business))
+  
+  for (const businessName of accountBusinessNames) {
+    if (!businessNames.has(businessName)) {
+      errors.push(`Account references unknown business: ${businessName}`)
+    }
+  }
+  
+  // Check that account counts in businesses match actual accounts
+  for (const business of MOCK_BUSINESSES) {
+    const actualAccountCount = MOCK_ACCOUNTS.filter(a => a.business === business.name).length
+    if (business.accountsCount !== actualAccountCount) {
+      errors.push(`Business "${business.name}" claims ${business.accountsCount} accounts but has ${actualAccountCount}`)
+    }
+  }
+  
+  // Check that business total balances match sum of account balances
+  for (const business of MOCK_BUSINESSES) {
+    const actualBalance = MOCK_ACCOUNTS
+      .filter(a => a.business === business.name)
+      .reduce((sum, a) => sum + a.balance, 0)
+    
+    if (Math.abs(business.totalBalance - actualBalance) > 0.01) {
+      errors.push(`Business "${business.name}" balance mismatch: claimed ${business.totalBalance}, actual ${actualBalance}`)
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  }
+}
+
+// Run validation in development
+if (process.env.NODE_ENV === 'development') {
+  const validation = validateMockData()
+  if (!validation.isValid) {
+    console.warn('Mock data validation errors:', validation.errors)
+  } else {
+    console.log('✅ Mock data validation passed')
+  }
+}
+
+// Re-export transaction colors from design tokens for backward compatibility
+export { transactionColorTokens as transactionColors } from "./design-tokens"
+
+// Organization-specific team members data
+export const MOCK_TEAM_MEMBERS_BY_ORG: Record<string, any[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": [ // Startup Project
+    {
+      id: "user_001",
+      name: "John Smith",
+      email: "john@startupproject.com",
+      role: "owner",
+      status: "active",
+      joined: "January 2025",
+      lastLogin: "2 hours ago",
+      authentication: "Google",
+      signInCount: 57,
+      permissions: {
+        canManageTeam: true,
+        canManageBusinesses: true,
+        canManageAccounts: true,
+        canManageWallet: true,
+        canViewAnalytics: true
+      }
+    },
+    {
+      id: "user_002",
+      name: "Sarah Johnson",
+      email: "sarah@startupproject.com",
+      role: "admin",
+      status: "active",
+      joined: "January 2025",
+      lastLogin: "1 day ago",
+      authentication: "Google",
+      signInCount: 24,
+      invitedBy: "John Smith",
+      permissions: {
+        canManageTeam: true,
+        canManageBusinesses: true,
+        canManageAccounts: true,
+        canManageWallet: false,
+        canViewAnalytics: true
+      }
+    },
+    {
+      id: "user_003",
+      name: "Mike Chen",
+      email: "mike@startupproject.com",
+      role: "member",
+      status: "active",
+      joined: "February 2025",
+      lastLogin: "3 hours ago",
+      authentication: "Text Provider",
+      signInCount: 12,
+      invitedBy: "Sarah Johnson",
+      permissions: {
+        canManageTeam: false,
+        canManageBusinesses: false,
+        canManageAccounts: true,
+        canManageWallet: false,
+        canViewAnalytics: true
+      }
+    },
+    {
+      id: "user_004",
+      name: "Lisa Rodriguez",
+      email: "lisa@startupproject.com",
+      role: "member",
+      status: "pending",
+      joined: "February 2025",
+      authentication: "Pending",
+      signInCount: 0,
+      invitedBy: "John Smith",
+      permissions: {
+        canManageTeam: false,
+        canManageBusinesses: false,
+        canManageAccounts: false,
+        canManageWallet: false,
+        canViewAnalytics: false
+      }
+    }
+  ],
+  "org_PersonalAccount123": [ // Personal Account
+    {
+      id: "user_p001",
+      name: "Alex Johnson",
+      email: "personal@example.com",
+      role: "owner",
+      status: "active",
+      joined: "March 2024",
+      lastLogin: "1 hour ago",
+      authentication: "Google",
+      signInCount: 89,
+      permissions: {
+        canManageTeam: true,
+        canManageBusinesses: true,
+        canManageAccounts: true,
+        canManageWallet: true,
+        canViewAnalytics: true
+      }
+    }
+  ],
+  "org_AcmeCorp456": [ // Acme Corporation
+    {
+      id: "user_a001",
+      name: "Robert Smith",
+      email: "robert@acmecorp.com",
+      role: "owner",
+      status: "active",
+      joined: "June 2023",
+      lastLogin: "30 minutes ago",
+      authentication: "Google",
+      signInCount: 234,
+      permissions: {
+        canManageTeam: true,
+        canManageBusinesses: true,
+        canManageAccounts: true,
+        canManageWallet: true,
+        canViewAnalytics: true
+      }
+    },
+    {
+      id: "user_a002",
+      name: "Emily Davis",
+      email: "emily@acmecorp.com",
+      role: "admin",
+      status: "active",
+      joined: "August 2023",
+      lastLogin: "2 hours ago",
+      authentication: "Microsoft",
+      signInCount: 156,
+      invitedBy: "Robert Smith",
+      permissions: {
+        canManageTeam: true,
+        canManageBusinesses: true,
+        canManageAccounts: true,
+        canManageWallet: false,
+        canViewAnalytics: true
+      }
+    }
+  ]
+}

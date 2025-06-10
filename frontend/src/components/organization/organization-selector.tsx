@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Check, ChevronDown, Plus, Settings } from "lucide-react"
+import { useState, useRef, useCallback, useMemo } from "react"
+import { useRouter } from "next/navigation"
+import { Check, ChevronDown, Plus, Search, Building2, Loader2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,197 +12,340 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { ThemeToggleButton } from "@/components/core/theme-toggle-button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
+import { getInitials } from "@/lib/mock-data"
+import { getAvatarClasses } from "@/lib/design-tokens"
+import { useTheme } from "next-themes"
+import { useDemoState } from "@/contexts/DemoStateContext"
+import { MOCK_BUSINESSES_BY_ORG } from "@/lib/mock-data"
+import { MOCK_ACCOUNTS_BY_ORG } from "@/lib/mock-data"
 
 interface Organization {
   id: string
   name: string
   avatar?: string
   role: string
-  tier?: "bronze" | "silver" | "gold" | "platinum" | null
+  businessCount: number
+}
+
+interface Business {
+  id: string
+  name: string
+  organizationId: string
+  status: "active" | "pending" | "suspended"
+  accountCount: number
 }
 
 export function OrganizationSelector() {
-  const [organizations, setOrganizations] = useState<Organization[]>([
-    {
-      id: "1",
-      name: "Personal Account",
-      role: "Owner",
-      tier: null,
-    },
-    {
-      id: "2",
-      name: "Acme Corporation",
-      avatar: "/air-conditioner-unit.png",
-      role: "Admin",
-      tier: "bronze",
-    },
-    {
-      id: "3",
-      name: "Startup Project",
-      avatar: "/abstract-geometric-SP.png",
-      role: "Member",
-      tier: "silver",
-    },
-    {
-      id: "4",
-      name: "Enterprise Solutions",
-      role: "Admin",
-      tier: "gold",
-    },
-    {
-      id: "5",
-      name: "Global Ventures",
-      role: "Owner",
-      tier: "platinum",
-    },
-  ])
+  const { theme } = useTheme()
+  const router = useRouter()
+  const { state, switchOrganization } = useDemoState()
+  const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
+  
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // Use real organization data from demo state
+  const selectedOrg = useMemo<Organization>(() => ({
+    id: state.currentOrganization.id,
+    name: state.currentOrganization.name,
+    avatar: state.currentOrganization.avatar,
+    role: "Owner", // Could be derived from user's role in the organization
+    businessCount: state.businesses.length,
+  }), [state.currentOrganization, state.businesses.length])
 
-  const [selectedOrg, setSelectedOrg] = useState<Organization>(organizations[2])
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [newOrgName, setNewOrgName] = useState("")
-  const [mounted, setMounted] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  
+  // Use refs to manage hover delays
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
-    setMounted(true)
+  // Convert all organizations from demo state
+  const organizations: Organization[] = useMemo(() => {
+    return state.organizations.map(org => ({
+      id: org.id,
+      name: org.name,
+      avatar: org.avatar,
+      role: org.id === state.currentOrganization.id ? "Owner" : "Member", // Current org is owner, others are member
+      businessCount: org.id === state.currentOrganization.id ? state.businesses.length : (MOCK_BUSINESSES_BY_ORG[org.id]?.length || 0) // Real count for all orgs
+    }))
+  }, [state.organizations, state.currentOrganization.id, state.businesses.length])
+
+  // Convert demo state businesses to the format expected by the component
+  const businesses: Business[] = useMemo(() => {
+    // Get businesses for all organizations, not just current one
+    const allBusinesses: Business[] = []
+    
+    // Add businesses from all organizations
+    Object.entries(MOCK_BUSINESSES_BY_ORG).forEach(([orgId, orgBusinesses]) => {
+      orgBusinesses.forEach(business => {
+        // Count accounts for this business from the appropriate organization
+        const orgAccounts = MOCK_ACCOUNTS_BY_ORG[orgId] || []
+        const accountCount = orgAccounts.filter(account => account.business === business.name).length
+        
+        allBusinesses.push({
+          id: business.id,
+          name: business.name,
+          organizationId: orgId,
+          status: business.status,
+          accountCount
+        })
+      })
+    })
+    
+    return allBusinesses
   }, [])
 
-  const handleCreateOrg = () => {
-    if (newOrgName.trim()) {
-      const newOrg: Organization = {
-        id: Date.now().toString(),
-        name: newOrgName,
-        role: "Owner",
-        tier: "bronze", 
-      }
-      setOrganizations([...organizations, newOrg])
-      setSelectedOrg(newOrg)
-      setNewOrgName("")
-      setIsCreateDialogOpen(false)
+  // Improved hover handlers with delays
+  const handleOrgMouseEnter = useCallback((orgId: string) => {
+    // Clear any pending leave timeout
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current)
+      leaveTimeoutRef.current = null
     }
-  }
-
-  const getTierGradient = (tier: Organization["tier"]) => {
-    switch (tier) {
-      case "bronze":
-        return "linear-gradient(to bottom, #FFC27A 0%, #7F462C 47%, #CC9966 100%)"
-      case "silver":
-        return "linear-gradient(to bottom, #E0E8FF 0%, #A8B8D8 47%, #C0D0F0 100%)"
-      case "gold":
-        return "linear-gradient(to bottom, #FFF7B2 0%, #FFD700 47%, #FFEC8B 100%)"
-      case "platinum":
-        return "linear-gradient(to bottom, #FFFFFF 0%, #E5E4E2 30%, #C9C0BB 50%, #E5E4E2 70%, #FFFFFF 100%)"
-      default:
-        return "linear-gradient(to bottom, rgba(255,255,255,0.2), rgba(255,255,255,0.05))"
+    
+    // Set hover with a small delay to prevent flickering
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
     }
-  }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredOrgId(orgId)
+    }, 100) // 100ms delay before showing businesses
+  }, [])
 
-  if (!mounted) {
-    return (
-      <Button variant="outline" className="w-full justify-between border-muted bg-background">
-        <div className="flex items-center">
-          <span className="truncate max-w-[180px]">Loading...</span>
-        </div>
-        <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
-      </Button>
-    )
-  }
+  const handleOrgMouseLeave = useCallback(() => {
+    // Clear any pending hover timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+      hoverTimeoutRef.current = null
+    }
+    
+    // Delay clearing the hover to allow moving to business items
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredOrgId(null)
+    }, 300) // 300ms delay before hiding businesses
+  }, [])
+
+  const handleBusinessesMouseEnter = useCallback(() => {
+    // Cancel any pending leave timeout when entering business area
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current)
+      leaveTimeoutRef.current = null
+    }
+  }, [])
+
+  const handleBusinessesMouseLeave = useCallback(() => {
+    // Set a timeout to clear hover when leaving business area
+    leaveTimeoutRef.current = setTimeout(() => {
+      setHoveredOrgId(null)
+    }, 200) // 200ms delay
+  }, [])
+
+  // Handle business click with proper Next.js navigation
+  const handleBusinessClick = useCallback((business: Business) => {
+    setIsDropdownOpen(false)
+    setSearchQuery("")
+    setHoveredOrgId(null)
+    
+    // Navigate to accounts page with business filter
+    const businessParam = encodeURIComponent(business.name)
+    router.push(`/dashboard/accounts?business=${businessParam}`)
+  }, [router])
+
+  // Clean up timeouts on unmount
+  const cleanupTimeouts = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+      hoverTimeoutRef.current = null
+    }
+    if (leaveTimeoutRef.current) {
+      clearTimeout(leaveTimeoutRef.current)
+      leaveTimeoutRef.current = null
+    }
+  }, [])
+
+  const filteredOrganizations = searchQuery
+    ? organizations.filter((org) => org.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : organizations
+
+  const displayOrgId = hoveredOrgId || selectedOrg.id
+  const filteredBusinesses = searchQuery
+    ? businesses
+        .filter((business) => business.organizationId === displayOrgId)
+        .filter((business) => business.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : businesses.filter((business) => business.organizationId === displayOrgId)
+
+  // Handle organization click with switching functionality
+  const handleOrganizationClick = useCallback(async (org: Organization) => {
+    if (org.id !== selectedOrg.id) {
+      setIsLoading(true)
+      setIsDropdownOpen(false)
+      
+      // Add a delay to make the switching more noticeable
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      switchOrganization(org.id)
+      setIsLoading(false)
+    }
+    setSearchQuery("")
+    setHoveredOrgId(null)
+    cleanupTimeouts()
+  }, [selectedOrg.id, switchOrganization])
 
   return (
     <div className="relative w-full">
-      <DropdownMenu>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between bg-background/80 border-border relative overflow-hidden"
+            className="w-full justify-between bg-background border-border text-foreground hover:bg-accent"
+            disabled={isLoading}
           >
-            <div
-              className="absolute top-0 left-0 w-2 h-full"
-              style={{
-                background: getTierGradient(selectedOrg.tier),
-                boxShadow: selectedOrg.tier ? "0 0 5px rgba(255,255,255,0.3)" : "none",
-              }}
-            />
-            <div className="flex items-center pl-2">
-              <span className="truncate max-w-[180px]">{selectedOrg.name}</span>
+            <div className="flex items-center">
+              <Avatar className="h-6 w-6 mr-2">
+                {selectedOrg.avatar ? (
+                  <AvatarImage src={selectedOrg.avatar || "/placeholder.svg"} alt={selectedOrg.name} />
+                ) : (
+                  <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
+                    {getInitials(selectedOrg.name)}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="flex flex-col items-start">
+                <span className="truncate max-w-[150px] text-foreground text-sm font-medium">{selectedOrg.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {selectedOrg.businessCount} {selectedOrg.businessCount === 1 ? "business" : "businesses"}
+                </span>
+              </div>
             </div>
-            <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 ml-2 text-muted-foreground animate-spin" />
+            ) : (
+              <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
+            )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[260px]">
-          <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {organizations.map((org) => (
-            <DropdownMenuItem
-              key={org.id}
-              className={`flex items-center py-2 px-3 cursor-pointer ${selectedOrg.id === org.id ? "bg-muted" : ""}`}
-              onClick={() => setSelectedOrg(org)}
-            >
-              <div className="flex items-center flex-1">
-                <Avatar className="h-8 w-8 mr-2">
-                  {org.avatar ? (
-                    <AvatarImage src={org.avatar || "/placeholder.svg"} alt={org.name} />
-                  ) : (
-                    <AvatarFallback>{org.name.charAt(0)}</AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="font-medium truncate max-w-[160px]">{org.name}</span>
-                  <span className="text-xs text-muted-foreground">{org.role}</span>
-                </div>
-              </div>
-              {selectedOrg.id === org.id && <Check className="h-4 w-4 ml-2 text-primary" />}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <div className="px-3 py-2">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Appearance</span>
-              <ThemeToggleButton />
+        <DropdownMenuContent 
+          align="start" 
+          className="w-[380px] bg-popover border-border p-0"
+          onCloseAutoFocus={cleanupTimeouts}
+        >
+          <div className="p-3 border-b border-border">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Find Organization or Business..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-8 bg-background border-border text-foreground"
+              />
             </div>
           </div>
-          <DropdownMenuSeparator />
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <DropdownMenuItem
-                className="flex items-center py-2 px-3 cursor-pointer"
-                onSelect={(e) => e.preventDefault()}
+
+          <div className="max-h-96 overflow-y-auto">
+            <div className="p-2">
+              <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
+                Organizations
+              </DropdownMenuLabel>
+              {filteredOrganizations.map((org) => (
+                <DropdownMenuItem
+                  key={org.id}
+                  className={cn(
+                    "flex items-center py-2 px-2 cursor-pointer text-popover-foreground hover:bg-accent rounded-md",
+                    selectedOrg.id === org.id ? "bg-accent" : "",
+                  )}
+                  onMouseEnter={() => handleOrgMouseEnter(org.id)}
+                  onMouseLeave={handleOrgMouseLeave}
+                  onClick={() => handleOrganizationClick(org)}
+                >
+                  <div className="flex items-center flex-1 min-w-0">
+                    <Avatar className="h-8 w-8 mr-3">
+                      {org.avatar ? (
+                        <AvatarImage src={org.avatar || "/placeholder.svg"} alt={org.name} />
+                      ) : (
+                        <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
+                          {getInitials(org.name)}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate text-popover-foreground">{org.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{org.role}</span>
+                        <span>•</span>
+                        <span>
+                          {org.businessCount} {org.businessCount === 1 ? "business" : "businesses"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {selectedOrg.id === org.id && <Check className="h-4 w-4 ml-2 text-[#c4b5fd]" />}
+                </DropdownMenuItem>
+              ))}
+            </div>
+
+            <DropdownMenuSeparator className="bg-border mx-2" />
+
+            <div 
+              className="p-2"
+              onMouseEnter={handleBusinessesMouseEnter}
+              onMouseLeave={handleBusinessesMouseLeave}
+            >
+              <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
+                {hoveredOrgId
+                  ? `${organizations.find((org) => org.id === hoveredOrgId)?.name} Businesses`
+                  : "Businesses"}
+              </DropdownMenuLabel>
+              {filteredBusinesses.map((business) => (
+                <DropdownMenuItem
+                  key={business.id}
+                  className="flex items-center py-2 px-2 cursor-pointer text-popover-foreground hover:bg-accent rounded-md"
+                  onClick={() => handleBusinessClick(business)}
+                >
+                  <div className="flex items-center flex-1 min-w-0">
+                    <Building2 className="h-4 w-4 mr-3 text-muted-foreground" />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-medium truncate text-popover-foreground">{business.name}</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>{business.accountCount} accounts</span>
+                        <div
+                          className={cn(
+                            "w-2 h-2 rounded-full",
+                            business.status === "active"
+                              ? "bg-emerald-500"
+                              : business.status === "pending"
+                                ? "bg-yellow-500"
+                                : "bg-red-500",
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </div>
+
+            <DropdownMenuSeparator className="bg-border mx-2" />
+
+            <div className="p-2">
+              <DropdownMenuItem 
+                className="flex items-center py-2 px-2 cursor-pointer text-popover-foreground hover:bg-accent rounded-md"
+                onClick={() => {
+                  setIsDropdownOpen(false)
+                  router.push('/dashboard/settings')
+                }}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 mr-3" />
                 <span>Create Organization</span>
               </DropdownMenuItem>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Organization</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Organization Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Acme Inc."
-                    value={newOrgName}
-                    onChange={(e) => setNewOrgName(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateOrg}>Create</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <DropdownMenuItem className="flex items-center py-2 px-3 cursor-pointer">
-            <Settings className="h-4 w-4 mr-2" />
-            <span>Manage Organizations</span>
-          </DropdownMenuItem>
+            </div>
+          </div>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

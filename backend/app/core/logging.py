@@ -46,4 +46,5 @@ def setup_logging(
     # Set logging level for specific loggers
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("fastapi").setLevel(logging.WARNING)
-    logging.getLogger("sqlalchemy").setLevel(logging.WARNING) 
+    logging.getLogger("sqlalchemy").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)  # Reduce httpx HTTP request logging 

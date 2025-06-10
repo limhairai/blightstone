@@ -1,7 +1,0 @@
-{
-  "projects": {
-    "default": "adhubprod1",
-    "prod": "adhubprod1",
-    "staging": "adhubstaging"
-  }
-}

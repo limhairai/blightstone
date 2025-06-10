@@ -4,45 +4,20 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
-// Mock data for ad accounts
-const mockAccounts = [
-  {
-    id: "acc_1",
-    name: "Facebook Ad Account",
-    status: "Active",
-    balance: "$1,250.00",
-    platform: "Facebook",
-    lastUpdated: "2 hours ago",
-  },
-  {
-    id: "acc_2",
-    name: "Google Ads",
-    status: "Active",
-    balance: "$3,780.50",
-    platform: "Google",
-    lastUpdated: "1 day ago",
-  },
-  {
-    id: "acc_3",
-    name: "TikTok Ads",
-    status: "Pending",
-    balance: "$500.00",
-    platform: "TikTok",
-    lastUpdated: "3 days ago",
-  },
-  {
-    id: "acc_4",
-    name: "Instagram Promotion",
-    status: "Inactive",
-    balance: "$0.00",
-    platform: "Instagram",
-    lastUpdated: "1 week ago",
-  },
-]
+import { MOCK_ACCOUNTS, formatCurrency } from "@/lib/mock-data"
 
 export function AdAccountsList() {
-  const [accounts] = useState(mockAccounts)
+  // Use centralized mock data and convert to the format expected by this component
+  const accounts = MOCK_ACCOUNTS.slice(0, 4).map((account) => ({
+    id: `acc_${account.id}`,
+    name: account.name,
+    status: account.status === "active" ? "Active" : 
+            account.status === "pending" ? "Pending" : 
+            account.status === "paused" ? "Paused" : "Inactive",
+    balance: `$${formatCurrency(account.balance)}`,
+    platform: account.platform,
+    lastUpdated: account.dateAdded,
+  }))
 
   return (
     <div className="space-y-4">
@@ -82,7 +57,7 @@ export function AdAccountsList() {
       {accounts.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No ad accounts found. Create your first account to get started.</p>
-          <Button className="mt-4">Create Account</Button>
+          <Button className="mt-4 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">Request Account</Button>
         </div>
       )}
     </div>

@@ -106,7 +106,7 @@ import {
 Use StatusBadge for displaying status information.
 
 \`\`\`tsx
-import { StatusBadge } from "@/components/core/status-badge"
+import { StatusBadge } from "@/components/ui/status-badge"
 
 <StatusBadge status="active" />
 <StatusBadge status="pending" />
@@ -179,8 +179,8 @@ Used to display various statuses (e.g., active, pending, error).
 *   `StatusBadge`
 
 ```tsx
-import { StatusDot } from "@/components/core/status-dot"
-import { StatusBadge } from "@/components/core/status-badge"
+import { StatusDot } from "@/components/ui/status-dot"
+import { StatusBadge } from "@/components/ui/status-badge"
 
 <StatusDot status="active" />
 <StatusBadge status="pending" size="sm">Pending Review</StatusBadge>

@@ -1,6 +1,8 @@
 // AdHub Design System
 // Comprehensive design tokens and styling guidelines for the application
 
+import { gradientTokens } from './design-tokens'
+
 // Base Tokens - Primitive values - REMOVED as these are now sourced from Tailwind theme 
 // (which is configured by design-tokens.ts and globals.css)
 
@@ -12,7 +14,7 @@
 // export const zIndex = { ... } // REMOVED
 
 export const gradients = {
-  primary: "bg-gradient-to-r from-primary to-[hsl(var(--brand-secondary-main))]",
+  primary: gradientTokens.primary,
   cardGradient: "bg-gradient-to-br from-[hsl(var(--card))] to-[#0a0a0a]",
   subtleCardGradient: "bg-gradient-to-br from-[#141414] to-[#0c0c0c]",
   darkGradient: "bg-gradient-to-br from-[#0c0c0c] to-[#050505]",

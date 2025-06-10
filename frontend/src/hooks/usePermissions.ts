@@ -1,64 +1,63 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { useTeam } from '@/contexts/TeamContext';
-import { Permission, UserRole } from '@/types/user';
-
-// Define role-based permissions
-const rolePermissions: Record<UserRole, Permission[]> = {
-  admin: [
-    'view_accounts',
-    'manage_accounts',
-    'view_analytics',
-    'manage_analytics',
-    'view_users',
-    'manage_users',
-    'view_settings',
-    'manage_settings'
-  ],
-  manager: [
-    'view_accounts',
-    'manage_accounts',
-    'view_analytics',
-    'manage_analytics',
-    'view_users',
-    'view_settings'
-  ],
-  member: [
-    'view_accounts',
-    'view_analytics',
-    'view_settings'
-  ]
-};
+import { useAppData } from '@/contexts/AppDataContext';
 
 export function usePermissions() {
-  const { user } = useAuth();
-  const { currentTeam } = useTeam();
+  const { 
+    isAppAdmin, 
+    isOrgOwner, 
+    isOrgAdmin, 
+    canManageTeam, 
+    canViewAdmin,
+    appUser,
+    currentOrg,
+    teamMembers
+  } = useAppData();
 
-  const hasPermission = (permission: Permission): boolean => {
-    if (!user || !currentTeam) return false;
-
-    const userRole = currentTeam.members[user.id]?.role;
-    if (!userRole) return false;
-
-    return rolePermissions[userRole].includes(permission);
-  };
-
-  const hasAnyPermission = (permissions: Permission[]): boolean => {
-    return permissions.some(permission => hasPermission(permission));
-  };
-
-  const hasAllPermissions = (permissions: Permission[]): boolean => {
-    return permissions.every(permission => hasPermission(permission));
-  };
-
-  const getUserRole = (): UserRole | null => {
-    if (!user || !currentTeam) return null;
-    return currentTeam.members[user.id]?.role || null;
-  };
+  // Get current user's role in the organization
+  const currentUserMember = teamMembers.find(m => m.user_id === appUser?.id);
+  const orgRole = currentUserMember?.role || null;
 
   return {
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    getUserRole
+    // App-level permissions
+    isAppAdmin,
+    canViewAdmin,
+    
+    // Organization-level permissions
+    isOrgOwner,
+    isOrgAdmin,
+    canManageTeam,
+    orgRole,
+    
+    // User info
+    userId: appUser?.id,
+    userEmail: appUser?.email,
+    userName: appUser?.name,
+    
+    // Organization info
+    orgId: currentOrg?.id,
+    orgName: currentOrg?.name,
+    
+    // Team info
+    teamMembers,
+    
+    // Permission helpers
+    canInviteMembers: canManageTeam,
+    canRemoveMembers: canManageTeam,
+    canEditOrg: isOrgOwner || isOrgAdmin,
+    canViewBilling: isOrgOwner || isOrgAdmin,
+    canManageUsers: canManageTeam,
+    canManageBilling: canManageTeam,
+    canManageBusinesses: canManageTeam,
+    canManageAdAccounts: canManageTeam,
+    
+    // Check if user has specific role
+    hasRole: (role: 'owner' | 'admin' | 'member') => orgRole === role,
+    
+    // Check if user has at least a certain role level
+    hasMinRole: (minRole: 'owner' | 'admin' | 'member') => {
+      const roleHierarchy = { owner: 3, admin: 2, member: 1 };
+      const userLevel = roleHierarchy[orgRole as keyof typeof roleHierarchy] || 0;
+      const minLevel = roleHierarchy[minRole];
+      return userLevel >= minLevel;
+    }
   };
 } 

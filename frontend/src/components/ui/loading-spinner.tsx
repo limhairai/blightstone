@@ -1,27 +1,34 @@
 import { cn } from "@/lib/utils"
-import { Loader2 } from "lucide-react"
+import { contentTokens } from "@/lib/content-tokens"
 
 interface LoadingSpinnerProps {
-  size?: "sm" | "md" | "lg" | "xl"
+  size?: "small" | "medium" | "large"
   className?: string
+  label?: string
 }
 
-export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) {
+export function LoadingSpinner({ 
+  size = "medium", 
+  className,
+  label = contentTokens.loading.default
+}: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: "w-4 h-4",
-    md: "w-6 h-6",
-    lg: "w-8 h-8",
-    xl: "w-10 h-10",
+    small: "h-4 w-4",
+    medium: "h-6 w-6",
+    large: "h-8 w-8"
   }
 
   return (
-    <Loader2 
+    <div
       className={cn(
-        "animate-spin text-primary",
+        "animate-spin rounded-full border-2 border-muted border-t-primary",
         sizeClasses[size],
         className
       )}
-      aria-label="Loading..."
-    />
+      role="status"
+      aria-label={label}
+    >
+      <span className="sr-only">{label}</span>
+    </div>
   )
 }

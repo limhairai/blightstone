@@ -1,32 +1,75 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useEffect } from "react"
-import DashboardSidebar from "./dashboard-sidebar"
+import { useEffect, useCallback, useState, createContext, useContext } from "react"
+import { DashboardSidebar } from "./dashboard-sidebar"
 import { Topbar } from "./topbar"
+import { SetupGuideWidget } from "@/components/onboarding/setup-guide-widget"
+import { useSetupProgress } from "@/hooks/useSetupProgress"
+import { shouldShowOnboarding } from "@/lib/setup-progress"
 import { usePathname } from "next/navigation"
-import { usePageTitle } from "@/components/core/providers"
+import { usePageTitle } from "@/components/core/simple-providers"
+import { useAuth } from "@/contexts/AuthContext"
+import { getGreeting } from "@/lib/get-greeting"
+import { layoutTokens } from "@/lib/design-tokens"
 
 interface AppShellProps {
   children: ReactNode
 }
 
+// Create context for setup widget state
+interface SetupWidgetContextType {
+  setupWidgetState: "expanded" | "collapsed" | "closed"
+  setSetupWidgetState: (state: "expanded" | "collapsed" | "closed") => void
+  showEmptyStateElements: boolean
+  setShowEmptyStateElements: (show: boolean) => void
+}
+
+const SetupWidgetContext = createContext<SetupWidgetContextType | undefined>(undefined)
+
+export const useSetupWidget = () => {
+  const context = useContext(SetupWidgetContext)
+  if (!context) {
+    throw new Error("useSetupWidget must be used within AppShell")
+  }
+  return context
+}
+
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
+  const { user } = useAuth()
+  const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("expanded")
+  const [showEmptyStateElements, setShowEmptyStateElements] = useState(false)
+  
+  // Get setup progress
+  const setupProgress = useSetupProgress()
+  const shouldShowOnboardingElements = shouldShowOnboarding(setupProgress)
 
-  // Improved page title extraction
-  const getPageTitle = () => {
+  // Update empty state elements based on setup progress
+  useEffect(() => {
+    setShowEmptyStateElements(shouldShowOnboardingElements)
+  }, [shouldShowOnboardingElements])
+
+  // Improved page title extraction - memoized to prevent unnecessary re-renders
+  const getPageTitle = useCallback(() => {
     if (!pathname) {
       return "Dashboard"
     }
 
+    // For dashboard root, use user greeting like Slash does
+    if (pathname === "/dashboard") {
+      const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
+      const greeting = getGreeting()
+      return `${greeting}, ${userName}`
+    }
+
     // Map of paths to their display titles
     const pathTitles: Record<string, string> = {
-      "/dashboard": "Dashboard",
+      "/dashboard/businesses": "Businesses",
       "/dashboard/wallet": "Wallet",
-      "/dashboard/wallet/transactions": "Transactions",
-      "/dashboard/accounts": "Accounts",
+      "/dashboard/transactions": "Transactions",
+      "/dashboard/accounts": "Ad Accounts",
       "/dashboard/settings": "Settings",
     }
 
@@ -43,23 +86,45 @@ export function AppShell({ children }: AppShellProps) {
 
     // Convert to title case (capitalize first letter)
     return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1)
-  }
+  }, [pathname, user])
 
   useEffect(() => {
     const title = getPageTitle()
     setPageTitle(title)
-  }, [pathname, setPageTitle])
+  }, [getPageTitle, setPageTitle])
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <DashboardSidebar />
+    <SetupWidgetContext.Provider value={{ 
+      setupWidgetState, 
+      setSetupWidgetState, 
+      showEmptyStateElements, 
+      setShowEmptyStateElements 
+    }}>
+      <div className="flex h-screen overflow-hidden">
+        {/* Sidebar */}
+        <DashboardSidebar />
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Topbar hasNotifications={false} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        {/* Main Content */}
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <Topbar 
+            hasNotifications={false} 
+            setupWidgetState={setupWidgetState}
+            onSetupWidgetStateChange={setSetupWidgetState}
+            showEmptyStateElements={showEmptyStateElements}
+            setupProgress={setupProgress}
+          />
+          <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>{children}</main>
+        </div>
+
+        {/* Global Setup Guide Widget - only show when user needs onboarding */}
+        {showEmptyStateElements && (
+          <SetupGuideWidget 
+            widgetState={setupWidgetState} 
+            onStateChange={setSetupWidgetState}
+            setupProgress={setupProgress}
+          />
+        )}
       </div>
-    </div>
+    </SetupWidgetContext.Provider>
   )
 } 

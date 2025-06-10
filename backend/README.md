@@ -1,12 +1,12 @@
 # AdHub Backend
 
-Enterprise-level backend service for the AdHub application, built with FastAPI and Firestore.
+Enterprise-level backend service for the AdHub application, built with FastAPI and Supabase/PostgreSQL.
 
 ## Features
 
 - RESTful API endpoints for managing ad accounts and campaigns
 - JWT-based authentication with role-based access control
-- Firestore database with optimized queries and indexes
+- Supabase/PostgreSQL database integration
 - CORS support for frontend integration
 - OpenAPI documentation
 - Comprehensive logging and monitoring
@@ -35,7 +35,7 @@ backend/
 │   ├── core/
 │   │   ├── config.py                # Application configuration
 │   │   ├── security.py              # Security utilities
-│   │   ├── firebase.py              # Firebase configuration
+│   │   ├── supabase_client.py       # Supabase client configuration
 │   │   └── logging.py               # Logging configuration
 │   ├── models/
 │   │   ├── user.py                  # User data models
@@ -127,8 +127,10 @@ pip install -r requirements-dev.txt  # For development
 3. Configure environment variables:
 Copy `.env.example` to `.env` and fill in the values:
 ```
-FIREBASE_ADMIN_CREDENTIALS={"type": "service_account", ...}
+SUPABASE_URL=your-supabase-url-here
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
 SECRET_KEY=your-secret-key-here
+# Add other necessary environment variables for your application
 ```
 
 4. Run the application:

@@ -129,6 +129,55 @@ export const colorTokens = {
 export const colors = colorTokens
 
 // -----------------------------------------------
+// Gradient Tokens
+// -----------------------------------------------
+
+export const gradientTokens = {
+  // Primary gradient for buttons and interactive elements
+  // Using consistent brand colors across all themes
+  primary: "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black",
+  
+  // Light gradient for backgrounds and subtle elements
+  // Light mode: more transparent for better contrast
+  // Dark mode: slightly more opaque for visibility
+  light: "bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 dark:from-[#b4a0ff]/20 dark:to-[#ffb4a0]/20",
+  
+  // Avatar gradient for profile pictures and business logos
+  // Single gradient that works well in both light and dark modes
+  avatar: "bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 text-gray-800 dark:text-white",
+  
+  // Text gradient for special text elements
+  text: "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent",
+  
+  // Border gradient for special borders
+  border: "border-[#b4a0ff]/20 dark:border-[#b4a0ff]/30",
+}
+
+// Transaction color tokens for consistent styling
+export const transactionColorTokens = {
+  deposit: {
+    bg: "bg-emerald-100 dark:bg-emerald-500/20",
+    text: "text-emerald-600 dark:text-emerald-400",
+    icon: "text-emerald-600 dark:text-emerald-400"
+  },
+  withdrawal: {
+    bg: "bg-red-100 dark:bg-red-500/20", 
+    text: "text-red-600 dark:text-red-400",
+    icon: "text-red-600 dark:text-red-400"
+  },
+  transfer: {
+    bg: "bg-blue-100 dark:bg-blue-500/20",
+    text: "text-blue-600 dark:text-blue-400", 
+    icon: "text-blue-600 dark:text-blue-400"
+  },
+  spend: {
+    bg: "bg-orange-100 dark:bg-orange-500/20",
+    text: "text-orange-600 dark:text-orange-400",
+    icon: "text-orange-600 dark:text-orange-400"
+  }
+}
+
+// -----------------------------------------------
 // Typography Tokens
 // -----------------------------------------------
 
@@ -168,6 +217,55 @@ export const typographyTokens = {
     normal: "0",
     wide: "0.025em",
   },
+
+  // Typography Patterns - Consistent text styles for specific UI elements
+  patterns: {
+    // Page titles and main headings
+    pageTitle: "text-xl font-semibold text-foreground",
+    sectionTitle: "text-lg font-semibold text-foreground",
+    cardTitle: "text-base font-semibold text-foreground",
+    
+    // Balance and monetary amounts
+    balanceLarge: "text-2xl font-bold text-foreground", // For main balance displays
+    balanceMedium: "text-xl font-semibold text-foreground", // For secondary balances
+    balanceSmall: "text-base font-medium text-foreground", // For small amounts
+    
+    // Body text
+    bodyLarge: "text-base text-foreground",
+    bodyMedium: "text-sm text-foreground", 
+    bodySmall: "text-xs text-foreground",
+    
+    // Muted text
+    mutedLarge: "text-base text-muted-foreground",
+    mutedMedium: "text-sm text-muted-foreground",
+    mutedSmall: "text-xs text-muted-foreground",
+    
+    // Labels and captions
+    label: "text-sm font-medium text-foreground",
+    caption: "text-xs text-muted-foreground",
+    
+    // Interactive elements
+    buttonText: "text-sm font-medium",
+    linkText: "text-sm text-primary hover:underline",
+    
+    // Status and badges
+    badgeText: "text-xs font-medium",
+    statusText: "text-sm font-medium",
+    
+    // Form elements
+    inputLabel: "text-sm font-medium text-foreground",
+    inputText: "text-sm text-foreground",
+    inputPlaceholder: "text-sm text-muted-foreground",
+    
+    // Table elements
+    tableHeader: "text-xs font-medium text-muted-foreground",
+    tableCell: "text-sm text-foreground",
+    tableCellMuted: "text-sm text-muted-foreground",
+    
+    // Navigation
+    navItem: "text-sm font-medium text-foreground",
+    navItemMuted: "text-sm text-muted-foreground",
+  }
 }
 
 // -----------------------------------------------
@@ -195,6 +293,115 @@ export const spacingTokens = {
   64: "16rem",   // 256px
   80: "20rem",   // 320px
   96: "24rem"    // 384px
+}
+
+// -----------------------------------------------
+// Layout Tokens
+// -----------------------------------------------
+/**
+ * Centralized layout tokens for consistent spacing across the app.
+ * 
+ * Usage examples:
+ * - Page container: <div className={layoutTokens.spacing.container}>
+ * - Card grid: <div className={layoutTokens.layouts.cardGrid}>
+ * - Button group: <div className={layoutTokens.layouts.buttonGroup}>
+ * - Custom combination: <div className={`grid ${layoutTokens.gridCols.cardsResponsive} ${layoutTokens.gaps.cardGrid}`}>
+ * 
+ * This ensures maintainability and design consistency across all pages and components.
+ */
+
+export const layoutTokens = {
+  // Page-level spacing patterns
+  spacing: {
+    // Main page container spacing
+    container: "space-y-6",
+    // Section spacing within pages
+    section: "space-y-4", 
+    // Component spacing within sections
+    component: "space-y-3",
+    // Form field spacing
+    formField: "space-y-2",
+    // Tight spacing for related elements
+    tight: "space-y-1",
+  },
+
+  // Grid and flex gaps
+  gaps: {
+    // Standard grid gaps
+    gridSmall: "gap-3",
+    gridMedium: "gap-4", 
+    gridLarge: "gap-6",
+    
+    // Flex gaps for inline elements
+    flexTight: "gap-1",
+    flexSmall: "gap-2",
+    flexMedium: "gap-3",
+    flexLarge: "gap-4",
+    
+    // Special purpose gaps
+    cardGrid: "gap-4", // For card grids
+    formGrid: "gap-4", // For form layouts
+    buttonGroup: "gap-2", // For button groups
+    iconText: "gap-2", // For icon + text combinations
+  },
+
+  // Padding constants
+  padding: {
+    // Page-level padding (centralized in app shell)
+    pageX: "px-6", // Horizontal page padding
+    pageTop: "pt-4", // Top page padding
+    
+    // Component padding
+    card: "p-4",
+    cardHeader: "p-4 pb-2",
+    cardContent: "p-4 pt-2",
+    
+    // Form padding
+    formContainer: "p-6",
+    formSection: "p-4",
+    
+    // Dialog padding
+    dialog: "p-6",
+    dialogHeader: "p-6 pb-4",
+    dialogContent: "p-6 pt-0",
+  },
+
+  // Grid column patterns
+  gridCols: {
+    // Responsive grid patterns
+    cardsResponsive: "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+    metricsResponsive: "grid-cols-1 md:grid-cols-3",
+    formResponsive: "grid-cols-1 md:grid-cols-2",
+    
+    // Fixed patterns
+    twoCol: "grid-cols-2",
+    threeCol: "grid-cols-3", 
+    fourCol: "grid-cols-4",
+    
+    // Dashboard specific
+    dashboardMain: "grid-cols-1 lg:grid-cols-3", // Main dashboard layout
+  },
+
+  // Common layout combinations
+  layouts: {
+    // Page container with consistent spacing
+    pageContainer: "space-y-6",
+    
+    // Card grid with consistent spacing
+    cardGrid: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4",
+    
+    // Metrics grid
+    metricsGrid: "grid grid-cols-1 md:grid-cols-3 gap-4",
+    
+    // Form layout
+    formLayout: "space-y-2",
+    
+    // Button group
+    buttonGroup: "flex gap-2",
+    
+    // Icon with text
+    iconText: "flex items-center gap-2",
+  },
 }
 
 // -----------------------------------------------
@@ -562,6 +769,54 @@ export const getTransactionAmountStyle = (amount: number, mode: "light" | "dark"
 }
 
 // -----------------------------------------------
+// Gradient Utilities
+// -----------------------------------------------
+
+// Get gradient classes by type
+export const getGradient = (type: keyof typeof gradientTokens) => {
+  return gradientTokens[type];
+}
+
+// Get gradient classes by type and mode
+export const getGradientByMode = (type: keyof typeof gradientTokens, mode: "light" | "dark" = "light") => {
+  return gradientTokens[type][mode];
+}
+
+// Get transaction color classes by type
+export const getTransactionColors = (type: keyof typeof transactionColorTokens) => {
+  return transactionColorTokens[type];
+}
+
+// Get transaction color classes by type and mode
+export const getTransactionColorsByMode = (type: keyof typeof transactionColorTokens, mode: "light" | "dark" = "light") => {
+  return {
+    icon: transactionColorTokens[type].icon[mode],
+    text: transactionColorTokens[type].text[mode],
+  };
+}
+
+// Avatar utility functions using design tokens
+export const getAvatarClasses = (size: 'sm' | 'md' | 'lg' = 'md', mode: "light" | "dark" = "light"): string => {
+  const sizeClasses = {
+    sm: 'h-8 w-8 text-sm',
+    md: 'h-10 w-10 text-base', 
+    lg: 'h-16 w-16 text-2xl'
+  }
+  
+  return `${sizeClasses[size]} ${gradientTokens.avatar} font-semibold rounded-lg flex items-center justify-center`
+}
+
+export const getBusinessAvatarClasses = (size: 'sm' | 'md' | 'lg' = 'md', mode: "light" | "dark" = "light"): string => {
+  const sizeClasses = {
+    sm: 'h-6 w-6 text-xs',
+    md: 'h-8 w-8 text-sm',
+    lg: 'h-12 w-12 text-base'
+  }
+  
+  return `${sizeClasses[size]} ${gradientTokens.avatar} font-medium rounded-md flex items-center justify-center`
+}
+
+// -----------------------------------------------
 // CSS Custom Properties Generator
 // -----------------------------------------------
 
@@ -603,8 +858,36 @@ export const generateCSSVariables = (mode: "light" | "dark" = "light") => {
   }
 }
 
+// Layout token utilities
+export const getLayoutSpacing = (type: keyof typeof layoutTokens.spacing) => {
+  return layoutTokens.spacing[type]
+}
+
+export const getLayoutGap = (type: keyof typeof layoutTokens.gaps) => {
+  return layoutTokens.gaps[type]
+}
+
+export const getLayoutPadding = (type: keyof typeof layoutTokens.padding) => {
+  return layoutTokens.padding[type]
+}
+
+export const getGridCols = (type: keyof typeof layoutTokens.gridCols) => {
+  return layoutTokens.gridCols[type]
+}
+
+export const getLayout = (type: keyof typeof layoutTokens.layouts) => {
+  return layoutTokens.layouts[type]
+}
+
+// Utility to combine layout classes
+export const combineLayoutClasses = (...classes: string[]) => {
+  return classes.filter(Boolean).join(' ')
+}
+
 const allDesignTokens = {
   colors: colorTokens,
+  gradients: gradientTokens,
+  transactionColors: transactionColorTokens,
   typography: typographyTokens,
   spacing: spacingTokens,
   components: componentTokens,
@@ -620,7 +903,19 @@ const allDesignTokens = {
     getProgressColor,
     getUsageCircleColorValue,
     getTransactionAmountStyle,
+    getGradient,
+    getGradientByMode,
+    getTransactionColors,
+    getTransactionColorsByMode,
+    getAvatarClasses,
+    getBusinessAvatarClasses,
     generateCSSVariables,
+    getLayoutSpacing,
+    getLayoutGap,
+    getLayoutPadding,
+    getGridCols,
+    getLayout,
+    combineLayoutClasses,
   },
 };
 

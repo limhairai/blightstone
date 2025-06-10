@@ -4,14 +4,16 @@ import type { Metadata } from "next";
 import { Inter } from 'next/font/google';
 import "@/styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
-import { Providers } from "@/components/core/providers";
+import { SimpleProviders } from "@/components/core/simple-providers";
+import { EnvIndicator } from "@/components/debug/env-indicator";
 import { Toaster } from "@/components/ui/sonner";
+import { DemoProvider } from "@/contexts/DemoStateContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "AdHub - Ad Account Management Platform",
-  description: "Manage your ad accounts, track spending, and optimize campaigns",
+  description: "Manage your advertising accounts across multiple platforms",
   generator: 'v0.dev'
 };
 
@@ -23,9 +25,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <Providers>
+        <DemoProvider>
+        <SimpleProviders>
           {children}
-        </Providers>
+          <EnvIndicator />
+        </SimpleProviders>
+          <Toaster />
+        </DemoProvider>
       </body>
     </html>
   );

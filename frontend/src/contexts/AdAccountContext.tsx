@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import { usePathname } from 'next/navigation';
 
 interface AdAccount {
   id: string;
@@ -27,18 +29,28 @@ interface AdAccountContextType {
 
 const AdAccountContext = createContext<AdAccountContextType | undefined>(undefined);
 
+function isPublicOrAuthPage(pathname: string): boolean {
+  return pathname === "/" || pathname === "/login" || pathname === "/register";
+}
+
 export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
+  const { user, session, loading: authLoading } = useAuth();
+  const pathname = usePathname();
   const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAdAccounts = async () => {
+    // Don't fetch if no user or session
+    if (!user || !session?.access_token) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('adhub_token');
       const res = await fetch('/api/proxy/v1/ad-accounts', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
       setAdAccounts(data.adAccounts || []);
@@ -49,21 +61,45 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // Don't fetch if auth is still loading
+    if (authLoading) {
+      return;
+    }
+
+    // Don't fetch if no user or no session
+    if (!user || !session?.access_token) {
+      setAdAccounts([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
+    // Don't fetch if we're on a public page (landing, login, register)
+    if (pathname && isPublicOrAuthPage(pathname)) {
+      setAdAccounts([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     fetchAdAccounts();
-  }, []);
+  }, [user, session?.access_token, authLoading, pathname]);
 
   const refresh = fetchAdAccounts;
 
   const createAdAccount = async (data: Partial<AdAccount>) => {
+    if (!user || !session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('adhub_token');
       const res = await fetch('/api/proxy/v1/ad-accounts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(data),
       });
@@ -76,15 +112,18 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateAdAccount = async (id: string, data: Partial<AdAccount>) => {
+    if (!user || !session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('adhub_token');
       const res = await fetch(`/api/proxy/v1/ad-accounts/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(data),
       });
@@ -97,13 +136,16 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const archiveAdAccount = async (id: string) => {
+    if (!user || !session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('adhub_token');
       const res = await fetch(`/api/proxy/v1/ad-accounts/${id}/archive`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) throw new Error('Failed to archive ad account');
       await fetchAdAccounts();
@@ -114,15 +156,18 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const tagAdAccount = async (id: string, tags: string[]) => {
+    if (!user || !session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('adhub_token');
       const res = await fetch(`/api/proxy/v1/ad-accounts/${id}/tags`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ tags }),
       });
@@ -135,13 +180,16 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const syncAdAccount = async (id: string) => {
+    if (!user || !session?.access_token) {
+      throw new Error('Not authenticated');
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('adhub_token');
       const res = await fetch(`/api/proxy/v1/ad-accounts/${id}/sync-status`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!res.ok) throw new Error('Failed to sync ad account');
       await fetchAdAccounts();

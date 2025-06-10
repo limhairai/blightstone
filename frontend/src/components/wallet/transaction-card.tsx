@@ -3,6 +3,7 @@
 import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { formatCurrency, transactionColors } from "@/lib/mock-data"
 
 interface Transaction {
   id: string
@@ -64,26 +65,26 @@ export function TransactionCard() {
     switch (type) {
       case "deposit":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-950/30 text-[#34D197]">
-            <ArrowDownIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.deposit.bg}`}>
+            <ArrowDownIcon className={`h-4 w-4 ${transactionColors.deposit.icon}`} />
           </div>
         )
       case "withdrawal":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-rose-950/30 text-[#F56565]">
-            <ArrowUpIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.withdrawal.bg}`}>
+            <ArrowUpIcon className={`h-4 w-4 ${transactionColors.withdrawal.icon}`} />
           </div>
         )
       case "transfer":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-950/30 text-blue-400">
-            <ArrowUpIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.transfer.bg}`}>
+            <ArrowUpIcon className={`h-4 w-4 ${transactionColors.transfer.icon}`} />
           </div>
         )
       case "ad-account-top-up":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-rose-950/30 text-[#F56565]">
-            <ArrowUpIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.spend.bg}`}>
+            <ArrowUpIcon className={`h-4 w-4 ${transactionColors.spend.icon}`} />
           </div>
         )
       default:
@@ -116,7 +117,7 @@ export function TransactionCard() {
                 </div>
               </div>
               <div className="text-right">
-                <p className={`text-sm font-medium ${transaction.type === "deposit" ? "text-[#34D197]" : ""}`}>
+                <p className={`text-sm font-medium ${transaction.type === "deposit" ? transactionColors.deposit.text : "text-foreground"}`}>
                   {transaction.type === "deposit" ? "+" : ""}${transaction.amount}
                 </p>
                 <p className="text-xs text-muted-foreground">{transaction.account}</p>

@@ -1,22 +1,7 @@
-print("!!!!!!!!!!!! HELLO FROM THE VERY LATEST APP.MAIN.PY VERSION 12345 !!!!!!!!!!!!")
 import sys
 import os
 from dotenv import load_dotenv
 import logging
-
-# Attempt to aggressively clear app.core.security from sys.modules
-# This is a debugging step to combat potential stale module caching issues.
-if 'app.core.security' in sys.modules:
-    print("[BACKEND app.main.py] Attempting to remove 'app.core.security' from sys.modules")
-    del sys.modules['app.core.security']
-if 'app.core' in sys.modules: # also try to remove the parent package to be thorough
-    print("[BACKEND app.main.py] Attempting to remove 'app.core' from sys.modules")
-    del sys.modules['app.core']
-
-# Log the Python executable and sys.path at the very beginning
-print(f"[BACKEND app.main.py] Python Executable: {sys.executable}")
-print(f"[BACKEND app.main.py] sys.path: {sys.path}")
-print(f"[BACKEND app.main.py] CWD: {os.getcwd()}")
 
 load_dotenv()
 from fastapi import FastAPI, Request, Depends, HTTPException, status

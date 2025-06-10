@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from app.core.firebase import get_firestore
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 from app.services.facebook import FacebookAPI
 from datetime import datetime
 import os

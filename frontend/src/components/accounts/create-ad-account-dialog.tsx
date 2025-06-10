@@ -3,200 +3,204 @@
 import type React from "react"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Check, Loader2 } from "lucide-react"
+import { useDemoState } from "@/contexts/DemoStateContext"
+import { toast } from "sonner"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
+  businessId?: string
+  onAccountCreated?: () => void
 }
 
-export function CreateAdAccountDialog({ trigger }: CreateAdAccountDialogProps) {
+export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }: CreateAdAccountDialogProps) {
+  const { state, createAccount } = useDemoState()
   const [open, setOpen] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
-    project: "",
-    accountCount: 1,
+    business: businessId || "",
+    spendLimit: 1000,
+    quota: 5000,
   })
 
-  // Mock projects data
-  const projects = [
-    { id: "1", name: "Marketing Campaigns", status: "Approved" },
-    { id: "2", name: "Social Media", status: "Approved" },
-    { id: "3", name: "New Campaign", status: "Pending" },
-  ]
+  // Only show approved businesses
+  const approvedBusinesses = state.businesses.filter(business => business.status === 'active')
 
-  const approvedProjects = projects.filter((p) => p.status === "Approved")
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
-
-  const handleAccountCountChange = (increment: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      accountCount: increment
-        ? Math.min(prev.accountCount + 1, 10) // Max 10 accounts at once
-        : Math.max(prev.accountCount - 1, 1), // Min 1 account
-    }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log("Ad Account data:", formData)
-    // Here you would submit the data to your API
-    setOpen(false)
-    // Reset form
-    setFormData({
-      name: "",
-      project: "",
-      accountCount: 1,
-    })
+    
+    if (!formData.name.trim()) {
+      toast.error("Please enter an account name")
+      return
+    }
+
+    if (!formData.business) {
+      toast.error("Please select a business")
+      return
+    }
+
+    try {
+      // Generate realistic account data
+      const accountData = {
+        name: formData.name.trim(),
+        business: approvedBusinesses.find(b => b.id === formData.business)?.name || "",
+        adAccount: `act_${Math.random().toString().slice(2, 17)}`, // Generate realistic ad account ID
+        balance: 0, // New accounts start with $0
+        status: "pending" as const, // New accounts start as pending
+        platform: "Meta" as const,
+        timezone: "America/New_York",
+        spendLimit: formData.spendLimit,
+        quota: formData.quota,
+        spent: 0, // New accounts start with $0 spent
+      }
+
+      await createAccount(accountData)
+      
+      setShowSuccess(true)
+
+      // Reset form and close dialog after success animation
+      setTimeout(() => {
+        setFormData({
+          name: "",
+          business: businessId || "",
+          spendLimit: 1000,
+          quota: 5000,
+        })
+        setShowSuccess(false)
+        setOpen(false)
+
+        if (onAccountCreated) {
+          onAccountCreated()
+        }
+      }, 2000)
+    } catch (error) {
+      // Error handling is done in the createAccount function
+    }
+  }
+
+  if (showSuccess) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="w-16 h-16 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-4">
+              <Check className="w-8 h-8 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Account Requested!</h3>
+            <p className="text-muted-foreground">Your ad account request has been submitted and is under review.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Ad Account Application</DialogTitle>
-            <DialogDescription>Create new ad accounts linked to an approved project.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="project">Project</Label>
-              {approvedProjects.length === 0 ? (
-                <div className="text-sm text-red-500">
-                  No approved projects available. Please create and get a project approved first.
-                </div>
-              ) : (
-                <Select value={formData.project} onValueChange={(value) => handleSelectChange("project", value)}>
-                  <SelectTrigger id="project">
-                    <SelectValue placeholder="Select project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {approvedProjects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="name">Account Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Enter a name for this ad account"
-                required
-                disabled={approvedProjects.length === 0}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>No. of accounts</Label>
-              <div className="flex items-center">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleAccountCountChange(false)}
-                  disabled={formData.accountCount <= 1 || approvedProjects.length === 0}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                  >
-                    <path d="M5 12h14"></path>
-                  </svg>
-                </Button>
-                <div className="w-16 mx-2">
-                  <Input
-                    className="text-center"
-                    value={formData.accountCount}
-                    readOnly
-                    disabled={approvedProjects.length === 0}
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleAccountCountChange(true)}
-                  disabled={formData.accountCount >= 10 || approvedProjects.length === 0}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                  >
-                    <path d="M5 12h14"></path>
-                    <path d="M12 5v14"></path>
-                  </svg>
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-2 p-4 rounded-md bg-muted">
-              <h4 className="text-sm font-medium mb-2">Business Manager Details</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs">Business Manager ID</Label>
-                  <div className="text-sm mt-1">{formData.project ? "123456789" : "Select a project"}</div>
-                </div>
-                <div>
-                  <Label className="text-xs">Timezone</Label>
-                  <div className="text-sm mt-1">{formData.project ? "Eastern Time (ET)" : "Select a project"}</div>
-                </div>
-              </div>
-            </div>
+      <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="text-foreground">Request Ad Account</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Request a new advertising account for your business. This will be submitted for review.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-foreground">
+              Account Name *
+            </Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter account name (e.g., 'Main Campaign Account')"
+              required
+              className="bg-background border-border text-foreground"
+            />
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+
+          <div className="space-y-2">
+            <Label htmlFor="business" className="text-foreground">
+              Business *
+            </Label>
+            {approvedBusinesses.length > 0 ? (
+              <Select
+                value={formData.business}
+                onValueChange={(value) => setFormData({ ...formData, business: value })}
+                required
+              >
+                <SelectTrigger className="bg-background border-border text-foreground">
+                  <SelectValue placeholder="Select a business" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border">
+                  {approvedBusinesses.map((business) => (
+                    <SelectItem key={business.id} value={business.id} className="text-popover-foreground hover:bg-accent">
+                      {business.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="p-3 bg-muted/50 border border-border rounded-md">
+                <p className="text-sm text-muted-foreground">
+                  No approved businesses available. You need to have an approved business before requesting ad accounts.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Apply for a business first and wait for approval.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-foreground">Platform</Label>
+            <div className="flex items-center space-x-2 p-3 border rounded-md bg-muted/50 border-border">
+              <span className="text-sm font-medium text-foreground">Meta (Facebook & Instagram)</span>
+            </div>
+            <p className="text-xs text-muted-foreground">More platforms coming soon</p>
+          </div>
+
+          <div className="flex justify-end space-x-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={state.loading.accounts}
+              className="border-border text-foreground hover:bg-accent"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={!formData.project || !formData.name || approvedProjects.length === 0}>
-              Create {formData.accountCount} Account{formData.accountCount > 1 ? "s" : ""}
+            <Button
+              type="submit"
+              disabled={state.loading.accounts || approvedBusinesses.length === 0}
+              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+            >
+              {state.loading.accounts ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Request"
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   )
-}
+} 

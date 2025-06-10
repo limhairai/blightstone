@@ -5,10 +5,11 @@ from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.core.config import settings
-from app.core.firebase import get_firestore
-from firebase_admin import auth as firebase_auth
-import os
+from app.core.supabase_client import get_supabase_client, get_current_user_data_from_token
 from app.schemas.user import UserRead
+import logging
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token")
@@ -25,98 +26,86 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> UserRead:
-    print(f"[SECURITY_DEBUG GET_CURRENT_USER] Received token: {token[:20]}...")
+    logger.debug(f"[GET_CURRENT_USER] Received token for validation.")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
 
-    if os.getenv("FIREBASE_AUTH_EMULATOR_HOST") and token == "test_token_for_emulator":
-        print("[SECURITY_DEBUG GET_CURRENT_USER] Using MOCK user for emulator with test_token_for_emulator")
-        mock_user_data_with_firestore_fields = {
-            "uid": "dev-uid-from-security-py",
-            "email": "dev@example.com",
-            "name": "Dev User (Emulator)",
-            "role": "admin",
-            "is_superuser": True,
-            "avatar": None
-        }
-        try:
-            return UserRead(**mock_user_data_with_firestore_fields)
-        except Exception as e_mock:
-            print(f"[SECURITY_DEBUG GET_CURRENT_USER] Error creating UserRead for MOCK user: {e_mock}")
-            raise credentials_exception
-
     try:
-        print("[SECURITY_DEBUG GET_CURRENT_USER] Attempting firebase_auth.verify_id_token(token)")
-        decoded_token: dict[str, Any] = firebase_auth.verify_id_token(token)
+        # Use the helper function to validate token and get user data
+        user_data = get_current_user_data_from_token(token)
         
-        token_uid = decoded_token.get("uid")
-        token_email = decoded_token.get("email")
-        token_name = decoded_token.get("name")
-
-        print(f"[SECURITY_DEBUG GET_CURRENT_USER] Token verified successfully. UID from token: {token_uid}")
-        if token_uid is None:
-            print("[SECURITY_DEBUG GET_CURRENT_USER] UID missing in token after verification.")
+        if not user_data:
+            logger.warning("[GET_CURRENT_USER] Invalid token - no user data returned")
             raise credentials_exception
-
-        db = get_firestore()
-        user_doc_ref = db.collection("users").document(token_uid)
-        user_doc = user_doc_ref.get()
-
-        if user_doc.exists:
-            firestore_user_data = user_doc.to_dict()
-            print(f"[SECURITY_DEBUG GET_CURRENT_USER] Fetched user from Firestore. UID: {token_uid}, Data: {firestore_user_data}")
             
-            user_to_return = UserRead(
-                uid=token_uid,
-                email=firestore_user_data.get("email", token_email),
-                name=firestore_user_data.get("name", token_name),
-                avatar=firestore_user_data.get("avatar"),
-                role=firestore_user_data.get("role", "client"),
-                is_superuser=firestore_user_data.get("is_superuser", False)
-            )
-            print(f"[SECURITY_DEBUG GET_CURRENT_USER] Returning UserRead populated from Firestore: {user_to_return.model_dump_json()}")
-            return user_to_return
-        else:
-            print(f"[SECURITY_DEBUG GET_CURRENT_USER] WARNING: User UID {token_uid} verified by Firebase, but no profile found in Firestore 'users' collection.")
-            user_fallback_data = {
-                "uid": token_uid,
-                "email": token_email,
-                "name": token_name,
-                "role": "client",
-                "is_superuser": False
-            }
-            print(f"[SECURITY_DEBUG GET_CURRENT_USER] Returning UserRead populated from TOKEN DATA ONLY (no Firestore record): {UserRead(**user_fallback_data).model_dump_json()}")
-            return UserRead(**user_fallback_data)
+        # Handle both JWT payload format (sub) and user object format (id)
+        user_id_from_token = user_data.get("id") or user_data.get("sub")
+        if not user_id_from_token:
+            logger.warning(f"[GET_CURRENT_USER] Token valid but no user ID found. Available keys: {list(user_data.keys())}")
+            raise credentials_exception
+            
+        logger.debug(f"[GET_CURRENT_USER] Token verified successfully. User ID: {user_id_from_token}")
+        
+    except Exception as e:
+        logger.warning(f"[GET_CURRENT_USER] Error verifying token: {e}")
+        raise credentials_exception from e
 
-    except firebase_auth.InvalidIdTokenError as e_invalid_token:
-        print(f"[SECURITY_DEBUG GET_CURRENT_USER] Invalid ID token: {e_invalid_token}")
-        raise credentials_exception
-    except firebase_auth.ExpiredIdTokenError as e_expired_token:
-        print(f"[SECURITY_DEBUG GET_CURRENT_USER] Expired ID token: {e_expired_token}")
-        raise credentials_exception
-    except firebase_auth.RevokedIdTokenError as e_revoked_token:
-        print(f"[SECURITY_DEBUG GET_CURRENT_USER] Revoked ID token: {e_revoked_token}")
-        raise credentials_exception
-    except Exception as e_generic:
-        print(f"[SECURITY_DEBUG GET_CURRENT_USER] An unexpected error occurred: {type(e_generic).__name__} - {e_generic}")
-        raise credentials_exception
+    supabase = get_supabase_client()
+    try:
+        response = supabase.table("profiles").select("id, email, name, avatar_url, role, is_superuser").eq("id", user_id_from_token).maybe_single().execute()
+        
+        if not response or not hasattr(response, 'data') or not response.data:
+            logger.warning(f"[GET_CURRENT_USER] No profile found in Supabase 'profiles' table for user ID: {user_id_from_token}")
+            # Try to get user from auth.users as fallback
+            try:
+                auth_user_response = supabase.auth.admin.get_user_by_id(user_id_from_token)
+                if auth_user_response and auth_user_response.user:
+                    logger.info(f"[GET_CURRENT_USER] User {user_id_from_token} found in auth.users, but no profile. Returning with defaults.")
+                    return UserRead(
+                        uid=auth_user_response.user.id,
+                        email=auth_user_response.user.email,
+                        name=auth_user_response.user.user_metadata.get("name", "N/A"),
+                        is_superuser=False,
+                        role="client"
+                    )
+                else:
+                    logger.error(f"[GET_CURRENT_USER] User {user_id_from_token} not found in auth.users either.")
+                    raise credentials_exception
+            except Exception as auth_error:
+                logger.error(f"[GET_CURRENT_USER] Error fetching from auth.users: {auth_error}")
+                raise credentials_exception
 
-def require_superuser(current_user: UserRead = Depends(get_current_user)):
-    print(f"[SECURITY_DEBUG REQUIRE_SUPERUSER] Checking superuser status for UID: {current_user.uid}")
+        profile_data = response.data
+        logger.debug(f"[GET_CURRENT_USER] Fetched profile from Supabase: {profile_data}")
+        
+        return UserRead(
+            uid=profile_data["id"], 
+            email=profile_data["email"],
+            name=profile_data.get("name"),
+            avatar=profile_data.get("avatar_url"),
+            role=profile_data.get("role", "client"),
+            is_superuser=profile_data.get("is_superuser", False)
+        )
+    except Exception as e:
+        logger.error(f"[GET_CURRENT_USER] Error fetching profile from Supabase for user ID {user_id_from_token}: {e}", exc_info=True)
+        raise credentials_exception from e
+
+def require_superuser(current_user: UserRead = Depends(get_current_user)) -> UserRead:
+    logger.debug(f"[REQUIRE_SUPERUSER] Checking superuser status for UID: {current_user.uid}")
     is_super = getattr(current_user, 'is_superuser', False)
-    if not is_super and current_user.role != 'admin':
-        print(f"[SECURITY_DEBUG REQUIRE_SUPERUSER] User {current_user.uid} (role: {current_user.role}, is_superuser: {is_super}) is NOT a superuser.")
+    if not is_super and getattr(current_user, 'role', 'client') != 'admin':
+        logger.warning(f"[REQUIRE_SUPERUSER] User {current_user.uid} (role: {getattr(current_user, 'role', 'client')}, is_superuser: {is_super}) is NOT a superuser/admin.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Superuser privileges required for this action."
+            detail="Superuser or admin privileges required for this action."
         )
-    print(f"[SECURITY_DEBUG REQUIRE_SUPERUSER] User {current_user.uid} (role: {current_user.role}, is_superuser: {is_super}) IS a superuser.")
+    logger.info(f"[REQUIRE_SUPERUSER] User {current_user.uid} (role: {getattr(current_user, 'role', 'client')}, is_superuser: {is_super}) IS a superuser/admin.")
     return current_user 

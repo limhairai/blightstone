@@ -1,11 +1,11 @@
 # AdHub Frontend
 
-Enterprise-level frontend application for AdHub, built with Next.js and Firebase.
+Enterprise-level frontend application for AdHub, built with Next.js.
 
 ## Features
 
 - Modern UI with Tailwind CSS and Radix UI components
-- Firebase Authentication and Firestore integration
+- Supabase Authentication and Database integration
 - Responsive design
 - Dark mode support
 - Type-safe with TypeScript
@@ -50,14 +50,12 @@ npm install
 ```
 
 2. Configure environment variables:
-Create a `.env.local` file in the frontend directory with:
+Create a `.env.local` file in the frontend directory with necessary API keys and Supabase URL/anon key (refer to Supabase documentation and your project setup).
+For example:
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+# Add other necessary environment variables here
 ```
 
 3. Run the development server:

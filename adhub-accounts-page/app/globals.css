@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dark Mode Default */
+    --background: 220 60% 4%;
+    --foreground: 210 17% 98%;
+    --card: 220 13% 9%;
+    --card-foreground: 210 17% 98%;
+    --popover: 220 13% 9%;
+    --popover-foreground: 210 17% 98%;
+    --primary: 250 100% 85%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 220 27% 14%;
+    --secondary-foreground: 210 17% 98%;
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 10% 66%;
+    --accent: 220 13% 15%;
+    --accent-foreground: 210 17% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 250 100% 85%;
+
+    /* Status Colors - Dark Mode */
+    --status-active-dot: 145 63% 55%;
+    --status-active-badge-background: 145 85% 15%;
+    --status-active-badge-foreground: 145 74% 65%;
+
+    --status-pending-dot: 36 93% 60%;
+    --status-pending-badge-background: 45 100% 12%;
+    --status-pending-badge-foreground: 32 90% 55%;
+
+    --status-failed-dot: 0 84% 65%;
+    --status-failed-badge-background: 0 80% 12%;
+    --status-failed-badge-foreground: 0 70% 60%;
+
+    --status-inactive-dot: 240 3% 60%;
+    --status-inactive-badge-background: 210 17% 12%;
+    --status-inactive-badge-foreground: 220 13% 70%;
+
+    /* Brand Colors */
+    --brand-primary: #c4b5fd;
+    --brand-secondary: #ffc4b5;
+
+    /* Radius */
+    --radius-sm: 0.25rem;
+    --radius: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-full: 9999px;
+  }
+
+  .light {
+    /* Light Mode Overrides */
+    --background: 210 17% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 250 100% 81%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 45%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 210 17% 98%;
+    --border: 220 14% 93%;
+    --input: 220 14% 93%;
+    --ring: 250 100% 81%;
+
+    /* Status Colors - Light Mode */
+    --status-active-badge-background: 145 85% 98%;
+    --status-active-badge-foreground: 145 74% 36%;
+    --status-pending-badge-background: 45 100% 97%;
+    --status-pending-badge-foreground: 32 90% 37%;
+    --status-failed-badge-background: 0 80% 97%;
+    --status-failed-badge-foreground: 0 70% 50%;
+    --status-inactive-badge-background: 210 17% 98%;
+    --status-inactive-badge-foreground: 220 13% 30%;
+
+    /* Brand Colors - Light Mode */
+    --brand-primary: #b4a0ff;
+    --brand-secondary: #ffb4a0;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Inter", system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Custom gradient utilities */
+.text-gradient-brand {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.bg-gradient-brand {
+  background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+}

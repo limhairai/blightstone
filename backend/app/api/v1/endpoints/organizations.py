@@ -1,13 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from fastapi.concurrency import run_in_threadpool
-from app.core.firebase import get_firestore
-from app.core.security import get_current_user
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
+from app.core.security import get_current_user, require_superuser
+from app.core.supabase_client import get_supabase_client
 from app.schemas.user import UserRead as User
-from datetime import datetime
+from app.schemas.organization import (
+    OrganizationCreate, 
+    OrganizationRead, 
+    OrganizationUpdate,
+    OrganizationMemberRead,
+    UserOrganizationLink # Used for list_organizations response
+)
+from datetime import datetime, timezone
 from pydantic import BaseModel
-from typing import Any, Dict, Annotated
+from typing import Any, Dict, Annotated, List, Optional
 import inspect
+import uuid
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 class OrganizationOnboarding(BaseModel):
@@ -15,229 +26,270 @@ class OrganizationOnboarding(BaseModel):
     adSpend: Dict[str, Any]
     supportChannel: Dict[str, Any]
 
-@router.post("", status_code=201)
-async def create_organization(
-    org_payload: OrganizationOnboarding,
+@router.post("", response_model=OrganizationRead, status_code=status.HTTP_201_CREATED)
+async def create_organization_endpoint(
+    org_payload: OrganizationCreate,
     current_user: User = Depends(get_current_user)
 ):
-    db = get_firestore()
-    print(f"[BACKEND organizations.py] create_organization called by UID: {current_user.uid} for org name: {org_payload.name}")
+    logger.info(f"Attempting to create organization '{org_payload.name}' by user {current_user.uid}")
+    supabase = get_supabase_client()
+
+    # Prepare organization data for insertion
+    org_data_to_create = org_payload.model_dump(exclude_unset=True)
     
-    org_data_to_create = {
-        "name": org_payload.name,
-        "createdBy": current_user.uid,
-        "owner_uid": current_user.uid,
-        "createdAt": datetime.utcnow(),
-        "planId": "bronze",
-        "onboarding_details": {
-            "adSpend": org_payload.adSpend,
-            "supportChannel": org_payload.supportChannel,
-        },
-    }
+    # Ensure owner_id is set correctly from current_user if creator_user_id isn't explicitly in payload
+    # (though creator_user_id in schema is usually set to current_user.uid by calling code or default in endpoint)
+    # The DB column is owner_id.
+    if org_payload.creator_user_id:
+        org_data_to_create["owner_id"] = str(org_payload.creator_user_id)
+    else:
+        # This case should ideally not be hit if creator_user_id is always populated by endpoint/service layer
+        org_data_to_create["owner_id"] = str(current_user.uid) 
     
+    # Remove creator_user_id if it was a DTO-only field and owner_id is the target DB column
+    if "creator_user_id" in org_data_to_create:
+        del org_data_to_create["creator_user_id"]
+
+    org_data_to_create["verification_status"] = "pending_review" # Default status
+
+    # Fields from OrganizationBase (now in OrganizationCreate) that map directly to DB columns:
+    # name is already included by model_dump if set
+    # landing_page_url, industry, description, ad_spend_monthly, support_channel_type, 
+    # support_channel_contact, avatar_url, plan_id are also included if set in org_payload
+    # and present in org_data_to_create due to model_dump(exclude_unset=True).
+    # No specific mapping needed here IF Pydantic schema field names match DB column names.
+    
+    # Ensure all required DB fields are present or have defaults in DB.
+    # Supabase typically handles created_at/updated_at with defaults or triggers.
+
     try:
-        def _create_org_in_db():
-            print(f"[BACKEND organizations.py] THREAD: Attempting to add organization to Firestore with data: {org_data_to_create}")
-            _update_time, _org_doc_ref = db.collection("organizations").add(org_data_to_create)
-            _org_id = _org_doc_ref.id
-            print(f"[BACKEND organizations.py] THREAD: Organization added with ID: {_org_id}. Timestamp: {_update_time}")
+        # Insert into 'organizations' table
+        org_insert_response = supabase.table("organizations").insert(org_data_to_create).execute()
 
-            _org_user_doc_id = f"{_org_id}_{current_user.uid}"
-            print(f"[BACKEND organizations.py] THREAD: Attempting to link user {current_user.uid} to org {_org_id} in organization_users")
-            db.collection("organization_users").document(_org_user_doc_id).set({
-                "orgId": _org_id,
-                "userId": current_user.uid,
-                "role": "owner",
-                "joinedAt": datetime.utcnow(),
-            })
-            print(f"[BACKEND organizations.py] THREAD: User linked to organization.")
-            return _org_id
-
-        org_id = await run_in_threadpool(_create_org_in_db)
-        print(f"[BACKEND organizations.py] org_id from threadpool: {org_id}")
-
-        def _get_created_org(_org_id):
-            print(f"[BACKEND organizations.py] THREAD: Attempting to fetch created org ID: {_org_id}")
-            _created_org_doc = db.collection("organizations").document(_org_id).get()
-            if not _created_org_doc.exists:
-                print(f"[BACKEND organizations.py] THREAD: Failed to retrieve created org ID: {_org_id}")
-                return None
-            _response_data = _created_org_doc.to_dict()
-            _response_data["id"] = _org_id
-            print(f"[BACKEND organizations.py] THREAD: Successfully fetched created org: {_response_data}")
-            return _response_data
+        if not org_insert_response.data:
+            logger.error(f"Failed to insert organization into DB. Payload: {org_data_to_create}, Error: {org_insert_response.error}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not create organization.")
         
-        response_data = await run_in_threadpool(_get_created_org, org_id)
+        created_org_data = org_insert_response.data[0]
+        org_id = created_org_data["id"]
+        logger.debug(f"Organization '{org_payload.name}' created with ID: {org_id} by user {current_user.uid}")
 
-        if response_data is None:
-             print(f"[BACKEND organizations.py] Raising HTTPException because response_data is None for org_id: {org_id}")
-             raise HTTPException(status_code=500, detail="Failed to retrieve created organization after creation.")
+        # Link the creator as the owner in 'organization_members' junction table
+        org_user_data = {
+            "organization_id": str(org_id),
+            "user_id": str(current_user.uid),
+            "role": "owner",
+            # "joined_at": datetime.now(timezone.utc) # Supabase can default this
+        }
+        org_user_insert_response = supabase.table("organization_members").insert(org_user_data).execute()
 
-        print(f"[BACKEND organizations.py] Successfully created and retrieved org: {response_data}")
-        return response_data
+        if not org_user_insert_response.data:
+            logger.error(f"Failed to link owner {current_user.uid} to new organization {org_id}. Error: {org_user_insert_response.error}")
+            # Potentially rollback organization creation or mark for cleanup
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Organization created, but failed to assign owner.")
+        
+        logger.debug(f"User {current_user.uid} linked as owner to organization {org_id}")
+        
+        # Return the created organization data using OrganizationRead schema
+        # The 'created_org_data' from insert might not have all fields or correct types for OrganizationRead
+        # (e.g., created_at might be a string). It's safer to re-fetch or carefully map.
+        # For simplicity here, we'll assume the insert response is sufficient if keys match.
+        # A more robust approach is to fetch the newly created org by its ID.
+
+        return OrganizationRead(**created_org_data) # Ensure all fields for OrganizationRead are present
+
+    except HTTPException as e:
+        raise e # Re-raise FastAPI HTTP exceptions
+    except Exception as e:
+        logger.error(f"Unexpected error creating organization '{org_payload.name}' for user {current_user.uid}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An internal server error occurred: {str(e)}")
+
+@router.get("", response_model=List[UserOrganizationLink])
+async def list_my_organizations_endpoint(current_user: User = Depends(get_current_user)):
+    logger.debug(f"Fetching organizations for user: {current_user.uid}")
+    supabase = get_supabase_client()
+    try:
+        # Fetch organization memberships for the current user from 'organization_members'
+        # Then join with 'organizations' table to get organization names
+        # The RPC call `get_user_organizations` simplifies this if it exists and does the join.
+        # Direct query:
+        response = (
+            supabase.table("organization_members")
+            .select("role, organizations(id, name)") # Supabase join syntax
+            .eq("user_id", str(current_user.uid))
+            .execute()
+        )
+
+        user_org_links = []
+        if response.data:
+            for item in response.data:
+                if item.get('organizations'): # Check if the joined organization data exists
+                    org_data = item['organizations'] # This will be an object if one-to-one, or list if many
+                    if isinstance(org_data, dict): # Ensure it's a dict (single org)
+                        user_org_links.append(UserOrganizationLink(
+                            organization_id=org_data['id'],
+                            organization_name=org_data['name'],
+                            user_role_in_org=item['role']
+                        ))
+                    # If 'organizations' could be a list (e.g. if relationship was misdefined as many-to-many from user perspective)
+                    # you might need to iterate or adjust the query.
+                    # For typical org_users, this join should yield one org per membership record.
+        
+        logger.debug(f"Found {len(user_org_links)} organizations for user {current_user.uid}")
+        return user_org_links
 
     except Exception as e:
-        print(f"[BACKEND organizations.py] Error during organization creation for UID {current_user.uid}: {e}")
-        raise HTTPException(status_code=500, detail=f"An internal error occurred: {str(e)}")
+        logger.error(f"Unexpected error fetching organizations for user {current_user.uid}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred.")
 
-@router.get("/", status_code=200)
-async def list_organizations(current_user: User = Depends(get_current_user)):
-    db = get_firestore()
-    org_user_docs = db.collection("organization_users").where("userId", "==", current_user.uid).stream()
-    orgs = []
-    for org_user in org_user_docs:
-        org_user_data = org_user.to_dict()
-        org_id = org_user_data["orgId"]
-        role = org_user_data.get("role", "member")
-        # Fetch org info
-        org_doc = db.collection("organizations").document(org_id).get()
-        if org_doc.exists:
-            org_data = org_doc.to_dict()
-            plan_id = org_data.get("planId") or org_data.get("plan") or "bronze"
-            orgs.append({
-                "id": org_id,
-                "name": org_data.get("name"),
-                "avatar": org_data.get("avatar"),
-                "role": role,
-                "planId": plan_id,
-            })
-    return {"organizations": orgs}
+@router.get("/{org_id}", response_model=OrganizationRead)
+async def get_organization_details_endpoint(
+    org_id: uuid.UUID, 
+    current_user: User = Depends(get_current_user)
+):
+    logger.info(f"Fetching details for organization {org_id} by user {current_user.uid}")
+    supabase = get_supabase_client()
+    try:
+        # First, verify the current user is a member of this organization
+        member_check_response = (
+            supabase.table("organization_members")
+            .select("user_id")
+            .eq("organization_id", str(org_id))
+            .eq("user_id", str(current_user.uid))
+            .maybe_single() # Expect one or none
+            .execute()
+        )
 
-@router.get("/members", status_code=200)
-async def list_members(orgId: str, current_user=Depends(get_current_user)):
-    db = get_firestore()
-    # Only members of org can view
-    org_user_doc = db.collection("organization_users").document(f"{orgId}_{current_user.uid}").get()
-    if not org_user_doc.exists:
-        raise HTTPException(status_code=403, detail="Not a member of this organization.")
-    # List all members
-    org_users = db.collection("organization_users").where("orgId", "==", orgId).stream()
-    members = []
-    for u in org_users:
-        d = u.to_dict()
-        # Optionally fetch user email from users collection
-        user_doc = db.collection("users").document(d["userId"]).get()
-        email = user_doc.to_dict()["email"] if user_doc.exists else None
-        members.append({
-            "userId": d["userId"],
-            "email": email,
-            "role": d["role"],
-            "joinedAt": d["joinedAt"],
-        })
-    return members
+        if not member_check_response.data:
+            logger.warning(f"User {current_user.uid} attempted to access org {org_id} but is not a member.")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a member of this organization or organization does not exist.")
 
-class RemoveMemberRequest(BaseModel):
-    userId: str
-    orgId: str
+        # If member, fetch organization details
+        org_response = (
+            supabase.table("organizations")
+            .select("*" ) # Select all columns or specify for OrganizationRead
+            .eq("id", str(org_id))
+            .single() # Expect exactly one
+            .execute()
+        )
 
-@router.post("/remove-member", status_code=200)
-async def remove_member(data: RemoveMemberRequest, current_user=Depends(get_current_user)):
-    db = get_firestore()
-    # Only owner/admin can remove, cannot remove self, cannot remove last owner
-    org_user_doc = db.collection("organization_users").document(f"{data.orgId}_{current_user.uid}").get()
-    if not org_user_doc.exists:
-        raise HTTPException(status_code=403, detail="Not a member of this organization.")
-    role = org_user_doc.to_dict()["role"]
-    if role not in ["owner", "admin"]:
-        raise HTTPException(status_code=403, detail="Not authorized to remove members.")
-    if data.userId == current_user.uid:
-        raise HTTPException(status_code=400, detail="You cannot remove yourself.")
-    # Prevent removing last owner
-    if role == "owner":
-        owners = db.collection("organization_users").where("orgId", "==", data.orgId).where("role", "==", "owner").stream()
-        owner_count = sum(1 for _ in owners)
-        target_doc = db.collection("organization_users").document(f"{data.orgId}_{data.userId}").get()
-        if target_doc.exists and target_doc.to_dict()["role"] == "owner" and owner_count <= 1:
-            raise HTTPException(status_code=400, detail="Cannot remove the last owner.")
-    db.collection("organization_users").document(f"{data.orgId}_{data.userId}").delete()
-    return {"detail": "Member removed."}
+        if not org_response.data:
+            logger.warning(f"Organization {org_id} not found, though user {current_user.uid} is listed as member (potential data inconsistency).")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found.")
+        
+        logger.info(f"Successfully fetched details for organization {org_id}")
+        return OrganizationRead(**org_response.data)
 
-@router.get("", status_code=200)
-async def list_organizations_noslash(current_user: User = Depends(get_current_user)):
-    return await list_organizations(current_user)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Unexpected error fetching organization {org_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred.")
 
-@router.get("/{org_id}/members", status_code=200)
-async def get_organization_members(org_id: str, current_user=Depends(get_current_user)):
-    db = get_firestore()
-    # Only members of org can view
-    org_user_doc = db.collection("organization_users").document(f"{org_id}_{current_user.uid}").get()
-    if not org_user_doc.exists:
-        raise HTTPException(status_code=403, detail="Not a member of this organization.")
-    # List all members
-    org_users = db.collection("organization_users").where("orgId", "==", org_id).stream()
-    members = []
-    for u in org_users:
-        d = u.to_dict()
-        # Optionally fetch user email from users collection
-        user_doc = db.collection("users").document(d["userId"]).get()
-        email = user_doc.to_dict()["email"] if user_doc.exists else None
-        members.append({
-            "userId": d["userId"],
-            "email": email,
-            "role": d["role"],
-            "joinedAt": d["joinedAt"],
-        })
-    return members
+# --- Admin Endpoints for Organization Management ---
 
-class LeaveOrganizationRequest(BaseModel):
-    orgId: str
+class AdminOrganizationFilterParams(BaseModel):
+    verification_status: Optional[str] = Query(None, description="Filter by verification status (e.g., 'pending_review', 'approved', 'rejected')")
+    limit: int = Query(50, ge=1, le=100)
+    offset: int = Query(0, ge=0)
 
-@router.post("/leave", status_code=200)
-async def leave_organization(data: LeaveOrganizationRequest, current_user=Depends(get_current_user)):
-    db = get_firestore()
-    org_user_doc = db.collection("organization_users").document(f"{data.orgId}_{current_user.uid}").get()
-    if not org_user_doc.exists:
-        raise HTTPException(status_code=403, detail="Not a member of this organization.")
-    role = org_user_doc.to_dict()["role"]
-    # Prevent last owner from leaving
-    if role == "owner":
-        owners = db.collection("organization_users").where("orgId", "==", data.orgId).where("role", "==", "owner").stream()
-        owner_count = sum(1 for _ in owners)
-        if owner_count <= 1:
-            raise HTTPException(status_code=400, detail="Cannot leave as the last owner. Transfer ownership or promote another member first.")
-    db.collection("organization_users").document(f"{data.orgId}_{current_user.uid}").delete()
-    return {"detail": "Left organization."}
+@router.get("/admin/all", response_model=List[OrganizationRead], dependencies=[Depends(require_superuser)])
+async def admin_list_all_organizations_endpoint(
+    filters: AdminOrganizationFilterParams = Depends() # Use Pydantic model for query params
+):
+    logger.info(f"Admin request to list organizations with filters: {filters}")
+    supabase = get_supabase_client()
+    try:
+        query = supabase.table("organizations").select("*") # Adjust columns as needed for OrganizationRead
+        
+        if filters.verification_status:
+            query = query.eq("verification_status", filters.verification_status)
+        
+        query = query.limit(filters.limit).offset(filters.offset).order("created_at", desc=True)
+        
+        response = query.execute()
 
-class DeleteOrganizationRequest(BaseModel):
-    orgId: str
+        if response.error:
+            logger.error(f"Admin: Error fetching organizations: {response.error.message}")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch organizations.")
+        
+        orgs = [OrganizationRead(**org_data) for org_data in response.data]
+        logger.info(f"Admin: Successfully fetched {len(orgs)} organizations.")
+        return orgs
 
-@router.post("/delete", status_code=200)
-async def delete_organization(data: DeleteOrganizationRequest, current_user=Depends(get_current_user)):
-    db = get_firestore()
-    org_user_doc = db.collection("organization_users").document(f"{data.orgId}_{current_user.uid}").get()
-    if not org_user_doc.exists:
-        raise HTTPException(status_code=403, detail="Not a member of this organization.")
-    role = org_user_doc.to_dict()["role"]
-    if role != "owner":
-        raise HTTPException(status_code=403, detail="Only the owner can delete the organization.")
-    org_doc = db.collection("organizations").document(data.orgId).get()
-    if not org_doc.exists:
-        raise HTTPException(status_code=404, detail="Organization not found.")
-    org_data = org_doc.to_dict()
-    if org_data.get("balance", 0) > 0:
-        raise HTTPException(status_code=400, detail="Organization balance must be zero before deletion. Withdraw or consolidate funds first.")
-    # Delete all organization_users
-    org_users = db.collection("organization_users").where("orgId", "==", data.orgId).stream()
-    for u in org_users:
-        db.collection("organization_users").document(u.id).delete()
-    # Mark ad accounts as available inventory (not deleted)
-    ad_accounts = db.collection("adAccounts").where("orgId", "==", data.orgId).stream()
-    for ad in ad_accounts:
-        db.collection("adAccounts").document(ad.id).update({"orgId": None, "status": "available"})
-    # Delete the organization
-    db.collection("organizations").document(data.orgId).delete()
-    return {"detail": "Organization deleted."}
+    except Exception as e:
+        logger.error(f"Admin: Unexpected error fetching organizations: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred.")
 
-@router.get("/{org_id}", status_code=200)
-async def get_organization(org_id: str, current_user: User = Depends(get_current_user)):
-    db = get_firestore()
-    # Check if user is a member of the org
-    org_user_doc = db.collection("organization_users").document(f"{org_id}_{current_user.uid}").get()
-    if not org_user_doc.exists:
-        raise HTTPException(status_code=403, detail="Not a member of this organization.")
-    org_doc = db.collection("organizations").document(org_id).get()
-    if not org_doc.exists:
-        raise HTTPException(status_code=404, detail="Organization not found.")
-    org_data = org_doc.to_dict()
-    org_data["id"] = org_id
-    return org_data 
+class OrganizationStatusUpdatePayload(BaseModel):
+    verification_status: str # e.g., "approved", "rejected"
+    # admin_notes: Optional[str] = None # Example: if you want to store reason for status change
+
+@router.put("/admin/{org_id}/status", response_model=OrganizationRead, dependencies=[Depends(require_superuser)])
+async def admin_update_organization_status_endpoint(
+    org_id: uuid.UUID,
+    payload: OrganizationStatusUpdatePayload,
+):
+    logger.info(f"Admin request to update status of organization {org_id} to '{payload.verification_status}'")
+    supabase = get_supabase_client()
+
+    # Validate verification_status value if needed
+    allowed_statuses = ["pending_review", "approved", "rejected", "needs_more_info"]
+    if payload.verification_status not in allowed_statuses:
+        logger.warning(f"Admin: Invalid verification status provided: {payload.verification_status}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid status. Must be one of {allowed_statuses}")
+
+    try:
+        update_data = {"verification_status": payload.verification_status, "updated_at": datetime.now(timezone.utc).isoformat()}
+        # if payload.admin_notes: update_data["admin_notes"] = payload.admin_notes
+
+        response = (
+            supabase.table("organizations")
+            .update(update_data)
+            .eq("id", str(org_id))
+            .execute()
+        )
+
+        if not response.data: # Update returns data on success
+            logger.error(f"Admin: Failed to update status for organization {org_id}. Error: {getattr(response.error, 'message', 'Unknown error')}")
+            # Check if org exists before claiming update failed
+            check_org = supabase.table("organizations").select("id").eq("id", str(org_id)).maybe_single().execute()
+            if not check_org.data:
+                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Organization with ID {org_id} not found.")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update organization status.")
+
+        updated_org_data = response.data[0]
+        logger.info(f"Admin: Successfully updated status for organization {org_id} to {payload.verification_status}")
+        return OrganizationRead(**updated_org_data)
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Admin: Unexpected error updating status for org {org_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred.")
+
+# Placeholder for Member Management - these would need similar refactoring
+# For example:
+# @router.post("/{org_id}/members", response_model=OrganizationMemberRead, status_code=status.HTTP_201_CREATED)
+# async def add_member_to_organization(org_id: uuid.UUID, member_payload: OrganizationMemberCreate, current_user: UserRead = Depends(get_current_user)):
+#     # Check if current_user is admin/owner of org_id
+#     # Add member to organization_members table
+#     pass
+
+# @router.delete("/{org_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+# async def remove_member_from_organization(org_id: uuid.UUID, user_id: uuid.UUID, current_user: UserRead = Depends(get_current_user)):
+#     # Check if current_user is admin/owner of org_id
+#     # Check constraints (not last owner, not self if not allowed)
+#     # Remove member from organization_members table
+#     pass
+
+# Note: The old /members, /remove-member, /leave, /delete endpoints from Firestore version need to be
+# fully refactored for Supabase, including permission checks based on 'organization_members' roles.
+# This initial refactor focuses on core org creation, listing, and admin status updates.
+# The detailed member management and deletion logic would follow the same pattern of:
+# 1. Check permissions (e.g., is current_user owner/admin of the org via 'organization_members' table).
+# 2. Perform Supabase operation on 'organization_members' or 'organizations' table.
+# 3. Return appropriate response.
+
+# The old catch-all OrganizationOnboarding model is replaced by OrganizationCreate.
+# Other specific request models like RemoveMemberRequest can be defined here or in schemas/organization.py 

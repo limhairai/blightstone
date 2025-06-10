@@ -1,9 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from app.core.security import require_superuser
-from app.core.firebase import get_firestore
+from app.core.security import require_superuser, get_current_user
+from app.core.supabase_client import get_supabase_client
+from app.schemas.user import UserRead as User
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 from pydantic import BaseModel
 from typing import List, Optional
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 class UserProfile(BaseModel):
@@ -25,96 +29,95 @@ class OnboardingProgress(BaseModel):
     steps: List[OnboardingStep]
     currentStep: int
 
+@router.get("/profile")
+async def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    """Get the current user's profile from Supabase profiles table"""
+    supabase = get_supabase_client()
+    try:
+        # Fetch user profile from profiles table
+        response = (
+            supabase.table("profiles")
+            .select("id, email, name, avatar_url, role, is_superuser")
+            .eq("id", str(current_user.uid))
+            .single()
+            .execute()
+        )
+        
+        if response.data:
+            return {
+                "id": response.data["id"],
+                "email": response.data["email"],
+                "name": response.data.get("name"),
+                "avatar_url": response.data.get("avatar_url"),
+                "role": response.data.get("role", "client"),
+                "is_superuser": response.data.get("is_superuser", False)
+            }
+        else:
+            # If no profile exists, return basic info from auth user
+            return {
+                "id": current_user.uid,
+                "email": current_user.email,
+                "name": None,
+                "avatar_url": None,
+                "role": "client",
+                "is_superuser": False
+            }
+    except Exception as e:
+        logger.error(f"Error fetching profile for user {current_user.uid}: {e}")
+        # Fallback to auth user data
+        return {
+            "id": current_user.uid,
+            "email": current_user.email,
+            "name": None,
+            "avatar_url": None,
+            "role": "client",
+            "is_superuser": False
+        }
+
+# TODO: Migrate these endpoints to Supabase or remove if not needed
+# The following endpoints are deprecated and use Firebase/Firestore
+
 @router.get("")
 def list_users(search: str = Query("", alias="search"), current_user=Depends(require_superuser)):
-    db = get_firestore()
-    users_ref = db.collection("users")
-    if search:
-        # Simple search by email or displayName
-        users = [doc.to_dict() | {"uid": doc.id} for doc in users_ref.stream() if search.lower() in (doc.to_dict().get("email", "") + doc.to_dict().get("displayName", "")).lower()]
-    else:
-        users = [doc.to_dict() | {"uid": doc.id} for doc in users_ref.stream()]
-    return {"users": users}
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please use Supabase-based user management.")
 
 @router.post("/{uid}/deactivate")
 def deactivate_user(uid: str, current_user=Depends(require_superuser)):
-    db = get_firestore()
-    user_ref = db.collection("users").document(uid)
-    user_ref.update({"active": False})
-    return {"success": True}
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please use Supabase-based user management.")
 
 @router.post("/{uid}/reactivate")
 def reactivate_user(uid: str, current_user=Depends(require_superuser)):
-    db = get_firestore()
-    user_ref = db.collection("users").document(uid)
-    user_ref.update({"active": True})
-    return {"success": True}
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please use Supabase-based user management.")
 
 @router.post("/{uid}/reset-password")
 def reset_password(uid: str, current_user=Depends(require_superuser)):
-    # In a real app, trigger password reset email via Firebase Admin SDK
-    return {"success": True, "message": "Password reset email sent (stub)"}
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please use Supabase auth for password reset.")
 
 @router.post("/{uid}/impersonate")
 def impersonate_user(uid: str, current_user=Depends(require_superuser)):
-    # In a real app, set a session/cookie to impersonate the user
-    return {"success": True, "message": f"Now impersonating {uid} (stub)"}
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please implement with Supabase auth.")
 
 @router.post("")
 def create_user_profile(profile: UserProfile = Body(...)):
-    db = get_firestore()
-    print(f"[BACKEND users.py] Received request to create profile for UID: {profile.uid}")
-    doc_ref = db.collection("users").document(profile.uid)
-    data = profile.dict()
-    try:
-        print(f"[BACKEND users.py] Attempting to set user profile in Firestore for UID: {profile.uid} with data: {data}")
-        doc_ref.set(data, merge=True) # merge=True is fine, acts as upsert
-        print(f"[BACKEND users.py] Firestore set call completed for UID: {profile.uid}")
-        
-        # === ADD READ-AFTER-WRITE CHECK ===
-        print(f"[BACKEND users.py] Attempting to read back profile for UID: {profile.uid} immediately after set.")
-        try:
-            # Use a new DocumentReference for the read, or re-fetch the document snapshot
-            # It's generally safer to re-fetch if state might have changed or to confirm persistence
-            # For emulator, a direct get() on the same ref should be fine for immediate check
-            written_doc = doc_ref.get() # Get the document snapshot
-            if written_doc.exists:
-                print(f"[BACKEND users.py] SUCCESS: Read-after-write for UID {profile.uid}. Data: {written_doc.to_dict()}")
-            else:
-                print(f"[BACKEND users.py] FAILURE: Read-after-write for UID {profile.uid}. Document does NOT exist after set!")
-        except Exception as read_e:
-            print(f"[BACKEND users.py] ERROR during read-after-write for UID {profile.uid}: {read_e}")
-        # === END READ-AFTER-WRITE CHECK ===
-            
-        return {"status": "success", "profile": data}
-    except Exception as e:
-        print(f"[BACKEND users.py] Firestore ERROR for UID {profile.uid}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. User profiles are now handled by Supabase triggers.")
 
 @router.get("/{uid}")
 def get_user_profile(uid: str):
-    db = get_firestore()
-    doc_ref = db.collection("users").document(uid)
-    doc = doc_ref.get()
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail="User not found")
-    return doc.to_dict() | {"uid": doc.id}
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please use /profile for current user or implement Supabase-based user lookup.")
 
 @router.get("/{uid}/onboarding")
 def get_onboarding_progress(uid: str):
-    db = get_firestore()
-    doc_ref = db.collection("users").document(uid)
-    doc = doc_ref.get()
-    if not doc.exists:
-        raise HTTPException(status_code=404, detail="User not found")
-    onboarding = doc.to_dict().get("onboarding")
-    if not onboarding:
-        return {"steps": [], "currentStep": 0}
-    return onboarding
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please implement onboarding with Supabase.")
 
 @router.post("/{uid}/onboarding")
 def update_onboarding_progress(uid: str, progress: OnboardingProgress):
-    db = get_firestore()
-    doc_ref = db.collection("users").document(uid)
-    doc_ref.set({"onboarding": progress.dict()}, merge=True)
-    return {"status": "success", "onboarding": progress.dict()} 
+    """DEPRECATED: This endpoint uses Firebase and needs migration to Supabase"""
+    raise HTTPException(status_code=501, detail="This endpoint is deprecated. Please implement onboarding with Supabase.") 

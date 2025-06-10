@@ -8,11 +8,15 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { InfoIcon, AlertCircle, Wallet } from "lucide-react"
+import { formatCurrency } from "@/lib/mock-data"
+import { contentTokens } from "@/lib/content-tokens"
+import { layout } from "@/lib/layout-utils"
+import { useDemoState } from "@/contexts/DemoStateContext"
 
 interface TopUpDialogProps {
   isOpen: boolean
   onClose: () => void
-  accountId: string
+  accountId: string | number
   accountName: string
   onTopUp?: (amount: number) => void
 }
@@ -26,14 +30,18 @@ const CUSTOMER_TIERS = {
 }
 
 export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }: TopUpDialogProps) {
-  // Mock data
-  const walletBalance = 5000
+  const { state, topUpAccount } = useDemoState()
+  
+  // Use real-time wallet balance from demo state
+  const walletBalance = state.financialData.walletBalance
   const customerTier = "BASIC"
   const commissionRate = CUSTOMER_TIERS[customerTier].commissionRate
 
   const [amount, setAmount] = useState<number>(100)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Get loading state
+  const isSubmitting = state.loading.accounts
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -62,18 +70,25 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
   const handleSubmit = async () => {
     if (amount <= 0 || amount > walletBalance) return
 
-    setIsSubmitting(true)
+    try {
+      // Convert accountId to number if it's a string
+      const numericAccountId = typeof accountId === 'string' ? parseInt(accountId) : accountId
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Use the actual topUpAccount function from state management
+      await topUpAccount(numericAccountId, amount)
 
+      // Call the optional callback
     if (onTopUp) {
       onTopUp(amount)
     }
 
-    setIsSubmitting(false)
     onClose()
+    } catch (error) {
+      setError("Failed to top up account. Please try again.")
+    }
   }
+
+  const quickAmounts = [50, 100, 500, 1000]
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -94,53 +109,44 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
           <div className="flex justify-between items-center p-3 rounded-md bg-[#0a0812] border border-[#2C2C2E]">
             <div>
               <Label className="text-[#888888]">Available Balance</Label>
-              <div className="text-lg font-semibold">${walletBalance.toFixed(2)}</div>
+              <div className="text-lg font-semibold">${formatCurrency(walletBalance)}</div>
             </div>
             <Wallet className="h-5 w-5 text-[#888888]" />
           </div>
 
-          <div className="space-y-3">
-            <Label className="text-[#888888]">Select Amount to Top Up</Label>
-
+          <div className={layout.stackMedium}>
+            <div className={layout.formFields}>
+              <Label className="text-foreground">Quick amounts</Label>
             <div className="grid grid-cols-4 gap-2">
-              {predefinedAmounts.map((presetAmount) => (
+                {quickAmounts.map((quickAmount) => (
                 <Button
-                  key={presetAmount}
+                    key={quickAmount}
                   type="button"
-                  variant={amount === presetAmount ? "default" : "outline"}
-                  onClick={() => handleAmountChange(presetAmount)}
-                  className={`h-10 ${amount === presetAmount ? "bg-[#b19cd9] text-black" : "bg-transparent text-white border-[#2C2C2E]"}`}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAmountChange(quickAmount)}
+                    className="border-border text-foreground hover:bg-accent"
+                    disabled={isSubmitting}
                 >
-                  ${presetAmount}
+                    ${quickAmount}
                 </Button>
               ))}
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label className="text-[#888888]">Custom Amount</Label>
-                <Label className="text-white font-medium">${amount}</Label>
-              </div>
-              <Slider
-                value={[amount]}
-                min={10}
-                max={Math.min(2000, walletBalance)}
-                step={10}
-                onValueChange={(values) => handleAmountChange(values[0])}
-                className="my-4"
-              />
-
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#888888]">$</span>
+            <div className={layout.formFields}>
+              <Label htmlFor="amount" className="text-foreground">
+                {contentTokens.labels.amount}
+              </Label>
                 <Input
+                id="amount"
                   type="number"
                   value={amount}
-                  onChange={(e) => handleAmountChange(Number(e.target.value))}
-                  className="pl-8 bg-[#0a0812] border-[#2C2C2E]"
-                  min={0}
-                  max={walletBalance}
+                onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
+                placeholder="0.00"
+                className="bg-background border-border text-foreground"
+                disabled={isSubmitting}
                 />
-              </div>
             </div>
           </div>
 
@@ -173,15 +179,28 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose} className="border-[#2C2C2E]">
+          <Button 
+            variant="outline" 
+            onClick={onClose} 
+            className="border-[#2C2C2E]"
+            disabled={isSubmitting}
+          >
             Cancel
           </Button>
           <Button
+            type="submit"
+            disabled={!amount || isSubmitting || amount > walletBalance}
             onClick={handleSubmit}
-            disabled={isSubmitting || !!error || amount <= 0}
-            className="bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-black hover:opacity-90"
+            className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
           >
-            {isSubmitting ? "Processing..." : "Top Up Account"}
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                Processing...
+              </div>
+            ) : (
+              "Top Up Account"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

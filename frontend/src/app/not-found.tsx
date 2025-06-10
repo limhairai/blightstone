@@ -1,9 +1,11 @@
 // frontend/src/app/not-found.tsx (VERY SIMPLE VERSION)
 export default function NotFound() {
   return (
-    <div>
-      <h1>404 - Basic Not Found</h1>
-      <p>This is a very basic custom not found page.</p>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-foreground mb-4">404</h1>
+        <p className="text-muted-foreground">Page not found</p>
+      </div>
     </div>
   );
 } 

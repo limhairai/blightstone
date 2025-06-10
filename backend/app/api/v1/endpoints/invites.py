@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Request, Body
 from pydantic import BaseModel, EmailStr
-from app.core.firebase import get_firestore
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 from app.core.security import get_current_user
 from datetime import datetime, timedelta
 import uuid

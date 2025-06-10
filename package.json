@@ -6,11 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "deploy": "next build && firebase deploy"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@firebase/firestore": "^4.7.11",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
@@ -48,8 +46,6 @@
     "cookies-next": "latest",
     "date-fns": "latest",
     "embla-carousel-react": "8.5.1",
-    "firebase": "^11.6.1",
-    "firebase-admin": "^13.4.0",
     "input-otp": "1.4.1",
     "js-cookie": "latest",
     "lucide-react": "^0.454.0",
@@ -77,7 +73,6 @@
     "@typescript-eslint/eslint-plugin": "~6.21.0",
     "@typescript-eslint/parser": "~6.21.0",
     "eslint": "^8.56.0",
-    "firebase-tools": "^14.2.2",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "postcss": "^8",

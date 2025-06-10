@@ -2,6 +2,8 @@
 
 import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
+import { layout } from "@/lib/layout-utils"
+import { formatCurrency, transactionColors } from "@/lib/mock-data"
 
 interface Transaction {
   id: string
@@ -13,7 +15,11 @@ interface Transaction {
   status?: "completed" | "pending" | "failed"
 }
 
-export function RecentTransactions() {
+interface RecentTransactionsProps {
+  limit?: number
+}
+
+export function RecentTransactions({ limit = 5 }: RecentTransactionsProps) {
   // Mock data
   const transactions: Transaction[] = [
     {
@@ -63,26 +69,26 @@ export function RecentTransactions() {
     switch (type) {
       case "deposit":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-950/30 text-[#34D197]">
-            <ArrowDownIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.deposit.bg}`}>
+            <ArrowDownIcon className={`h-4 w-4 ${transactionColors.deposit.icon}`} />
           </div>
         )
       case "withdrawal":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-rose-950/30 text-[#F56565]">
-            <ArrowUpIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.withdrawal.bg}`}>
+            <ArrowUpIcon className={`h-4 w-4 ${transactionColors.withdrawal.icon}`} />
           </div>
         )
       case "transfer":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-950/30 text-blue-400">
-            <ArrowUpIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.transfer.bg}`}>
+            <ArrowUpIcon className={`h-4 w-4 ${transactionColors.transfer.icon}`} />
           </div>
         )
       case "ad-account-top-up":
         return (
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-rose-950/30 text-[#F56565]">
-            <ArrowUpIcon className="h-4 w-4" />
+          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.spend.bg}`}>
+            <ArrowUpIcon className={`h-4 w-4 ${transactionColors.spend.icon}`} />
           </div>
         )
       default:
@@ -90,9 +96,17 @@ export function RecentTransactions() {
     }
   }
 
+  const getAmountColor = (type: string) => {
+    return type === "deposit" ? transactionColors.deposit.text : "text-foreground"
+  }
+
+  const getAmountPrefix = (type: string) => {
+    return type === "deposit" ? "+" : "-"
+  }
+
   return (
-    <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
-      <div className="flex items-center justify-between p-4">
+    <div className="space-y-4">
+      <div className={layout.flexBetween}>
         <h3 className="text-lg font-semibold">Transactions</h3>
         <Link
           href="/dashboard/wallet/transactions"
@@ -101,23 +115,21 @@ export function RecentTransactions() {
           See all <ChevronRightIcon className="ml-1 h-4 w-4" />
         </Link>
       </div>
-      <div className="space-y-4 p-4 pt-0">
-        {transactions.map((transaction) => (
-          <div key={transaction.id} className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+      <div className={layout.stackMedium}>
+        {transactions.slice(0, limit).map((transaction) => (
+          <div key={transaction.id} className={layout.flexBetween}>
+            <div className="flex items-center gap-3">
               {getTransactionIcon(transaction.type)}
               <div>
-                <p className="text-sm font-medium leading-none">{transaction.description}</p>
-                <p className="text-sm text-muted-foreground">
-                  {transaction.type === "ad-account-top-up" ? "Ad Account Top-up" : "Deposit"}
-                </p>
+                <p className="text-sm font-medium text-foreground">{transaction.description}</p>
+                <p className="text-xs text-muted-foreground">{transaction.account}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className={`text-sm font-medium ${transaction.type === "deposit" ? "text-[#34D197]" : ""}`}>
-                {transaction.type === "deposit" ? "+" : ""}${transaction.amount}
+              <p className={`text-sm font-medium ${getAmountColor(transaction.type)}`}>
+                {getAmountPrefix(transaction.type)}{formatCurrency(transaction.amount)}
               </p>
-              <p className="text-xs text-muted-foreground">{transaction.account}</p>
+              <p className="text-xs text-muted-foreground">{transaction.date}</p>
             </div>
           </div>
         ))}

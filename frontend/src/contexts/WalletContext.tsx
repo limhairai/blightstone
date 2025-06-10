@@ -1,96 +1,129 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useOrganization } from "./organization-context";
+import { useAppData } from "@/contexts/AppDataContext";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface WalletContextType {
-  walletBalance: number;
-  adAccounts: any[];
-  transactions: any[];
-  loading: boolean;
-  error: string;
-  refresh: () => void;
-  txPage: number;
-  setTxPage: (page: number) => void;
-  txPageSize: number;
-  txTotal: number;
+interface AdAccount {
+  id: string;
+  name: string;
+  platform: 'facebook' | 'google' | 'tiktok';
+  status: 'active' | 'inactive' | 'pending';
+  balance: number;
+  currency: string;
+  last_sync: string;
 }
 
-export const WalletContext = createContext<WalletContextType | undefined>(undefined);
+interface WalletContextType {
+  adAccounts: AdAccount[];
+  totalBalance: number;
+  loading: boolean;
+  error: string | null;
+  refreshAdAccounts: () => Promise<void>;
+  addAdAccount: (account: Omit<AdAccount, 'id'>) => Promise<void>;
+}
 
-export const WalletProvider = ({ children }: { children: ReactNode }) => {
-  const { currentOrg } = useOrganization();
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [adAccounts, setAdAccounts] = useState<any[]>([]);
-  const [transactions, setTransactions] = useState<any[]>([]);
+const WalletContext = createContext<WalletContextType | null>(null);
+
+export function WalletProvider({ children }: { children: ReactNode }) {
+  const { currentOrg } = useAppData();
+  const { session } = useAuth();
+  const [adAccounts, setAdAccounts] = useState<AdAccount[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [txPage, setTxPage] = useState(1);
-  const [txPageSize] = useState(20);
-  const [txTotal, setTxTotal] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async () => {
-    if (!currentOrg?.id) return;
-    const token = localStorage.getItem("adhub_token");
-    if (!token) return;
-    setLoading(true);
-    setError("");
-    try {
-      // Fetch org document for balance
-      const orgRes = await fetch(`/api/proxy/v1/organizations/${currentOrg.id}`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-      const orgData = await orgRes.json();
-      setWalletBalance(orgData.balance || 0);
-      const adRes = await fetch(`/api/proxy/v1/ad-accounts?orgId=${currentOrg.id}`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-      const adData = await adRes.json();
-      setAdAccounts(adData.adAccounts || []);
-      const txRes = await fetch(`/api/proxy/v1/transactions?orgId=${currentOrg.id}&limit=${txPageSize}&offset=${(txPage-1)*txPageSize}`, {
-        headers: { "Authorization": `Bearer ${token}` },
-      });
-      if (txRes.ok) {
-        const txData = await txRes.json();
-        setTransactions(txData.transactions || []);
-        setTxTotal(txData.total || 0);
-      } else if (txRes.status === 404) {
-        setTransactions([]);
-        setTxTotal(0);
-      } else {
-        setError("Failed to fetch transactions");
-      }
-    } catch (e: any) {
-      setError(e.message || "Failed to fetch wallet data");
-    }
-    setLoading(false);
+  const getAuthHeaders = () => {
+    if (!session?.access_token) return null;
+    return {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json'
+    };
   };
 
+  const refreshAdAccounts = async () => {
+    if (!currentOrg || !session?.access_token) {
+      setAdAccounts([]);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const headers = getAuthHeaders();
+      if (!headers) throw new Error('Not authenticated');
+
+      const response = await fetch(`/api/proxy/v1/organizations/${currentOrg.id}/ad-accounts`, {
+        headers
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAdAccounts(Array.isArray(data) ? data : data.adAccounts || []);
+      } else {
+        throw new Error('Failed to fetch ad accounts');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load ad accounts');
+      setAdAccounts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addAdAccount = async (account: Omit<AdAccount, 'id'>) => {
+    if (!currentOrg || !session?.access_token) {
+      throw new Error('Not authenticated or no organization selected');
+    }
+
+    const headers = getAuthHeaders();
+    if (!headers) throw new Error('Not authenticated');
+
+    const response = await fetch('/api/proxy/v1/ad-accounts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        ...account,
+        orgId: currentOrg.id
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Failed to add ad account');
+    }
+
+    // Refresh the list
+    await refreshAdAccounts();
+  };
+
+  // Calculate total balance
+  const totalBalance = adAccounts.reduce((sum, account) => sum + account.balance, 0);
+
+  // Load ad accounts when org changes
   useEffect(() => {
-    if (!currentOrg?.id) return;
-    const token = localStorage.getItem("adhub_token");
-    if (!token) return;
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentOrg?.id, txPage]);
+    refreshAdAccounts();
+  }, [currentOrg, session?.access_token]);
 
   const value: WalletContextType = {
-    walletBalance,
     adAccounts,
-    transactions,
+    totalBalance,
     loading,
     error,
-    refresh: fetchData,
-    txPage,
-    setTxPage,
-    txPageSize,
-    txTotal,
+    refreshAdAccounts,
+    addAdAccount
   };
 
-  return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
-};
+  return (
+    <WalletContext.Provider value={value}>
+      {children}
+    </WalletContext.Provider>
+  );
+}
 
-export const useWallet = () => {
-  const ctx = useContext(WalletContext);
-  if (!ctx) throw new Error("useWallet must be used within a WalletProvider");
-  return ctx;
-}; 
+export function useWallet() {
+  const context = useContext(WalletContext);
+  if (!context) {
+    throw new Error('useWallet must be used within a WalletProvider');
+  }
+  return context;
+} 

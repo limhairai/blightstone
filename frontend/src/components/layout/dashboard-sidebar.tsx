@@ -1,123 +1,264 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Home, Settings, Users, Menu, Receipt, Wallet } from "lucide-react"
-import { OrganizationSelector } from "../organization/organization-selector"
-import { useState, useEffect } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { OrganizationSelector } from "@/components/organization/organization-selector"
 import { AdHubLogo } from "@/components/core/AdHubLogo"
+import { cn } from "@/lib/utils"
+import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard } from "lucide-react"
 
-const sidebarItems = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Accounts", href: "/dashboard/accounts", icon: Users },
-  { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
-  { name: "Transactions", href: "/dashboard/wallet/transactions", icon: Receipt },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
-]
+interface SidebarItem {
+  name: string
+  href?: string
+  icon: any
+  subItems?: { name: string; href: string; icon?: any }[]
+  action?: () => void
+}
 
-export default function DashboardSidebar() {
-  const pathname = usePathname()
+export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Businesses"]) // Default expanded
+  const pathname = usePathname()
 
-  // Ensure component is mounted to avoid hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const sidebarItems: SidebarItem[] = [
+    { name: "Dashboard", href: "/dashboard", icon: Home },
+    {
+      name: "Businesses",
+      href: "/dashboard/businesses",
+      icon: Building2,
+      subItems: [
+        { name: "All Businesses", href: "/dashboard/businesses" },
+        { name: "Ad Accounts", href: "/dashboard/accounts" },
+      ],
+    },
+    { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
+    { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
+    {
+      name: "Settings",
+      href: "/dashboard/settings",
+      icon: Settings,
+    },
+  ]
 
-  const toggleSidebar = () => {
-    setCollapsed(!collapsed)
+  const toggleExpanded = (itemName: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(itemName) ? prev.filter((name) => name !== itemName) : [...prev, itemName],
+    )
   }
 
-  // Improved isActive logic to prevent multiple active items
-  const isItemActive = (href: string) => {
-    if (!mounted) return false
-    if (!pathname) return false
+  const isExpanded = (itemName: string) => expandedItems.includes(itemName)
 
+  const isActive = (href: string) => {
     if (href === "/dashboard") {
-      // Only exact match for dashboard
-      return pathname === href
-    } else if (href === "/dashboard/wallet") {
-      // For wallet, don't mark active when on transactions page
-      return pathname === href
-    } else if (href === "/dashboard/wallet/transactions") {
-      // For transactions, only mark active when on transactions page
-      return pathname === href || pathname.startsWith(href)
+      return pathname === "/dashboard"
     }
-    // For other items, check if the path starts with the href
-    return pathname.startsWith(href)
+    
+    // Special handling for wallet vs transactions to prevent both from being highlighted
+    if (href === "/dashboard/wallet") {
+      return pathname === "/dashboard/wallet" // Only exact match for wallet
+    }
+    if (href === "/dashboard/transactions") {
+      return pathname === "/dashboard/transactions" // Only exact match for transactions
+    }
+    
+    // For exact matches
+    if (pathname === href) {
+      return true
+    }
+    
+    // For sections that have sub-routes (businesses, settings), use startsWith
+    if (href === "/dashboard/businesses" || href === "/dashboard/settings") {
+      return pathname && pathname.startsWith(href)
+    }
+    
+    return false
   }
+
+  const isSubItemActive = (parentHref: string, subItems?: { name: string; href: string; icon?: any }[]) => {
+    if (!subItems) return false
+    return subItems.some((subItem) => pathname === subItem.href)
+  }
+
+  const toggleSidebar = () => setCollapsed(!collapsed)
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-screen border-r border-border bg-background transition-all duration-300",
-        collapsed ? "w-16" : "w-64",
-      )}
-    >
-      {/* Header */}
-      <div className="h-16 flex items-center px-4 border-b border-border">
-        {collapsed ? (
-          <div className="w-full flex justify-center">
-            <Avatar className="h-10 w-10 bg-secondary">
-              <AvatarImage src="/abstract-geometric-SP.png" alt="Current Organization" />
-              <AvatarFallback className="text-lg">S</AvatarFallback>
-            </Avatar>
-          </div>
-        ) : (
-          <OrganizationSelector />
+    <>
+      <aside
+        className={cn(
+          "flex flex-col h-screen border-r border-border bg-card transition-all duration-300",
+          collapsed ? "w-16" : "w-64",
         )}
-      </div>
+      >
+        {/* Organization Selector Header */}
+        <div className="h-16 flex items-center px-4 border-b border-border">
+          {collapsed ? (
+            <div className="w-full flex justify-center">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
+                <span className="text-sm font-semibold bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-transparent">
+                  SP
+                </span>
+              </Button>
+            </div>
+          ) : (
+            <OrganizationSelector />
+          )}
+        </div>
 
-      {/* Main Navigation - using flex-1 to make it fill available space */}
-      <div className="flex-1 overflow-y-auto">
-        <nav className={cn("space-y-2 p-2", collapsed && "pt-4")}>
+        {/* Navigation Items */}
+        <nav className="space-y-1 p-3 flex-1">
           {sidebarItems.map((item) => {
             const Icon = item.icon
-            const isActive = isItemActive(item.href)
+            const hasSubItems = item.subItems && item.subItems.length > 0
+            const isItemExpanded = hasSubItems && isExpanded(item.name)
+            const hasActiveSubItem = hasSubItems && isSubItemActive(item.href || "", item.subItems)
+
             return (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start rounded-md",
-                    isActive
-                      ? "bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 text-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-                    collapsed ? "justify-center h-12 px-0" : "h-10 px-3",
+              <div key={item.name}>
+                {/* Main Item */}
+                <div className="flex items-center">
+                  {item.action ? (
+                    <div
+                      className="flex-1 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        item.action?.()
+                      }}
+                    >
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start rounded-md text-sm",
+                          (item.href && isActive(item.href)) || hasActiveSubItem
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                          collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                            collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
+                          )}
+                        />
+                        {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
+                      </Button>
+                    </div>
+                  ) : hasSubItems ? (
+                    <div
+                      className="flex-1 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (!collapsed) {
+                          toggleExpanded(item.name)
+                        }
+                      }}
+                    >
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start rounded-md text-sm",
+                          (item.href && isActive(item.href)) || hasActiveSubItem
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                          collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                            collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
+                          )}
+                        />
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 text-left">{item.name}</span>
+                            {hasSubItems && (
+                              <ChevronDown
+                                className={cn("h-4 w-4 transition-transform", isItemExpanded ? "rotate-180" : "")}
+                              />
+                            )}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <Link href={item.href!} className="flex-1">
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-start rounded-md text-sm",
+                          (item.href && isActive(item.href)) || hasActiveSubItem
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                          collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                            collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
+                          )}
+                        />
+                        {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
+                      </Button>
+                    </Link>
                   )}
-                >
-                  <Icon className={cn(isActive ? "text-[#b4a0ff]" : "", collapsed ? "h-5 w-5" : "h-4 w-4 mr-2")} />
-                  {!collapsed && item.name}
-                </Button>
-              </Link>
+                </div>
+
+                {/* Sub Items */}
+                {hasSubItems && !collapsed && isItemExpanded && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {item.subItems?.map((subItem) => {
+                      const SubIcon = subItem.icon
+                      return (
+                        <Link href={subItem.href} key={subItem.name}>
+                          <Button
+                            variant="ghost"
+                            className={cn(
+                              "w-full justify-start rounded-md text-sm h-8 px-3",
+                              isActive(subItem.href)
+                                ? "bg-accent/50 text-foreground"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                            )}
+                          >
+                            {SubIcon && <SubIcon className="h-3.5 w-3.5 mr-2" />}
+                            {!SubIcon && subItem.name === "All Businesses" && (
+                              <Building2 className="h-3.5 w-3.5 mr-2" />
+                            )}
+                            {!SubIcon && subItem.name === "Ad Accounts" && <CreditCard className="h-3.5 w-3.5 mr-2" />}
+                            <span className="text-xs">{subItem.name}</span>
+                          </Button>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )
           })}
         </nav>
-      </div>
 
-      {/* Footer with Collapse Button - fixed at bottom */}
-      <div className="border-t border-border p-4 mt-auto">
-        <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
-          <button
-            onClick={toggleSidebar}
-            className="p-1 rounded-md hover:bg-secondary"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <Menu className="h-5 w-5 text-muted-foreground" />
-          </button>
+        {/* Collapse Toggle Footer */}
+        <div className="border-t border-border p-4">
+          <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
+            <button
+              onClick={toggleSidebar}
+              className="p-1 rounded-md hover:bg-accent"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <Menu className="h-4 w-4 text-muted-foreground" />
+            </button>
 
-          {!collapsed && (
-            <div className="flex items-center">
-              <AdHubLogo size="lg" />
-            </div>
-          )}
+            {!collapsed && (
+              <div className="flex items-center">
+                <AdHubLogo size="sm" />
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 } 

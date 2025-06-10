@@ -1,24 +1,27 @@
 "use client"
 
 import { Wallet } from 'lucide-react'
+import { formatCurrency, MOCK_FINANCIAL_DATA } from '@/lib/mock-data'
+import { typographyTokens } from '@/lib/design-tokens'
 
 interface BalanceCardProps {
   balance?: number
+  growth?: number
 }
 
-export function BalanceCard({ balance = 5750.0 }: BalanceCardProps) {
+export function BalanceCard({ balance = MOCK_FINANCIAL_DATA.walletBalance, growth = MOCK_FINANCIAL_DATA.monthlyGrowth }: BalanceCardProps) {
   return (
-    <div className="bg-white dark:bg-[#111111] border border-gray-100 dark:border-[#222] rounded-lg p-4 shadow-sm">
+    <div className="bg-muted/30 border rounded-lg p-4">
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold">${balance.toFixed(2)}</span>
-            <span className="text-xs text-[#6941c6]/70 dark:text-[#b4a0ff]/70">+12.5% this month</span>
+        <div className="space-y-2">
+          <div className="flex items-baseline gap-3">
+            <span className={typographyTokens.patterns.balanceLarge}>${formatCurrency(balance)}</span>
+            <span className={`${typographyTokens.patterns.bodySmall} text-[#b4a0ff] font-medium`}>+{growth}% this month</span>
           </div>
-          <p className="text-sm text-gray-500 dark:text-muted-foreground">Available for ad campaigns and funding</p>
+          <p className={typographyTokens.patterns.mutedMedium}>Available for ad campaigns and funding</p>
         </div>
-        <div className="h-10 w-10 rounded-full bg-[#f9f5ff] dark:bg-[#1A1A1A] flex items-center justify-center border border-[#e9d7fe] dark:border-[#2A2A2A]">
-          <Wallet className="h-5 w-5 text-[#6941c6] dark:text-[#b4a0ff]" />
+        <div className="h-12 w-12 rounded-lg bg-muted/50 flex items-center justify-center border">
+          <Wallet className="h-6 w-6 text-[#b4a0ff]" />
         </div>
       </div>
     </div>

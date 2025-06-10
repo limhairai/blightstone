@@ -5,58 +5,54 @@ from typing import Optional, Dict, Any, List
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
-# Firebase Credentials Handling
-FIREBASE_ADMIN_CREDENTIALS = None
-_emulator_host_firestore = os.environ.get("FIRESTORE_EMULATOR_HOST")
-_emulator_host_auth = os.environ.get("FIREBASE_AUTH_EMULATOR_HOST")
-
-# Consider emulators active if either Firestore or Auth emulator host is set
-_using_emulators = _emulator_host_firestore or _emulator_host_auth
-
-if not _using_emulators:
-    print("[CONFIG] Not using Firebase emulators. Attempting to load production Firebase credentials.")
-    _firebase_admin_creds_json_env = os.environ.get("FIREBASE_ADMIN_CREDENTIALS_JSON")
-    if _firebase_admin_creds_json_env:
-        print("[CONFIG] Loading Firebase credentials from FIREBASE_ADMIN_CREDENTIALS_JSON env var.")
-        try:
-            FIREBASE_ADMIN_CREDENTIALS = json.loads(_firebase_admin_creds_json_env)
-        except json.JSONDecodeError as e:
-            print(f"[CONFIG] ERROR: Failed to parse FIREBASE_ADMIN_CREDENTIALS_JSON: {e}")
-            # Potentially raise an error or exit if creds are vital for prod
-    else:
-        _firebase_admin_creds_path_env = os.environ.get("FIREBASE_ADMIN_CREDENTIALS_PATH")
-        if _firebase_admin_creds_path_env:
-            print(f"[CONFIG] Loading Firebase credentials from FIREBASE_ADMIN_CREDENTIALS_PATH env var: {_firebase_admin_creds_path_env}")
-            try:
-                with open(_firebase_admin_creds_path_env) as f:
-                    FIREBASE_ADMIN_CREDENTIALS = json.load(f)
-            except Exception as e:
-                print(f"[CONFIG] ERROR: Failed to load Firebase credentials from path {_firebase_admin_creds_path_env}: {e}")
-        else:
-            print("[CONFIG] WARNING: No Firebase production credentials provided (env var JSON content or path) and not using emulators. Live Firebase connection will likely fail or use default ADC if available.")
-else:
-    print(f"[CONFIG] Using Firebase Emulators (FIRESTORE_EMULATOR_HOST: {_emulator_host_firestore}, FIREBASE_AUTH_EMULATOR_HOST: {_emulator_host_auth}). Skipping production Firebase credential loading.")
-
-
 class Mode(str, Enum):
-    DEV = "dev"
+    DEV = "development"
     STAGING = "staging"
-    PROD = "prod"
+    PROD = "production"
+
+def get_env_file() -> str:
+    """Determine which .env file to load based on environment."""
+    mode = os.environ.get("MODE", os.environ.get("ENVIRONMENT", os.environ.get("NODE_ENV", "development"))).lower()
+    
+    # Map common environment names to our file names
+    env_mapping = {
+        "development": ".env.development",
+        "dev": ".env.development", 
+        "local": ".env.development",
+        "staging": ".env.staging",
+        "stage": ".env.staging",
+        "production": ".env.production",
+        "prod": ".env.production",
+    }
+    
+    env_file = env_mapping.get(mode, ".env.development")
+    
+    # Check if the specific env file exists, fallback to .env
+    if os.path.exists(env_file):
+        print(f"Loading environment from: {env_file}")
+        return env_file
+    elif os.path.exists(".env"):
+        print(f"Environment file {env_file} not found, falling back to .env")
+        return ".env"
+    else:
+        print(f"No environment file found, using system environment variables")
+        return ""
 
 class Settings(BaseSettings):
-    # Environment
-    MODE: Mode = Mode.DEV if os.environ.get("DEBUG", "True").lower() == "true" else Mode.PROD
-    DEBUG: bool = Field(default_factory=lambda: os.environ.get("DEBUG", "True").lower() == "true")
+    # Environment - support both MODE and ENVIRONMENT variables
+    MODE: Mode = Mode.DEV
+    ENVIRONMENT: Optional[str] = None  # Allow ENVIRONMENT variable
+    DEBUG: bool = Field(default=True)
     
     # API Configuration
-    API_URL: str = os.environ.get("API_URL", "http://localhost:8000")
-    WS_API_URL: str = os.environ.get("WS_API_URL", "ws://localhost:8000")
+    API_URL: str = "http://localhost:8000"
+    WS_API_URL: str = "ws://localhost:8000"
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "AdHub"
     VERSION: str = "1.0.0"
     
     # CORS Configuration - to be loaded from env var primarily
-    CORS_ORIGINS_STRING: Optional[str] = os.environ.get("CORS_ORIGINS_STRING") 
+    CORS_ORIGINS_STRING: Optional[str] = None
     
     @property
     def BACKEND_CORS_ORIGINS(self) -> List[str]:
@@ -71,35 +67,50 @@ class Settings(BaseSettings):
     # Security
     # For production, set SECRET_KEY as an environment variable.
     # Generate a strong key, e.g., using: openssl rand -hex 32
-    SECRET_KEY: str = os.environ.get("SECRET_KEY", "a_very_insecure_default_dev_key_please_change_for_prod_or_set_env_var") 
+    SECRET_KEY: str = "a_very_insecure_default_dev_key_please_change_for_prod_or_set_env_var"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
-    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     
-    # Firebase Configuration
-    FIREBASE_ADMIN_CREDENTIALS: Optional[Dict[str, Any]] = FIREBASE_ADMIN_CREDENTIALS
-    FIREBASE_PROJECT_ID: Optional[str] = os.environ.get("FIREBASE_PROJECT_ID")
+    # Supabase Configuration
+    SUPABASE_URL: Optional[str] = None
+    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    SUPABASE_JWT_SECRET: Optional[str] = None
+    SUPABASE_ANON_KEY: Optional[str] = None
     
     # Meta API
-    META_APP_ID: Optional[str] = os.environ.get("META_APP_ID")
-    META_APP_SECRET: Optional[str] = os.environ.get("META_APP_SECRET")
-    META_API_VERSION: str = os.environ.get("META_API_VERSION", "v19.0")
-    FB_ACCESS_TOKEN: Optional[str] = os.environ.get("FB_ACCESS_TOKEN")
-    HOST_BM_ID: Optional[str] = os.environ.get("HOST_BM_ID")
+    META_APP_ID: Optional[str] = None
+    META_APP_SECRET: Optional[str] = None
+    META_API_VERSION: str = "v19.0"
+    FB_ACCESS_TOKEN: Optional[str] = None
+    HOST_BM_ID: Optional[str] = None
     
     # Rate Limiting
-    RATE_LIMIT_PER_MINUTE: int = int(os.environ.get("RATE_LIMIT_PER_MINUTE", "60"))
+    RATE_LIMIT_PER_MINUTE: int = 60
     
     # Cache
-    REDIS_URL: Optional[str] = os.environ.get("REDIS_URL")
+    REDIS_URL: Optional[str] = None
     
     # Database
-    DATABASE_URL: str = os.environ.get("DATABASE_URL", "sqlite:///./adhub.db")
+    DATABASE_URL: str = "sqlite:///./adhub.db"
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # If ENVIRONMENT is set but MODE is not, sync them
+        if self.ENVIRONMENT and not kwargs.get('MODE'):
+            env_to_mode = {
+                "development": Mode.DEV,
+                "staging": Mode.STAGING,
+                "production": Mode.PROD
+            }
+            if self.ENVIRONMENT.lower() in env_to_mode:
+                self.MODE = env_to_mode[self.ENVIRONMENT.lower()]
     
     class Config:
         case_sensitive = True
-        # env_file = ".env" # Pydantic-settings handles .env loading by default if python-dotenv is installed
-        # env_file_encoding = 'utf-8' # Optional if needed
+        env_file = get_env_file()
+        env_file_encoding = 'utf-8'
+        extra = 'ignore'  # Allow extra fields without validation errors
 
 settings = Settings()
 

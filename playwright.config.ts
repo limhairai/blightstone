@@ -4,7 +4,7 @@ import path from 'path';
 const PROJECT_ROOT = __dirname; // Assumes playwright.config.ts is in project root which is adhub/
 const FRONTEND_DIR = path.join(PROJECT_ROOT, 'frontend');
 const BACKEND_DIR = path.join(PROJECT_ROOT, 'backend');
-const SCRIPTS_DIR = path.join(PROJECT_ROOT, 'scripts');
+// const SCRIPTS_DIR = path.join(PROJECT_ROOT, 'scripts'); // No longer needed if manage_emulators.sh is removed
 
 export default defineConfig({
   testDir: './tests', // Create a 'tests' folder in adhub/ for your spec files
@@ -29,15 +29,7 @@ export default defineConfig({
     },
   ],
   webServer: [
-    {
-      command: `bash ${path.join(SCRIPTS_DIR, 'manage_emulators.sh')} start`,
-      cwd: PROJECT_ROOT,
-      url: 'http://127.0.0.1:4001',
-      reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 60 * 1000,
-    },
+    // Removed webServer entry for manage_emulators.sh
     {
       command: `${path.join(BACKEND_DIR, 'venv', 'bin', 'python')} -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`,
       cwd: BACKEND_DIR,
@@ -47,10 +39,9 @@ export default defineConfig({
       stderr: 'pipe',
       timeout: 90 * 1000,
       env: {
-        FIRESTORE_EMULATOR_HOST: "localhost:8081",
-        FIREBASE_AUTH_EMULATOR_HOST: "localhost:9098",
         PYTHONUNBUFFERED: "1",
         PYTHONIOENCODING: "UTF-8"
+        // FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST removed
       }
     },
     {
@@ -62,9 +53,7 @@ export default defineConfig({
       stderr: 'pipe',
       timeout: 120 * 1000, 
       env: {
-        NEXT_PUBLIC_USE_FIREBASE_EMULATOR: 'true',
-        NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9098',
-        NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST: 'localhost:8081',
+        // NEXT_PUBLIC_USE_FIREBASE_EMULATOR, NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST, NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST removed
       }
     },
   ],

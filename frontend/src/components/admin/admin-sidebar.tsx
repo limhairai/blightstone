@@ -171,7 +171,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
           <div className="ml-3 font-bold text-xl">
             <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Ad</span>
             <span>Hub</span>
-            <span className="ml-2 text-xs bg-[#b4a0ff] text-black px-1.5 py-0.5 rounded-full">ADMIN</span>
+            <span className="ml-2 text-xs bg-[#b4a0ff] text-black px-2.5 py-1 rounded-full">ADMIN</span>
           </div>
         )}
       </div>
@@ -298,7 +298,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 <div className="ml-3 flex items-center justify-between w-full">
                   <span>{item.name}</span>
                   {item.badge && (
-                    <span className="bg-[#b4a0ff] text-black text-xs px-1.5 py-0.5 rounded-full">{item.badge}</span>
+                    <span className="bg-[#b4a0ff] text-black text-xs px-2.5 py-1 rounded-full">{item.badge}</span>
                   )}
                 </div>
               )}

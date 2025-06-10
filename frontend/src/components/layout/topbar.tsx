@@ -1,43 +1,223 @@
 "use client"
 
-import { Bell, Search, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { usePageTitle } from "@/components/core/providers"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { CircularProgress } from "@/components/ui/circular-progress"
+import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
+import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"
+import { usePageTitle } from "@/components/core/simple-providers"
+import { useAuth } from "@/contexts/AuthContext"
+import { useAppData } from "@/contexts/AppDataContext"
+import { useTheme } from "next-themes"
+import Link from "next/link"
+import { useDemoState } from "@/contexts/DemoStateContext"
+import { formatCurrency } from "@/lib/mock-data"
+import { useState, useEffect } from "react"
+import { gradientTokens } from "@/lib/design-tokens"
+import { useRouter } from "next/navigation"
 
 interface TopbarProps {
   isAdmin?: boolean
   hasNotifications?: boolean
+  setupWidgetState?: "expanded" | "collapsed" | "closed"
+  onSetupWidgetStateChange?: (state: "expanded" | "collapsed" | "closed") => void
+  showEmptyStateElements?: boolean
+  setupProgress?: {
+    emailVerification: { completed: boolean }
+    walletFunding: { completed: boolean }
+    businessSetup: { completed: boolean }
+    adAccountSetup: { completed: boolean }
+  }
 }
 
-export function Topbar({ isAdmin = false, hasNotifications = false }: TopbarProps) {
-  const { pageTitle } = usePageTitle();
+export function Topbar({ 
+  isAdmin = false, 
+  hasNotifications = false,
+  setupWidgetState,
+  onSetupWidgetStateChange,
+  showEmptyStateElements = true,
+  setupProgress
+}: TopbarProps) {
+  const { pageTitle } = usePageTitle()
+  const { user, signOut } = useAuth()
+  const { appUser } = useAppData()
+  const { state } = useDemoState()
+  const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  const router = useRouter()
+
+  // Avoid hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Calculate setup progress percentage
+  const calculateSetupProgress = () => {
+    if (!setupProgress) return 75
+    const completed = Object.values(setupProgress).filter(item => item.completed).length
+    return Math.round((completed / Object.keys(setupProgress).length) * 100)
+  }
+
+  const setupPercentage = calculateSetupProgress()
+
+  // Use real user data from demo state
+  const userProfile = state.userProfile
+  const userInitial = userProfile.firstName.charAt(0) + userProfile.lastName.charAt(0)
+  const userEmail = userProfile.email
+  const userName = `${userProfile.firstName} ${userProfile.lastName}`
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme)
+  }
 
   return (
-    <header className="border-b border-border h-16 flex items-center justify-between px-4 md:px-6 bg-card">
-      <div className="flex items-center gap-3">
-        {isAdmin && (
-          <Badge variant="outline" className="bg-purple-500/10 text-purple-500 border-purple-500/20">
-            <Shield className="h-3 w-3 mr-1" /> Admin Mode
-          </Badge>
-        )}
-        <h1 className="text-lg font-semibold text-foreground whitespace-nowrap">
-          {pageTitle || "Dashboard"}
-        </h1>
+    <div className="sticky top-0 z-50 h-16 border-b border-border/20 flex items-center justify-between px-3 md:px-4 bg-card/80 backdrop-blur-md">
+      {/* Left: Page Title */}
+      <div className="flex items-center gap-3 ml-4">
+        <h1 className="text-xl font-semibold text-foreground">{pageTitle}</h1>
       </div>
-      <div className="flex items-center gap-4 md:gap-6">
-        <div className="relative hidden md:block">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input type="search" placeholder="Search..." className="w-64 pl-8 bg-background" />
-        </div>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+      
+      {/* Right: Controls */}
+      <div className="flex items-center gap-2 md:gap-3 ml-auto">
+        {/* Setup Guide Button with Circular Progress */}
+        {showEmptyStateElements && (
+          <Button
+            variant="outline"
+            size="sm"
+            className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
+            onClick={() => onSetupWidgetStateChange?.(setupWidgetState === "expanded" ? "collapsed" : "expanded")}
+          >
+            <CircularProgress percentage={setupPercentage} size={16} />
+            <span className="font-medium text-foreground">Setup Guide</span>
+          </Button>
+        )}
+        
+        {/* Notification Bell */}
+        <Button variant="ghost" size="icon" className="relative hover:bg-accent">
+          <Bell className="h-5 w-5 text-muted-foreground" />
           {hasNotifications && (
-            <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+            <span className={`absolute top-1 right-1 w-2 h-2 ${gradientTokens.primary.replace('bg-gradient-to-r', 'bg-gradient-to-r').replace('hover:opacity-90 text-black', '')} rounded-full`} />
           )}
         </Button>
+
+        {/* Connect Account Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
+        >
+          <Globe className="h-4 w-4 text-[#b4a0ff]" />
+          <span className="font-medium text-foreground">Connect Account</span>
+          <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70" />
+        </Button>
+
+        {/* Main Account Balance & Top Up - Now with real-time data */}
+        <div className="hidden md:flex bg-muted rounded-full px-4 py-1.5 items-center border border-border">
+          <span className="text-sm font-medium text-foreground">
+            ${formatCurrency(state.financialData.walletBalance)}
+          </span>
+        </div>
+
+        {/* User Profile Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={userProfile.avatar} alt="User" />
+                <AvatarFallback className={gradientTokens.avatar}>
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64 bg-popover border-border p-0">
+            <div className="px-4 py-3 border-b border-border">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium text-popover-foreground">{userName}</p>
+                <p className="text-xs text-muted-foreground">{userEmail}</p>
+                <p className="text-xs text-muted-foreground">{state.currentOrganization.plan} Plan</p>
+              </div>
+            </div>
+
+            <div className="py-2">
+              <Link href="/dashboard/settings/account">
+                <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/dashboard/settings">
+                <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </DropdownMenuItem>
+              </Link>
+            </div>
+
+            <DropdownMenuSeparator className="bg-border" />
+
+            <div className="py-2">
+              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
+                <Moon className="h-4 w-4 mr-2" />
+                Theme
+                <div className="ml-auto flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 rounded-sm ${theme === 'system' ? 'bg-accent' : ''}`}
+                    onClick={() => handleThemeChange('system')}
+                  >
+                    <Monitor className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 rounded-sm ${theme === 'light' ? 'bg-accent' : ''}`}
+                    onClick={() => handleThemeChange('light')}
+                  >
+                    <Sun className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 rounded-sm ${theme === 'dark' ? 'bg-accent' : ''}`}
+                    onClick={() => handleThemeChange('dark')}
+                  >
+                    <Moon className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </DropdownMenuItem>
+            </div>
+
+            <DropdownMenuSeparator className="bg-border" />
+
+            <div className="py-2">
+              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </div>
+
+            <div className="p-2 border-t border-border">
+              <Button
+                className={gradientTokens.primary}
+                size="sm"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                Upgrade to Pro
+              </Button>
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-    </header>
+    </div>
   )
 }

@@ -1,167 +1,177 @@
 "use client"
 
-import { useState } from "react"
-import { MoreHorizontal, Settings, Wallet, Filter, Plus, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { StatusBadge, type StatusType } from "@/components/core/status-badge"
-import { StatusDot } from "@/components/core/status-dot"
-import { AccountsTable } from "@/components/accounts/accounts-table"
-import { AccountsCardGrid } from "./accounts-card-grid"
-import { AccountsFilter } from "./accounts-filter"
-import { ViewToggle } from "@/components/ui/view-toggle"
+import { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CreateAdAccountDialog } from "./create-ad-account-dialog"
+import { StatusDot } from "@/components/ui/status-dot"
+import { AccountsTable } from "@/components/accounts/accounts-table"
+import { Search, Plus } from "lucide-react"
+
+type AccountStatus = "active" | "pending" | "disabled" | "idle" | "archived" | "error" | "warning" | "success" | "info" | "suspended" | "inactive"
 
 interface Account {
   id: string
   name: string
   accountId: string
-  project: string
-  status: "active" | "pending" | "inactive" | "suspended"
-  balance: number
-  spendLimit: number
-  dateAdded: string
-  quota: number
+  status: AccountStatus
+  users?: number
+  billings?: number
+  type?: string
+  partner?: string
+  currency?: string
+  ads?: number
+  estimated?: string
+  holds?: string
+  balance: string | number
+  totalSpend?: string | number
+  spendToday?: string | number
+  hasIssues?: boolean
+  spendLimit?: string
+  dateAdded?: string
+  performance?: string
 }
 
-export function AccountsTab() {
-  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
+interface AccountsTabProps {
+  accounts: Account[]
+  onCreateAccount?: () => void
+}
 
-  // Mock data from accountspage2.txt
-  const accounts: Account[] = [
-    { id: "1", name: "Meta Ads Primary", accountId: "123456789", project: "Marketing Campaigns", status: "active", balance: 1250.0, spendLimit: 5000.0, dateAdded: "04/15/2025", quota: 58, },
-    { id: "2", name: "Google Ads Main", accountId: "987654321", project: "Marketing Campaigns", status: "active", balance: 3750.0, spendLimit: 10000.0, dateAdded: "04/10/2025", quota: 84, },
-    { id: "3", name: "TikTok Campaign", accountId: "456789123", project: "Social Media", status: "pending", balance: 0.0, spendLimit: 2500.0, dateAdded: "04/18/2025", quota: 0, },
-    { id: "4", name: "Meta Ads Promotions", accountId: "789123456", project: "Product Launch", status: "active", balance: 947.05, spendLimit: 3000.0, dateAdded: "04/05/2025", quota: 32, },
-    { id: "5", name: "Meta Ads Marketing", accountId: "654321987", project: "Brand Awareness", status: "inactive", balance: 920.6, spendLimit: 4000.0, dateAdded: "03/28/2025", quota: 23, },
-  ]
+export function AccountsTab({ accounts, onCreateAccount }: AccountsTabProps) {
+  const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((account) => {
+      const matchesSearch = 
+        account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        account.accountId.toLowerCase().includes(searchQuery.toLowerCase())
+      
+      const matchesStatus = statusFilter === "all" || account.status === statusFilter
+      
+      return matchesSearch && matchesStatus
+    })
+  }, [accounts, searchQuery, statusFilter])
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = accounts.reduce((acc, account) => {
+      acc[account.status] = (acc[account.status] || 0) + 1
+      return acc
+    }, {} as Record<string, number>)
+    
+    return {
+      all: accounts.length,
+      active: counts.active || 0,
+      pending: counts.pending || 0,
+      inactive: counts.inactive || 0,
+      suspended: counts.suspended || 0,
+      error: counts.error || 0,
+      disabled: counts.disabled || 0,
+    }
+  }, [accounts])
 
   const handleSelectAccount = (accountId: string, checked: boolean) => {
     if (checked) {
-      setSelectedAccounts([...selectedAccounts, accountId])
+      setSelectedAccounts(prev => [...prev, accountId])
     } else {
-      setSelectedAccounts(selectedAccounts.filter((id) => id !== accountId))
+      setSelectedAccounts(prev => prev.filter(id => id !== accountId))
     }
   }
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedAccounts(accounts.map((account) => account.id))
+      setSelectedAccounts(filteredAccounts.map(account => account.id))
     } else {
       setSelectedAccounts([])
     }
   }
 
-  // Get threshold color based on percentage
-  const getThresholdColor = (quota: number) => {
-    if (quota === 0) return "text-gray-400"
-    if (quota < 60) return "text-[#34D197]"
-    if (quota < 80) return "text-[#FFC857]"
-    return "text-[#F56565]"
-  }
-
   return (
     <div className="space-y-4">
-      <div className="mb-4">
-        <h2 className="text-xl font-semibold">Ad Accounts</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Ad Accounts</h2>
+          <p className="text-sm text-muted-foreground">
+            Manage your advertising accounts and budgets
+          </p>
+        </div>
+        
+        <Button onClick={onCreateAccount} className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">
+          <Plus className="h-4 w-4 mr-2" />
+          Request Account
+        </Button>
       </div>
 
-      <div className="rounded-md border">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="p-3 text-left">
-                  <Checkbox
-                    checked={accounts.length > 0 && selectedAccounts.length === accounts.length}
-                    onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                  />
-                </th>
-                <th className="p-3 text-left font-medium">Name</th>
-                <th className="p-3 text-left font-medium">Project</th>
-                <th className="p-3 text-left font-medium">Ad Account</th>
-                <th className="p-3 text-left font-medium">Status</th>
-                <th className="p-3 text-left font-medium">Balance</th>
-                <th className="p-3 text-left font-medium">Spend Limit</th>
-                <th className="p-3 text-left font-medium">Date Added</th>
-                <th className="p-3 text-left font-medium">Threshold</th>
-                <th className="p-3 text-left font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((account) => (
-                <tr key={account.id} className="border-b hover:bg-muted/50">
-                  <td className="p-3">
-                    <Checkbox
-                      checked={selectedAccounts.includes(account.id)}
-                      onCheckedChange={(checked) => handleSelectAccount(account.id, !!checked)}
-                    />
-                  </td>
-                  <td className="p-3 font-medium">
-                    {account.name}
-                    <div className="text-xs text-muted-foreground">{account.accountId.substring(0, 4)}</div>
-                  </td>
-                  <td className="p-3">{account.project}</td>
-                  <td className="p-3 font-mono text-xs">{account.accountId}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <StatusDot status={account.status} />
-                      <StatusBadge status={account.status} size="sm" />
-                    </div>
-                  </td>
-                  <td className="p-3 font-medium">${account.balance.toFixed(2)}</td>
-                  <td className="p-3">${account.spendLimit.toFixed(2)}</td>
-                  <td className="p-3">{account.dateAdded}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="relative h-2 w-16 rounded-full bg-gray-200 dark:bg-gray-700">
-                        <div
-                          className={`absolute left-0 top-0 h-full rounded-full ${
-                            account.quota === 0
-                              ? "bg-gray-400"
-                              : account.quota < 60
-                                ? "bg-[#34D197]"
-                                : account.quota < 80
-                                  ? "bg-[#FFC857]"
-                                  : "bg-[#F56565]"
-                          }`}
-                          style={{ width: `${account.quota}%` }}
-                        />
-                      </div>
-                      <span className={getThresholdColor(account.quota)}>{account.quota}%</span>
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit account</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem>Top up</DropdownMenuItem>
-                        <DropdownMenuItem>Pause account</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Filters and Search */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search accounts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">
+              <div className="flex items-center gap-2">
+                <span>All Statuses</span>
+                <span className="text-xs text-muted-foreground">({statusCounts.all})</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="active">
+              <div className="flex items-center gap-2">
+                <StatusDot status="active" />
+                <span>Active</span>
+                <span className="text-xs text-muted-foreground">({statusCounts.active})</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="pending">
+              <div className="flex items-center gap-2">
+                <StatusDot status="pending" />
+                <span>Pending</span>
+                <span className="text-xs text-muted-foreground">({statusCounts.pending})</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="inactive">
+              <div className="flex items-center gap-2">
+                <StatusDot status="inactive" />
+                <span>Inactive</span>
+                <span className="text-xs text-muted-foreground">({statusCounts.inactive})</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Results */}
+      <div className="space-y-4">
+        {filteredAccounts.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No accounts found</p>
+          </div>
+        ) : (
+          <>
+            <AccountsTable 
+              accounts={filteredAccounts}
+              selectedAccounts={selectedAccounts}
+              onSelectAccount={handleSelectAccount}
+              onSelectAll={handleSelectAll}
+            />
+            
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredAccounts.length} of {accounts.length} accounts
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

@@ -6,11 +6,18 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { CreditCard, DollarSign, Wallet } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { CreditCard, DollarSign, Wallet, Shield } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CryptoPaymentForm } from "./crypto-payment-form"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import { TopUpForm } from "./top-up-form"
+import { useWallet } from "@/contexts/WalletContext"
+import { useAuth } from "@/contexts/AuthContext"
+import { layout } from "@/lib/layout-utils"
+import { contentTokens } from "@/lib/content-tokens"
 
 interface TopUpWalletProps {
   onTopUp: (amount: number, paymentMethod?: string, orgId?: string) => void
@@ -50,100 +57,98 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <Label className="text-muted-foreground">Select Amount</Label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {predefinedAmounts.map((value) => (
-            <Button
-              key={value}
-              type="button"
-              variant={amount === value ? "default" : "outline"}
-              onClick={() => setAmount(value)}
-              className={`h-12 ${
-                amount === value
-                  ? "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
-                  : "border-border text-foreground hover:bg-muted"
-              }`}
-            >
-              ${value}
-            </Button>
-          ))}
+      <div className={layout.stackLarge}>
+        <div>
+          <h3 className="text-lg font-semibold text-foreground mb-2">Top Up Wallet</h3>
+          <p className="text-sm text-muted-foreground">Add funds to your wallet to distribute to ad accounts</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="custom-amount" className="text-muted-foreground">
-            Custom Amount
-          </Label>
-          <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="custom-amount"
-              type="number"
-              placeholder="Enter amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="pl-9 bg-muted border-border text-foreground focus:border-ring focus:ring-ring"
-            />
+        <div className={layout.stackLarge}>
+          <div>
+            <Label htmlFor="amount" className="text-foreground">
+              {contentTokens.labels.amount}
+            </Label>
+            <div className="relative mt-1">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="pl-8 bg-background border-border text-foreground"
+                min="1"
+                step="0.01"
+              />
+            </div>
           </div>
+
+          <Tabs value={paymentMethod} onValueChange={setPaymentMethod} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-muted">
+              <TabsTrigger value="card" className="data-[state=active]:bg-background">
+                Credit Card
+              </TabsTrigger>
+              <TabsTrigger value="crypto" className="data-[state=active]:bg-background">
+                Crypto
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="card" className={`mt-4 ${layout.stackLarge}`}>
+              <div className={layout.stackMedium}>
+                <div>
+                  <Label htmlFor="cardNumber" className="text-foreground">
+                    Card Number
+                  </Label>
+                  <Input
+                    id="cardNumber"
+                    placeholder="1234 5678 9012 3456"
+                    className="bg-background border-border text-foreground"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="expiry" className="text-foreground">
+                      Expiry
+                    </Label>
+                    <Input
+                      id="expiry"
+                      placeholder="MM/YY"
+                      className="bg-background border-border text-foreground"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cvc" className="text-foreground">
+                      CVC
+                    </Label>
+                    <Input
+                      id="cvc"
+                      placeholder="123"
+                      className="bg-background border-border text-foreground"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className={`${layout.stackLarge} p-4 border rounded-md border-border bg-muted`}>
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium text-foreground">Secure Payment</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your payment information is encrypted and secure. We use industry-standard security measures.
+                </p>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="crypto" className="mt-4">
+              <CryptoPaymentForm amount={amount} orgId={orgId} />
+            </TabsContent>
+          </Tabs>
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <Label className="text-muted-foreground">Payment Method</Label>
-        <Tabs defaultValue="card" className="w-full" onValueChange={setPaymentMethod}>
-          <TabsList className="grid grid-cols-3 bg-muted p-1 h-auto">
-            <TabsTrigger value="card" className="data-[state=active]:bg-background px-3 py-1.5 h-auto">
-              <CreditCard className="h-4 w-4 mr-2" />
-              Card
-            </TabsTrigger>
-            <TabsTrigger value="crypto" className="data-[state=active]:bg-background px-3 py-1.5 h-auto">
-              <Wallet className="h-4 w-4 mr-2" />
-              Crypto
-            </TabsTrigger>
-            <TabsTrigger value="bank" className="data-[state=active]:bg-background px-3 py-1.5 h-auto">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Bank
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="card" className="mt-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="card-number" className="text-muted-foreground">Card Number</Label>
-              <Input id="card-number" placeholder="1234 5678 9012 3456" className="bg-muted border-border text-foreground focus:border-ring focus:ring-ring" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="expiry" className="text-muted-foreground">Expiry Date</Label>
-                <Input id="expiry" placeholder="MM/YY" className="bg-muted border-border text-foreground focus:border-ring focus:ring-ring" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cvc" className="text-muted-foreground">CVC</Label>
-                <Input id="cvc" placeholder="123" className="bg-muted border-border text-foreground focus:border-ring focus:ring-ring" />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="crypto" className="mt-4">
-            <CryptoPaymentForm amount={amount} orgId={orgId} />
-          </TabsContent>
-
-          <TabsContent value="bank" className="mt-4">
-            <div className="space-y-4 p-4 border rounded-md border-border bg-muted">
-              <p className="text-sm text-muted-foreground">Please use the following details for bank transfer:</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="font-medium text-muted-foreground">Account Name:</div><div className="text-foreground">AdHub Inc.</div>
-                <div className="font-medium text-muted-foreground">Account Number:</div><div className="font-mono text-foreground">1234567890</div>
-                <div className="font-medium text-muted-foreground">Routing Number:</div><div className="font-mono text-foreground">987654321</div>
-                <div className="font-medium text-muted-foreground">Reference:</div><div className="text-foreground">Your account email</div>
-              </div>
-              <p className="text-xs text-muted-foreground">Note: Bank transfers may take 1-3 business days to process</p>
-            </div>
-          </TabsContent>
-        </Tabs>
       </div>
 
       <Button type="submit" className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" disabled={loading || !amount || Number.parseFloat(amount) <= 0}>
-        {loading ? "Processing..." : "Process Payment"}
+        {loading ? contentTokens.loading.processing : "Process Payment"}
       </Button>
     </form>
   )

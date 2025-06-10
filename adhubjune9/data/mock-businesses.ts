@@ -1,0 +1,70 @@
+import type { Business } from "@/types/business"
+
+export const MOCK_BUSINESSES: Business[] = [
+  {
+    id: "1",
+    name: "TechFlow Solutions",
+    status: "active",
+    dateCreated: "Feb 15, 2024",
+    accountsCount: 2,
+    totalBalance: 6700.0,
+    totalSpend: 7850,
+    monthlyQuota: 35000,
+    industry: "Technology",
+    website: "https://techflow.com",
+    description: "Leading software development and consulting company",
+    logo: "/placeholder.svg?height=40&width=40&text=TF",
+    bmId: "1234567890123456", // Active businesses have BM IDs
+    domains: [
+      { domain: "techflow.com", verified: true },
+      { domain: "techflow.io", verified: false },
+    ],
+  },
+  {
+    id: "2",
+    name: "Digital Marketing Co",
+    status: "active",
+    dateCreated: "Jan 28, 2024",
+    accountsCount: 2,
+    totalBalance: 1200.0,
+    totalSpend: 2250,
+    monthlyQuota: 11000,
+    industry: "Marketing",
+    website: "https://digitalmarketing.co",
+    description: "Full-service digital marketing agency",
+    logo: "/placeholder.svg?height=40&width=40&text=DM",
+    bmId: "2345678901234567", // Active businesses have BM IDs
+    domains: [{ domain: "digitalmarketing.co", verified: true }],
+  },
+  {
+    id: "3",
+    name: "StartupHub Inc",
+    status: "pending",
+    dateCreated: "Mar 5, 2024",
+    accountsCount: 1,
+    totalBalance: 800.0,
+    totalSpend: 1200,
+    monthlyQuota: 5000,
+    industry: "Startup Incubator",
+    website: "https://startuphub.inc",
+    description: "Startup incubator and venture capital firm",
+    logo: "/placeholder.svg?height=40&width=40&text=SH",
+    // No BM ID for pending businesses
+    domains: [{ domain: "startuphub.inc", verified: false }],
+  },
+  {
+    id: "4",
+    name: "E-commerce Plus",
+    status: "suspended",
+    dateCreated: "Dec 10, 2023",
+    accountsCount: 0,
+    totalBalance: 0.0,
+    totalSpend: 5600,
+    monthlyQuota: 15000,
+    industry: "E-commerce",
+    description: "Online retail platform and marketplace",
+    logo: "/placeholder.svg?height=40&width=40&text=EP",
+    bmId: "3456789012345678", // Suspended businesses still have BM IDs
+    domains: [{ domain: "ecommerceplus.com", verified: true }],
+  },
+]
