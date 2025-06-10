@@ -34,7 +34,7 @@ interface Business {
   id: string
   name: string
   organizationId: string
-  status: "active" | "pending" | "suspended"
+  status: "active" | "pending" | "suspended" | "rejected"
   accountCount: number
 }
 

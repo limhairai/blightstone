@@ -40,7 +40,7 @@ interface TransactionFilters {
   status: string
   dateRange: {
     from: Date | undefined
-    to: Date | undefined
+    to?: Date | undefined
   }
   amountRange: {
     min: string
@@ -74,7 +74,7 @@ export function AdvancedTransactionManager() {
       reference: `TXN-${tx.id.toString().padStart(6, '0')}`,
       description: tx.type === "deposit" ? "Wallet top-up" : 
                   tx.type === "withdrawal" ? "Account funding" :
-                  tx.type === "transfer" ? "Internal transfer" : "Ad spend",
+                  tx.type === "spend" ? "Ad spend" : "Internal transfer",
       category: tx.type === "spend" ? "advertising" : "funding",
       paymentMethod: tx.type === "deposit" ? "Credit Card" : "Bank Transfer"
     }))
@@ -477,7 +477,9 @@ export function AdvancedTransactionManager() {
                   
                   <div className="text-right">
                     <div className="text-sm font-medium">{transaction.date}</div>
-                    <div className="text-xs text-muted-foreground">{transaction.timestamp}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {transaction.timestamp.toLocaleTimeString()}
+                    </div>
                   </div>
                   
                   <Dialog>

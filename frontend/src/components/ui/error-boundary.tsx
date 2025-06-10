@@ -268,8 +268,11 @@ export function InlineError({
     }
   }
 
+  // Map custom variants to supported Alert variants
+  const alertVariant = variant === "destructive" ? "destructive" : "default"
+
   return (
-    <Alert className={cn("", className)} variant={variant}>
+    <Alert className={cn("", className)} variant={alertVariant}>
       {getIcon()}
       <AlertDescription className="flex items-center justify-between">
         <span>{message}</span>
@@ -342,14 +345,14 @@ export function useErrorHandler() {
     })
   }
 
-  const handleAsyncError = async <T>(
+  const handleAsyncError = async function<T>(
     asyncFn: () => Promise<T>,
     options?: {
       title?: string
       successMessage?: string
       onError?: (error: Error) => void
     }
-  ): Promise<T | null> => {
+  ): Promise<T | null> {
     try {
       const result = await asyncFn()
       if (options?.successMessage) {

@@ -779,7 +779,9 @@ export const getGradient = (type: keyof typeof gradientTokens) => {
 
 // Get gradient classes by type and mode
 export const getGradientByMode = (type: keyof typeof gradientTokens, mode: "light" | "dark" = "light") => {
-  return gradientTokens[type][mode];
+  // Since gradientTokens are already responsive strings that include both light and dark variants,
+  // we just return the gradient string regardless of mode
+  return gradientTokens[type];
 }
 
 // Get transaction color classes by type
@@ -789,9 +791,11 @@ export const getTransactionColors = (type: keyof typeof transactionColorTokens) 
 
 // Get transaction color classes by type and mode
 export const getTransactionColorsByMode = (type: keyof typeof transactionColorTokens, mode: "light" | "dark" = "light") => {
+  // Since transactionColorTokens already contain responsive classes with both light and dark variants,
+  // we just return the color classes regardless of mode
   return {
-    icon: transactionColorTokens[type].icon[mode],
-    text: transactionColorTokens[type].text[mode],
+    icon: transactionColorTokens[type].icon,
+    text: transactionColorTokens[type].text,
   };
 }
 

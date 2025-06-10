@@ -28,7 +28,6 @@ import { layoutTokens, typographyTokens } from "@/lib/design-tokens"
 import { useDemoState } from "@/contexts/DemoStateContext"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { FullPageLoading } from "@/components/ui/enhanced-loading"
-import { toastMessages } from "@/components/ui/enhanced-toast"
 
 export function DashboardView() {
   const { user } = useAuth()
@@ -210,6 +209,15 @@ export function DashboardView() {
     shouldShowOnboarding(setupProgress)
   , [setupProgress])
 
+  // Create empty state conditions for banners
+  const emptyStateConditions = useMemo(() => 
+    checkEmptyState(
+      transactions.length,
+      accounts.length, 
+      realBalance,
+      !!user?.email_confirmed_at
+    ), [transactions.length, accounts.length, realBalance, user?.email_confirmed_at])
+
   // Update context when onboarding state changes
   useEffect(() => {
     setShowEmptyStateElements(shouldShowOnboardingElements)
@@ -270,15 +278,15 @@ export function DashboardView() {
     <ErrorBoundary>
       <div className={layoutTokens.spacing.container}>
         {/* Email verification banner */}
-        {shouldShowEmailBanner(user) && (
+        {shouldShowEmailBanner(emptyStateConditions) && (
           <EmailVerificationBanner onResendEmail={handleResendEmail} />
         )}
 
         {/* Setup Guide Widget */}
         {showEmptyStateElements && (
           <SetupGuideWidget
-            isExpanded={setupWidgetState === "expanded"}
-            onToggle={() => setSetupWidgetState(setupWidgetState === "expanded" ? "collapsed" : "expanded")}
+            widgetState={setupWidgetState === "expanded" ? "expanded" : "collapsed"}
+            onStateChange={(state) => setSetupWidgetState(state)}
             setupProgress={setupProgress}
           />
         )}

@@ -57,6 +57,14 @@ export default function TransactionsPage() {
     name: business.name,
   }))
 
+  // Helper function to generate status
+  const generateStatus = (): "completed" | "pending" | "failed" => {
+    const rand = Math.random()
+    if (rand > 0.1) return "completed"
+    if (rand > 0.05) return "pending" 
+    return "failed"
+  }
+
   // Convert demo state transactions to component format and add business information
   const allTransactions: Transaction[] = state.transactions.map((tx) => {
     // Map transaction to business based on account name or create business associations
@@ -81,7 +89,7 @@ export default function TransactionsPage() {
       description: tx.name,
       amount: tx.amount,
       type: tx.type === "spend" ? "withdrawal" : tx.type,
-      status: Math.random() > 0.1 ? "completed" : Math.random() > 0.5 ? "pending" : "failed",
+      status: generateStatus(),
       account: tx.account,
       reference: `REF${tx.id.toString().padStart(6, '0')}`,
       businessId,

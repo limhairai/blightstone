@@ -54,7 +54,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
 
   // Get business filter from URL params
   useEffect(() => {
-    const businessParam = searchParams.get('business')
+    const businessParam = searchParams?.get('business')
     if (businessParam) {
       setFilters(prev => ({ ...prev, business: businessParam }))
     }
@@ -108,7 +108,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
   const handleBulkPause = async () => {
     try {
       for (const accountId of selectedAccounts) {
-        await pauseAccount(accountId)
+        await pauseAccount(Number(accountId))
       }
       setSelectedAccounts([])
       toast.success(`Paused ${selectedAccounts.length} account(s)`)
@@ -120,7 +120,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
   const handleBulkResume = async () => {
     try {
       for (const accountId of selectedAccounts) {
-        await resumeAccount(accountId)
+        await resumeAccount(Number(accountId))
       }
       setSelectedAccounts([])
       toast.success(`Resumed ${selectedAccounts.length} account(s)`)
@@ -136,7 +136,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
     
     try {
       for (const accountId of selectedAccounts) {
-        await deleteAccount(accountId)
+        await deleteAccount(Number(accountId))
       }
       setSelectedAccounts([])
       toast.success(`Deleted ${selectedAccounts.length} account(s)`)
@@ -261,7 +261,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
         </div>
 
         <div className="flex items-center gap-3">
-          <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))} className="w-[140px] h-10 bg-background border-border text-foreground">
+          <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
             <SelectTrigger className="w-[140px] h-10 bg-background border-border text-foreground">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -286,7 +286,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
 
           {/* Only show business filter if not filtering by specific businessId */}
           {!businessId && (
-            <Select value={filters.business} onValueChange={(value) => setFilters(prev => ({ ...prev, business: value }))} className="w-[180px] h-10 bg-background border-border text-foreground">
+            <Select value={filters.business} onValueChange={(value) => setFilters(prev => ({ ...prev, business: value }))}>
               <SelectTrigger className="w-[180px] h-10 bg-background border-border text-foreground">
                 <SelectValue placeholder="Business" />
               </SelectTrigger>
@@ -440,7 +440,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
 
               {/* Timezone */}
               <div className="flex items-center">
-                <span className="text-xs text-foreground">{formatTimezone(account.timezone || "")}</span>
+                <span className="text-xs text-foreground">{formatTimezone("America/New_York")}</span>
               </div>
 
               {/* Status */}
@@ -514,10 +514,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
                       return originalAccount?.status === 'active' ? (
                         <DropdownMenuItem 
                           className="text-popover-foreground hover:bg-accent"
-                          onClick={() => handlePauseAccount({
-                            ...account,
-                            id: Number(account.id)
-                          })}
+                          onClick={() => handlePauseAccount(originalAccount)}
                         >
                           <Pause className="h-3 w-3 mr-2" />
                           Pause Account
@@ -525,10 +522,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
                       ) : originalAccount?.status === 'paused' ? (
                         <DropdownMenuItem 
                           className="text-popover-foreground hover:bg-accent"
-                          onClick={() => handleResumeAccount({
-                            ...account,
-                            id: Number(account.id)
-                          })}
+                          onClick={() => handleResumeAccount(originalAccount)}
                         >
                           <Play className="h-3 w-3 mr-2" />
                           Resume Account
@@ -537,10 +531,10 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
                     })()}
                     <DropdownMenuItem 
                       className="text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDeleteAccount({
-                        ...account,
-                        id: Number(account.id)
-                      })}
+                      onClick={() => {
+                        const originalAccount = state.accounts.find(acc => acc.id === Number(account.id))
+                        if (originalAccount) handleDeleteAccount(originalAccount)
+                      }}
                     >
                       <Trash2 className="h-3 w-3 mr-2" />
                       Delete Account
@@ -601,13 +595,9 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
 
       <BulkTopUpDialog
         selectedAccounts={selectedAccounts.map(id => {
-          const account = filteredAccounts.find(acc => acc.id === id)
-          return account ? {
-            id: account.id,
-            name: account.name,
-            balance: account.balance
-          } : null
-        }).filter(Boolean)}
+          const originalAccount = state.accounts.find(acc => acc.id === Number(id))
+          return originalAccount
+        }).filter((account): account is MockAccount => account !== undefined)}
         open={bulkTopUpOpen}
         onOpenChange={setBulkTopUpOpen}
         onTopUpComplete={() => {
