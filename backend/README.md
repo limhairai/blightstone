@@ -1,215 +1,142 @@
-# AdHub Backend
+# AdHub Backend API
 
-Enterprise-level backend service for the AdHub application, built with FastAPI and Supabase/PostgreSQL.
+A FastAPI-based backend service for AdHub, providing authentication, organization management, and ad account integration.
 
-## Features
-
-- RESTful API endpoints for managing ad accounts and campaigns
-- JWT-based authentication with role-based access control
-- Supabase/PostgreSQL database integration
-- CORS support for frontend integration
-- OpenAPI documentation
-- Comprehensive logging and monitoring
-- Rate limiting and security measures
-- Background tasks and job queues
-- Caching layer
-- Health checks and metrics
-
-## Project Structure
+## 🏗️ Project Structure
 
 ```
 backend/
-├── app/
-│   ├── api/
-│   │   ├── deps/                    # API dependencies and middleware
-│   │   │   ├── auth.py              # Authentication dependencies
-│   │   │   ├── rate_limit.py        # Rate limiting middleware
-│   │   │   └── security.py          # Security middleware
-│   │   └── v1/
-│   │       ├── endpoints/
-│   │       │   ├── auth.py          # Authentication endpoints
-│   │       │   ├── ad_accounts.py   # Ad account management
-│   │       │   ├── campaigns.py     # Campaign management
-│   │       │   └── health.py        # Health check endpoints
-│   │       └── api.py               # API router configuration
-│   ├── core/
-│   │   ├── config.py                # Application configuration
-│   │   ├── security.py              # Security utilities
-│   │   ├── supabase_client.py       # Supabase client configuration
-│   │   └── logging.py               # Logging configuration
-│   ├── models/
-│   │   ├── user.py                  # User data models
-│   │   ├── ad_account.py            # Ad account data models
-│   │   └── campaign.py              # Campaign data models
-│   ├── schemas/
-│   │   ├── auth.py                  # Authentication schemas
-│   │   ├── ad_account.py            # Ad account schemas
-│   │   └── campaign.py              # Campaign schemas
-│   ├── services/
-│   │   ├── auth.py                  # Authentication service
-│   │   ├── ad_account.py            # Ad account service
-│   │   ├── campaign.py              # Campaign service
-│   │   └── meta_api.py              # Meta API integration
-│   ├── tasks/
-│   │   ├── background.py            # Background task definitions
-│   │   └── scheduler.py             # Scheduled task definitions
-│   ├── utils/
-│   │   ├── cache.py                 # Caching utilities
-│   │   ├── date.py                  # Date/time utilities
-│   │   └── validation.py            # Data validation utilities
-│   └── main.py                      # Application entry point
-├── tests/
-│   ├── api/                         # API endpoint tests
-│   ├── services/                    # Service layer tests
-│   ├── utils/                       # Utility tests
-│   └── conftest.py                  # Test configuration
-├── scripts/
-│   ├── setup.py                     # Setup scripts
-│   └── deploy.py                    # Deployment scripts
-├── docs/
-│   ├── api/                         # API documentation
-│   └── architecture/                # Architecture documentation
-├── .env.example                     # Example environment variables
-├── .gitignore                       # Git ignore file
-├── requirements.txt                 # Production dependencies
-├── requirements-dev.txt             # Development dependencies
-└── README.md                        # Project documentation
+├── main.py                 # FastAPI application entry point
+├── requirements.txt        # Python dependencies
+├── requirements-dev.txt    # Development dependencies
+├── Procfile               # Deployment configuration
+│
+├── api/                   # API layer
+│   ├── api.py            # Main API router configuration
+│   ├── deps/             # API dependencies (auth, database, etc.)
+│   └── endpoints/        # API endpoint handlers
+│       ├── auth.py       # Authentication endpoints
+│       ├── organizations.py # Organization management
+│       ├── ad_accounts.py   # Ad account management
+│       ├── wallet.py     # Wallet and transactions
+│       ├── users.py      # User management
+│       ├── invites.py    # Team invitations
+│       ├── projects.py   # Project management
+│       ├── admin.py      # Admin operations
+│       └── twofa.py      # Two-factor authentication
+│
+├── core/                 # Core application logic
+│   ├── config.py        # Configuration settings
+│   ├── supabase_client.py # Supabase database client
+│   └── security.py      # Security utilities
+│
+├── models/              # Data models and schemas
+├── services/            # Business logic services
+├── schemas/             # Pydantic schemas for API
+├── utils/               # Utility functions
+├── tasks/               # Background tasks
+├── db/                  # Database utilities
+│
+├── tests/               # Test files
+└── docs/                # Documentation
 ```
 
-## Key Architectural Decisions
+## 🚀 Getting Started
 
-1. **Separation of Concerns**
-   - API layer handles HTTP requests and responses
-   - Service layer contains business logic
-   - Models define data structures
-   - Schemas handle data validation
+### Prerequisites
+- Python 3.8+
+- Supabase account and project
+- Environment variables configured
 
-2. **Dependency Injection**
-   - Clear dependency management
-   - Easy testing and mocking
-   - Flexible configuration
+### Installation
 
-3. **Error Handling**
-   - Centralized error handling
-   - Custom exception types
-   - Proper HTTP status codes
+1. **Create virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-4. **Security**
-   - JWT authentication
-   - Role-based access control
-   - Rate limiting
-   - Input validation
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-5. **Performance**
-   - Caching layer
-   - Optimized database queries
-   - Background tasks for heavy operations
+3. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your Supabase credentials
+   ```
 
-6. **Monitoring**
-   - Comprehensive logging
-   - Health checks
-   - Performance metrics
+4. **Run the development server:**
+   ```bash
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
-## Setup
+## 🔧 Configuration
 
-1. Create a virtual environment:
+The backend uses Supabase as the primary database. Configure these environment variables:
+
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_KEY=your_service_key
+SUPABASE_ANON_KEY=your_anon_key
+```
+
+## 📚 API Documentation
+
+Once running, visit:
+- **API Docs**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
+
+## 🏢 Core Features
+
+### Authentication & Authorization
+- JWT-based authentication via Supabase Auth
+- Role-based access control (Owner, Admin, Member)
+- Two-factor authentication support
+
+### Organization Management
+- Multi-tenant organization structure
+- Team member invitations and management
+- Subscription and billing integration
+
+### Ad Account Integration
+- Meta (Facebook) Ads API integration
+- Ad account management and monitoring
+- Campaign performance tracking
+
+### Wallet System
+- Organization wallet management
+- Transaction tracking and history
+- Balance management
+
+## 🧪 Testing
+
+Run tests with:
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+pytest
 ```
 
-2. Install dependencies:
+## 🚀 Deployment
+
+The backend is configured for deployment on platforms like Heroku, Railway, or similar:
+
 ```bash
-pip install -r requirements.txt
-pip install -r requirements-dev.txt  # For development
+# Using the Procfile
+web: uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
-3. Configure environment variables:
-Copy `.env.example` to `.env` and fill in the values:
-```
-SUPABASE_URL=your-supabase-url-here
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key-here
-SECRET_KEY=your-secret-key-here
-# Add other necessary environment variables for your application
-```
+## 📝 Development Notes
 
-4. Run the application:
-```bash
-uvicorn app.main:app --reload
-```
+- **Database**: Uses Supabase PostgreSQL with Row Level Security
+- **Authentication**: Supabase Auth with JWT tokens
+- **API Framework**: FastAPI with automatic OpenAPI documentation
+- **Code Style**: Follow PEP 8 guidelines
+- **Dependencies**: Keep requirements.txt updated
 
-## Development Guidelines
+## 🔗 Related
 
-1. **Code Style**
-   - Follow PEP 8
-   - Use type hints
-   - Write docstrings
-   - Keep functions small and focused
-
-2. **Testing**
-   - Write unit tests for all new features
-   - Maintain high test coverage
-   - Use pytest fixtures
-   - Mock external services
-
-3. **Documentation**
-   - Update API documentation
-   - Document architectural decisions
-   - Keep README up to date
-   - Add inline comments for complex logic
-
-4. **Version Control**
-   - Use feature branches
-   - Write meaningful commit messages
-   - Review code before merging
-   - Keep commits atomic
-
-5. **Deployment**
-   - Use CI/CD pipelines
-   - Automated testing
-   - Environment-specific configurations
-   - Monitoring and alerts
-
-## API Documentation
-
-Once the server is running, you can access the API documentation at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## Project Structure
-
-```
-backend/
-├── app/
-│   ├── api/
-│   │   └── v1/
-│   │       ├── endpoints/
-│   │       │   ├── auth.py
-│   │       │   ├── ad_accounts.py
-│   │       │   └── campaigns.py
-│   │       └── api.py
-│   ├── core/
-│   │   ├── config.py
-│   │   └── security.py
-│   ├── db/
-│   │   ├── base.py
-│   │   └── session.py
-│   ├── models/
-│   │   ├── user.py
-│   │   ├── ad_account.py
-│   │   └── campaign.py
-│   ├── schemas/
-│   │   ├── auth.py
-│   │   ├── ad_account.py
-│   │   └── campaign.py
-│   └── main.py
-├── requirements.txt
-└── README.md
-```
-
-## Development
-
-- Use `alembic` for database migrations
-- Follow PEP 8 style guide
-- Write tests for new features
-- Update API documentation when adding new endpoints 
+- **Frontend**: React/Next.js application in `/frontend`
+- **Database**: Supabase migrations in `/supabase/migrations`
+- **Documentation**: Additional docs in `/docs` 
