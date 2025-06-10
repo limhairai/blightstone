@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
-from app.core.security import get_current_user, require_superuser
-from app.schemas.user import UserRead as User
+# from core.firebase import get_firestore  # TODO: Migrate to Supabase
+from core.security import get_current_user, require_superuser
+from schemas.user import UserRead as User
 import logging
 
 router = APIRouter()

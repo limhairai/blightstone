@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
-from app.core.security import get_current_user
+# from core.firebase import get_firestore  # TODO: Migrate to Supabase
+from core.security import get_current_user
 from pydantic import BaseModel
 import pyotp
 import qrcode

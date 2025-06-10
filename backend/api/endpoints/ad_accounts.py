@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
-from app.services.facebook import FacebookAPI
+# from core.firebase import get_firestore  # TODO: Migrate to Supabase
+from services.facebook import FacebookAPI
 from datetime import datetime
 import os
 import requests  # Add this import for the test endpoint
 import time
-from app.core.security import get_current_user
-from app.schemas.user import UserRead as User
+from core.security import get_current_user
+from schemas.user import UserRead as User
 from typing import List
-from app.services.audit_log_service import log_audit_event
+from services.audit_log_service import log_audit_event
 from collections import defaultdict
 import logging
 

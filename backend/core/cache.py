@@ -1,7 +1,7 @@
 from typing import Any, Callable, Optional
 from functools import wraps
 import time
-from app.core.config import settings
+from core.config import settings
 
 class Cache:
     def __init__(self):

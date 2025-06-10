@@ -3,7 +3,7 @@ import os
 import jwt
 import logging
 from supabase import create_client, Client
-from app.core.config import settings
+from core.config import settings
 
 logger = logging.getLogger(__name__)
 

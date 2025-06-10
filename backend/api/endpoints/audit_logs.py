@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query
 from typing import List, Optional
 from datetime import datetime
-from app.models.audit_log import AuditLog
-from app.dependencies import get_current_admin_user
-from app.db import firestore_db
+from models import AuditLog
+from dependencies import get_current_admin_user
+from db import firestore_db
 
 router = APIRouter()
 

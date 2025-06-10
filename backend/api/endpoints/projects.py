@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
-# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
-from app.schemas.group import GroupCreate, GroupUpdate, GroupRead
-from app.schemas.user import UserRead as User
-from app.core.security import get_current_user
+# from core.firebase import get_firestore  # TODO: Migrate to Supabase
+from schemas.group import GroupCreate, GroupUpdate, GroupRead
+from schemas.user import UserRead as User
+from core.security import get_current_user
 from typing import List
 from datetime import datetime
 

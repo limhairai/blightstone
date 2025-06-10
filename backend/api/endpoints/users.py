@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
-from app.core.security import require_superuser, get_current_user
-from app.core.supabase_client import get_supabase_client
-from app.schemas.user import UserRead as User
-# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
+from core.security import require_superuser, get_current_user
+from core.supabase_client import get_supabase_client
+from schemas.user import UserRead as User
+# from core.firebase import get_firestore  # TODO: Migrate to Supabase
 from pydantic import BaseModel
 from typing import List, Optional
 import logging

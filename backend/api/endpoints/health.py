@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends
-# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
+# from core.firebase import get_firestore  # TODO: Migrate to Supabase
 from datetime import datetime
 from typing import Dict, Any
 
