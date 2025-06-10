@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { ArrowUpRight, ArrowDownLeft, Calendar, DollarSign } from "lucide-react"
 import { MOCK_ACCOUNTS, type MockAccount } from "@/lib/mock-data"
 

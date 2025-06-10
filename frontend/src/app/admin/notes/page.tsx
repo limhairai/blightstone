@@ -1,8 +1,8 @@
 "use client";
 
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { AdminOrgNotes } from "@/components/admin/admin-org-notes";
-import { Loader } from "@/components/core/Loader";
+import { useSuperuser } from "../../../contexts/SuperuserContext";
+import { AdminOrgNotes } from "../../../components/admin/admin-org-notes";
+import { Loader } from "../../../components/core/Loader";
 
 export default function AdminNotesPage() {
   const { isSuperuser, loading, error } = useSuperuser();

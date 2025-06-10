@@ -6,11 +6,11 @@ import { DashboardSidebar } from "./dashboard-sidebar"
 import { Topbar } from "./topbar"
 import { SetupGuideWidget } from "@/components/onboarding/setup-guide-widget"
 import { useSetupProgress } from "@/hooks/useSetupProgress"
-import { shouldShowOnboarding } from "@/lib/setup-progress"
+import { shouldShowOnboarding } from "@/lib/state-utils"
 import { usePathname } from "next/navigation"
 import { usePageTitle } from "@/components/core/simple-providers"
 import { useAuth } from "@/contexts/AuthContext"
-import { getGreeting } from "@/lib/get-greeting"
+import { getGreeting } from "@/lib/utils"
 import { layoutTokens } from "@/lib/design-tokens"
 
 interface AppShellProps {

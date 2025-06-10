@@ -20,7 +20,7 @@ import { AccountTransactionsDialog } from "@/components/dashboard/account-transa
 import { WithdrawBalanceDialog } from "@/components/dashboard/withdraw-balance-dialog"
 import { TopUpDialog } from "@/components/dashboard/top-up-dialog"
 import { MOCK_BUSINESSES, type MockAccount } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { layout } from "@/lib/layout-utils"

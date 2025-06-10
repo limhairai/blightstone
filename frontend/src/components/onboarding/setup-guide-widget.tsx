@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Check, X, ChevronDown, ChevronRight, Maximize2, Minimize2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { SetupProgress, calculateSetupCompletion, getNextStep } from "@/lib/setup-progress"
+import { SetupProgress, calculateSetupCompletion, getNextStep } from "@/lib/state-utils"
 
 type WidgetState = "expanded" | "collapsed" | "closed"
 

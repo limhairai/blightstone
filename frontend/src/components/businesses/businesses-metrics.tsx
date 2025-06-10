@@ -1,5 +1,5 @@
 import { MOCK_BUSINESSES } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { Building2, CreditCard, Wallet, TrendingUp } from "lucide-react"
 
 export function BusinessesMetrics() {

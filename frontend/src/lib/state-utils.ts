@@ -1,4 +1,8 @@
-// Advanced onboarding state management
+// Consolidated state management utilities
+
+// ============================================================================
+// ONBOARDING STATE MANAGEMENT
+// ============================================================================
 
 export interface OnboardingState {
   // Permanent completion tracking (never resets)
@@ -134,18 +138,7 @@ export function shouldShowOnboarding(state: OnboardingState): boolean {
   }
   
   // For experienced users, only show if they explicitly need help
-  // (e.g., they click "Setup Guide" button)
   return false
-}
-
-export function shouldShowEmailBanner(state: OnboardingState): boolean {
-  // Always show if email not verified (regardless of other state)
-  return !state.currentEmailVerified
-}
-
-export function shouldShowSetupButton(state: OnboardingState): boolean {
-  // Show button if onboarding was dismissed but user might want to access it
-  return state.hasExplicitlyDismissedOnboarding || !shouldShowOnboarding(state)
 }
 
 export function getOnboardingProgress(state: OnboardingState): {
@@ -180,26 +173,116 @@ export function isNewUser(accountCreatedAt: string, thresholdDays: number = 7): 
   return daysSinceCreation <= thresholdDays
 }
 
-export function getOnboardingStrategy(state: OnboardingState): 'full' | 'minimal' | 'none' | 'help-only' {
-  // User explicitly dismissed
-  if (state.hasExplicitlyDismissedOnboarding) {
-    return 'help-only' // Only show setup button
+// ============================================================================
+// SETUP PROGRESS TRACKING (Simplified version)
+// ============================================================================
+
+export interface SetupStep {
+  id: string
+  name: string
+  completed: boolean
+  required: boolean
+}
+
+export interface SetupProgress {
+  emailVerification: SetupStep
+  walletFunding: SetupStep
+  businessSetup: SetupStep
+  adAccountSetup: SetupStep
+}
+
+export function getSetupProgress(
+  emailVerified: boolean,
+  hasBalance: boolean,
+  hasBusinesses: boolean,
+  hasAccounts: boolean
+): SetupProgress {
+  return {
+    emailVerification: {
+      id: 'email-verification',
+      name: 'Email Verification',
+      completed: emailVerified,
+      required: true
+    },
+    walletFunding: {
+      id: 'wallet-funding',
+      name: 'Wallet Funding',
+      completed: hasBalance,
+      required: true
+    },
+    businessSetup: {
+      id: 'business-setup',
+      name: 'Business Setup',
+      completed: hasBusinesses,
+      required: true
+    },
+    adAccountSetup: {
+      id: 'ad-account-setup',
+      name: 'Ad Account Setup',
+      completed: hasAccounts,
+      required: true
+    }
   }
+}
+
+export function calculateSetupCompletion(progress: SetupProgress): {
+  completedSteps: number
+  totalSteps: number
+  percentage: number
+  isComplete: boolean
+} {
+  const steps = Object.values(progress)
+  const requiredSteps = steps.filter(step => step.required)
+  const completedRequiredSteps = requiredSteps.filter(step => step.completed)
   
-  // New user who hasn't completed onboarding
-  if (isNewUser(state.accountCreatedAt) && !getOnboardingProgress(state).isFullyOnboarded) {
-    return 'full' // Show full onboarding experience
+  const completedSteps = completedRequiredSteps.length
+  const totalSteps = requiredSteps.length
+  const percentage = Math.round((completedSteps / totalSteps) * 100)
+  const isComplete = completedSteps === totalSteps
+  
+  return {
+    completedSteps,
+    totalSteps,
+    percentage,
+    isComplete
   }
-  
-  // Experienced user who completed onboarding
-  if (getOnboardingProgress(state).isFullyOnboarded) {
-    return 'help-only' // Only show setup button if needed
+}
+
+export function getNextStep(progress: SetupProgress): SetupStep | null {
+  const steps = Object.values(progress)
+  const nextIncompleteStep = steps.find(step => step.required && !step.completed)
+  return nextIncompleteStep || null
+}
+
+// ============================================================================
+// EMPTY STATE UTILITIES
+// ============================================================================
+
+export interface EmptyStateConditions {
+  noTransactions: boolean
+  noAccounts: boolean
+  noBalance: boolean
+  emailNotVerified: boolean
+}
+
+export function checkEmptyState(
+  transactionsCount: number,
+  accountsCount: number,
+  balance: number,
+  emailVerified: boolean
+): EmptyStateConditions {
+  return {
+    noTransactions: transactionsCount === 0,
+    noAccounts: accountsCount === 0,
+    noBalance: balance === 0,
+    emailNotVerified: !emailVerified
   }
-  
-  // Older user who never completed onboarding
-  if (!isNewUser(state.accountCreatedAt) && !getOnboardingProgress(state).isFullyOnboarded) {
-    return 'minimal' // Show less intrusive onboarding
-  }
-  
-  return 'none'
+}
+
+export function shouldShowSetupElements(conditions: EmptyStateConditions): boolean {
+  return conditions.noTransactions && conditions.noAccounts && conditions.noBalance
+}
+
+export function shouldShowEmailBanner(conditions: EmptyStateConditions): boolean {
+  return conditions.emailNotVerified
 } 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { AdminOrgFiles } from "@/components/admin/admin-org-files";
-import { Loader } from "@/components/core/Loader";
+import { useSuperuser } from "../../../contexts/SuperuserContext";
+import { AdminOrgFiles } from "../../../components/admin/admin-org-files";
+import { Loader } from "../../../components/core/Loader";
 
 export default function AdminFilesPage() {
   const { isSuperuser, loading, error } = useSuperuser();

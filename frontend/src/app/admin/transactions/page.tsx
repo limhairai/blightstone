@@ -1,8 +1,8 @@
 "use client";
 
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { AdminOrgTransactionsTable } from "@/components/admin/admin-org-transactions-table";
-import { Loader } from "@/components/core/Loader";
+import { useSuperuser } from "../../../contexts/SuperuserContext";
+import { AdminOrgTransactions } from "../../../components/admin/admin-org-transactions";
+import { Loader } from "../../../components/core/Loader";
 
 export default function AdminTransactionsPage() {
   const { isSuperuser, loading, error } = useSuperuser();
@@ -14,7 +14,7 @@ export default function AdminTransactionsPage() {
   return (
     <div>
       <h1>Admin Transactions</h1>
-      <AdminOrgTransactionsTable orgId="some-org-id" isSuperuser={isSuperuser} />
+      <AdminOrgTransactions orgId="some-org-id" isSuperuser={isSuperuser} />
     </div>
   );
 } 

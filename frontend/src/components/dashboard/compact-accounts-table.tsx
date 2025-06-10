@@ -15,7 +15,7 @@ import { CompactFilters } from "@/components/dashboard/compact-filters"
 import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
 import { TopUpDialog } from "@/components/dashboard/top-up-dialog"
 import { MOCK_ACCOUNTS, type MockAccount } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Plus, TrendingUp, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 

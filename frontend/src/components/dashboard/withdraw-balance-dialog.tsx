@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/hooks/use-toast"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { MOCK_FINANCIAL_DATA, type MockAccount } from "@/lib/mock-data"
 import { ArrowUpRight, DollarSign, Check, Loader2, AlertTriangle } from "lucide-react"
 

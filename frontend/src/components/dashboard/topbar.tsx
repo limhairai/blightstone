@@ -7,7 +7,7 @@ import { CompactHeaderMetrics } from "@/components/dashboard/compact-header-metr
 import { OrganizationSelector } from "@/components/dashboard/organization-selector"
 import { TopUpDialog } from "@/components/dashboard/top-up-dialog"
 import { MOCK_FINANCIAL_DATA } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { Bell, Plus, User, Settings, LogOut, Wallet } from "lucide-react"
 import {
   DropdownMenu,

@@ -22,8 +22,8 @@ import {
   transactionColors,
   APP_CONSTANTS
 } from "@/lib/mock-data"
-import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "@/lib/empty-state-utils"
-import { getSetupProgress, shouldShowOnboarding, calculateSetupCompletion } from "@/lib/setup-progress"
+import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "@/lib/state-utils"
+import { getSetupProgress, shouldShowOnboarding, calculateSetupCompletion } from "@/lib/state-utils"
 import { layoutTokens, typographyTokens } from "@/lib/design-tokens"
 import { useDemoState } from "@/contexts/DemoStateContext"
 import { ErrorBoundary } from "@/components/ui/error-boundary"

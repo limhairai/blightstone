@@ -1,5 +1,5 @@
 import { MOCK_ACCOUNTS } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/format"
+import { formatCurrency } from "@/lib/utils"
 import { CreditCard, Wallet, TrendingUp, AlertCircle } from "lucide-react"
 
 export function AccountsMetrics() {
