@@ -1,8 +1,8 @@
 "use client";
 
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { AdminOrgActivityLog } from "@/components/admin/admin-org-activity-log";
-import { Loader } from "@/components/core/Loader";
+import { useSuperuser } from "../../../contexts/SuperuserContext";
+import { AdminOrgActivityLog } from "../../../components/admin/admin-org-activity-log";
+import { Loader } from "../../../components/core/Loader";
 
 export default function AdminActivityPage() {
   const { isSuperuser, loading, error } = useSuperuser();

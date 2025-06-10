@@ -1,8 +1,8 @@
 "use client";
 
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { AdminClientAccountsTable } from "@/components/admin/admin-client-accounts-table";
-import { Loader } from "@/components/core/Loader";
+import { useSuperuser } from "../../../contexts/SuperuserContext";
+import { AdminClientAccountsTable } from "../../../components/admin/admin-client-accounts-table";
+import { Loader } from "../../../components/core/Loader";
 
 export default function AdminClientsPage() {
   const { isSuperuser, loading, error } = useSuperuser();
