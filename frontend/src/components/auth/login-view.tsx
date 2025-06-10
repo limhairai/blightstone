@@ -7,7 +7,7 @@ import { AdHubLogo } from "@/components/core/AdHubLogo"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
-import { toast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { Loader } from "@/components/core/Loader"
 
 export function LoginView() {
@@ -38,21 +38,42 @@ export function LoginView() {
     e.preventDefault();
     setError("");
     setLoading(true);
+    
     try {
       const result = await signIn(email, password);
       if (result.error) {
-        throw new Error(result.error.message);
+        let errorMessage = "Failed to sign in. Please try again.";
+        
+        // Handle specific Supabase error messages
+        if (result.error.message === 'Invalid login credentials') {
+          errorMessage = "Incorrect email or password. Please check your credentials and try again.";
+        } else if (result.error.message === 'Email not confirmed') {
+          errorMessage = "Please check your email and confirm your account before signing in.";
+        } else if (result.error.message.includes('Too many requests')) {
+          errorMessage = "Too many login attempts. Please wait a moment and try again.";
+        } else if (result.error.message.includes('User not found')) {
+          errorMessage = "No account found with this email address.";
+        } else {
+          errorMessage = result.error.message;
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
       }
-      // Don't redirect immediately - let the auth state change handle routing
-      // The AppRouter will automatically redirect to dashboard when user/session are set
-      toast({ title: "Signed in!", description: "Welcome back.", variant: "default" });
+      
+      // Success - let the useEffect handle the redirect
+      toast.success("Signed in!", {
+        description: "Welcome back."
+      });
+      
     } catch (err: unknown) {
-      let message = "Failed to sign in. Please try again.";
+      let message = "An unexpected error occurred. Please try again.";
       if (err instanceof Error) {
         message = err.message;
       }
       setError(message);
-      toast({ title: "Sign in failed", description: message, variant: "destructive" });
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -61,20 +82,37 @@ export function LoginView() {
   const handleGoogleSignIn = async () => {
     setError("");
     setLoading(true);
+    
     try {
       const result = await signInWithGoogle();
       if (result.error) {
-        throw new Error(result.error.message);
+        let errorMessage = "Failed to sign in with Google. Please try again.";
+        
+        if (result.error.message.includes('popup_closed_by_user')) {
+          errorMessage = "Google sign-in was cancelled.";
+        } else if (result.error.message.includes('access_denied')) {
+          errorMessage = "Google sign-in access was denied.";
+        } else {
+          errorMessage = result.error.message;
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
       }
-      // Don't redirect immediately - let the auth state change handle routing
-      toast({ title: "Signed in!", description: "Welcome back.", variant: "default" });
+      
+      // Success - Google will redirect, so we might not reach this point
+      toast.success("Signed in!", {
+        description: "Welcome back."
+      });
+      
     } catch (err: unknown) {
-      let message = "Failed to sign in with Google. Please try again.";
+      let message = "An unexpected error occurred with Google sign-in.";
       if (err instanceof Error) {
         message = err.message;
       }
       setError(message);
-      toast({ title: "Google Sign-in failed", description: message, variant: "destructive" });
+      toast.error(message);
     } finally {
       setLoading(false);
     }

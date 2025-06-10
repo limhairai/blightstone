@@ -171,38 +171,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error("Error signing in:", error);
-      // Differentiate common errors for better UX
-      if (error.message === 'Invalid login credentials') {
-        toast({ title: "Sign In Failed", description: "Incorrect email or password. Please try again.", variant: "destructive" });
-      } else if (error.message === 'Email not confirmed') {
-        toast({ 
-            title: "Email Not Confirmed", 
-            description: "Please check your email to confirm your account before signing in.", 
-            variant: "destructive",
-            duration: 10000,
-        });
-      } else {
-        toast({ title: "Sign In Error", description: error.message, variant: "destructive" });
-      }
       setLoading(false);
+      // Return the error to let the login component handle the UI feedback
       return { data: null, error };
     }
 
     // If signIn is successful, data.user and data.session will be populated.
     // onAuthStateChange will automatically pick this up and update the context state.
-    // setLoading(false); // onAuthStateChange will handle this.
-
-    // The fetch call to /api/v1/users/${userCredential.user.uid} from the old Firebase
-    // version is no longer needed here. The existence of the user in auth.users is confirmed
-    // by a successful Supabase login, and the profiles table entry is handled by the trigger.
-    // If we need to fetch profile data immediately after login to populate the context further,
-    // that could be done here or, more commonly, in a useEffect that reacts to user changes.
+    // Set loading to false immediately for better UX
+    setLoading(false);
 
     // For now, we rely on onAuthStateChange to update user and session.
     // The component consuming the context might want to redirect to the dashboard here.
-    // e.g., router.push('/dashboard') - but that's UI logic, not for the context itself.
-
-    toast({ title: "Signed In", description: "Welcome back!", variant: "default" });
 
     return { data: { user: data.user, session: data.session }, error: null };
   };
