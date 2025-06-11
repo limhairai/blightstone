@@ -2,7 +2,7 @@
 import type React from "react";
 import type { Metadata } from "next";
 import { Inter } from 'next/font/google';
-import "@/styles/globals.css";
+import "../styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";

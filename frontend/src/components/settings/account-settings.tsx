@@ -21,7 +21,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "../ui/dialog"
 import { useDemoState, type UserProfile } from "../../contexts/DemoStateContext"
 import { gradientTokens } from "../../lib/design-tokens"
 

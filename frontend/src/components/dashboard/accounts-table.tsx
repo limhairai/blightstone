@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 import { StatusBadge } from "../ui/status-badge"
 import { AccountTransactionsDialog } from "./account-transactions-dialog"
 import { WithdrawBalanceDialog } from "./withdraw-balance-dialog"

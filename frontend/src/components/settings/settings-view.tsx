@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "../ui/dialog"
 import { MOCK_ORGANIZATION } from "../../lib/mock-data"
 
 export function SettingsView() {

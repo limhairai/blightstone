@@ -8,7 +8,7 @@ import {
   formatCurrency,
   getTotalAccountsBalance,
   getActiveAccountsCount
-} from "@/lib/mock-data"
+} from "../../lib/mock-data"
 
 export default function AccountMetrics() {
   // Use centralized mock data

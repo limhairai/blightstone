@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 import { Checkbox } from "../ui/checkbox"
 import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
 import { StatusBadge } from "../ui/status-badge"

@@ -30,7 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import { gradients } from "../../lib/design-system"
 import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"

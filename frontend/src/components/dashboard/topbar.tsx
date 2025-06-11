@@ -15,7 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 
 export function Topbar() {
   const [topUpDialogOpen, setTopUpDialogOpen] = useState(false)

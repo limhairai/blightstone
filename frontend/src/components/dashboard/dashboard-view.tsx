@@ -21,7 +21,7 @@ import {
   formatRelativeTime,
   transactionColors,
   APP_CONSTANTS
-} from "@/lib/mock-data"
+} from "../../lib/mock-data"
 import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "../../lib/state-utils"
 import { getSetupProgress, shouldShowOnboarding } from "../../lib/state-utils"
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"

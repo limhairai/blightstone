@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 import { CreateBusinessDialog } from "./create-business-dialog"
 import { useRouter } from "next/navigation"
 import { gradients } from "../../lib/design-system"

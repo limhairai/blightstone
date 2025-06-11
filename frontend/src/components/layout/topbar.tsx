@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 import { CircularProgress } from "../ui/circular-progress"
 import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
 import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"

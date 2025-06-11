@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "../ui/dropdown-menu"
 import { StatusBadge } from "../ui/status-badge"
 import { CompactFilters } from "./compact-filters"
 import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
