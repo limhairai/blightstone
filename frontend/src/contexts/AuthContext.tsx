@@ -62,7 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The first event fired will determine the initial authenticated state.
     const { data: authSubscriptionData } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: AuthSession | null) => {
-        // console.log("Supabase auth event:", event, currentSession);
+        console.log("🔐 Supabase auth event:", event, {
+          hasSession: !!currentSession,
+          hasUser: !!currentSession?.user,
+          userId: currentSession?.user?.id,
+          environment: process.env.NODE_ENV
+        });
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false); // This is the point where the auth state is considered resolved.
@@ -161,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log("🚀 Starting sign in attempt:", { email, environment: process.env.NODE_ENV });
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -168,7 +174,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (error) {
-      console.error("Error signing in:", error);
+      console.error("❌ Error signing in:", error, {
+        message: error.message,
+        status: error.status,
+        environment: process.env.NODE_ENV
+      });
       setLoading(false);
       // Return the error to let the login component handle the UI feedback
       return { data: null, error };
