@@ -32,6 +32,7 @@ interface AuthContextType {
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string, options?: { redirectTo?: string }) => Promise<{ data: {} | null; error: AuthError | null }>;
   signInWithGoogle: (options?: { redirectTo?: string }) => Promise<{ data: { provider?: string; url?: string; } | null; error: AuthError | null }>;
+  resendVerification: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -202,6 +203,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         environment: process.env.NODE_ENV
       });
       setLoading(false);
+      
+
+      
       // Return the error to let the login component handle the UI feedback
       return { data: null, error };
     }
@@ -276,6 +280,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Supabase signInWithOAuth returns { data: { provider, url }, error }
     return { data, error: null }; 
   };
+
+  const resendVerification = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+    });
+
+    if (error) {
+      console.error("Error resending verification email:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return { error };
+    }
+
+    toast({ 
+      title: "Verification Email Sent", 
+      description: "Please check your email for the verification link.", 
+      variant: "default",
+      duration: 5000,
+    });
+    return { error: null };
+  };
   // End placeholder functions
 
   const value = {
@@ -287,6 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     resetPassword,
     signInWithGoogle,
+    resendVerification,
   };
 
   return (

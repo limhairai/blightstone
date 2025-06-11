@@ -58,7 +58,7 @@ export function LoginView() {
         if (result.error.message === 'Invalid login credentials') {
           errorMessage = "Incorrect email or password. Please check your credentials and try again.";
         } else if (result.error.message === 'Email not confirmed') {
-          errorMessage = "Please check your email and confirm your account before signing in.";
+          errorMessage = "Please check your email and click the confirmation link before signing in.";
         } else if (result.error.message.includes('Too many requests')) {
           errorMessage = "Too many login attempts. Please wait a moment and try again.";
         } else if (result.error.message.includes('User not found')) {

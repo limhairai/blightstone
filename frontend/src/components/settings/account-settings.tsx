@@ -156,12 +156,6 @@ export function AccountSettings() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h3 className="text-lg font-semibold text-foreground">Account Information</h3>
-        <p className="text-sm text-muted-foreground mt-1">Manage your personal account data and preferences.</p>
-      </div>
-
       {/* Profile Section */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">

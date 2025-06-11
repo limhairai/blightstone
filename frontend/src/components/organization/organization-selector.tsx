@@ -146,15 +146,30 @@ export function OrganizationSelector() {
   }, [])
 
   // Handle business click with proper Next.js navigation
-  const handleBusinessClick = useCallback((business: Business) => {
+  const handleBusinessClick = useCallback(async (business: Business) => {
     setIsDropdownOpen(false)
     setSearchQuery("")
     setHoveredOrgId(null)
     
+    // Check if business belongs to a different organization
+    if (business.organizationId !== selectedOrg.id) {
+      // Switch to the business's organization first
+      setIsLoading(true)
+      
+      // Add a delay to make the switching more noticeable
+      await new Promise(resolve => setTimeout(resolve, 800))
+      
+      switchOrganization(business.organizationId)
+      setIsLoading(false)
+      
+      // Wait a bit more for the organization switch to complete
+      await new Promise(resolve => setTimeout(resolve, 300))
+    }
+    
     // Navigate to accounts page with business filter
     const businessParam = encodeURIComponent(business.name)
     router.push(`/dashboard/accounts?business=${businessParam}`)
-  }, [router])
+  }, [router, selectedOrg.id, switchOrganization])
 
   // Clean up timeouts on unmount
   const cleanupTimeouts = useCallback(() => {
