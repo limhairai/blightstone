@@ -47,11 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // This helps in quickly updating UI if a session exists,
     // but onAuthStateChange will be the final authority and will set loading to false.
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      // Only set if still in the initial loading phase driven by onAuthStateChange
-      if (loading) {
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-      }
+      console.log("Initial session:", initialSession);
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
     }).catch(error => {
       console.error("Error fetching initial session:", error);
       // If getSession fails, we still rely on onAuthStateChange to set the correct state.
@@ -64,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The first event fired will determine the initial authenticated state.
     const { data: authSubscriptionData } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: AuthSession | null) => {
-        // console.log("Supabase auth event:", event, currentSession);
+        console.log("Supabase auth event:", event, currentSession);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false); // This is the point where the auth state is considered resolved.
@@ -74,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       authSubscriptionData?.subscription?.unsubscribe();
     };
-  }, []); // Run only once on mount
+  }, []);
 
   // Sign out function
   const signOut = useCallback(async () => {
