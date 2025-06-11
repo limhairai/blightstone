@@ -1,12 +1,12 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { AccountsTable } from "@/components/dashboard/accounts-table"
-import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
-import { Button } from "@/components/ui/button"
+import { AccountsTable } from "../../../components/dashboard/accounts-table"
+import { CreateAdAccountDialog } from "../../../components/accounts/create-ad-account-dialog"
+import { Button } from "../../../components/ui/button"
 import { Plus, LayoutGrid, ArrowLeft } from "lucide-react"
 import Link from "next/link"
-import { layoutTokens } from "@/lib/design-tokens"
+import { layoutTokens } from "../../../lib/design-tokens"
 
 export default function AccountsPageV0() {
   const searchParams = useSearchParams()
