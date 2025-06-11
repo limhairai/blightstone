@@ -1,13 +1,13 @@
 "use client"
 
-import { BusinessesTable } from "../../../components/businesses/businesses-table"
-import { CreateBusinessDialog } from "../../../components/businesses/create-business-dialog"
-import { Button } from "../../../components/ui/button"
+import { BusinessesTable } from "@/components/businesses/businesses-table"
+import { CreateBusinessDialog } from "@/components/businesses/create-business-dialog"
+import { Button } from "@/components/ui/button"
 import { Plus, Building2 } from "lucide-react"
-import { formatCurrency } from "../../../lib/mock-data"
-import { layout } from "../../../lib/layout-utils"
-import { contentTokens } from "../../../lib/content-tokens"
-import { useDemoState } from "../../../contexts/DemoStateContext"
+import { formatCurrency } from "@/lib/mock-data"
+import { layout } from "@/lib/layout-utils"
+import { contentTokens } from "@/lib/content-tokens"
+import { useDemoState } from "@/contexts/DemoStateContext"
 
 export default function BusinessesPage() {
   const { state } = useDemoState()
