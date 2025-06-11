@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 // Import the types from your .d.ts file if you need to use them explicitly in the component,
 // but for callback parameters, TypeScript should infer them from the updated global Window.FB types.
-// import type { FBLoginResponse, FBProfileResponse } from '@/types/facebook'; // This import is not strictly needed if TS infers correctly from global
+// import type { FBLoginResponse, FBProfileResponse } from '../../types/facebook'; // This import is not strictly needed if TS infers correctly from global
 
 const FACEBOOK_APP_ID = '659164973596972';
 

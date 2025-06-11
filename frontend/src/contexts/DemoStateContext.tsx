@@ -16,7 +16,7 @@ import {
   type MockAccount,
   type MockTransaction,
   type MockOrganization
-} from '@/lib/mock-data'
+} from '../lib/mock-data'
 import { toast } from 'sonner'
 
 // Team member interface

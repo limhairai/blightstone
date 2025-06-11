@@ -9,7 +9,7 @@ import {
   getNextStep,
   OnboardingPersistence,
   SetupProgress
-} from '@/lib/state-utils'
+} from '../lib/state-utils'
 import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '../lib/mock-data'
 
 export interface UseAdvancedOnboardingReturn {
