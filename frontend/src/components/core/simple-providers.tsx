@@ -1,11 +1,11 @@
 "use client"
 
-import { ThemeProvider } from "@/components/ui/theme-provider"
-import { AuthProvider, useAuth } from "@/contexts/AuthContext"
-import { AppDataProvider, useAppData } from "@/contexts/AppDataContext"
-import { AppShell } from '@/components/layout/app-shell'
-import { Toaster } from "@/components/ui/sonner"
-import { Loader } from "@/components/core/Loader"
+import { ThemeProvider } from "../ui/theme-provider"
+import { AuthProvider, useAuth } from "../../contexts/AuthContext"
+import { AppDataProvider, useAppData } from "../../contexts/AppDataContext"
+import { AppShell } from '../layout/app-shell'
+import { Toaster } from "../ui/sonner"
+import { Loader } from "./Loader"
 import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
 import { TooltipProvider } from "@radix-ui/react-tooltip"

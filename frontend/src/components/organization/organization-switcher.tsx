@@ -2,8 +2,8 @@
 
 import { useState } from "react"
 import { Check, ChevronsUpDown, Plus } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "../../lib/utils"
+import { Button } from "../ui/button"
 import {
   Command,
   CommandEmpty,
@@ -18,8 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { useAppData } from "@/contexts/AppDataContext";
-import { contentTokens } from "@/lib/content-tokens"
+import { useAppData } from "../../contexts/AppDataContext";
+import { contentTokens } from "../../lib/content-tokens"
 
 interface OrganizationSwitcherProps {
   className?: string

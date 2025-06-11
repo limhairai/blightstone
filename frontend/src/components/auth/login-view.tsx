@@ -1,14 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { AdHubLogo } from "@/components/core/AdHubLogo"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { AdHubLogo } from "../core/AdHubLogo"
 import { useState, useEffect } from "react"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { Loader } from "@/components/core/Loader"
+import { Loader } from "../core/Loader"
 
 export function LoginView() {
   const [email, setEmail] = useState("");

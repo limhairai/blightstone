@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "../ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { SlidersHorizontal } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Input } from "../ui/input"
 
 interface AccountsFilterProps {
   onFilterChange?: (filters: {

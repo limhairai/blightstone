@@ -1,6 +1,6 @@
 "use client";
 
-import { AccountManagementPreview } from "@/components/accounts/account-management-preview"
+import { AccountManagementPreview } from "./account-management-preview"
 import { useInView } from 'react-intersection-observer';
 
 export function AccountManagementSection() {

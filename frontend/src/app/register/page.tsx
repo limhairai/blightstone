@@ -1,6 +1,6 @@
 "use client"
 
-import { RegisterView } from "@/components/auth/register-view"
+import { RegisterView } from "../../components/auth/register-view"
 
 export default function RegisterPage() {
   return <RegisterView />

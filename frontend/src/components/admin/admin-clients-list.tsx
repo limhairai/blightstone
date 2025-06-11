@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
 import { Search, UserCog, DollarSign, ChevronRight } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Input } from "../ui/input"
 import Link from "next/link"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "../ui/avatar"
 
 interface AdminClient {
   id: string

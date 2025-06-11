@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { useSuperuser } from "@/contexts/SuperuserContext";
-import { Loader } from "@/components/core/Loader";
+import { useSuperuser } from "../../contexts/SuperuserContext";
+import { Loader } from "../core/Loader";
 
 export default function AdminPageContent({ children }: { children: React.ReactNode }) {
   const { isSuperuser, loading, error } = useSuperuser();

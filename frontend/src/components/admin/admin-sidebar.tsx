@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 import {
   LayoutDashboard,
   Users,
@@ -16,7 +16,7 @@ import {
   ChevronRight,
   type LucideIcon,
 } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
 // Define an interface for navigation items
 interface NavItem {

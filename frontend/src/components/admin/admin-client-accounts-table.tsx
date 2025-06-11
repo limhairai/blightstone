@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
 import { ExternalLink, DollarSign, BarChart3, Edit } from "lucide-react"
 
 interface AdminClientAccount {

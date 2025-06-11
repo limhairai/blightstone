@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Badge } from "../ui/badge"
+import { Alert, AlertDescription } from "../ui/alert"
 import { 
   Database, 
   Trash2, 
@@ -14,8 +14,8 @@ import {
   CheckCircle,
   Info
 } from "lucide-react"
-import { businessStore } from "@/lib/business-store"
-import { useToast } from "@/hooks/use-toast"
+import { businessStore } from "../../lib/business-store"
+import { useToast } from "../../hooks/use-toast"
 
 export function DemoDataPanel() {
   const { toast } = useToast()

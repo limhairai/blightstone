@@ -3,10 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { OrganizationSelector } from "@/components/organization/organization-selector"
-import { AdHubLogo } from "@/components/core/AdHubLogo"
-import { cn } from "@/lib/utils"
+import { Button } from "../ui/button"
+import { OrganizationSelector } from "../organization/organization-selector"
+import { AdHubLogo } from "../core/AdHubLogo"
+import { cn } from "../../lib/utils"
 import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard } from "lucide-react"
 
 interface SidebarItem {

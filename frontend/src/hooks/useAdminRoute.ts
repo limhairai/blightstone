@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppData } from '../contexts/AppDataContext';
 
 export function useAdminRoute() {
   const { canViewAdmin, loading } = useAppData();

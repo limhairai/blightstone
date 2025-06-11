@@ -1,15 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { formatCurrency } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Separator } from "../ui/separator"
+import { formatCurrency } from "../../lib/utils"
 import { Wallet, DollarSign, ArrowRight, Check, Loader2 } from "lucide-react"
-import type { MockAccount } from "@/types/account"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import type { MockAccount } from "../../types/account"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import { toast } from "sonner"
 
 interface TopUpDialogProps {

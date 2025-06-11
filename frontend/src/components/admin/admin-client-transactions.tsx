@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Badge } from "../ui/badge"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
 import { DollarSign, Search, Calendar, ArrowDownToLine, ArrowUpFromLine, RefreshCw } from "lucide-react"
 
 type TransactionType = "deposit" | "withdrawal" | "transfer" | "fee"

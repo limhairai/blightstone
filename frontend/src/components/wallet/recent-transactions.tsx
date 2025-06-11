@@ -2,8 +2,8 @@
 
 import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
-import { layout } from "@/lib/layout-utils"
-import { formatCurrency, transactionColors } from "@/lib/mock-data"
+import { layout } from "../../lib/layout-utils"
+import { formatCurrency, transactionColors } from "../../lib/mock-data"
 
 interface Transaction {
   id: string

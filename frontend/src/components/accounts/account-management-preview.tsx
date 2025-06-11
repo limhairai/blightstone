@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../ui/button"
 
 // Define accounts outside the component so it's a stable reference
 const accountsData = [

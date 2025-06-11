@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils"
-import { type StatusType, getStatusConfig, normalizeStatus } from "@/lib/status-types"
+import { cn } from "../../lib/utils"
+import { type StatusType, getStatusConfig, normalizeStatus } from "../../lib/status-types"
 
 interface StatusBadgeProps {
   status: StatusType | string // Accept both strict types and strings for flexibility

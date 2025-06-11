@@ -1,4 +1,4 @@
-import { getUsageCircleColorValue } from "@/lib/design-tokens"
+import { getUsageCircleColorValue } from "../../lib/design-tokens"
 
 interface UsageCircleProps {
   percentage: number

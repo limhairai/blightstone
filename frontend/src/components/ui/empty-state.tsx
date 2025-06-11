@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "./button"
 import type { LucideIcon } from "lucide-react"
 
 interface EmptyStateProps {

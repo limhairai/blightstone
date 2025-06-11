@@ -1,4 +1,4 @@
-import { MOCK_ACCOUNTS } from "@/lib/mock-data"
+import { MOCK_ACCOUNTS } from "../lib/mock-data"
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {

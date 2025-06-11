@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../ui/button"
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Label } from "../ui/label"
+import { Input } from "../ui/input"
 import { Check, Loader2 } from "lucide-react"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import { toast } from "sonner"
 
 interface CreateAdAccountDialogProps {

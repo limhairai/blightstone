@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Slider } from "@/components/ui/slider"
-import { formatCurrency } from "@/lib/mock-data"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { ScrollArea } from "../ui/scroll-area"
+import { Slider } from "../ui/slider"
+import { formatCurrency } from "../../lib/mock-data"
 import { Shuffle, Info, Percent, DollarSign, Trash2 } from 'lucide-react'
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import React from "react"
 
 interface DistributeFundsDialogProps {

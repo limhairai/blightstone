@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { formatCurrency, getInitials } from "@/lib/mock-data"
-import { getBusinessAvatarClasses } from "@/lib/design-tokens"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Button } from "../ui/button"
+import { formatCurrency, getInitials } from "../../lib/mock-data"
+import { getBusinessAvatarClasses } from "../../lib/design-tokens"
 import { ChevronUp, ChevronDown, MoreHorizontal } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import { useTheme } from "next-themes"
 
 interface BusinessBalance {

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../ui/button"
 import {
   Dialog,
   DialogContent,
@@ -12,18 +12,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { Input } from "../ui/input"
+import { Textarea } from "../ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Label } from "../ui/label"
+import { useToast } from "../../hooks/use-toast"
 import { Check, Loader2, Building2, Upload, X, Plus } from "lucide-react"
-import type { Business } from "@/types/business"
-import { Badge } from "@/components/ui/badge"
+import type { Business } from "../../types/business"
+import { Badge } from "../ui/badge"
 import { toast } from "sonner"
-import { getInitials, type MockBusiness } from "@/lib/mock-data"
-import { getBusinessAvatarClasses } from "@/lib/design-tokens"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { getInitials, type MockBusiness } from "../../lib/mock-data"
+import { getBusinessAvatarClasses } from "../../lib/design-tokens"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import { useTheme } from "next-themes"
 
 interface EditBusinessDialogProps {

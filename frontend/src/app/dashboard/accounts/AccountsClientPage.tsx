@@ -1,9 +1,9 @@
 "use client"
 
-import { CompactHeaderMetrics } from "@/components/dashboard/compact-header-metrics"
-import { CompactAccountsTable } from "@/components/dashboard/compact-accounts-table"
-import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
-import { Button } from "@/components/ui/button"
+import { CompactHeaderMetrics } from "../../../components/dashboard/compact-header-metrics"
+import { CompactAccountsTable } from "../../../components/dashboard/compact-accounts-table"
+import { CreateAdAccountDialog } from "../../../components/accounts/create-ad-account-dialog"
+import { Button } from "../../../components/ui/button"
 import { Plus, LayoutGrid } from "lucide-react"
 
 export default function AccountsClientPage() {

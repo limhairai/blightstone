@@ -2,8 +2,8 @@
 
 import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon } from "lucide-react"
 import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatCurrency, transactionColors } from "@/lib/mock-data"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { formatCurrency, transactionColors } from "../../lib/mock-data"
 
 interface Transaction {
   id: string

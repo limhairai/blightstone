@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { MOCK_ACCOUNTS, formatCurrency } from "@/lib/mock-data"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
+import { Badge } from "../ui/badge"
+import { MOCK_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
 
 export function AdAccountsList() {
   // Use centralized mock data and convert to the format expected by this component

@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
 import { PlusIcon, Search, Building2, ExternalLink, MoreHorizontal } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Checkbox } from "@/components/ui/checkbox"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { StatusDot } from "@/components/ui/status-dot"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Checkbox } from "../ui/checkbox"
+import { StatusBadge } from "../ui/status-badge"
+import { StatusDot } from "../ui/status-dot"
 import { CreateBusinessDialog } from "./create-business-dialog"
 import {
   DropdownMenu,

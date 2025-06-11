@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils"
-import { contentTokens } from "@/lib/content-tokens"
+import { cn } from "../../lib/utils"
+import { contentTokens } from "../../lib/content-tokens"
 
 interface LoadingSpinnerProps {
   size?: "small" | "medium" | "large"

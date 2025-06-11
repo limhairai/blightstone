@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 
 // Define a type for organization transaction entries
 interface OrgTransaction {

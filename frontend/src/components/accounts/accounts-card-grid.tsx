@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardFooter } from "../ui/card"
+import { Badge } from "../ui/badge"
 import { MoreHorizontal, ChevronRight, BarChart3, Edit, Trash2, Wallet } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { AccountTopUpDialog } from "@/components/wallet/account-top-up-dialog"
-import { cn } from "@/lib/utils"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
+import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
+import { cn } from "../../lib/utils"
 
 interface Account {
   id: string

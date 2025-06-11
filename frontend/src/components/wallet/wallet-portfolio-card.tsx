@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { formatCurrency, MOCK_BALANCE_DATA } from "@/lib/mock-data"
+import { Card, CardContent } from "../ui/card"
+import { Button } from "../ui/button"
+import { formatCurrency, MOCK_BALANCE_DATA } from "../../lib/mock-data"
 import { TrendingDown, TrendingUp } from "lucide-react"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { useDemoState } from "../../contexts/DemoStateContext"
 
 export function WalletPortfolioCard() {
   const { state } = useDemoState()

@@ -1,6 +1,6 @@
 "use client"
 
-import { BusinessDetailView } from "@/components/businesses/business-detail-view"
+import { BusinessDetailView } from "../../../../components/businesses/business-detail-view"
 
 interface BusinessDetailPageProps {
   params: {

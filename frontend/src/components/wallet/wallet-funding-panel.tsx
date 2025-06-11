@@ -1,16 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Building2, ArrowUpDown, Shuffle, CreditCard, Wallet } from 'lucide-react'
 import { toast } from "sonner"
 import { ConsolidateFundsDialog } from "./consolidate-funds-dialog"
 import { DistributeFundsDialog } from "./distribute-funds-dialog"
-import { useDemoState } from "@/contexts/DemoStateContext"
-import { formatCurrency } from "@/lib/mock-data"
+import { useDemoState } from "../../contexts/DemoStateContext"
+import { formatCurrency } from "../../lib/mock-data"
 
 export function WalletFundingPanel() {
   const { state, fundWallet, withdrawFromWallet } = useDemoState()

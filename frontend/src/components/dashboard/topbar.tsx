@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { CircularProgress } from "@/components/ui/circular-progress"
-import { CompactHeaderMetrics } from "@/components/dashboard/compact-header-metrics"
-import { OrganizationSelector } from "@/components/dashboard/organization-selector"
-import { TopUpDialog } from "@/components/dashboard/top-up-dialog"
-import { MOCK_FINANCIAL_DATA } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/utils"
+import { Button } from "../ui/button"
+import { CircularProgress } from "../ui/circular-progress"
+import { CompactHeaderMetrics } from "./compact-header-metrics"
+import { OrganizationSelector } from "./organization-selector"
+import { TopUpDialog } from "./top-up-dialog"
+import { MOCK_FINANCIAL_DATA } from "../../lib/mock-data"
+import { formatCurrency } from "../../lib/utils"
 import { Bell, Plus, User, Settings, LogOut, Wallet } from "lucide-react"
 import {
   DropdownMenu,

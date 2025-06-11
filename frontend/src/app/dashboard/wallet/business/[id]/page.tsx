@@ -2,15 +2,15 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { formatCurrency, MOCK_BUSINESSES } from "@/lib/mock-data"
+import { Button } from "../../../../../components/ui/button"
+import { Badge } from "../../../../../components/ui/badge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../../../../components/ui/dropdown-menu"
+import { formatCurrency, MOCK_BUSINESSES } from "../../../../../lib/mock-data"
 import { ArrowLeft, TrendingUp, TrendingDown, ChevronDown, Calendar, Info, ExternalLink } from 'lucide-react'
-import { layout } from "@/lib/layout-utils"
-import { contentTokens } from "@/lib/content-tokens"
-import { layoutTokens } from "@/lib/design-tokens"
-import { usePageTitle } from "@/components/core/simple-providers"
+import { layout } from "../../../../../lib/layout-utils"
+import { contentTokens } from "../../../../../lib/content-tokens"
+import { layoutTokens } from "../../../../../lib/design-tokens"
+import { usePageTitle } from "../../../../../components/core/simple-providers"
 
 export default function BusinessDetailPage() {
   const params = useParams()

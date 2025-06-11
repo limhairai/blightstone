@@ -2,19 +2,19 @@
 
 import { useState } from "react"
 import { ArrowDownIcon, ArrowUpIcon, CalendarIcon, DownloadIcon, FilterIcon, SearchIcon, SlidersHorizontal, Receipt } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
+import { Button } from "../../../components/ui/button"
+import { Card, CardHeader } from "../../../components/ui/card"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../../components/ui/tabs"
+import { Input } from "../../../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover"
+import { Calendar } from "../../../components/ui/calendar"
 import { format } from "date-fns"
-import { formatCurrency, MOCK_BUSINESSES } from "@/lib/mock-data"
-import { useDemoState } from "@/contexts/DemoStateContext"
-import { usePageTitle } from "@/components/core/simple-providers"
+import { formatCurrency, MOCK_BUSINESSES } from "../../../lib/mock-data"
+import { useDemoState } from "../../../contexts/DemoStateContext"
+import { usePageTitle } from "../../../components/core/simple-providers"
 import { useEffect } from "react"
-import { ErrorBoundary } from "@/components/ui/error-boundary"
+import { ErrorBoundary } from "../../../components/ui/error-boundary"
 
 // Transaction interface with business information
 interface Transaction {

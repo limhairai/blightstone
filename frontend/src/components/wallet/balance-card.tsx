@@ -1,8 +1,8 @@
 "use client"
 
 import { Wallet } from 'lucide-react'
-import { formatCurrency, MOCK_FINANCIAL_DATA } from '@/lib/mock-data'
-import { typographyTokens } from '@/lib/design-tokens'
+import { formatCurrency, MOCK_FINANCIAL_DATA } from '../../lib/mock-data'
+import { typographyTokens } from '../../lib/design-tokens'
 
 interface BalanceCardProps {
   balance?: number

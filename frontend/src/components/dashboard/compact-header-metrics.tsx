@@ -1,5 +1,5 @@
-import { MOCK_ACCOUNTS, MOCK_FINANCIAL_DATA } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/utils"
+import { MOCK_ACCOUNTS, MOCK_FINANCIAL_DATA } from "../../lib/mock-data"
+import { formatCurrency } from "../../lib/utils"
 import { TrendingUp, Wallet, CreditCard } from "lucide-react"
 
 export function CompactHeaderMetrics() {

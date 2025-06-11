@@ -1,15 +1,15 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Checkbox } from "@/components/ui/checkbox"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { StatusDot } from "@/components/ui/status-dot"
-import { Badge } from "@/components/ui/badge"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Tabs, TabsList, TabsTrigger } from "../ui/tabs"
+import { Card, CardContent } from "../ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Checkbox } from "../ui/checkbox"
+import { StatusBadge } from "../ui/status-badge"
+import { StatusDot } from "../ui/status-dot"
+import { Badge } from "../ui/badge"
 import { 
   Search, 
   PlusCircle, 
@@ -32,9 +32,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { CreateBusinessDialog } from "./create-business-dialog"
 import { useRouter } from "next/navigation"
-import { gradients } from "@/lib/design-system"
-import { businessStore, type Business } from "@/lib/business-store"
-import { useToast } from "@/hooks/use-toast"
+import { gradients } from "../../lib/design-system"
+import { businessStore, type Business } from "../../lib/business-store"
+import { useToast } from "../../hooks/use-toast"
 
 interface AdAccountSummary {
   total: number

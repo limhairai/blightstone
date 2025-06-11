@@ -11,16 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
-import { getInitials } from "@/lib/mock-data"
-import { getAvatarClasses } from "@/lib/design-tokens"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { cn } from "../../lib/utils"
+import { getInitials } from "../../lib/mock-data"
+import { getAvatarClasses } from "../../lib/design-tokens"
 import { useTheme } from "next-themes"
-import { useDemoState } from "@/contexts/DemoStateContext"
-import { MOCK_BUSINESSES_BY_ORG } from "@/lib/mock-data"
-import { MOCK_ACCOUNTS_BY_ORG } from "@/lib/mock-data"
+import { useDemoState } from "../../contexts/DemoStateContext"
+import { MOCK_BUSINESSES_BY_ORG } from "../../lib/mock-data"
+import { MOCK_ACCOUNTS_BY_ORG } from "../../lib/mock-data"
 
 interface Organization {
   id: string

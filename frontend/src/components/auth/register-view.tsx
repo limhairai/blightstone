@@ -1,16 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AdHubLogo } from "@/components/core/AdHubLogo"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
+import { AdHubLogo } from "../core/AdHubLogo"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from '@/contexts/AuthContext'
-import { Skeleton } from "@/components/ui/skeleton"
-import { toast } from "@/components/ui/use-toast"
+import { useAuth } from '../../contexts/AuthContext'
+import { Skeleton } from "../ui/skeleton"
+import { toast } from "../ui/use-toast"
 
 export function RegisterView() {
   const [name, setName] = useState("");

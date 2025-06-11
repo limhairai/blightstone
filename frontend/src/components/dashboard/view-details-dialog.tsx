@@ -1,12 +1,12 @@
 "use client"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { StatusBadge } from "@/components/dashboard/status-badge"
-import { formatCurrency } from "@/utils/format"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { Separator } from "../ui/separator"
+import { StatusBadge } from "./status-badge"
+import { formatCurrency } from "../../utils/format"
 import { ExternalLink, Copy, Calendar, DollarSign, TrendingUp } from "lucide-react"
-import type { MockAccount } from "@/types/account"
+import type { MockAccount } from "../../types/account"
 
 interface ViewDetailsDialogProps {
   account: MockAccount | null

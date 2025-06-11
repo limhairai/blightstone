@@ -1,12 +1,12 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { StatusDot } from "@/components/ui/status-dot"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Card, CardContent, CardHeader } from "../ui/card"
+import { Badge } from "../ui/badge"
+import { StatusBadge } from "../ui/status-badge"
+import { StatusDot } from "../ui/status-dot"
 import { 
   ArrowLeft,
   Search, 
@@ -32,10 +32,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
-import { gradients } from "@/lib/design-system"
-import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
-import { businessStore, type Business, type AdAccount } from "@/lib/business-store"
-import { useToast } from "@/hooks/use-toast"
+import { gradients } from "../../lib/design-system"
+import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
+import { businessStore, type Business, type AdAccount } from "../../lib/business-store"
+import { useToast } from "../../hooks/use-toast"
 
 interface BusinessDetailViewProps {
   businessId: string

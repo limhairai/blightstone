@@ -1,6 +1,6 @@
 "use client"
 
-import { Badge } from "@/components/ui/badge"
+import { Badge } from "../ui/badge"
 
 export function EnvIndicator() {
   const environment = process.env.NEXT_PUBLIC_ENVIRONMENT || 'unknown'

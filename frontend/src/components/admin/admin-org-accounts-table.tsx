@@ -1,7 +1,7 @@
-import { useAdAccounts } from "@/contexts/AdAccountContext";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import { useAdAccounts } from "../../contexts/AdAccountContext";
+import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
 
 export function AdminOrgAccountsTable({ _orgId, isSuperuser }: { _orgId: string, isSuperuser: boolean }) {
   const { adAccounts, loading, error } = useAdAccounts();

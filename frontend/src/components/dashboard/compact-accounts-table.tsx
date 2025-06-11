@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "../ui/button"
+import { Checkbox } from "../ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,14 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { CompactFilters } from "@/components/dashboard/compact-filters"
-import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
-import { TopUpDialog } from "@/components/dashboard/top-up-dialog"
-import { MOCK_ACCOUNTS, type MockAccount } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/utils"
+import { StatusBadge } from "../ui/status-badge"
+import { CompactFilters } from "./compact-filters"
+import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
+import { TopUpDialog } from "./top-up-dialog"
+import { MOCK_ACCOUNTS, type MockAccount } from "../../lib/mock-data"
+import { formatCurrency } from "../../lib/utils"
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Plus, TrendingUp, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 
 export function CompactAccountsTable() {
   const [accounts, setAccounts] = useState<MockAccount[]>(MOCK_ACCOUNTS)

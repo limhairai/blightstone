@@ -4,15 +4,15 @@ import type React from "react"
 
 import { useState } from "react"
 import { Trash2, AlertTriangle, Mail, Copy, Upload, X, Shield } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
+import { Badge } from "../ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Separator } from "../ui/separator"
+import { Switch } from "../ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -22,8 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { useDemoState, type UserProfile } from "@/contexts/DemoStateContext"
-import { gradientTokens } from "@/lib/design-tokens"
+import { useDemoState, type UserProfile } from "../../contexts/DemoStateContext"
+import { gradientTokens } from "../../lib/design-tokens"
 
 export function AccountSettings() {
   const { state, updateUserProfile } = useDemoState()

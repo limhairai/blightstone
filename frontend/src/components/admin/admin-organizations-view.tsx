@@ -1,8 +1,8 @@
 "use client"
 
-import { useSuperuser } from "@/contexts/SuperuserContext"
-import { AdminOrgAccountsTable } from "@/components/admin/admin-org-accounts-table"
-import { Loader } from "@/components/core/Loader"
+import { useSuperuser } from "../../contexts/SuperuserContext"
+import { AdminOrgAccountsTable } from "./admin-org-accounts-table"
+import { Loader } from "../core/Loader"
 
 export function AdminOrganizationsView() {
   const { isSuperuser, loading, error } = useSuperuser()

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { usePathname } from 'next/navigation';
-import { MOCK_FINANCIAL_DATA } from '@/lib/mock-data';
+import { MOCK_FINANCIAL_DATA } from '../lib/mock-data';
 
 // Types
 interface Organization {

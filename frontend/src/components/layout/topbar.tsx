@@ -1,7 +1,7 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "../ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,18 +10,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { CircularProgress } from "@/components/ui/circular-progress"
+import { CircularProgress } from "../ui/circular-progress"
 import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
 import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"
-import { usePageTitle } from "@/components/core/simple-providers"
-import { useAuth } from "@/contexts/AuthContext"
-import { useAppData } from "@/contexts/AppDataContext"
+import { usePageTitle } from "../core/simple-providers"
+import { useAuth } from "../../contexts/AuthContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { useTheme } from "next-themes"
 import Link from "next/link"
-import { useDemoState } from "@/contexts/DemoStateContext"
-import { formatCurrency } from "@/lib/mock-data"
+import { useDemoState } from "../../contexts/DemoStateContext"
+import { formatCurrency } from "../../lib/mock-data"
 import { useState, useEffect } from "react"
-import { gradientTokens } from "@/lib/design-tokens"
+import { gradientTokens } from "../../lib/design-tokens"
 import { useRouter } from "next/navigation"
 
 interface TopbarProps {

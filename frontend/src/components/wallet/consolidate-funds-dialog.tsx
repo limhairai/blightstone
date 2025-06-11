@@ -1,13 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { formatCurrency } from "@/lib/mock-data"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
+import { Button } from "../ui/button"
+import { Checkbox } from "../ui/checkbox"
+import { ScrollArea } from "../ui/scroll-area"
+import { formatCurrency } from "../../lib/mock-data"
 import { ArrowUpDown, Info } from 'lucide-react'
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import React from "react"
 
 interface ConsolidateFundsDialogProps {

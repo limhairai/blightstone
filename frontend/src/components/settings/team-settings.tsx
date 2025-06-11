@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { MoreHorizontal, Search, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Badge } from "../ui/badge"
+import { Avatar, AvatarFallback } from "../ui/avatar"
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,8 +34,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { useDemoState, type TeamMember } from "@/contexts/DemoStateContext"
-import { gradientTokens } from "@/lib/design-tokens"
+import { useDemoState, type TeamMember } from "../../contexts/DemoStateContext"
+import { gradientTokens } from "../../lib/design-tokens"
 
 export function TeamSettings() {
   const { state, inviteTeamMember, removeTeamMember, changeMemberRole, resendInvitation } = useDemoState()

@@ -1,8 +1,8 @@
 "use client"
 
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 import { Loader2, RefreshCw, Download, Upload, CreditCard, BarChart3 } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "./card"
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg"

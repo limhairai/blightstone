@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { StatusDot } from "@/components/ui/status-dot"
-import { AccountsTable } from "@/components/accounts/accounts-table"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { StatusDot } from "../ui/status-dot"
+import { AccountsTable } from "./accounts-table"
 import { Search, Plus } from "lucide-react"
 
 type AccountStatus = "active" | "pending" | "disabled" | "idle" | "archived" | "error" | "warning" | "success" | "info" | "suspended" | "inactive"

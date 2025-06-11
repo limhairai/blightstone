@@ -1,7 +1,7 @@
 "use client"
 
 import { LayoutGrid, List } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "./button"
 
 interface ViewToggleProps {
   view: "table" | "grid"

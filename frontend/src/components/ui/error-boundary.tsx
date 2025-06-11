@@ -1,9 +1,9 @@
 "use client"
 
 import { Component, ReactNode } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "./button"
+import { Card, CardContent, CardHeader, CardTitle } from "./card"
+import { Alert, AlertDescription } from "./alert"
 import { 
   AlertTriangle, 
   RefreshCw, 
@@ -17,7 +17,7 @@ import {
   FileX,
   AlertCircle
 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 import { toast } from "sonner"
 
 interface ErrorBoundaryState {

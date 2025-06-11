@@ -10,10 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { cn } from "@/lib/utils"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { cn } from "../../lib/utils"
 
 // Update the Organization interface to remove accountCount
 interface Organization {

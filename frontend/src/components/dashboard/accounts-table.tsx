@@ -4,10 +4,10 @@ import type React from "react"
 
 import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "../ui/checkbox"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,20 +15,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { AccountTransactionsDialog } from "@/components/dashboard/account-transactions-dialog"
-import { WithdrawBalanceDialog } from "@/components/dashboard/withdraw-balance-dialog"
-import { TopUpDialog } from "@/components/dashboard/top-up-dialog"
-import { MOCK_BUSINESSES, type MockAccount } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/utils"
+import { StatusBadge } from "../ui/status-badge"
+import { AccountTransactionsDialog } from "./account-transactions-dialog"
+import { WithdrawBalanceDialog } from "./withdraw-balance-dialog"
+import { TopUpDialog } from "./top-up-dialog"
+import { MOCK_BUSINESSES, type MockAccount } from "../../lib/mock-data"
+import { formatCurrency } from "../../lib/utils"
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { layout } from "@/lib/layout-utils"
-import { contentTokens } from "@/lib/content-tokens"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { cn } from "../../lib/utils"
+import { layout } from "../../lib/layout-utils"
+import { contentTokens } from "../../lib/content-tokens"
+import { useDemoState } from "../../contexts/DemoStateContext"
 import { toast } from "sonner"
-import { ViewDetailsDialog } from "@/components/dashboard/view-details-dialog"
-import { BulkTopUpDialog } from "@/components/dashboard/bulk-top-up-dialog"
+import { ViewDetailsDialog } from "./view-details-dialog"
+import { BulkTopUpDialog } from "./bulk-top-up-dialog"
 
 interface AccountsTableProps {
   initialBusinessFilter?: string

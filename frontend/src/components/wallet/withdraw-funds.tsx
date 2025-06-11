@@ -3,15 +3,15 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import { DollarSign, CreditCard, Building, Clock, Loader2 } from "lucide-react"
-import { layout } from "@/lib/layout-utils"
-import { contentTokens } from "@/lib/content-tokens"
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
+import { layout } from "../../lib/layout-utils"
+import { contentTokens } from "../../lib/content-tokens"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../ui/select"
 
 export function WithdrawFunds() {
   const [amount, setAmount] = useState("")

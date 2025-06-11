@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { MoreHorizontal, Edit, ExternalLink, Archive, Trash2, AlertCircle, Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Checkbox } from "@/components/ui/checkbox"
-import { AccountTopUpDialog } from "@/components/wallet/account-top-up-dialog"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { StatusDot } from "@/components/ui/status-dot"
+import { Checkbox } from "../ui/checkbox"
+import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
+import { StatusBadge } from "../ui/status-badge"
+import { StatusDot } from "../ui/status-dot"
 
 // Define a more specific type for account status
 type AccountStatus = "active" | "pending" | "disabled" | "idle" | "archived" | "error" | "warning" | "success" | "info" | "suspended" | "inactive";

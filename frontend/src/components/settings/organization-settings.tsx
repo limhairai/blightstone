@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
 import {
   Dialog,
   DialogContent,
@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings } from 'lucide-react'
-import { Progress } from "@/components/ui/progress"
-import { pricingPlans } from "@/lib/mock-data"
-import { useDemoState } from "@/contexts/DemoStateContext"
-import { gradientTokens } from "@/lib/design-tokens"
+import { Progress } from "../ui/progress"
+import { pricingPlans } from "../../lib/mock-data"
+import { useDemoState } from "../../contexts/DemoStateContext"
+import { gradientTokens } from "../../lib/design-tokens"
 
 export function OrganizationSettings() {
   const { state, updateOrganization } = useDemoState()

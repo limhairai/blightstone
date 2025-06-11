@@ -1,14 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { useToast } from "@/hooks/use-toast"
-import { formatCurrency } from "@/lib/utils"
-import { MOCK_FINANCIAL_DATA, type MockAccount } from "@/lib/mock-data"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Separator } from "../ui/separator"
+import { useToast } from "../../hooks/use-toast"
+import { formatCurrency } from "../../lib/utils"
+import { MOCK_FINANCIAL_DATA, type MockAccount } from "../../lib/mock-data"
 import { ArrowUpRight, DollarSign, Check, Loader2, AlertTriangle } from "lucide-react"
 
 interface WithdrawBalanceDialogProps {

@@ -17,11 +17,11 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 
 // Supabase imports
 import { User as SupabaseUser, Session, AuthError, AuthChangeEvent, AuthSession } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabaseClient'; // Adjusted path assuming lib is at src/lib
+import { supabase } from '../lib/supabaseClient'; // Adjusted path assuming lib is at src/lib
 
 import { useRouter } from 'next/navigation';
-import { toast } from "@/components/ui/use-toast"
-import { Loader } from "@/components/core/Loader";
+import { toast } from "../components/ui/use-toast"
+import { Loader } from "../components/core/Loader";
 
 interface AuthContextType {
   user: SupabaseUser | null;

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "../../lib/utils"
 import { Loader2 } from "lucide-react"
 
 export function Loader({ fullScreen = false }: { fullScreen?: boolean }) {

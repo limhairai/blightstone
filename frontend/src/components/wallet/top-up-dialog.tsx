@@ -1,17 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
+import { Label } from "../ui/label"
+import { Slider } from "../ui/slider"
+import { Alert, AlertDescription } from "../ui/alert"
 import { InfoIcon, AlertCircle, Wallet } from "lucide-react"
-import { formatCurrency } from "@/lib/mock-data"
-import { contentTokens } from "@/lib/content-tokens"
-import { layout } from "@/lib/layout-utils"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { formatCurrency } from "../../lib/mock-data"
+import { contentTokens } from "../../lib/content-tokens"
+import { layout } from "../../lib/layout-utils"
+import { useDemoState } from "../../contexts/DemoStateContext"
 
 interface TopUpDialogProps {
   isOpen: boolean

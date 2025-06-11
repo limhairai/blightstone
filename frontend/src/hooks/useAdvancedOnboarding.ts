@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { useAppData } from '@/contexts/AppDataContext'
-import { supabase } from '@/lib/supabaseClient'
+import { useAuth } from '../contexts/AuthContext'
+import { useAppData } from '../contexts/AppDataContext'
+import { supabase } from '../lib/supabaseClient'
 import { 
   getSetupProgress,
   shouldShowOnboarding,
@@ -10,7 +10,7 @@ import {
   OnboardingPersistence,
   SetupProgress
 } from '@/lib/state-utils'
-import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '@/lib/mock-data'
+import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '../lib/mock-data'
 
 export interface UseAdvancedOnboardingReturn {
   // State

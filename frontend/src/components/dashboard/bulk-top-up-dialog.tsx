@@ -1,17 +1,17 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { useToast } from "@/hooks/use-toast"
-import { formatCurrency } from "@/utils/format"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Checkbox } from "../ui/checkbox"
+import { ScrollArea } from "../ui/scroll-area"
+import { useToast } from "../../hooks/use-toast"
+import { formatCurrency } from "../../utils/format"
 import { Wallet, DollarSign, Check, Loader2 } from "lucide-react"
-import type { MockAccount } from "@/types/account"
+import type { MockAccount } from "../../types/account"
 
 interface BulkTopUpDialogProps {
   selectedAccounts: MockAccount[]

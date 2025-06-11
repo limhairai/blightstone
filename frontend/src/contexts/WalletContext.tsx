@@ -1,7 +1,7 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { useAppData } from "@/contexts/AppDataContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAppData } from "./AppDataContext";
+import { useAuth } from "./AuthContext";
 
 interface AdAccount {
   id: string;

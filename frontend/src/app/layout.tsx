@@ -4,10 +4,10 @@ import type { Metadata } from "next";
 import { Inter } from 'next/font/google';
 import "@/styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
-import { SimpleProviders } from "@/components/core/simple-providers";
-import { EnvIndicator } from "@/components/debug/env-indicator";
-import { Toaster } from "@/components/ui/sonner";
-import { DemoProvider } from "@/contexts/DemoStateContext";
+import { SimpleProviders } from "../components/core/simple-providers";
+import { EnvIndicator } from "../components/debug/env-indicator";
+import { Toaster } from "../components/ui/sonner";
+import { DemoProvider } from "../contexts/DemoStateContext";
 
 const inter = Inter({ subsets: ["latin"] });
 

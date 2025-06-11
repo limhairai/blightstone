@@ -1,19 +1,19 @@
 "use client"
 
 import type React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from "../../../lib/utils"
 import Link from "next/link"
-import { usePageTitle } from "@/components/core/simple-providers"
+import { usePageTitle } from "../../../components/core/simple-providers"
 import { usePathname } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar"
+import { Badge } from "../../../components/ui/badge"
 import { Copy, Edit } from 'lucide-react'
-import { Button } from "@/components/ui/button"
+import { Button } from "../../../components/ui/button"
 import { useEffect } from "react"
-import { getInitials } from "@/lib/mock-data"
-import { getAvatarClasses, gradientTokens } from "@/lib/design-tokens"
+import { getInitials } from "../../../lib/mock-data"
+import { getAvatarClasses, gradientTokens } from "../../../lib/design-tokens"
 import { useTheme } from "next-themes"
-import { useDemoState } from "@/contexts/DemoStateContext"
+import { useDemoState } from "../../../contexts/DemoStateContext"
 
 interface SettingsLayoutProps {
   children: React.ReactNode

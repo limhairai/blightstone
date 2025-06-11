@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
+import { Checkbox } from "../ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,15 +12,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { StatusBadge } from "@/components/ui/status-badge"
-import { StatusDot } from "@/components/ui/status-dot"
-import { MOCK_ACCOUNTS } from "@/lib/mock-data"
-import { formatCurrency } from "@/lib/mock-data"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { StatusBadge } from "../ui/status-badge"
+import { StatusDot } from "../ui/status-dot"
+import { MOCK_ACCOUNTS } from "../../lib/mock-data"
+import { formatCurrency } from "../../lib/mock-data"
 import { Search, MoreHorizontal, Eye, Edit, Trash2, Pause, Play, CreditCard, Plus } from "lucide-react"
-import { layout } from "@/lib/layout-utils"
-import { contentTokens } from "@/lib/content-tokens"
-import { AccountTopUpDialog } from "@/components/wallet/account-top-up-dialog"
+import { layout } from "../../lib/layout-utils"
+import { contentTokens } from "../../lib/content-tokens"
+import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
 
 interface BusinessAccountsTableProps {
   businessName: string

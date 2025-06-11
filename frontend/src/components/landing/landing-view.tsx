@@ -2,12 +2,12 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ProfessionalFeaturesSection } from "@/components/landing/professional-features-section"
-import { FAQSection } from "@/components/landing/faq-section"
-import { AccountManagementSection } from "@/components/accounts/account-management-section"
-import { InstantFundingSection } from "@/components/wallet/instant-funding-section"
-import { AdHubLogo } from "@/components/core/AdHubLogo"
+import { Button } from "../ui/button"
+import { ProfessionalFeaturesSection } from "./professional-features-section"
+import { FAQSection } from "./faq-section"
+import { AccountManagementSection } from "../accounts/account-management-section"
+import { InstantFundingSection } from "../wallet/instant-funding-section"
+import { AdHubLogo } from "../core/AdHubLogo"
 import { useInView } from 'react-intersection-observer'
 import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'

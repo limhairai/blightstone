@@ -3,9 +3,9 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { OrganizationSelector } from "@/components/dashboard/organization-selector"
-import { cn } from "@/lib/utils"
+import { Button } from "../ui/button"
+import { OrganizationSelector } from "./organization-selector"
+import { cn } from "../../lib/utils"
 import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard } from "lucide-react"
 
 interface SidebarItem {

@@ -3,12 +3,12 @@
 import type React from "react"
 
 import { useState } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
-import { cn } from "@/lib/utils"
+import { Dialog, DialogContent } from "../ui/dialog"
+import { cn } from "../../lib/utils"
 import { Building2, Users, User, Settings } from "lucide-react"
-import { OrganizationSettings } from "@/components/settings/organization-settings"
-import { TeamSettings } from "@/components/settings/team-settings"
-import { AccountSettings } from "@/components/settings/account-settings"
+import { OrganizationSettings } from "../settings/organization-settings"
+import { TeamSettings } from "../settings/team-settings"
+import { AccountSettings } from "../settings/account-settings"
 
 interface SettingsModalProps {
   open: boolean

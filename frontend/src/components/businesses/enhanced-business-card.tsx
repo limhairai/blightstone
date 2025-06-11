@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { StatusDot } from "@/components/ui/status-dot"
+import { Card, CardContent, CardHeader } from "../ui/card"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { StatusDot } from "../ui/status-dot"
 import { 
   Building2, 
   ExternalLink, 
@@ -20,9 +20,9 @@ import {
   ArrowRight
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { layout } from "@/lib/layout-utils"
-import { contentTokens } from "@/lib/content-tokens"
-import { useToast } from "@/hooks/use-toast"
+import { layout } from "../../lib/layout-utils"
+import { contentTokens } from "../../lib/content-tokens"
+import { useToast } from "../../hooks/use-toast"
 
 interface AdAccountSummary {
   total: number

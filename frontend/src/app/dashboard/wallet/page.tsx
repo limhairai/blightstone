@@ -1,9 +1,9 @@
 "use client"
 
-import { WalletPortfolioCard } from "@/components/wallet/wallet-portfolio-card"
-import { WalletFundingPanel } from "@/components/wallet/wallet-funding-panel"
-import { BusinessBalancesTable } from "@/components/wallet/business-balances-table"
-import { layout } from "@/lib/layout-utils"
+import { WalletPortfolioCard } from "../../../components/wallet/wallet-portfolio-card"
+import { WalletFundingPanel } from "../../../components/wallet/wallet-funding-panel"
+import { BusinessBalancesTable } from "../../../components/wallet/business-balances-table"
+import { layout } from "../../../lib/layout-utils"
 
 export default function WalletPage() {
   return (

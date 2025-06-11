@@ -1,8 +1,8 @@
 "use client"
 
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MOCK_BUSINESSES, MOCK_ACCOUNTS } from "@/lib/mock-data"
+import { Input } from "../ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { MOCK_BUSINESSES, MOCK_ACCOUNTS } from "../../lib/mock-data"
 import { Search } from "lucide-react"
 
 interface CompactFiltersProps {

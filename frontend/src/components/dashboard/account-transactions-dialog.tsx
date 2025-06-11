@@ -1,11 +1,11 @@
 "use client"
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { formatCurrency } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Badge } from "../ui/badge"
+import { Separator } from "../ui/separator"
+import { formatCurrency } from "../../lib/utils"
 import { ArrowUpRight, ArrowDownLeft, Calendar, DollarSign } from "lucide-react"
-import { MOCK_ACCOUNTS, type MockAccount } from "@/lib/mock-data"
+import { MOCK_ACCOUNTS, type MockAccount } from "../../lib/mock-data"
 
 interface Transaction {
   id: string
