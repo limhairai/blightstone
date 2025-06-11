@@ -1,7 +1,7 @@
 import { 
   getSetupProgress, 
   calculateSetupCompletion, 
-  shouldShowOnboarding, 
+  shouldShowOnboarding,
   getNextStep 
 } from '../state-utils'
 

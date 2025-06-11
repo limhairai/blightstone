@@ -3,20 +3,21 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAppData } from '@/contexts/AppDataContext'
 import { supabase } from '@/lib/supabaseClient'
 import { 
-  getOnboardingState, 
-  getOnboardingSteps,
+  getSetupProgress,
   shouldShowOnboarding,
-  getOnboardingProgress,
-  OnboardingState,
-  OnboardingStep
+  calculateSetupCompletion,
+  getNextStep,
+  OnboardingPersistence,
+  SetupProgress
 } from '@/lib/state-utils'
 import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '@/lib/mock-data'
 
 export interface UseAdvancedOnboardingReturn {
   // State
-  onboardingState: OnboardingState
-  steps: OnboardingStep[]
-  progress: ReturnType<typeof getOnboardingProgress>
+  setupProgress: SetupProgress
+  persistence: OnboardingPersistence | null
+  completion: ReturnType<typeof calculateSetupCompletion>
+  nextStep: ReturnType<typeof getNextStep>
   
   // Visibility flags
   shouldShowOnboarding: boolean
@@ -31,62 +32,50 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
   const { user } = useAuth()
   const { currentOrg, organizations } = useAppData()
 
-  // Get current state
-  const currentState = useMemo(() => {
-    if (!user) return null
-
-    // In a real app, this would come from the database
-    // For now, we'll simulate it based on current data
+  // Get current setup progress
+  const setupProgress = useMemo(() => {
     const realBalance = currentOrg?.balance || MOCK_FINANCIAL_DATA.walletBalance
     const accountsCount = MOCK_ACCOUNTS.length
 
+    return getSetupProgress(
+      !!user?.email_confirmed_at,
+      realBalance > 0,
+      organizations.length > 0,
+      accountsCount > 0
+    )
+  }, [user?.email_confirmed_at, currentOrg?.balance, organizations.length])
+
+  // Get persistence data (in real app, this would come from database)
+  const persistence = useMemo((): OnboardingPersistence | null => {
+    if (!user) return null
+
     // TODO: Replace with actual database calls
-    const mockOnboardingData = {
-      hasCompletedEmailVerification: !!user.email_confirmed_at,
+    // For now, simulate based on current data
+    const realBalance = currentOrg?.balance || MOCK_FINANCIAL_DATA.walletBalance
+    const accountsCount = MOCK_ACCOUNTS.length
+
+    return {
+      hasEverCompletedEmail: !!user.email_confirmed_at,
       hasEverFundedWallet: realBalance > 0, // This should come from DB
       hasEverCreatedBusiness: organizations.length > 0, // This should come from DB
       hasEverCreatedAccount: accountsCount > 0, // This should come from DB
       hasExplicitlyDismissedOnboarding: false, // This should come from DB
       accountCreatedAt: user.created_at || new Date().toISOString()
     }
+  }, [user, currentOrg?.balance, organizations.length])
 
-    return getOnboardingState(
-      mockOnboardingData.hasCompletedEmailVerification,
-      mockOnboardingData.hasEverFundedWallet,
-      mockOnboardingData.hasEverCreatedBusiness,
-      mockOnboardingData.hasEverCreatedAccount,
-      
-      // Current state
-      !!user.email_confirmed_at,
-      realBalance > 0,
-      organizations.length > 0,
-      accountsCount > 0,
-      
-      // User preferences
-      mockOnboardingData.hasExplicitlyDismissedOnboarding,
-      mockOnboardingData.accountCreatedAt
-    )
-  }, [user, currentOrg, organizations])
+  // Calculate derived data
+  const completion = useMemo(() => 
+    calculateSetupCompletion(setupProgress)
+  , [setupProgress])
 
-  // Get derived data
-  const steps = useMemo(() => 
-    currentState ? getOnboardingSteps(currentState) : []
-  , [currentState])
+  const nextStep = useMemo(() => 
+    getNextStep(setupProgress)
+  , [setupProgress])
 
-  const progress = useMemo(() => 
-    currentState ? getOnboardingProgress(currentState) : {
-      completedSteps: 0,
-      totalSteps: 4,
-      percentage: 0,
-      isFullyOnboarded: false,
-      nextStep: null
-    }
-  , [currentState])
-
-  // Visibility flags
   const showOnboarding = useMemo(() => 
-    currentState ? shouldShowOnboarding(currentState) : false
-  , [currentState])
+    shouldShowOnboarding(setupProgress, persistence || undefined)
+  , [setupProgress, persistence])
 
   // Actions
   const dismissOnboarding = useCallback(async () => {
@@ -115,7 +104,7 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
     try {
       // Map step IDs to database fields
       const fieldMap: Record<string, string> = {
-        'email-verification': 'hasCompletedEmailVerification',
+        'email-verification': 'hasEverCompletedEmail',
         'wallet-funding': 'hasEverFundedWallet',
         'business-setup': 'hasEverCreatedBusiness',
         'ad-account-setup': 'hasEverCreatedAccount'
@@ -151,7 +140,7 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
         .from('user_profiles')
         .update({
           onboarding_state: {
-            hasCompletedEmailVerification: !!user.email_confirmed_at,
+            hasEverCompletedEmail: !!user.email_confirmed_at,
             hasEverFundedWallet: false,
             hasEverCreatedBusiness: false,
             hasEverCreatedAccount: false,
@@ -173,9 +162,10 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
   }, [user?.id, user?.email_confirmed_at])
 
   return {
-    onboardingState: currentState || {} as OnboardingState,
-    steps,
-    progress,
+    setupProgress,
+    persistence,
+    completion,
+    nextStep,
     shouldShowOnboarding: showOnboarding,
     dismissOnboarding,
     markStepCompleted,
