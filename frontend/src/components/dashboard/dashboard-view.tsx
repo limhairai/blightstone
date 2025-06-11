@@ -28,9 +28,10 @@ import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
 import { useDemoState } from "../../contexts/DemoStateContext"
 import { ErrorBoundary } from "../ui/error-boundary"
 import { FullPageLoading } from "../ui/enhanced-loading"
+import { DashboardDebug } from "../debug/dashboard-debug"
 
 export function DashboardView() {
-  const { user } = useAuth()
+  const { user, loading: authLoading } = useAuth()
   const { currentOrg, organizations, createOrganization, loading } = useAppData()
   const { state } = useDemoState()
   const { theme } = useTheme()
@@ -43,6 +44,30 @@ export function DashboardView() {
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
   const { setupWidgetState, setSetupWidgetState, showEmptyStateElements, setShowEmptyStateElements } = useSetupWidget()
   const balanceChartRef = useRef<HTMLDivElement>(null)
+
+  // Show debug info in development or when there's an issue
+  const showDebug = process.env.NODE_ENV === 'development' || loading
+
+  // Early return for loading states
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <FullPageLoading />
+        {showDebug && <DashboardDebug />}
+      </div>
+    )
+  }
+
+  // Early return for unauthenticated users
+  if (!user) {
+    router.push('/login')
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>Redirecting to login...</div>
+        {showDebug && <DashboardDebug />}
+      </div>
+    )
+  }
 
   // Get user's first name for greeting
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
@@ -551,6 +576,9 @@ export function DashboardView() {
           <AccountsTable />
         </div>
       </div>
+      
+      {/* Debug component for troubleshooting */}
+      {showDebug && <DashboardDebug />}
     </ErrorBoundary>
   )
 } 
