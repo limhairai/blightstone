@@ -12,6 +12,7 @@ import { formatCurrency } from "../../lib/mock-data"
 import { contentTokens } from "../../lib/content-tokens"
 import { layout } from "../../lib/layout-utils"
 import { useDemoState } from "../../contexts/DemoStateContext"
+import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface TopUpDialogProps {
   isOpen: boolean
@@ -68,7 +69,19 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
   const finalAmount = amount - commissionAmount
 
   const handleSubmit = async () => {
-    if (amount <= 0 || amount > walletBalance) return
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(amount.toString(), 'Amount'),
+      () => amount <= 0 ? { field: 'amount', message: 'Please enter a valid positive amount' } : null,
+      () => amount > walletBalance ? { field: 'amount', message: 'Amount exceeds available wallet balance' } : null,
+      () => amount > 50000 ? { field: 'amount', message: 'Maximum top-up amount is $50,000' } : null,
+      () => amount < 50 ? { field: 'amount', message: 'Minimum top-up amount is $50' } : null,
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
 
     try {
       // Convert accountId to number if it's a string
@@ -77,18 +90,20 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
       // Use the actual topUpAccount function from state management
       await topUpAccount(numericAccountId, amount)
 
-      // Call the optional callback
-    if (onTopUp) {
-      onTopUp(amount)
-    }
+      showSuccessToast("Account Topped Up!", `$${amount} has been added to ${accountName}.`)
 
-    onClose()
+      // Call the optional callback
+      if (onTopUp) {
+        onTopUp(amount)
+      }
+
+      onClose()
     } catch (error) {
-      setError("Failed to top up account. Please try again.")
+      showValidationErrors([{ field: 'general', message: 'Failed to top up account. Please try again.' }])
     }
   }
 
-  const quickAmounts = [50, 100, 500, 1000]
+  const quickAmounts = [100, 500, 1000, 5000]
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -136,7 +151,7 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
 
             <div className={layout.formFields}>
               <Label htmlFor="amount" className="text-foreground">
-                {contentTokens.labels.amount}
+                {contentTokens.labels.amount} <span className="text-red-500">*</span>
               </Label>
                 <Input
                 id="amount"

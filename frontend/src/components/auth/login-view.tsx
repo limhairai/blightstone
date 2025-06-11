@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader } from "../core/Loader"
+import { validateLoginForm, showValidationErrors } from "../../lib/form-validation"
 
 export function LoginView() {
   const [email, setEmail] = useState("");
@@ -37,6 +38,15 @@ export function LoginView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    
+    // Comprehensive form validation
+    const validation = validateLoginForm({ email, password })
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
+    
     setLoading(true);
     
     try {

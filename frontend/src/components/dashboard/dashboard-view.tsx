@@ -13,7 +13,7 @@ import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
 import { AccountsTable } from "./accounts-table"
 import { useSetupWidget } from "../layout/app-shell"
-import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon } from "lucide-react"
+import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon, RefreshCw } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { 
@@ -29,10 +29,11 @@ import { useDemoState } from "../../contexts/DemoStateContext"
 import { ErrorBoundary } from "../ui/error-boundary"
 import { FullPageLoading } from "../ui/enhanced-loading"
 import { DashboardDebug } from "../debug/dashboard-debug"
+import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 
 export function DashboardView() {
   const { user, loading: authLoading } = useAuth()
-  const { currentOrg, organizations, createOrganization, loading } = useAppData()
+  const { currentOrg, organizations, createOrganization, loading, refreshData } = useAppData()
   const { state } = useDemoState()
   const { theme } = useTheme()
   const router = useRouter()
@@ -42,8 +43,43 @@ export function DashboardView() {
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
-  const { setupWidgetState, setSetupWidgetState, showEmptyStateElements, setShowEmptyStateElements } = useSetupWidget()
+  // Safe hook usage with fallback for when component is rendered outside AppShell context
+  const [fallbackSetupWidgetState, setFallbackSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("collapsed")
+  const [fallbackShowEmptyStateElements, setFallbackShowEmptyStateElements] = useState(false)
+  
+  let setupWidgetState, setSetupWidgetState, showEmptyStateElements, setShowEmptyStateElements
+  try {
+    const setupWidget = useSetupWidget()
+    setupWidgetState = setupWidget.setupWidgetState
+    setSetupWidgetState = setupWidget.setSetupWidgetState
+    showEmptyStateElements = setupWidget.showEmptyStateElements
+    setShowEmptyStateElements = setupWidget.setShowEmptyStateElements
+  } catch (error) {
+    // Fallback when not in AppShell context (e.g., during sign-out)
+    setupWidgetState = fallbackSetupWidgetState
+    setSetupWidgetState = setFallbackSetupWidgetState
+    showEmptyStateElements = fallbackShowEmptyStateElements
+    setShowEmptyStateElements = setFallbackShowEmptyStateElements
+  }
   const balanceChartRef = useRef<HTMLDivElement>(null)
+
+  // Auto-refresh dashboard data every 5 minutes
+  const { manualRefresh, isRefreshing } = useAutoRefresh({
+    enabled: !!user && !loading && !authLoading, // Only refresh when user is authenticated and not loading
+    interval: REFRESH_INTERVALS.NORMAL,
+    onRefresh: async () => {
+      // Refresh app data (demo state is reactive and doesn't need manual refresh)
+      if (refreshData && user && !authLoading) {
+        try {
+          await refreshData()
+        } catch (error) {
+          console.warn('Dashboard auto-refresh failed:', error)
+          // Don't crash the app, just log the warning
+        }
+      }
+    },
+    dependencies: [user?.id, currentOrg?.id] // Restart refresh when user or org changes
+  })
 
   // Show debug info in development or when there's an issue
   const showDebug = process.env.NODE_ENV === 'development' || loading
@@ -347,8 +383,26 @@ export function DashboardView() {
                       <div className={typographyTokens.patterns.mutedMedium}>May 22, 2025</div>
                       <div className={typographyTokens.patterns.balanceLarge}>${formatCurrency(realBalance)}</div>
 
-                      {/* Time filter dropdown */}
-                      <div className="flex justify-end mb-2">
+                      {/* Time filter dropdown and refresh indicator */}
+                      <div className="flex justify-end items-center gap-2 mb-2">
+                        {/* Auto-refresh indicator and manual refresh */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                            <span className="hidden sm:inline">Auto-refresh (5min)</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={manualRefresh}
+                            disabled={isRefreshing}
+                            title="Refresh now"
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-8 px-3 rounded-md">
@@ -445,8 +499,26 @@ export function DashboardView() {
                       <div className={typographyTokens.patterns.mutedMedium}>May 22, 2025</div>
                       <div className={typographyTokens.patterns.balanceLarge}>${formatCurrency(monthlySpend)}</div>
 
-                      {/* Time filter dropdown */}
-                      <div className="flex justify-end mb-2">
+                      {/* Time filter dropdown and refresh indicator */}
+                      <div className="flex justify-end items-center gap-2 mb-2">
+                        {/* Auto-refresh indicator and manual refresh */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                            <span className="hidden sm:inline">Auto-refresh (5min)</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={manualRefresh}
+                            disabled={isRefreshing}
+                            title="Refresh now"
+                          >
+                            <RefreshCw className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="sm" className="h-8 px-3 rounded-md">

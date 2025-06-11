@@ -21,7 +21,7 @@ import { WithdrawBalanceDialog } from "./withdraw-balance-dialog"
 import { TopUpDialog } from "./top-up-dialog"
 import { MOCK_BUSINESSES, type MockAccount } from "../../lib/mock-data"
 import { formatCurrency } from "../../lib/utils"
-import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2 } from "lucide-react"
+import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2, RefreshCw } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
@@ -29,6 +29,7 @@ import { useDemoState } from "../../contexts/DemoStateContext"
 import { toast } from "sonner"
 import { ViewDetailsDialog } from "./view-details-dialog"
 import { BulkTopUpDialog } from "./bulk-top-up-dialog"
+import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 
 interface AccountsTableProps {
   initialBusinessFilter?: string
@@ -39,6 +40,17 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
   const { state, pauseAccount, resumeAccount, deleteAccount } = useDemoState()
   const router = useRouter()
   const searchParams = useSearchParams()
+
+  // Auto-refresh accounts data every 60 seconds (slower than dashboard)
+  const { manualRefresh, isRefreshing } = useAutoRefresh({
+    enabled: true,
+    interval: REFRESH_INTERVALS.SLOW,
+    onRefresh: async () => {
+      // The accounts data is reactive through useDemoState, so we don't need to do anything
+      // This is just to show the refresh indicator
+    },
+    dependencies: [businessId] // Restart refresh when business filter changes
+  })
   
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [viewAccount, setViewAccount] = useState<any>(null)
@@ -261,6 +273,24 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Auto-refresh indicator and manual refresh */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+              <span className="hidden sm:inline">Auto-refresh (10min)</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={manualRefresh}
+              disabled={isRefreshing}
+              title="Refresh now"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          </div>
+          
           <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
             <SelectTrigger className="w-[140px] h-10 bg-background border-border text-foreground">
               <SelectValue placeholder="Status" />

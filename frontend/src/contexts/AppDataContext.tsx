@@ -194,8 +194,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     try {
       // Fetch user profile and organizations in parallel
       const [userProfile, orgs] = await Promise.all([
-        fetchUserProfile(),
-        fetchOrganizations()
+        fetchUserProfile().catch((err) => {
+          console.error('AppDataContext: Failed to fetch user profile:', err);
+          return null; // Return null instead of throwing
+        }),
+        fetchOrganizations().catch((err) => {
+          console.error('AppDataContext: Failed to fetch organizations:', err);
+          return []; // Return empty array instead of throwing
+        })
       ]);
 
       setAppUser(userProfile);
@@ -217,8 +223,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('adhub_current_org_id', selectedOrg.id);
 
         // Fetch team members for current org
-        const members = await fetchTeamMembers(selectedOrg.id);
-        setTeamMembers(members);
+        try {
+          const members = await fetchTeamMembers(selectedOrg.id);
+          setTeamMembers(members);
+        } catch (err) {
+          console.error('AppDataContext: Failed to fetch team members:', err);
+          setTeamMembers([]); // Set empty array instead of crashing
+        }
       } else {
         setCurrentOrgState(null);
         setTeamMembers([]);
@@ -226,6 +237,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
 
     } catch (err) {
+      console.error('AppDataContext: Unexpected error in refreshData:', err);
       setError(err instanceof Error ? err.message : 'Failed to load app data');
     } finally {
       setLoading(false);
@@ -290,7 +302,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!authLoading && user && session?.access_token) {
       console.log('AppDataContext: Refreshing data for authenticated user');
-      refreshData();
+      refreshData().catch((err) => {
+        console.error('AppDataContext: Failed to refresh data:', err);
+        // Don't crash the app, just log the error
+      });
     } else if (!user || !session?.access_token) {
       console.log('AppDataContext: Clearing data for unauthenticated user');
       setAppUser(null);

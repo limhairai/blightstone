@@ -12,12 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
+import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Label } from "../ui/label"
 import { useToast } from "../../hooks/use-toast"
 import { Check, Loader2 } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
+import { validateAdAccountForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
@@ -32,6 +34,7 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
   const { toast } = useToast()
 
   const [formData, setFormData] = useState({
+    name: "",
     business: businessId || "",
   })
 
@@ -45,6 +48,15 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Comprehensive form validation
+    const validation = validateAdAccountForm(formData)
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
+    
     setIsLoading(true)
 
     try {
@@ -52,14 +64,12 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       setShowSuccess(true)
-      toast({
-        title: contentTokens.success.created,
-        description: "Your ad account has been submitted for review.",
-      })
+      showSuccessToast("Account Requested!", "Your ad account has been submitted for review.")
 
       // Reset form after success
       setTimeout(() => {
         setFormData({
+          name: "",
           business: businessId || "",
         })
         setShowSuccess(false)
@@ -70,11 +80,7 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
         }
       }, 2000)
     } catch (error) {
-      toast({
-        title: contentTokens.errors.generic,
-        description: "Failed to create ad account. Please try again.",
-        variant: "destructive",
-      })
+      showValidationErrors([{ field: 'general', message: 'Failed to create ad account. Please try again.' }])
     } finally {
       setIsLoading(false)
     }
@@ -109,8 +115,22 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
         </DialogHeader>
         <form onSubmit={handleSubmit} className={layout.formFields}>
           <div className={layout.stackSmall}>
+            <Label htmlFor="name" className="text-foreground">
+              Account Name *
+            </Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter account name (e.g., 'Main Campaign Account')"
+              required
+              className="bg-background border-border text-foreground"
+            />
+          </div>
+
+          <div className={layout.stackSmall}>
             <Label htmlFor="business" className="text-foreground">
-              {contentTokens.labels.company}
+              {contentTokens.labels.company} *
             </Label>
             <Select
               value={formData.business}

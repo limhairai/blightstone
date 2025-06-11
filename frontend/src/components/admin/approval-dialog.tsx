@@ -13,6 +13,7 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { CheckCircle, AlertCircle } from "lucide-react"
+import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface ApprovalDialogProps {
   isOpen: boolean
@@ -36,13 +37,25 @@ export function ApprovalDialog({
   const [error, setError] = useState("")
 
   const handleSubmit = () => {
-    if (!accountId.trim()) {
-      setError("Please enter a valid ad account ID")
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(accountId, 'Ad Account ID'),
+      () => validators.minLength(accountId, 3, 'Ad Account ID'),
+      () => validators.maxLength(accountId, 50, 'Ad Account ID'),
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
       return
     }
 
-    onApprove(accountId, notes)
-    resetForm()
+    try {
+      onApprove(accountId, notes)
+      showSuccessToast("Request Approved!", "The ad account has been successfully assigned.")
+      resetForm()
+    } catch (error) {
+      showValidationErrors([{ field: 'general', message: 'Failed to approve request. Please try again.' }])
+    }
   }
 
   const resetForm = () => {

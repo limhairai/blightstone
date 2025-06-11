@@ -18,6 +18,7 @@ import { useWallet } from "../../contexts/WalletContext"
 import { useAuth } from "../../contexts/AuthContext"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
+import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface TopUpWalletProps {
   onTopUp: (amount: number, paymentMethod?: string, orgId?: string) => void
@@ -32,28 +33,37 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    const idempotency_key = crypto.randomUUID()
+    
     const numAmount = Number.parseFloat(amount)
-
-    if (isNaN(numAmount) || numAmount <= 0) {
-      toast({ title: "Invalid Amount", description: "Please enter a valid positive amount.", variant: "destructive" })
-      setLoading(false)
+    
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(amount, 'Amount'),
+      () => isNaN(numAmount) || numAmount <= 0 ? { field: 'amount', message: 'Please enter a valid positive amount' } : null,
+      () => numAmount > 50000 ? { field: 'amount', message: 'Maximum top-up amount is $50,000' } : null,
+      () => numAmount < 50 ? { field: 'amount', message: 'Minimum top-up amount is $50' } : null,
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
       return
     }
+    
+    setLoading(true)
 
     try {
       console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)
       onTopUp(numAmount, paymentMethod, orgId)
+      showSuccessToast("Top-up Initiated!", `$${numAmount} has been added to your wallet.`)
       setAmount("")
     } catch (e: any) {
-      toast({ title: "Top-up initiation failed", description: e.message || "An error occurred.", variant: "destructive" })
+      showValidationErrors([{ field: 'general', message: e.message || 'Failed to process top-up. Please try again.' }])
     } finally {
       setLoading(false)
     }
   }
 
-  const predefinedAmounts = ["100", "250", "500", "1000"]
+  const predefinedAmounts = ["100", "500", "1000", "5000"]
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -66,7 +76,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
         <div className={layout.stackLarge}>
           <div>
             <Label htmlFor="amount" className="text-foreground">
-              {contentTokens.labels.amount}
+              {contentTokens.labels.amount} <span className="text-red-500">*</span>
             </Label>
             <div className="relative mt-1">
               <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">$</span>
@@ -77,7 +87,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="pl-8 bg-background border-border text-foreground"
-                min="1"
+                min="50"
                 step="0.01"
               />
             </div>
@@ -97,7 +107,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
               <div className={layout.stackMedium}>
                 <div>
                   <Label htmlFor="cardNumber" className="text-foreground">
-                    Card Number
+                    Card Number <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="cardNumber"
@@ -108,7 +118,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="expiry" className="text-foreground">
-                      Expiry
+                      Expiry <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="expiry"
@@ -118,7 +128,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
                   </div>
                   <div>
                     <Label htmlFor="cvc" className="text-foreground">
-                      CVC
+                      CVC <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="cvc"

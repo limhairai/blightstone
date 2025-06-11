@@ -985,7 +985,7 @@ export const APP_CONSTANTS = {
   },
   
   // Default amounts for quick actions
-  QUICK_TOP_UP_AMOUNTS: [50, 100, 500, 1000],
+  QUICK_TOP_UP_AMOUNTS: [100, 500, 1000, 5000],
   QUICK_WITHDRAW_AMOUNTS: [100, 500, 1000, 2000],
   
   // Time filter options

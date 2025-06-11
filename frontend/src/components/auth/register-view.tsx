@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from '../../contexts/AuthContext'
 import { Skeleton } from "../ui/skeleton"
 import { toast } from "../ui/use-toast"
+import { validateRegistrationForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 export function RegisterView() {
   const [name, setName] = useState("");
@@ -61,11 +62,15 @@ export function RegisterView() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    validateAll();
-    if (!isFormValid) {
-      setError("Please fix the errors above.");
-      return;
+    
+    // Comprehensive form validation
+    const validation = validateRegistrationForm({ name, email, password, confirmPassword, terms })
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
     }
+    
     setLoading(true);
 
     try {

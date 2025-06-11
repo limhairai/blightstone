@@ -68,6 +68,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userId: currentSession?.user?.id,
           environment: process.env.NODE_ENV
         });
+
+        // Show toast for email confirmation
+        if (event === 'SIGNED_IN' && currentSession?.user && !user) {
+          // User just signed in (not just a session refresh)
+          if (currentSession.user.email_confirmed_at) {
+            toast({
+              title: "Welcome back!",
+              description: "You have successfully signed in.",
+              variant: "default",
+            });
+          }
+        }
+
+        // Show toast for email verification
+        if (event === 'TOKEN_REFRESHED' && currentSession?.user?.email_confirmed_at && user && !user.email_confirmed_at) {
+          toast({
+            title: "Email Confirmed!",
+            description: "Your email has been successfully verified.",
+            variant: "default",
+          });
+        }
+
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false); // This is the point where the auth state is considered resolved.

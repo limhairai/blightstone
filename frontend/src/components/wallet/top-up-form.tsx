@@ -27,7 +27,7 @@ export function TopUpForm() {
     })
   }
 
-  const predefinedAmounts = ["100", "250", "500", "1000"]
+  const predefinedAmounts = ["100", "500", "1000", "5000"]
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

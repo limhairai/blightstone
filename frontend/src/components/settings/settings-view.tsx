@@ -33,6 +33,7 @@ import {
   DialogTrigger,
 } from "../ui/dialog"
 import { MOCK_ORGANIZATION } from "../../lib/mock-data"
+import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 export function SettingsView() {
   const [isEditing, setIsEditing] = useState(false)
@@ -52,7 +53,33 @@ export function SettingsView() {
   })
 
   const handleSave = () => {
-    setIsEditing(false)
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(formData.businessName, 'Business name'),
+      () => validators.minLength(formData.businessName, 2, 'Business name'),
+      () => validators.maxLength(formData.businessName, 100, 'Business name'),
+      () => validators.select(formData.businessType, 'Business type'),
+      () => validators.required(formData.taxId, 'Tax ID'),
+      () => formData.website ? validators.url(formData.website, 'Website') : null,
+      () => validators.required(formData.address, 'Street address'),
+      () => validators.required(formData.city, 'City'),
+      () => validators.required(formData.state, 'State'),
+      () => validators.required(formData.zipCode, 'ZIP code'),
+      () => validators.required(formData.phoneNumber, 'Phone number'),
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
+
+    try {
+      // Here you would typically save to your backend
+      showSuccessToast("Settings Saved!", "Your organization settings have been updated successfully.")
+      setIsEditing(false)
+    } catch (error) {
+      showValidationErrors([{ field: 'general', message: 'Failed to save settings. Please try again.' }])
+    }
   }
 
   const handleCancel = () => {
@@ -66,9 +93,26 @@ export function SettingsView() {
   }
 
   const handleInvite = () => {
-    console.log(`Inviting ${inviteEmail} as ${inviteRole}`);
-    setInviteDialogOpen(false)
-    setInviteEmail("")
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(inviteEmail, 'Email'),
+      () => validators.email(inviteEmail),
+      () => validators.select(inviteRole, 'Role'),
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
+
+    try {
+      console.log(`Inviting ${inviteEmail} as ${inviteRole}`);
+      showSuccessToast("Invitation Sent!", `An invitation has been sent to ${inviteEmail}.`)
+      setInviteDialogOpen(false)
+      setInviteEmail("")
+    } catch (error) {
+      showValidationErrors([{ field: 'general', message: 'Failed to send invitation. Please try again.' }])
+    }
   }
 
   return (
@@ -129,7 +173,7 @@ export function SettingsView() {
               <CardContent className="space-y-3 p-3 pt-0">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="businessName" className="text-xs">Business Name</Label>
+                    <Label htmlFor="businessName" className="text-xs">Business Name <span className="text-red-500">*</span></Label>
                     {isEditing ? (
                       <Input id="businessName" value={formData.businessName} onChange={(e) => setFormData({ ...formData, businessName: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -137,7 +181,7 @@ export function SettingsView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="businessType" className="text-xs">Business Type</Label>
+                    <Label htmlFor="businessType" className="text-xs">Business Type <span className="text-red-500">*</span></Label>
                     {isEditing ? (
                       <Select value={formData.businessType} onValueChange={(value) => setFormData({ ...formData, businessType: value })}>
                         <SelectTrigger className="h-8 text-xs">
@@ -157,7 +201,7 @@ export function SettingsView() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="taxId" className="text-xs">Tax ID (EIN)</Label>
+                    <Label htmlFor="taxId" className="text-xs">Tax ID (EIN) <span className="text-red-500">*</span></Label>
                     {isEditing ? (
                       <Input id="taxId" value={formData.taxId} onChange={(e) => setFormData({ ...formData, taxId: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -182,7 +226,7 @@ export function SettingsView() {
               </CardHeader>
               <CardContent className="space-y-3 p-3 pt-0">
                 <div className="space-y-1">
-                  <Label htmlFor="address" className="text-xs">Street Address</Label>
+                  <Label htmlFor="address" className="text-xs">Street Address <span className="text-red-500">*</span></Label>
                   {isEditing ? (
                     <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="h-8 text-xs" />
                   ) : (
@@ -191,7 +235,7 @@ export function SettingsView() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="city" className="text-xs">City</Label>
+                                          <Label htmlFor="city" className="text-xs">City <span className="text-red-500">*</span></Label>
                     {isEditing ? (
                       <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -199,7 +243,7 @@ export function SettingsView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="state" className="text-xs">State</Label>
+                                          <Label htmlFor="state" className="text-xs">State <span className="text-red-500">*</span></Label>
                     {isEditing ? (
                       <Input id="state" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -207,7 +251,7 @@ export function SettingsView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="zipCode" className="text-xs">ZIP Code</Label>
+                                          <Label htmlFor="zipCode" className="text-xs">ZIP Code <span className="text-red-500">*</span></Label>
                     {isEditing ? (
                       <Input id="zipCode" value={formData.zipCode} onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -216,7 +260,7 @@ export function SettingsView() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="phoneNumber" className="text-xs">Phone Number</Label>
+                  <Label htmlFor="phoneNumber" className="text-xs">Phone Number <span className="text-red-500">*</span></Label>
                   {isEditing ? (
                     <Input id="phoneNumber" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} className="h-8 text-xs" />
                   ) : (
@@ -258,11 +302,11 @@ export function SettingsView() {
                   </DialogHeader>
                   <div className="space-y-3 py-3">
                     <div className="space-y-1">
-                      <Label htmlFor="email" className="text-xs">Email Address</Label>
+                      <Label htmlFor="email" className="text-xs">Email Address <span className="text-red-500">*</span></Label>
                       <Input id="email" placeholder="colleague@example.com" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="h-8 text-xs" />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="role" className="text-xs">Role</Label>
+                      <Label htmlFor="role" className="text-xs">Role <span className="text-red-500">*</span></Label>
                       <Select value={inviteRole} onValueChange={setInviteRole}>
                         <SelectTrigger id="role" className="h-8 text-xs">
                           <SelectValue placeholder="Select a role" />

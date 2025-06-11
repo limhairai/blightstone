@@ -68,9 +68,9 @@ export function InstantFundingSection() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <button className="bg-[#2a2a2a]/80 hover:bg-[#3a3a3a]/80 border border-white/5 hover:border-white/10 rounded-lg p-2 text-white/80 text-xs sm:text-sm transition-all duration-200 backdrop-blur-sm">$1,000</button>
-                    <button className="bg-[#2a2a2a]/80 hover:bg-[#3a3a3a]/80 border border-white/5 hover:border-white/10 rounded-lg p-2 text-white/80 text-xs sm:text-sm transition-all duration-200 backdrop-blur-sm">$5,000</button>
-                    <button className="bg-[#2a2a2a]/80 hover:bg-[#3a3a3a]/80 border border-white/5 hover:border-white/10 rounded-lg p-2 text-white/80 text-xs sm:text-sm transition-all duration-200 backdrop-blur-sm">$10,000</button>
+                                    <button className="bg-[#2a2a2a]/80 hover:bg-[#3a3a3a]/80 border border-white/5 hover:border-white/10 rounded-lg p-2 text-white/80 text-xs sm:text-sm transition-all duration-200 backdrop-blur-sm">$500</button>
+                <button className="bg-[#2a2a2a]/80 hover:bg-[#3a3a3a]/80 border border-white/5 hover:border-white/10 rounded-lg p-2 text-white/80 text-xs sm:text-sm transition-all duration-200 backdrop-blur-sm">$1,000</button>
+                <button className="bg-[#2a2a2a]/80 hover:bg-[#3a3a3a]/80 border border-white/5 hover:border-white/10 rounded-lg p-2 text-white/80 text-xs sm:text-sm transition-all duration-200 backdrop-blur-sm">$5,000</button>
                   </div>
                   <button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black font-medium py-2.5 sm:py-3 rounded-lg hover:opacity-90 hover:shadow-[0_0_30px_rgba(180,160,255,0.3)] transition-all duration-300 hover:scale-[1.02] text-sm sm:text-base">
                     Add Funds Instantly

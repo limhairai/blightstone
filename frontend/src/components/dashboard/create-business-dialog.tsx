@@ -21,6 +21,7 @@ import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
 import { useDemoState } from "../../contexts/DemoStateContext"
 import { cn } from "../../lib/utils"
+import { validateBusinessForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface CreateBusinessDialogProps {
   trigger: React.ReactNode
@@ -102,9 +103,11 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate URL before submission
-    if (formData.website && !validateUrl(formData.website)) {
-      setUrlError("Please enter a valid website URL")
+    // Comprehensive form validation
+    const validation = validateBusinessForm(formData)
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
       return
     }
 
@@ -119,6 +122,8 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
         monthlyQuota: 10000, // Default quota
       })
 
+      showSuccessToast("Application Submitted!", "Your business application has been submitted for review.")
+      
       setShowSuccess(true)
       setTimeout(() => {
         setFormData({
@@ -137,6 +142,7 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
       }, 2000)
     } catch (error) {
       console.error('Failed to create business:', error)
+      showValidationErrors([{ field: 'general', message: 'Failed to create business. Please try again.' }])
     }
   }
 
@@ -175,7 +181,7 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
         <form onSubmit={handleSubmit} className={layout.formGroups}>
           <div className={layout.stackSmall}>
             <Label htmlFor="name" className="text-foreground">
-              Business Name
+              Business Name *
             </Label>
             <Input
               id="name"
@@ -233,7 +239,7 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
 
           <div className={layout.stackSmall}>
             <Label htmlFor="description" className="text-foreground">
-              {contentTokens.labels.description}
+              {contentTokens.labels.description} *
             </Label>
             <textarea
               id="description"

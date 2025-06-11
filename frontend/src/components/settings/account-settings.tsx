@@ -24,6 +24,7 @@ import {
 } from "../ui/dialog"
 import { useDemoState, type UserProfile } from "../../contexts/DemoStateContext"
 import { gradientTokens } from "../../lib/design-tokens"
+import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 export function AccountSettings() {
   const { state, updateUserProfile } = useDemoState()
@@ -68,15 +69,36 @@ export function AccountSettings() {
   }
 
   const handleSave = () => {
-    updateUserProfile({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      phone: formData.phone || undefined,
-      timezone: formData.timezone,
-      language: formData.language,
-    })
-    setIsEditing(false)
-    toast.success("Your profile information has been saved successfully.")
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(formData.firstName, 'First name'),
+      () => validators.minLength(formData.firstName, 2, 'First name'),
+      () => validators.maxLength(formData.firstName, 50, 'First name'),
+      () => validators.required(formData.lastName, 'Last name'),
+      () => validators.minLength(formData.lastName, 2, 'Last name'),
+      () => validators.maxLength(formData.lastName, 50, 'Last name'),
+      () => validators.select(formData.timezone, 'Timezone'),
+      () => validators.select(formData.language, 'Language'),
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
+
+    try {
+      updateUserProfile({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone || undefined,
+        timezone: formData.timezone,
+        language: formData.language,
+      })
+      setIsEditing(false)
+      showSuccessToast("Profile Updated!", "Your profile information has been saved successfully.")
+    } catch (error) {
+      showValidationErrors([{ field: 'general', message: 'Failed to save profile. Please try again.' }])
+    }
   }
 
   const handleUpdateEmail = () => {
@@ -224,7 +246,7 @@ export function AccountSettings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label htmlFor="firstName" className="text-foreground text-sm">
-                    First Name
+                    First Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="firstName"
@@ -235,7 +257,7 @@ export function AccountSettings() {
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="lastName" className="text-foreground text-sm">
-                    Last Name
+                    Last Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="lastName"
@@ -260,7 +282,7 @@ export function AccountSettings() {
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="timezone" className="text-foreground text-sm">
-                    Timezone
+                    Timezone <span className="text-red-500">*</span>
                   </Label>
                   <Select value={formData.timezone} onValueChange={(value) => setFormData({ ...formData, timezone: value })}>
                     <SelectTrigger className="bg-background border-border text-foreground h-8">
