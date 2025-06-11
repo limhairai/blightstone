@@ -9,7 +9,7 @@
     "NEXT_PUBLIC_ENVIRONMENT": "production",
     "BACKEND_API_URL": "https://adhub-backend-prod.onrender.com",
     "NEXT_PUBLIC_SUPABASE_URL": "https://xewhfrwuzkfbnpwtdxuf.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2hmcnd1emtmYm5wd3RkeHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjA3NDAsImV4cCI6MjA2NDYzNjc0MH0.uiDOEeG4s5FQjGNW2M7WYP01jQ0fgtVhHTKgFQY4Q4U",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2hmcnd1emtmYm5wd3RkeHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjA3NDAsImV4cCI6MjA2NDYzNjc0MH0.uiDOEgNu2sbG9ZinYDBDfew2eXw_gIItZL9CuV7k_TE",
     "NEXT_PUBLIC_API_URL": "http://localhost:8000"
   },
   "build": {
@@ -18,7 +18,7 @@
       "NEXT_PUBLIC_ENVIRONMENT": "production",
       "BACKEND_API_URL": "https://adhub-backend-prod.onrender.com",
       "NEXT_PUBLIC_SUPABASE_URL": "https://xewhfrwuzkfbnpwtdxuf.supabase.co",
-      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2hmcnd1emtmYm5wd3RkeHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjA3NDAsImV4cCI6MjA2NDYzNjc0MH0.uiDOEeG4s5FQjGNW2M7WYP01jQ0fgtVhHTKgFQY4Q4U",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhld2hmcnd1emtmYm5wd3RkeHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNjA3NDAsImV4cCI6MjA2NDYzNjc0MH0.uiDOEgNu2sbG9ZinYDBDfew2eXw_gIItZL9CuV7k_TE",
       "NEXT_PUBLIC_API_URL": "http://localhost:8000"
     }
   },

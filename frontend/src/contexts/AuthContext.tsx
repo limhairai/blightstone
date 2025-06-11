@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // This helps in quickly updating UI if a session exists,
     // but onAuthStateChange will be the final authority and will set loading to false.
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      console.log("Initial session:", initialSession);
+      // Only set if still in the initial loading phase driven by onAuthStateChange
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
     }).catch(error => {
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The first event fired will determine the initial authenticated state.
     const { data: authSubscriptionData } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: AuthSession | null) => {
-        console.log("Supabase auth event:", event, currentSession);
+        // console.log("Supabase auth event:", event, currentSession);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false); // This is the point where the auth state is considered resolved.
