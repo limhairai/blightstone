@@ -23,7 +23,7 @@ import {
   APP_CONSTANTS
 } from "@/lib/mock-data"
 import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "@/lib/state-utils"
-import { getSetupProgress, shouldShowOnboarding, calculateSetupCompletion } from "@/lib/state-utils"
+import { getSetupProgress, calculateSetupCompletion } from "@/lib/state-utils"
 import { layoutTokens, typographyTokens } from "@/lib/design-tokens"
 import { useDemoState } from "@/contexts/DemoStateContext"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -205,9 +205,10 @@ export function DashboardView() {
       accounts.length > 0 // Has ad accounts (always true for demo)
     ), [user?.email_confirmed_at, realBalance, accounts.length])
 
-  const shouldShowOnboardingElements = useMemo(() => 
-    shouldShowOnboarding(setupProgress)
-  , [setupProgress])
+  const shouldShowOnboardingElements = useMemo(() => {
+    const completion = calculateSetupCompletion(setupProgress)
+    return !completion.isComplete
+  }, [setupProgress])
 
   // Create empty state conditions for banners
   const emptyStateConditions = useMemo(() => 
