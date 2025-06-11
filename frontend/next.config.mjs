@@ -6,6 +6,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Force fresh build - clear Vercel cache
 };
 
 export default nextConfig;
