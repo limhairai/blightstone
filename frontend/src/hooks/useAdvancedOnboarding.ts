@@ -6,13 +6,10 @@ import {
   getOnboardingState, 
   getOnboardingSteps,
   shouldShowOnboarding,
-  shouldShowEmailBanner,
-  shouldShowSetupButton,
   getOnboardingProgress,
-  getOnboardingStrategy,
   OnboardingState,
   OnboardingStep
-} from '@/lib/onboarding-state'
+} from '@/lib/state-utils'
 import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '@/lib/mock-data'
 
 export interface UseAdvancedOnboardingReturn {
@@ -20,12 +17,9 @@ export interface UseAdvancedOnboardingReturn {
   onboardingState: OnboardingState
   steps: OnboardingStep[]
   progress: ReturnType<typeof getOnboardingProgress>
-  strategy: ReturnType<typeof getOnboardingStrategy>
   
   // Visibility flags
   shouldShowOnboarding: boolean
-  shouldShowEmailBanner: boolean
-  shouldShowSetupButton: boolean
   
   // Actions
   dismissOnboarding: () => Promise<void>
@@ -89,21 +83,9 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
     }
   , [currentState])
 
-  const strategy = useMemo(() => 
-    currentState ? getOnboardingStrategy(currentState) : 'none'
-  , [currentState])
-
   // Visibility flags
   const showOnboarding = useMemo(() => 
     currentState ? shouldShowOnboarding(currentState) : false
-  , [currentState])
-
-  const showEmailBanner = useMemo(() => 
-    currentState ? shouldShowEmailBanner(currentState) : false
-  , [currentState])
-
-  const showSetupButton = useMemo(() => 
-    currentState ? shouldShowSetupButton(currentState) : false
   , [currentState])
 
   // Actions
@@ -194,10 +176,7 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
     onboardingState: currentState || {} as OnboardingState,
     steps,
     progress,
-    strategy,
     shouldShowOnboarding: showOnboarding,
-    shouldShowEmailBanner: showEmailBanner,
-    shouldShowSetupButton: showSetupButton,
     dismissOnboarding,
     markStepCompleted,
     resetOnboarding

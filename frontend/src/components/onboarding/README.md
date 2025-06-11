@@ -59,7 +59,7 @@ The onboarding system uses a sophisticated progress tracking system that monitor
 
 ### Progress Calculation:
 ```tsx
-import { getSetupProgress, shouldShowOnboarding, calculateSetupCompletion } from '@/lib/setup-progress'
+import { getSetupProgress, shouldShowOnboarding, calculateSetupCompletion } from '@/lib/state-utils'
 
 const progress = getSetupProgress(
   emailVerified,

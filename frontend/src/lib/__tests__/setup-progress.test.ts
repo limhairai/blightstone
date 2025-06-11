@@ -3,7 +3,7 @@ import {
   calculateSetupCompletion, 
   shouldShowOnboarding, 
   getNextStep 
-} from '../setup-progress'
+} from '../state-utils'
 
 describe('Setup Progress System', () => {
   describe('getSetupProgress', () => {

@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAppData } from '@/contexts/AppDataContext'
-import { getSetupProgress, SetupProgress } from '@/lib/setup-progress'
+import { getSetupProgress, SetupProgress } from '@/lib/state-utils'
 import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '@/lib/mock-data'
 
 export function useSetupProgress(): SetupProgress {

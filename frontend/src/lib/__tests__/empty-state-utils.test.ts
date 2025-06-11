@@ -1,4 +1,4 @@
-import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from '../empty-state-utils'
+import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from '../state-utils'
 
 describe('Empty State Utils', () => {
   describe('checkEmptyState', () => {
