@@ -77,4 +77,4 @@ cp backend/.env.example backend/.env
 
 ## 📄 License
 
-This project is proprietary software. All rights reserved. 
+This project is proprietary software. All rights reserved. # Environment updated to production Supabase
