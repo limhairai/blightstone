@@ -1,0 +1,7 @@
+# Force fresh builds - ignore cache
+.next/
+node_modules/
+.vercel/
+*.log
+.env.local
+.DS_Store 
