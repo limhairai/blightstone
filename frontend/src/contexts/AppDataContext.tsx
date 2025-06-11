@@ -95,7 +95,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (!headers || !user) return null;
 
     try {
-      const response = await fetch('/api/proxy/v1/users/profile', { headers });
+      const response = await fetch('/api/proxy/users/profile', { headers });
       if (response.ok) {
         const profile = await response.json();
         return {
@@ -137,7 +137,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     try {
       console.log('AppDataContext: Fetching organizations...');
-      const response = await fetch('/api/proxy/v1/organizations', { headers });
+      const response = await fetch('/api/proxy/organizations', { headers });
       
       if (response.ok) {
         const data = await response.json();
@@ -167,7 +167,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (!headers || !orgId) return [];
 
     try {
-      const response = await fetch(`/api/proxy/v1/organizations/${orgId}/members`, { headers });
+      const response = await fetch(`/api/proxy/organizations/${orgId}/members`, { headers });
       if (response.ok) {
         const members = await response.json();
         return Array.isArray(members) ? members : [];
@@ -253,7 +253,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const headers = getAuthHeaders();
     if (!headers) throw new Error('Not authenticated');
 
-    const response = await fetch('/api/proxy/v1/organizations', {
+    const response = await fetch('/api/proxy/organizations', {
       method: 'POST',
       headers,
       body: JSON.stringify({ name })
@@ -271,7 +271,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     const headers = getAuthHeaders();
     if (!headers || !currentOrg || !currentOrg.id) throw new Error('Not authenticated or no organization selected');
 
-    const response = await fetch(`/api/proxy/v1/organizations/${currentOrg.id}/invite`, {
+    const response = await fetch(`/api/proxy/organizations/${currentOrg.id}/invite`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ email, role })

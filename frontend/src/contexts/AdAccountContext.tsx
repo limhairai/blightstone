@@ -49,7 +49,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/proxy/v1/ad-accounts', {
+      const res = await fetch('/api/proxy/ad-accounts', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
@@ -95,7 +95,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/proxy/v1/ad-accounts', {
+      const res = await fetch('/api/proxy/ad-accounts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/proxy/v1/ad-accounts/${id}`, {
+      const res = await fetch(`/api/proxy/ad-accounts/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/proxy/v1/ad-accounts/${id}/archive`, {
+      const res = await fetch(`/api/proxy/ad-accounts/${id}/archive`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
@@ -163,7 +163,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/proxy/v1/ad-accounts/${id}/tags`, {
+      const res = await fetch(`/api/proxy/ad-accounts/${id}/tags`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -187,7 +187,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/proxy/v1/ad-accounts/${id}/sync-status`, {
+      const res = await fetch(`/api/proxy/ad-accounts/${id}/sync-status`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${session.access_token}` },
       });

@@ -39,7 +39,7 @@ export const SuperuserProvider = ({ children }: SuperuserProviderProps) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("/api/proxy/v1/auth/me", {
+        const response = await fetch("/api/proxy/auth/me", {
           headers: {
             'Authorization': `Bearer ${session.access_token}`,
           },

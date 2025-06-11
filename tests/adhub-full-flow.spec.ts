@@ -138,11 +138,11 @@ test.describe('AdHub Full User Flow: Registration and Onboarding', () => {
     
     console.log('Submitting onboarding form (final step by clicking "Complete Setup")...');
     const orgCreationPromise = page.waitForResponse(
-      resp => resp.url().includes('/api/proxy/v1/organizations') && resp.request().method() === 'POST',
+      resp => resp.url().includes('/api/proxy/organizations') && resp.request().method() === 'POST',
       { timeout: 20000 }
     );
     const projectCreationPromise = page.waitForResponse(
-      resp => resp.url().includes('/api/proxy/v1/projects') && resp.request().method() === 'POST',
+      resp => resp.url().includes('/api/proxy/projects') && resp.request().method() === 'POST',
       { timeout: 20000 }
     );
     await completeSetupButton.click(); 

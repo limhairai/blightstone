@@ -52,7 +52,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const headers = getAuthHeaders();
       if (!headers) throw new Error('Not authenticated');
 
-      const response = await fetch(`/api/proxy/v1/organizations/${currentOrg.id}/ad-accounts`, {
+      const response = await fetch(`/api/proxy/organizations/${currentOrg.id}/ad-accounts`, {
         headers
       });
 
@@ -78,7 +78,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     const headers = getAuthHeaders();
     if (!headers) throw new Error('Not authenticated');
 
-    const response = await fetch('/api/proxy/v1/ad-accounts', {
+    const response = await fetch('/api/proxy/ad-accounts', {
       method: 'POST',
       headers,
       body: JSON.stringify({
