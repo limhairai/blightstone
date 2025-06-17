@@ -26,22 +26,14 @@ interface VirtualizedTableProps<T> {
   expandedRowHeight?: number;
 }
 
-function VirtualizedTableRow<T>({ 
+function VirtualizedTableRow({ 
   index, 
   style, 
   data 
 }: { 
   index: number; 
   style: React.CSSProperties; 
-  data: {
-    items: T[];
-    columns: Column<T>[];
-    onRowClick?: (item: T, index: number) => void;
-    expandedRows?: Set<string>;
-    getRowId?: (item: T) => string;
-    renderExpandedContent?: (item: T) => React.ReactNode;
-    expandedRowHeight?: number;
-  }
+  data: any;
 }) {
   const { items, columns, onRowClick, expandedRows, getRowId, renderExpandedContent, expandedRowHeight = 200 } = data;
   const item = items[index];
@@ -49,7 +41,7 @@ function VirtualizedTableRow<T>({
   if (!item) {
     return (
       <div style={style} className="flex items-center space-x-4 px-4 border-b">
-        {columns.map((_, colIndex) => (
+        {columns.map((_: any, colIndex: number) => (
           <Skeleton key={colIndex} className="h-4 flex-1" />
         ))}
       </div>
@@ -66,7 +58,7 @@ function VirtualizedTableRow<T>({
         onClick={() => onRowClick?.(item, index)}
         style={{ minHeight: '60px' }}
       >
-        {columns.map((column, colIndex) => (
+        {columns.map((column: any, colIndex: number) => (
           <div 
             key={colIndex} 
             className={`flex-1 ${column.className || ''}`}
@@ -74,7 +66,7 @@ function VirtualizedTableRow<T>({
           >
             {column.render 
               ? column.render(item, index)
-              : String(item[column.key as keyof T] || '')
+              : String(item[column.key] || '')
             }
           </div>
         ))}
@@ -135,15 +127,7 @@ export function VirtualizedTable<T>({
       </div>
 
       {/* Virtualized Body */}
-      <List<{
-        items: T[];
-        columns: Column<T>[];
-        onRowClick?: (item: T, index: number) => void;
-        expandedRows?: Set<string>;
-        getRowId?: (item: T) => string;
-        renderExpandedContent?: (item: T) => React.ReactNode;
-        expandedRowHeight?: number;
-      }>
+      <List
         height={height}
         width="100%"
         itemCount={loading ? loadingRows : data.length}
