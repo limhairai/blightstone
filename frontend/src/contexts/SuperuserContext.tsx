@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
+import { config, shouldUseMockData, isDemoMode } from '../lib/config';
 
 interface SuperuserContextType {
   isSuperuser: boolean;
@@ -109,6 +110,15 @@ export const SuperuserProvider = ({ children }: SuperuserProviderProps) => {
   };
 
   useEffect(() => {
+    // In demo mode, always grant superuser access
+    if (isDemoMode() || shouldUseMockData()) {
+      console.log('SuperuserContext: Demo mode detected, granting superuser access');
+      setIsSuperuser(true);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     // Only make API call if user is authenticated and auth is not loading
     if (authLoading) {
       return; // Wait for auth to resolve
@@ -197,6 +207,14 @@ export const SuperuserProvider = ({ children }: SuperuserProviderProps) => {
 
   // Manual refresh function
   const refreshStatus = async () => {
+    // In demo mode, always return superuser status
+    if (isDemoMode() || shouldUseMockData()) {
+      setIsSuperuser(true);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     if (!user || !session?.access_token) {
       console.log('SuperuserContext: Cannot refresh - no user or session');
       return;

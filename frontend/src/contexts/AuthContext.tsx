@@ -18,6 +18,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 // Supabase imports
 import { User as SupabaseUser, Session, AuthError, AuthChangeEvent, AuthSession } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient'; // Adjusted path assuming lib is at src/lib
+import { config, shouldUseMockData, isDemoMode } from '../lib/config';
 
 import { useRouter } from 'next/navigation';
 import { toast } from "../components/ui/use-toast"
@@ -44,23 +45,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Attempt to get the session on initial load.
-    // This helps in quickly updating UI if a session exists,
-    // but onAuthStateChange will be the final authority and will set loading to false.
+    // In demo mode, provide mock user and session
+    if (isDemoMode() || shouldUseMockData()) {
+      console.log('AuthContext: Demo mode detected, providing mock user session');
+      
+      const mockUser: SupabaseUser = {
+        id: 'demo-admin-user-123',
+        email: 'admin@adhub.tech',
+        email_confirmed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        app_metadata: { provider: 'demo' },
+        user_metadata: { 
+          name: 'Demo Admin',
+          is_superuser: true 
+        },
+        aud: 'authenticated',
+        role: 'authenticated'
+      } as SupabaseUser;
+
+      const mockSession: Session = {
+        access_token: 'demo-access-token-123',
+        refresh_token: 'demo-refresh-token-123',
+        expires_in: 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        token_type: 'bearer',
+        user: mockUser
+      };
+
+      setUser(mockUser);
+      setSession(mockSession);
+      setLoading(false);
+      return;
+    }
+
+    // Production authentication logic
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      // Only set if still in the initial loading phase driven by onAuthStateChange
       setSession(initialSession);
       setUser(initialSession?.user ?? null);
     }).catch(error => {
       console.error("Error fetching initial session:", error);
-      // If getSession fails, we still rely on onAuthStateChange to set the correct state.
-      // If it's a critical error and onAuthStateChange might not fire,
-      // we might need to set loading to false here to prevent infinite loading.
-      // However, onAuthStateChange usually fires with SIGNED_OUT in such cases.
     });
 
-    // onAuthStateChange is the authoritative source for auth state.
-    // The first event fired will determine the initial authenticated state.
     const { data: authSubscriptionData } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: AuthSession | null) => {
         console.log("🔐 Supabase auth event:", event, {
@@ -70,9 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           environment: process.env.NODE_ENV
         });
 
-        // Show toast for email confirmation
         if (event === 'SIGNED_IN' && currentSession?.user && !user) {
-          // User just signed in (not just a session refresh)
           if (currentSession.user.email_confirmed_at) {
             toast({
               title: "Welcome back!",
@@ -82,7 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Show toast for email verification
         if (event === 'TOKEN_REFRESHED' && currentSession?.user?.email_confirmed_at && user && !user.email_confirmed_at) {
           toast({
             title: "Email Confirmed!",
@@ -93,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
-        setLoading(false); // This is the point where the auth state is considered resolved.
+        setLoading(false);
       }
     );
 
@@ -104,16 +127,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Sign out function
   const signOut = useCallback(async () => {
+    // In demo mode, just clear local state
+    if (isDemoMode() || shouldUseMockData()) {
+      setUser(null);
+      setSession(null);
+      router.push('/login');
+      return { error: null };
+    }
+
+    // Production sign out
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("Error signing out:", error);
       toast({ title: "Sign Out Error", description: error.message, variant: "destructive" });
     }
-    // Clear local states regardless of error from Supabase signOut
     setUser(null);
     setSession(null);
-    // Clear any other app-specific local storage related to user/org
-    localStorage.removeItem("adhub_current_org"); // Example, if you store this
+    localStorage.removeItem("adhub_current_org");
     router.push('/login');
     return { error };
   }, [router]);
