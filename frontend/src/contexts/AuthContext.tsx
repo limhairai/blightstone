@@ -172,14 +172,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // setLoading(false); // onAuthStateChange will set loading to false.
     
     // If sign up is successful and an email needs to be confirmed, 
-    // you might want to show a message to the user here.
+    // the component will handle the redirect to email confirmation page.
+    // We don't show a toast here since the component will handle the UX.
     if (data.user && !data.session) {
-        toast({
-            title: "Registration successful!",
-            description: "Please check your email to confirm your registration.",
-            variant: "default", // Or a specific variant for info
-            duration: 10000, // Keep message longer
-        });
+        console.log("SignUp successful - email confirmation required");
     }
 
     // The AuthContextType expects a specific return structure.

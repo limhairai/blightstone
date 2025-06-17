@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   Menu,
   ChevronRight,
+  CreditCard,
+  Building2,
   type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
@@ -35,36 +37,54 @@ const navItems: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    name: "Requests",
-    path: "/admin/requests",
+    name: "Applications",
+    path: "/admin/applications",
     icon: FileText,
+    badge: "New",
     children: [
       {
-        name: "All Requests",
-        path: "/admin/requests",
+        name: "All Applications",
+        path: "/admin/applications",
         icon: FileText,
       },
       {
-        name: "Pending Review",
-        path: "/admin/requests/pending",
-        icon: FileText,
+        name: "Workflow",
+        path: "/admin/workflow",
+        icon: Settings,
       },
     ],
   },
   {
-    name: "Clients",
-    path: "/admin/clients",
+    name: "Organizations",
+    path: "/admin/organizations",
     icon: Users,
     children: [
       {
-        name: "All Clients",
-        path: "/admin/clients",
+        name: "All Organizations",
+        path: "/admin/organizations",
         icon: Users,
       },
       {
-        name: "Active Accounts",
-        path: "/admin/clients/active",
-        icon: Users,
+        name: "Businesses",
+        path: "/admin/businesses",
+        icon: Building2,
+      },
+    ],
+  },
+  {
+    name: "Infrastructure",
+    path: "/admin/infrastructure",
+    icon: ShieldCheck,
+    children: [
+      {
+        name: "Monitoring",
+        path: "/admin/infrastructure",
+        icon: ShieldCheck,
+      },
+      {
+        name: "Assets",
+        path: "/admin/assets",
+        icon: Building2,
       },
     ],
   },
@@ -72,18 +92,6 @@ const navItems: NavItem[] = [
     name: "Finances",
     path: "/admin/finances",
     icon: DollarSign,
-    children: [
-      {
-        name: "Revenue",
-        path: "/admin/finances/revenue",
-        icon: DollarSign,
-      },
-      {
-        name: "Transactions",
-        path: "/admin/finances/transactions",
-        icon: DollarSign,
-      },
-    ],
   },
   {
     name: "Analytics",
@@ -94,8 +102,8 @@ const navItems: NavItem[] = [
 
 const bottomNavItems: NavItem[] = [
   {
-    name: "Settings",
-    path: "/admin/settings",
+    name: "Workflow Guide",
+    path: "/admin/workflow-guide",
     icon: Settings,
   },
   {

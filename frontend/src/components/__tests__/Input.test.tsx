@@ -4,5 +4,5 @@ test('Input updates value on change', () => {
   render(<Input placeholder='Type here' />);
   const input = screen.getByPlaceholderText('Type here');
   fireEvent.change(input, { target: { value: 'Hello' } });
-  expect(input.value).toBe('Hello');
+  expect((input as HTMLInputElement).value).toBe('Hello');
 });

@@ -86,7 +86,7 @@ export function OrganizationSettings() {
   // Calculate plan limits based on current organization's plan
   const planLimits = {
     businessesLimit: state.currentOrganization.limits.businesses,
-    adAccountsLimit: state.currentOrganization.limits.adAccounts,
+    adAccountsLimit: (state.currentOrganization as any).limits?.adAccounts || 100,
     teamMembersLimit: state.currentOrganization.limits.teamMembers,
   }
 

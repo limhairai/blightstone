@@ -192,7 +192,7 @@ export function AdminClientsList() {
                 <TableCell>{client.accountsCount}</TableCell>
                 <TableCell>{client.joinDate}</TableCell>
                 <TableCell className="text-right">
-                  <Link href={`/admin/clients/${client.id}`}>
+                  <Link href={`/admin/businesses/${client.id}`}>
                     <Button variant="ghost" size="sm" className="h-8 hover:bg-[#1A1A1A]">
                       Details <ChevronRight className="ml-1 h-4 w-4" />
                     </Button>

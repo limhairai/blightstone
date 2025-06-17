@@ -210,7 +210,7 @@ type DemoAction =
   | { type: 'DELETE_ACCOUNT'; payload: number }
   | { type: 'PAUSE_ACCOUNT'; payload: number }
   | { type: 'RESUME_ACCOUNT'; payload: number }
-  | { type: 'CREATE_BUSINESS'; payload: Omit<MockBusiness, 'id' | 'dateCreated' | 'accountsCount' | 'totalBalance' | 'totalSpend'> }
+  | { type: 'CREATE_BUSINESS'; payload: Omit<MockBusiness, 'id' | 'dateCreated' | 'accountsCount' | 'totalBalance' | 'totalSpend' | 'monthlyQuota'> }
   | { type: 'UPDATE_BUSINESS'; payload: MockBusiness }
   | { type: 'DELETE_BUSINESS'; payload: string }
   | { type: 'APPROVE_BUSINESS'; payload: string }
@@ -455,7 +455,8 @@ function demoReducer(state: DemoState, action: DemoAction): DemoState {
         }),
         accountsCount: 0,
         totalBalance: 0,
-        totalSpend: 0
+        totalSpend: 0,
+        monthlyQuota: 10000
       }
 
       return {
@@ -841,7 +842,7 @@ interface DemoContextType {
   deleteAccount: (accountId: number) => Promise<void>
   pauseAccount: (accountId: number) => Promise<void>
   resumeAccount: (accountId: number) => Promise<void>
-  createBusiness: (businessData: Omit<MockBusiness, 'id' | 'dateCreated' | 'accountsCount' | 'totalBalance' | 'totalSpend'>) => Promise<void>
+  createBusiness: (businessData: Omit<MockBusiness, 'id' | 'dateCreated' | 'accountsCount' | 'totalBalance' | 'totalSpend' | 'monthlyQuota'>) => Promise<void>
   updateBusiness: (business: MockBusiness) => Promise<void>
   deleteBusiness: (businessId: string) => Promise<void>
   approveBusiness: (businessId: string) => Promise<void>
@@ -1010,7 +1011,7 @@ export function DemoProvider({ children }: DemoProviderProps) {
     toast.success(`Resumed account: ${account?.name}`)
   }
 
-  const createBusiness = async (businessData: Omit<MockBusiness, 'id' | 'dateCreated' | 'accountsCount' | 'totalBalance' | 'totalSpend'>) => {
+  const createBusiness = async (businessData: Omit<MockBusiness, 'id' | 'dateCreated' | 'accountsCount' | 'totalBalance' | 'totalSpend' | 'monthlyQuota'>) => {
     dispatch({ type: 'SET_LOADING', payload: { key: 'businesses', value: true } })
     
     await new Promise(resolve => setTimeout(resolve, 1200))

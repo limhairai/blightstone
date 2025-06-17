@@ -28,7 +28,7 @@ export function BusinessBalancesTable() {
   const [isExpanded, setIsExpanded] = useState(true)
 
   // Calculate total balance from all businesses to determine percentages
-  const totalAllocated = state.businesses.reduce((sum, business) => sum + business.totalBalance, 0)
+  const totalAllocated = state.businesses.reduce((sum, business) => sum + (business.totalBalance || 0), 0)
   const unallocatedAmount = Math.max(0, state.financialData.walletBalance - totalAllocated)
   const totalBalance = state.financialData.walletBalance
 
@@ -49,10 +49,10 @@ export function BusinessBalancesTable() {
         id: business.id,
         name: business.name,
         logo: getInitials(business.name),
-        balance: business.totalBalance,
-        allocationPercent: totalBalance > 0 ? (business.totalBalance / totalBalance) * 100 : 0,
-        accounts: business.accountsCount,
-        bmId: business.bmId,
+        balance: business.totalBalance || 0,
+        allocationPercent: totalBalance > 0 ? ((business.totalBalance || 0) / totalBalance) * 100 : 0,
+        accounts: business.accountsCount || 0,
+        bmId: business.bmId || "",
       }))
   ]
 

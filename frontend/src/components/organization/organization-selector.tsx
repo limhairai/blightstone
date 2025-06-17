@@ -90,7 +90,9 @@ export function OrganizationSelector() {
           id: business.id,
           name: business.name,
           organizationId: orgId,
-          status: business.status,
+          status: business.status === 'under_review' || business.status === 'provisioning' || business.status === 'ready' 
+            ? 'pending' as const 
+            : business.status as "active" | "pending" | "suspended" | "rejected",
           accountCount
         })
       })

@@ -49,6 +49,10 @@ function isPublicOrAuthPage(pathname: string): boolean {
   return pathname === "/" || pathname === "/login" || pathname === "/register";
 }
 
+function isAdminPage(pathname: string): boolean {
+  return pathname.startsWith("/admin");
+}
+
 function AppRouter({ children }: { children: React.ReactNode }) {
   const { user, session, loading: authLoading } = useAuth();
   const { organizations, loading: dataLoading, error } = useAppData();
@@ -109,8 +113,8 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     return <ErrorScreen message={error} />;
   }
 
-  // For authenticated users on protected routes, wrap in AppShell
-  if (user && session && pathname && !isPublicOrAuthPage(pathname)) {
+  // For authenticated users on protected routes (but not admin), wrap in AppShell
+  if (user && session && pathname && !isPublicOrAuthPage(pathname) && !isAdminPage(pathname)) {
     return <AppShell>{children}</AppShell>;
   }
 

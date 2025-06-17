@@ -58,7 +58,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        setAdAccounts(Array.isArray(data) ? data : data.adAccounts || []);
+        setAdAccounts(Array.isArray(data) ? data : []);
       } else {
         throw new Error('Failed to fetch ad accounts');
       }

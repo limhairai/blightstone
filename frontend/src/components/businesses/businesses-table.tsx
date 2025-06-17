@@ -58,7 +58,7 @@ export function BusinessesTable() {
       filtered = filtered.filter(
         (business) =>
           business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          business.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          business.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (business.bmId && business.bmId.includes(searchQuery)),
       )
     }
@@ -75,9 +75,9 @@ export function BusinessesTable() {
         case "activity":
           return new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()
         case "accounts":
-          return b.accountsCount - a.accountsCount
+          return (b.accountsCount || 0) - (a.accountsCount || 0)
         case "balance":
-          return b.totalBalance - a.totalBalance
+          return (b.totalBalance || 0) - (a.totalBalance || 0)
         default:
           return 0
       }

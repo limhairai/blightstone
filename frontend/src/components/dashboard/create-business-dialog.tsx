@@ -113,13 +113,13 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
 
     try {
       // Use demo state management to create business
-      await createBusiness({
+            await createBusiness({
         name: formData.name,
+        businessType: formData.industry, // Use industry as businessType
         industry: formData.industry,
         website: formData.website ? normalizeUrl(formData.website) : undefined,
         description: formData.description || undefined,
         status: 'pending', // New businesses start as pending
-        monthlyQuota: 10000, // Default quota
       })
 
       showSuccessToast("Application Submitted!", "Your business application has been submitted for review.")

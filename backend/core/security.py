@@ -39,49 +39,104 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     )
 
     try:
-        # Use the helper function to validate token and get user data
-        user_data = get_current_user_data_from_token(token)
+        # Remove "Bearer " prefix if present
+        if token.lower().startswith("bearer "):
+            token = token.split(" ", 1)[1]
         
-        if not user_data:
-            logger.warning("[GET_CURRENT_USER] Invalid token - no user data returned")
-            raise credentials_exception
-            
-        # Handle both JWT payload format (sub) and user object format (id)
-        user_id_from_token = user_data.get("id") or user_data.get("sub")
-        if not user_id_from_token:
-            logger.warning(f"[GET_CURRENT_USER] Token valid but no user ID found. Available keys: {list(user_data.keys())}")
-            raise credentials_exception
-            
-        logger.debug(f"[GET_CURRENT_USER] Token verified successfully. User ID: {user_id_from_token}")
+        # Use Supabase to validate the token directly
+        supabase = get_supabase_client()
         
+        # Try to get user with the provided token
+        try:
+            user_response = supabase.auth.get_user(token)
+            if not user_response or not user_response.user:
+                logger.warning("[GET_CURRENT_USER] Invalid Supabase token - no user returned")
+                raise credentials_exception
+            
+            supabase_user = user_response.user
+            user_id = supabase_user.id
+            logger.debug(f"[GET_CURRENT_USER] Supabase token verified successfully. User ID: {user_id}")
+            
+        except Exception as e:
+            logger.warning(f"[GET_CURRENT_USER] Error verifying Supabase token: {e}")
+            raise credentials_exception from e
+            
     except Exception as e:
-        logger.warning(f"[GET_CURRENT_USER] Error verifying token: {e}")
+        logger.warning(f"[GET_CURRENT_USER] Error processing token: {e}")
         raise credentials_exception from e
 
-    supabase = get_supabase_client()
+    # Fetch user profile from profiles table with retry logic
+    max_retries = 2
+    retry_delay = 1  # seconds
+    response = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            response = supabase.table("profiles").select("id, email, name, avatar_url, role, is_superuser").eq("id", user_id).maybe_single().execute()
+            break  # Success, exit retry loop
+        except Exception as e:
+            error_msg = str(e).lower()
+            is_timeout = any(keyword in error_msg for keyword in ['timeout', 'handshake', 'ssl', 'connection'])
+            
+            if attempt < max_retries and is_timeout:
+                logger.warning(f"[GET_CURRENT_USER] Attempt {attempt + 1} failed with timeout, retrying in {retry_delay}s: {e}")
+                import time
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+                continue
+            else:
+                # Final attempt failed or non-timeout error
+                logger.error(f"[GET_CURRENT_USER] Error fetching profile from Supabase for user ID {user_id}: {e}", exc_info=True)
+                raise credentials_exception from e
+    
     try:
-        response = supabase.table("profiles").select("id, email, name, avatar_url, role, is_superuser").eq("id", user_id_from_token).maybe_single().execute()
-        
         if not response or not hasattr(response, 'data') or not response.data:
-            logger.warning(f"[GET_CURRENT_USER] No profile found in Supabase 'profiles' table for user ID: {user_id_from_token}")
-            # Try to get user from auth.users as fallback
+            logger.warning(f"[GET_CURRENT_USER] No profile found in Supabase 'profiles' table for user ID: {user_id}")
+            # Create profile from Supabase user data as fallback
             try:
-                auth_user_response = supabase.auth.admin.get_user_by_id(user_id_from_token)
-                if auth_user_response and auth_user_response.user:
-                    logger.info(f"[GET_CURRENT_USER] User {user_id_from_token} found in auth.users, but no profile. Returning with defaults.")
+                profile_data = {
+                    "id": supabase_user.id,
+                    "email": supabase_user.email,
+                    "name": supabase_user.user_metadata.get("full_name") or supabase_user.user_metadata.get("name") or supabase_user.email.split('@')[0],
+                    "avatar_url": supabase_user.user_metadata.get("avatar_url"),
+                    "role": "client",
+                    "is_superuser": False
+                }
+                
+                # Try to create the profile
+                create_response = supabase.table("profiles").insert(profile_data).execute()
+                if create_response.data:
+                    logger.info(f"[GET_CURRENT_USER] Created missing profile for user ID: {user_id}")
                     return UserRead(
-                        uid=auth_user_response.user.id,
-                        email=auth_user_response.user.email,
-                        name=auth_user_response.user.user_metadata.get("name", "N/A"),
-                        is_superuser=False,
-                        role="client"
+                        uid=profile_data["id"],
+                        email=profile_data["email"],
+                        name=profile_data["name"],
+                        avatar=profile_data["avatar_url"],
+                        role=profile_data["role"],
+                        is_superuser=profile_data["is_superuser"]
                     )
                 else:
-                    logger.error(f"[GET_CURRENT_USER] User {user_id_from_token} not found in auth.users either.")
-                    raise credentials_exception
-            except Exception as auth_error:
-                logger.error(f"[GET_CURRENT_USER] Error fetching from auth.users: {auth_error}")
-                raise credentials_exception
+                    # If profile creation fails, return user data from Supabase auth
+                    logger.warning(f"[GET_CURRENT_USER] Failed to create profile, using Supabase auth data")
+                    return UserRead(
+                        uid=supabase_user.id,
+                        email=supabase_user.email,
+                        name=supabase_user.user_metadata.get("full_name") or supabase_user.user_metadata.get("name") or "User",
+                        avatar=supabase_user.user_metadata.get("avatar_url"),
+                        role="client",
+                        is_superuser=False
+                    )
+            except Exception as profile_error:
+                logger.error(f"[GET_CURRENT_USER] Error creating profile: {profile_error}")
+                # Return user data from Supabase auth as final fallback
+                return UserRead(
+                    uid=supabase_user.id,
+                    email=supabase_user.email,
+                    name=supabase_user.user_metadata.get("full_name") or supabase_user.user_metadata.get("name") or "User",
+                    avatar=supabase_user.user_metadata.get("avatar_url"),
+                    role="client",
+                    is_superuser=False
+                )
 
         profile_data = response.data
         logger.debug(f"[GET_CURRENT_USER] Fetched profile from Supabase: {profile_data}")
@@ -95,7 +150,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
             is_superuser=profile_data.get("is_superuser", False)
         )
     except Exception as e:
-        logger.error(f"[GET_CURRENT_USER] Error fetching profile from Supabase for user ID {user_id_from_token}: {e}", exc_info=True)
+        logger.error(f"[GET_CURRENT_USER] Unexpected error in profile processing: {e}", exc_info=True)
         raise credentials_exception from e
 
 def require_superuser(current_user: UserRead = Depends(get_current_user)) -> UserRead:

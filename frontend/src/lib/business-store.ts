@@ -78,8 +78,12 @@ const transformSupabaseAdAccount = (account: SupabaseAdAccount): AdAccount => ({
 const transformMockBusiness = (business: MockBusiness): Business => ({
   id: business.id,
   name: business.name,
-  businessId: business.businessId,
-  status: business.status,
+  businessId: business.businessId || business.id,
+  status: business.status === 'under_review' || business.status === 'provisioning' || business.status === 'ready' 
+    ? 'pending' as const 
+    : business.status === 'rejected' 
+    ? 'suspended' as const
+    : business.status as "active" | "pending" | "suspended" | "inactive",
   landingPage: business.landingPage,
   website: business.website,
   businessType: business.businessType,
@@ -87,8 +91,10 @@ const transformMockBusiness = (business: MockBusiness): Business => ({
   country: business.country,
   timezone: business.timezone,
   dateCreated: business.dateCreated,
-  verification: business.verification,
-  adAccounts: business.adAccounts.map(transformMockAdAccount)
+  verification: business.verification === 'rejected' 
+    ? 'not_verified' as const 
+    : business.verification as "verified" | "not_verified" | "pending",
+  adAccounts: (business.adAccounts || []).map(transformMockAdAccount)
 })
 
 const transformMockAdAccount = (account: MockAdAccount): AdAccount => ({

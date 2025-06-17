@@ -110,11 +110,11 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
       // Use demo state management to create business
       await createBusiness({
         name: formData.name,
+        businessType: formData.industry, // Use industry as businessType
         industry: formData.industry,
         website: formData.website ? normalizeUrl(formData.website) : undefined,
         description: formData.description || undefined,
         status: 'pending', // New businesses start as pending
-        monthlyQuota: 10000, // Default quota
       })
 
       setShowSuccess(true)

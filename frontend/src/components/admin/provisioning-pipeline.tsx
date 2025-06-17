@@ -1,0 +1,437 @@
+"use client";
+
+import { useState } from "react";
+import { useDemoState } from "../../contexts/DemoStateContext";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  ExternalLink,
+  Building2,
+  Calendar,
+  Settings,
+  Users,
+  CreditCard,
+  Globe,
+  ArrowRight,
+  PlayCircle,
+  PauseCircle
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+export function ProvisioningPipeline() {
+  const { state, updateBusiness } = useDemoState();
+  const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<string>("");
+
+  // Filter businesses in provisioning states
+  const provisioningBusinesses = state.businesses.filter(
+    (business) => business.status === "provisioning" || business.status === "ready"
+  );
+
+  const getProvisioningStatusBadge = (status: string) => {
+    const statusConfig = {
+      not_started: { label: "Not Started", variant: "secondary" as const, icon: Clock, color: "text-gray-600" },
+      hk_provider_submitted: { label: "HK Provider Submitted", variant: "default" as const, icon: ExternalLink, color: "text-blue-600" },
+      hk_provider_approved: { label: "HK Provider Approved", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      bm_assigned: { label: "BM Assigned", variant: "default" as const, icon: Building2, color: "text-purple-600" },
+      account_created: { label: "Account Created", variant: "default" as const, icon: CreditCard, color: "text-indigo-600" },
+      client_invited: { label: "Client Invited", variant: "default" as const, icon: Users, color: "text-orange-600" },
+      completed: { label: "Completed", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
+    const Icon = config.icon;
+
+    return (
+      <Badge variant={config.variant} className="flex items-center gap-1">
+        <Icon className={`h-3 w-3 ${config.color}`} />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const getNextAction = (provisioningStatus: string) => {
+    const actions = {
+      not_started: "Submit to HK Provider",
+      hk_provider_submitted: "Check HK Provider Status",
+      hk_provider_approved: "Assign Business Manager",
+      bm_assigned: "Create Ad Account",
+      account_created: "Invite Client",
+      client_invited: "Complete Setup",
+      completed: "Manage Account"
+    };
+
+    return actions[provisioningStatus as keyof typeof actions] || "Unknown";
+  };
+
+  const handleProvisioningAction = async (business: any, action: string) => {
+    let updates: any = {};
+
+    switch (action) {
+      case "submit_hk_provider":
+        updates = {
+          provisioningStatus: "hk_provider_submitted",
+          hkProviderApplicationId: `HK-${Date.now()}`,
+          hkProviderStatus: "pending",
+          provisioningNotes: "Application submitted to HK provider for ad account creation",
+        };
+        break;
+
+      case "approve_hk_provider":
+        updates = {
+          provisioningStatus: "hk_provider_approved",
+          hkProviderStatus: "approved",
+          provisioningNotes: "HK provider approved ad account creation",
+        };
+        break;
+
+      case "assign_bm":
+        updates = {
+          provisioningStatus: "bm_assigned",
+          assignedBmId: `BM-${Date.now()}`,
+          assignedProfileSetId: `PS-${Date.now()}`,
+          provisioningNotes: "Business Manager assigned with 3-profile backup system",
+        };
+        break;
+
+      case "create_account":
+        updates = {
+          provisioningStatus: "account_created",
+          adAccountIds: [`AD-${Date.now()}`],
+          provisioningNotes: "Ad account created and linked to Business Manager",
+        };
+        break;
+
+      case "invite_client":
+        updates = {
+          provisioningStatus: "client_invited",
+          clientInvitedAt: new Date().toISOString(),
+          provisioningNotes: "Client invited to Business Manager with appropriate permissions",
+        };
+        break;
+
+      case "complete_setup":
+        updates = {
+          provisioningStatus: "completed",
+          status: "ready",
+          provisioningCompletedAt: new Date().toISOString(),
+          clientAccessGranted: true,
+          provisioningNotes: "Provisioning completed - client has full access to ad accounts",
+        };
+        break;
+    }
+
+    await updateBusiness({
+      ...business,
+      ...updates,
+    });
+
+    setDialogOpen(false);
+  };
+
+  const openActionDialog = (business: any, action: string) => {
+    setSelectedBusiness(business);
+    setActionType(action);
+    setDialogOpen(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Pipeline Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">In Pipeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">
+              {provisioningBusinesses.filter(b => b.status === "provisioning").length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">HK Provider Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {provisioningBusinesses.filter(b => b.provisioningStatus === "hk_provider_submitted").length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Client</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {provisioningBusinesses.filter(b => b.provisioningStatus === "account_created").length}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {provisioningBusinesses.filter(b => b.status === "ready").length}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Provisioning Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Provisioning Pipeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Business</TableHead>
+                <TableHead>Current Status</TableHead>
+                <TableHead>HK Provider</TableHead>
+                <TableHead>BM Assignment</TableHead>
+                <TableHead>Progress</TableHead>
+                <TableHead>Next Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {provisioningBusinesses.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    No businesses in provisioning pipeline
+                  </TableCell>
+                </TableRow>
+              ) : (
+                provisioningBusinesses.map((business) => (
+                  <TableRow key={business.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center">
+                          <Building2 className="h-4 w-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{business.name}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {business.industry} • Started {formatDistanceToNow(new Date(business.provisioningStartedAt || business.dateCreated), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      {getProvisioningStatusBadge(business.provisioningStatus || "not_started")}
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="space-y-1">
+                        {business.hkProviderApplicationId ? (
+                          <div className="text-sm">
+                            <p className="font-mono text-xs text-muted-foreground">
+                              {business.hkProviderApplicationId}
+                            </p>
+                            <Badge variant={business.hkProviderStatus === "approved" ? "default" : "secondary"} className="text-xs">
+                              {business.hkProviderStatus || "pending"}
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not submitted</span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="space-y-1">
+                        {business.assignedBmId ? (
+                          <div className="text-sm">
+                            <p className="font-mono text-xs text-muted-foreground">
+                              {business.assignedBmId}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Profile Set: {business.assignedProfileSetId}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not assigned</span>
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${
+                                business.provisioningStatus === "completed" ? 100 :
+                                business.provisioningStatus === "client_invited" ? 85 :
+                                business.provisioningStatus === "account_created" ? 70 :
+                                business.provisioningStatus === "bm_assigned" ? 55 :
+                                business.provisioningStatus === "hk_provider_approved" ? 40 :
+                                business.provisioningStatus === "hk_provider_submitted" ? 25 :
+                                10
+                              }%` 
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {
+                            business.provisioningStatus === "completed" ? "100%" :
+                            business.provisioningStatus === "client_invited" ? "85%" :
+                            business.provisioningStatus === "account_created" ? "70%" :
+                            business.provisioningStatus === "bm_assigned" ? "55%" :
+                            business.provisioningStatus === "hk_provider_approved" ? "40%" :
+                            business.provisioningStatus === "hk_provider_submitted" ? "25%" :
+                            "10%"
+                          }
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const status = business.provisioningStatus || "not_started";
+                          const actionMap = {
+                            not_started: "submit_hk_provider",
+                            hk_provider_submitted: "approve_hk_provider",
+                            hk_provider_approved: "assign_bm",
+                            bm_assigned: "create_account",
+                            account_created: "invite_client",
+                            client_invited: "complete_setup",
+                          };
+                          const action = actionMap[status as keyof typeof actionMap];
+                          if (action) {
+                            openActionDialog(business, action);
+                          }
+                        }}
+                        disabled={business.provisioningStatus === "completed"}
+                        className="h-8"
+                      >
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                        {getNextAction(business.provisioningStatus || "not_started")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Action Dialog */}
+      {selectedBusiness && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5 text-[#c4b5fd]" />
+                Provisioning Action: {selectedBusiness.name}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <h4 className="font-medium mb-2">Current Status</h4>
+                <div className="flex items-center gap-2">
+                  {getProvisioningStatusBadge(selectedBusiness.provisioningStatus || "not_started")}
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {getNextAction(selectedBusiness.provisioningStatus || "not_started")}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {actionType === "submit_hk_provider" && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      This will submit the business application to the HK provider for ad account creation. 
+                      The provider will review the business information and landing page.
+                    </p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <p className="text-sm font-medium text-blue-900">Action Details:</p>
+                      <ul className="text-sm text-blue-800 mt-1 space-y-1">
+                        <li>• Submit business info to HK provider portal</li>
+                        <li>• Generate tracking ID for application</li>
+                        <li>• Set status to "HK Provider Submitted"</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {actionType === "assign_bm" && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Assign a Business Manager with 3-profile backup system (1 main + 2 backups) to this business.
+                    </p>
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                      <p className="text-sm font-medium text-purple-900">BM Assignment:</p>
+                      <ul className="text-sm text-purple-800 mt-1 space-y-1">
+                        <li>• Assign available BM from inventory</li>
+                        <li>• Link to 3-profile set (max 20 BMs per set)</li>
+                        <li>• Configure permissions and access</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {actionType === "invite_client" && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Invite the client to their assigned Business Manager with appropriate permissions.
+                    </p>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+                      <p className="text-sm font-medium text-orange-900">Client Invitation:</p>
+                      <ul className="text-sm text-orange-800 mt-1 space-y-1">
+                        <li>• Send BM invitation to client email</li>
+                        <li>• Grant advertiser permissions</li>
+                        <li>• Provide setup instructions</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => handleProvisioningAction(selectedBusiness, actionType)}
+                  className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Execute Action
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+} 

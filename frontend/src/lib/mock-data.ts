@@ -907,20 +907,51 @@ export interface MockAccount {
 }
 
 export interface MockBusiness {
-  id: string
-  name: string
-  status: "active" | "pending" | "suspended" | "rejected"
-  dateCreated: string
-  accountsCount: number
-  totalBalance: number
-  totalSpend: number
-  monthlyQuota: number
-  industry: string
-  website?: string
-  description?: string
-  logo?: string
-  bmId?: string // Business Manager ID - only for active/suspended businesses
-  domains?: Array<{ domain: string; verified: boolean }>
+  id: string;
+  name: string;
+  businessType: string;
+  industry?: string;
+  description?: string;
+  website?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  dateCreated: string;
+  status: "pending" | "under_review" | "active" | "rejected" | "provisioning" | "ready";
+  verification?: "pending" | "verified" | "rejected";
+  reviewNotes?: string;
+  rejectionReason?: string;
+  reviewedAt?: string;
+  
+  // Business metrics and display properties
+  accountsCount?: number;
+  totalBalance?: number;
+  totalSpend?: number;
+  monthlyQuota?: number;
+  logo?: string;
+  bmId?: string;
+  domains?: Array<{ domain: string; verified: boolean }>;
+  
+  // New provisioning fields
+  provisioningStatus?: "not_started" | "hk_provider_submitted" | "hk_provider_approved" | "bm_assigned" | "account_created" | "client_invited" | "completed";
+  hkProviderApplicationId?: string;
+  hkProviderStatus?: "pending" | "approved" | "rejected";
+  assignedBmId?: string;
+  assignedProfileSetId?: string;
+  adAccountIds?: string[];
+  provisioningNotes?: string;
+  provisioningStartedAt?: string;
+  provisioningCompletedAt?: string;
+  
+  // Client delivery
+  clientInvitedAt?: string;
+  clientAccessGranted?: boolean;
+  
+  // Optional services
+  needsFacebookPage?: boolean;
+  needsPixelSetup?: boolean;
+  facebookPageId?: string;
+  pixelId?: string;
 }
 
 export interface MockChartData {
@@ -1026,6 +1057,7 @@ export const MOCK_BUSINESSES: MockBusiness[] = [
   {
     id: "1",
     name: "TechFlow Solutions",
+    businessType: "Technology",
     status: "active",
     dateCreated: "Feb 15, 2024",
     accountsCount: 2,
@@ -1045,6 +1077,7 @@ export const MOCK_BUSINESSES: MockBusiness[] = [
   {
     id: "2",
     name: "Digital Marketing Co",
+    businessType: "Marketing",
     status: "active",
     dateCreated: "Jan 28, 2024",
     accountsCount: 2,
@@ -1061,6 +1094,7 @@ export const MOCK_BUSINESSES: MockBusiness[] = [
   {
     id: "3",
     name: "StartupHub Inc",
+    businessType: "Startup Incubator",
     status: "pending",
     dateCreated: "Mar 5, 2024",
     accountsCount: 1,
@@ -1082,6 +1116,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
     {
       id: "p1",
       name: "Personal Projects",
+      businessType: "Personal",
       status: "active",
       dateCreated: "Apr 1, 2024",
       accountsCount: 1, // Matches the 1 account in MOCK_ACCOUNTS_BY_ORG
@@ -1100,6 +1135,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
     {
       id: "a1",
       name: "Acme Marketing",
+      businessType: "Marketing",
       status: "active",
       dateCreated: "Jun 15, 2023",
       accountsCount: 2, // 2 accounts: Enterprise Marketing Campaign + Brand Awareness - Marketing
@@ -1119,6 +1155,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
     {
       id: "a2",
       name: "Acme Sales",
+      businessType: "Sales",
       status: "active",
       dateCreated: "Jul 20, 2023",
       accountsCount: 1, // 1 account: Lead Generation - Sales
@@ -1135,6 +1172,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
     {
       id: "a3",
       name: "Acme Enterprise",
+      businessType: "Enterprise",
       status: "active",
       dateCreated: "Aug 10, 2023",
       accountsCount: 2, // 2 accounts: B2B Campaigns - Enterprise + Product Launch - Enterprise
@@ -1583,7 +1621,7 @@ export const validateMockData = () => {
       .filter(a => a.business === business.name)
       .reduce((sum, a) => sum + a.balance, 0)
     
-    if (Math.abs(business.totalBalance - actualBalance) > 0.01) {
+    if (Math.abs((business.totalBalance || 0) - actualBalance) > 0.01) {
       errors.push(`Business "${business.name}" balance mismatch: claimed ${business.totalBalance}, actual ${actualBalance}`)
     }
   }
@@ -1745,3 +1783,190 @@ export const MOCK_TEAM_MEMBERS_BY_ORG: Record<string, any[]> = {
     }
   ]
 }
+
+// Add new profile set and BM management interfaces
+export interface ProfileSet {
+  id: string;
+  name: string;
+  mainProfileId: string;
+  backupProfile1Id: string;
+  backupProfile2Id: string;
+  status: "active" | "compromised" | "maintenance";
+  managedBmCount: number;
+  maxBmCapacity: number; // 20 per set
+  createdAt: string;
+  lastHealthCheck?: string;
+}
+
+export interface BusinessManager {
+  id: string;
+  name: string;
+  fbBmId: string;
+  assignedProfileSetId: string;
+  assignedBusinessId?: string; // null if available for assignment
+  status: "available" | "assigned" | "active" | "suspended";
+  createdAt: string;
+  assignedAt?: string;
+  adAccountIds: string[];
+  healthStatus: "healthy" | "warning" | "critical";
+  lastHealthCheck?: string;
+}
+
+export interface AdAccountInventory {
+  id: string;
+  accountId: string;
+  source: "hk_provider" | "other";
+  status: "available" | "assigned" | "active" | "suspended";
+  assignedBusinessId?: string;
+  assignedBmId?: string;
+  spendLimit: number;
+  currency: string;
+  createdAt: string;
+  assignedAt?: string;
+}
+
+export interface ProfileTeam {
+  id: string;
+  name: string; // "Team 1", "Team 2", etc.
+  
+  // Profiles (1+2 setup)
+  mainProfile: {
+    id: string;
+    name: string;
+    browserProfileId: string;
+    status: 'active' | 'banned' | 'maintenance';
+  };
+  backupProfiles: [
+    {
+      id: string;
+      name: string;
+      browserProfileId: string; 
+      status: 'active' | 'banned' | 'maintenance';
+    },
+    {
+      id: string;
+      name: string;
+      browserProfileId: string;
+      status: 'active' | 'banned' | 'maintenance';
+    }
+  ];
+  
+  // Capacity
+  maxBusinessManagers: 20;
+  currentBusinessManagers: number;
+  
+  // Status
+  status: 'active' | 'maintenance' | 'full';
+  createdAt: string;
+  lastHealthCheck: string;
+}
+
+// Generate mock profile teams
+export const MOCK_PROFILE_TEAMS: ProfileTeam[] = Array.from({ length: 8 }, (_, i) => {
+  const teamNumber = i + 1;
+  const currentBMs = Math.min(20, Math.floor(Math.random() * 22)); // Some teams at capacity
+  
+  return {
+    id: `team_${teamNumber}`,
+    name: `Team ${teamNumber}`,
+    mainProfile: {
+      id: `profile_main_${teamNumber}`,
+      name: `team${teamNumber}_main`,
+      browserProfileId: `dolphin_main_${teamNumber}`,
+      status: 'active'
+    },
+    backupProfiles: [
+      {
+        id: `profile_backup1_${teamNumber}`,
+        name: `team${teamNumber}_backup1`,
+        browserProfileId: `dolphin_backup1_${teamNumber}`,
+        status: 'active'
+      },
+      {
+        id: `profile_backup2_${teamNumber}`,
+        name: `team${teamNumber}_backup2`,
+        browserProfileId: `dolphin_backup2_${teamNumber}`,
+        status: 'active'
+      }
+    ],
+    maxBusinessManagers: 20,
+    currentBusinessManagers: currentBMs,
+    status: currentBMs >= 20 ? 'full' : 'active',
+    createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
+    lastHealthCheck: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
+  };
+});
+
+export interface TeamBusinessManager {
+  id: string;
+  name: string;
+  fbBmId: string;
+  assignedTeamId: string;
+  assignedBusinessId?: string; // null if available for assignment
+  clientName: string;
+  organizationId: string;
+  status: 'active' | 'restricted' | 'suspended' | 'flagged';
+  
+  // Ad account info
+  adAccountIds: string[];
+  maxAdAccounts: 6;
+  currentAdAccounts: number;
+  
+  // Financial
+  monthlySpend: number;
+  spendLimit: number;
+  
+  // Health
+  healthStatus: 'healthy' | 'warning' | 'critical';
+  lastHealthCheck: string;
+  alerts: number;
+  
+  // Timestamps
+  createdAt: string;
+  assignedAt?: string;
+  lastActivity: string;
+}
+
+// Generate mock business managers with team assignments
+export const MOCK_TEAM_BUSINESS_MANAGERS: TeamBusinessManager[] = (() => {
+  const managers: TeamBusinessManager[] = [];
+  let bmIndex = 0;
+  
+  MOCK_PROFILE_TEAMS.forEach(team => {
+    for (let i = 0; i < team.currentBusinessManagers; i++) {
+      const adAccountCount = Math.floor(Math.random() * 6) + 1;
+      const monthlySpend = Math.floor(Math.random() * 50000) + 5000;
+      const alerts = Math.random() > 0.8 ? Math.floor(Math.random() * 3) + 1 : 0;
+      
+      managers.push({
+        id: `bm_${bmIndex + 1}`,
+        name: `Business Manager ${bmIndex + 1}`,
+        fbBmId: `fb_bm_${bmIndex + 1}`,
+        assignedTeamId: team.id,
+        assignedBusinessId: `business_${bmIndex + 1}`,
+        clientName: `Client ${String.fromCharCode(65 + (bmIndex % 26))}${Math.floor(bmIndex / 26) + 1}`,
+        organizationId: `org_${Math.floor(bmIndex / 5) + 1}`,
+        status: ['active', 'restricted', 'suspended', 'flagged'][Math.floor(Math.random() * 4)] as any,
+        
+        adAccountIds: Array.from({ length: adAccountCount }, (_, j) => `ad_${bmIndex}_${j + 1}`),
+        maxAdAccounts: 6,
+        currentAdAccounts: adAccountCount,
+        
+        monthlySpend,
+        spendLimit: monthlySpend + Math.floor(Math.random() * 20000),
+        
+        healthStatus: alerts > 0 ? 'warning' : 'healthy',
+        lastHealthCheck: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
+        alerts,
+        
+        createdAt: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
+        assignedAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000).toISOString(),
+        lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+      });
+      
+      bmIndex++;
+    }
+  });
+  
+  return managers;
+})();

@@ -5,7 +5,7 @@ export interface MockBusiness {
   id: string
   name: string
   businessId: string
-  status: "active" | "pending" | "suspended" | "inactive"
+  status: "active" | "pending" | "suspended" | "inactive" | "provisioning" | "ready" | "under_review" | "rejected"
   landingPage?: string
   website?: string
   businessType?: string
@@ -13,7 +13,32 @@ export interface MockBusiness {
   country?: string
   timezone?: string
   dateCreated: string
-  verification: "verified" | "not_verified" | "pending"
+  verification: "verified" | "not_verified" | "pending" | "rejected"
+  reviewNotes?: string
+  rejectionReason?: string
+  reviewedAt?: string
+  
+  // New provisioning fields
+  provisioningStatus?: "not_started" | "hk_provider_submitted" | "hk_provider_approved" | "bm_assigned" | "account_created" | "client_invited" | "completed"
+  hkProviderApplicationId?: string
+  hkProviderStatus?: "pending" | "approved" | "rejected"
+  assignedBmId?: string
+  assignedProfileSetId?: string
+  adAccountIds?: string[]
+  provisioningNotes?: string
+  provisioningStartedAt?: string
+  provisioningCompletedAt?: string
+  
+  // Client delivery
+  clientInvitedAt?: string
+  clientAccessGranted?: boolean
+  
+  // Optional services
+  needsFacebookPage?: boolean
+  needsPixelSetup?: boolean
+  facebookPageId?: string
+  pixelId?: string
+  
   adAccounts: MockAdAccount[]
 }
 
@@ -144,6 +169,167 @@ let mockBusinesses: MockBusiness[] = [
         businessId: "3"
       }
     ]
+  },
+  // Additional pending applications for admin review demo
+  {
+    id: "4",
+    name: "TechFlow Solutions",
+    businessId: "",
+    status: "provisioning",
+    landingPage: "https://techflow.io",
+    website: "https://techflow.io",
+    businessType: "technology",
+    description: "B2B SaaS platform providing workflow automation tools for enterprise clients",
+    country: "US",
+    timezone: "America/New_York",
+    dateCreated: "01/15/2025",
+    verification: "verified",
+    reviewedAt: "2025-01-16T14:30:00Z",
+    provisioningStatus: "hk_provider_submitted",
+    hkProviderApplicationId: "HK-1705234567890",
+    hkProviderStatus: "pending",
+    provisioningStartedAt: "2025-01-16T14:30:00Z",
+    provisioningNotes: "Application approved - starting provisioning pipeline",
+    adAccounts: []
+  },
+  {
+    id: "5",
+    name: "Green Energy Co",
+    businessId: "",
+    status: "pending",
+    landingPage: "https://greenenergy.com",
+    website: "https://greenenergy.com",
+    businessType: "energy",
+    description: "Renewable energy solutions and solar panel installation services",
+    country: "US",
+    timezone: "America/Los_Angeles",
+    dateCreated: "01/18/2025",
+    verification: "pending",
+    adAccounts: []
+  },
+  {
+    id: "6",
+    name: "FitLife Nutrition",
+    businessId: "",
+    status: "under_review",
+    landingPage: "https://fitlifenutrition.com",
+    website: "https://fitlifenutrition.com",
+    businessType: "health",
+    description: "Premium health supplements and personalized nutrition plans",
+    country: "US",
+    timezone: "America/Chicago",
+    dateCreated: "01/12/2025",
+    verification: "pending",
+    reviewNotes: "Please provide additional documentation for health claims compliance",
+    reviewedAt: "2025-01-20T10:30:00Z",
+    adAccounts: []
+  },
+  {
+    id: "7",
+    name: "Digital Marketing Pro",
+    businessId: "",
+    status: "rejected",
+    landingPage: "https://digitalmarketingpro.com",
+    website: "https://digitalmarketingpro.com",
+    businessType: "agency",
+    description: "Full-service digital marketing agency specializing in social media advertising",
+    country: "US",
+    timezone: "America/New_York",
+    dateCreated: "01/08/2025",
+    verification: "rejected",
+    rejectionReason: "Website content does not match business description. Please update your landing page to accurately reflect your services.",
+    reviewedAt: "2025-01-16T14:45:00Z",
+    adAccounts: []
+  },
+  {
+    id: "8",
+    name: "EcoFriendly Products",
+    businessId: "",
+    status: "pending",
+    landingPage: "https://ecofriendlyproducts.shop",
+    website: "https://ecofriendlyproducts.shop",
+    businessType: "ecommerce",
+    description: "Sustainable and eco-friendly household products and zero-waste solutions",
+    country: "CA",
+    timezone: "America/Toronto",
+    dateCreated: "01/20/2025",
+    verification: "pending",
+    adAccounts: []
+  },
+  // Additional businesses in provisioning states
+  {
+    id: "9",
+    name: "CloudTech Innovations",
+    businessId: "",
+    status: "provisioning",
+    landingPage: "https://cloudtech.io",
+    website: "https://cloudtech.io",
+    businessType: "technology",
+    description: "Cloud infrastructure and DevOps automation solutions",
+    country: "US",
+    timezone: "America/Los_Angeles",
+    dateCreated: "01/14/2025",
+    verification: "verified",
+    reviewedAt: "2025-01-15T16:20:00Z",
+    provisioningStatus: "bm_assigned",
+    hkProviderApplicationId: "HK-1705123456789",
+    hkProviderStatus: "approved",
+    assignedBmId: "BM-1705567890123",
+    assignedProfileSetId: "PS-1705567890123",
+    provisioningStartedAt: "2025-01-15T16:20:00Z",
+    provisioningNotes: "Business Manager assigned with 3-profile backup system",
+    adAccounts: []
+  },
+  {
+    id: "10",
+    name: "HealthFirst Wellness",
+    businessId: "",
+    status: "provisioning",
+    landingPage: "https://healthfirst.com",
+    website: "https://healthfirst.com",
+    businessType: "health",
+    description: "Holistic wellness coaching and health optimization programs",
+    country: "US",
+    timezone: "America/New_York",
+    dateCreated: "01/13/2025",
+    verification: "verified",
+    reviewedAt: "2025-01-14T11:45:00Z",
+    provisioningStatus: "account_created",
+    hkProviderApplicationId: "HK-1705098765432",
+    hkProviderStatus: "approved",
+    assignedBmId: "BM-1705432109876",
+    assignedProfileSetId: "PS-1705432109876",
+    adAccountIds: ["AD-1705654321098"],
+    provisioningStartedAt: "2025-01-14T11:45:00Z",
+    provisioningNotes: "Ad account created and linked to Business Manager",
+    adAccounts: []
+  },
+  {
+    id: "11",
+    name: "RetailMax Solutions",
+    businessId: "",
+    status: "ready",
+    landingPage: "https://retailmax.com",
+    website: "https://retailmax.com",
+    businessType: "ecommerce",
+    description: "E-commerce optimization and retail analytics platform",
+    country: "US",
+    timezone: "America/Chicago",
+    dateCreated: "01/10/2025",
+    verification: "verified",
+    reviewedAt: "2025-01-11T09:30:00Z",
+    provisioningStatus: "completed",
+    hkProviderApplicationId: "HK-1704987654321",
+    hkProviderStatus: "approved",
+    assignedBmId: "BM-1705321098765",
+    assignedProfileSetId: "PS-1705321098765",
+    adAccountIds: ["AD-1705543210987"],
+    provisioningStartedAt: "2025-01-11T09:30:00Z",
+    provisioningCompletedAt: "2025-01-12T14:15:00Z",
+    clientInvitedAt: "2025-01-12T13:45:00Z",
+    clientAccessGranted: true,
+    provisioningNotes: "Provisioning completed - client has full access to ad accounts",
+    adAccounts: []
   }
 ]
 

@@ -15,7 +15,7 @@ export default function BusinessesPage() {
   // Use real-time data from demo state
   const totalBusinesses = state.businesses.length
   const activeBusinesses = state.businesses.filter((b) => b.status === "active").length
-  const totalBalance = state.businesses.reduce((total, business) => total + business.totalBalance, 0)
+  const totalBalance = state.businesses.reduce((total, business) => total + 10000, 0) // Mock balance data
 
   return (
     <div className={layout.pageContent}>

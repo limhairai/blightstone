@@ -53,7 +53,7 @@ export const AdAccountProvider = ({ children }: { children: ReactNode }) => {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       const data = await res.json();
-      setAdAccounts(data.adAccounts || []);
+      setAdAccounts(Array.isArray(data) ? data : []);
     } catch (e: any) {
       setError(e.message || 'Failed to fetch ad accounts');
     }

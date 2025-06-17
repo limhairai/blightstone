@@ -28,7 +28,8 @@ import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
 import { useDemoState } from "../../contexts/DemoStateContext"
 import { ErrorBoundary } from "../ui/error-boundary"
 import { FullPageLoading } from "../ui/enhanced-loading"
-import { DashboardDebug } from "../debug/dashboard-debug"
+
+
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 
 export function DashboardView() {
@@ -81,15 +82,13 @@ export function DashboardView() {
     dependencies: [user?.id, currentOrg?.id] // Restart refresh when user or org changes
   })
 
-  // Show debug info in development or when there's an issue
-  const showDebug = process.env.NODE_ENV === 'development' || loading
+
 
   // Early return for loading states
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <FullPageLoading />
-        {showDebug && <DashboardDebug />}
       </div>
     )
   }
@@ -100,7 +99,6 @@ export function DashboardView() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div>Redirecting to login...</div>
-        {showDebug && <DashboardDebug />}
       </div>
     )
   }
@@ -649,8 +647,7 @@ export function DashboardView() {
         </div>
       </div>
       
-      {/* Debug component for troubleshooting */}
-      {showDebug && <DashboardDebug />}
+
     </ErrorBoundary>
   )
 } 

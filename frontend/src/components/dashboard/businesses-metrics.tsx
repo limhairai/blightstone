@@ -6,9 +6,9 @@ export function BusinessesMetrics() {
   const totalBusinesses = MOCK_BUSINESSES.length
   const activeBusinesses = MOCK_BUSINESSES.filter((b) => b.status === "active").length
   const pendingBusinesses = MOCK_BUSINESSES.filter((b) => b.status === "pending").length
-  const totalBalance = MOCK_BUSINESSES.reduce((total, business) => total + business.totalBalance, 0)
-  const totalAccounts = MOCK_BUSINESSES.reduce((total, business) => total + business.accountsCount, 0)
-  const totalSpend = MOCK_BUSINESSES.reduce((total, business) => total + business.totalSpend, 0)
+  const totalBalance = MOCK_BUSINESSES.reduce((total, business) => total + (business.totalBalance || 0), 0)
+  const totalAccounts = MOCK_BUSINESSES.reduce((total, business) => total + (business.accountsCount || 0), 0)
+  const totalSpend = MOCK_BUSINESSES.reduce((total, business) => total + (business.totalSpend || 0), 0)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

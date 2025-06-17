@@ -61,7 +61,7 @@ export function BusinessesTable() {
       filtered = filtered.filter(
         (business) =>
           business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          business.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          business.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (business.bmId && business.bmId.includes(searchQuery)),
       )
     }
@@ -82,9 +82,9 @@ export function BusinessesTable() {
         case "activity":
           return new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()
         case "accounts":
-          return b.accountsCount - a.accountsCount
+          return (b.accountsCount || 0) - (a.accountsCount || 0)
         case "balance":
-          return b.totalBalance - a.totalBalance
+          return (b.totalBalance || 0) - (a.totalBalance || 0)
         default:
           return 0
       }
@@ -152,7 +152,7 @@ export function BusinessesTable() {
   }
 
   // Get unique industries from current businesses for filter
-  const uniqueIndustries = Array.from(new Set(businesses.map((business) => business.industry)))
+  const uniqueIndustries = Array.from(new Set(businesses.map((business) => business.industry).filter(Boolean)))
 
   return (
     <div className={layout.stackMedium}>
@@ -205,7 +205,7 @@ export function BusinessesTable() {
                 All Industries
               </SelectItem>
               {uniqueIndustries.map((industry) => (
-                <SelectItem key={industry} value={industry} className="text-popover-foreground hover:bg-accent">
+                <SelectItem key={industry} value={industry!} className="text-popover-foreground hover:bg-accent">
                   {industry}
                 </SelectItem>
               ))}

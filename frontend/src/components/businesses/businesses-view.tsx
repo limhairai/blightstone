@@ -201,7 +201,7 @@ export function BusinessesView() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center w-8 h-6 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 rounded text-sm font-medium">
-                      {business.adAccounts}
+                                              {business.adAccounts}
                     </div>
                   </TableCell>
                   <TableCell>

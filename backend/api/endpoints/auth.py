@@ -32,45 +32,12 @@ async def login_for_access_token(
             )
         
         supabase_user = auth_response.user
+        supabase_session = auth_response.session
         logger.info(f"User {form_data.username} authenticated successfully with Supabase. User ID: {supabase_user.id}")
 
-        # 2FA Check (Simplified for migration - needs review for Supabase context)
-        # This assumes 2FA secret is stored in your 'profiles' table or Supabase user_metadata
-        # and that the client sends '2fa_code' in the form if enabled.
-        # This part is highly dependent on how you want to integrate 2FA with Supabase.
-        # For now, we will bypass custom 2FA if Supabase auth is successful and let Supabase handle MFA if configured there.
-        
-        # Fetch user profile to check for custom 2FA fields if you implement them
-        # profile_response = supabase.table("profiles").select("twofa_enabled", "twofa_secret").eq("id", supabase_user.id).maybe_single().execute()
-        # if profile_response.data and profile_response.data.get("twofa_enabled"):
-        #     if not request: # This dependency would need to be added to the function signature
-        #         logger.error("Request object not available for 2FA code extraction")
-        #         raise HTTPException(status_code=500, detail="Server configuration error for 2FA")
-            
-        #     form_payload = await request.form()
-        #     code = form_payload.get("2fa_code")
-        #     if not code:
-        #         logger.warning(f"2FA code required for user {form_data.username}")
-        #         raise HTTPException(status_code=400, detail="2FA code required.")
-            
-        #     secret = profile_response.data.get("twofa_secret")
-        #     if not secret:
-        #         logger.error(f"2FA secret not found for user {form_data.username}")
-        #         raise HTTPException(status_code=500, detail="2FA setup incomplete.")
-
-        #     totp = pyotp.TOTP(secret)
-        #     if not totp.verify(code):
-        #         logger.warning(f"Invalid 2FA code for user {form_data.username}")
-        #         raise HTTPException(status_code=400, detail="Invalid 2FA code.")
-        #     logger.info(f"2FA successful for {form_data.username}")
-
-        # Create your backend's own access token, with Supabase user ID as 'sub'
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        backend_access_token = create_access_token(
-            data={"sub": str(supabase_user.id)}, expires_delta=access_token_expires
-        )
-        logger.info(f"Backend access token created for Supabase user ID: {supabase_user.id}")
-        return {"access_token": backend_access_token, "token_type": "bearer"}
+        # Return the Supabase access token directly instead of creating a custom JWT
+        logger.info(f"Returning Supabase access token for user ID: {supabase_user.id}")
+        return {"access_token": supabase_session.access_token, "token_type": "bearer"}
 
     except HTTPException as e: # Re-raise HTTPExceptions directly
         raise e
@@ -216,8 +183,7 @@ async def update_my_profile(
 
 @router.post("/promote-superuser")
 async def promote_superuser(
-    uid: Optional[str] = Body(None, description="User ID (UID) of the user to promote."),
-    email: Optional[str] = Body(None, description="Email of the user to promote."),
+    request: dict = Body(..., description="Request body containing uid or email."),
     current_admin_user: UserRead = Depends(get_current_user) # Changed to get_current_user, will be checked by require_superuser logic
 ):
     # First, ensure the requesting user is themselves a superuser
@@ -225,6 +191,9 @@ async def promote_superuser(
         logger.warning(f"User {current_admin_user.uid} (not superuser) attempted to promote user.")
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only superusers can promote others.")
 
+    uid = request.get("uid")
+    email = request.get("email")
+    
     if not uid and not email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Either user ID (uid) or email must be provided.")
 
@@ -264,4 +233,129 @@ async def promote_superuser(
         raise e
     except Exception as e:
         logger.error(f"Exception during superuser promotion: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="An unexpected error occurred during superuser promotion.") 
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during superuser promotion.")
+
+@router.post("/create-profile")
+async def create_profile_for_current_user(
+    current_user_from_auth: UserRead = Depends(get_current_user)
+):
+    """
+    Helper endpoint to create a profile for the current authenticated user.
+    Useful when a user exists in auth.users but not in profiles table.
+    """
+    logger.info(f"Creating profile for user: {current_user_from_auth.uid}")
+    supabase = get_supabase_client()
+
+    try:
+        # Check if profile already exists
+        existing_profile = supabase.table("profiles").select("id").eq("id", current_user_from_auth.uid).maybe_single().execute()
+        
+        if existing_profile.data:
+            return {
+                "success": True,
+                "message": "Profile already exists",
+                "profile": existing_profile.data
+            }
+
+        # Create new profile
+        profile_data = {
+            "id": current_user_from_auth.uid,
+            "email": current_user_from_auth.email,
+            "name": current_user_from_auth.name or "User",
+            "avatar_url": current_user_from_auth.avatar,
+            "role": "client",
+            "is_superuser": False
+        }
+        
+        create_response = supabase.table("profiles").insert(profile_data).execute()
+        
+        if create_response.data:
+            logger.info(f"Profile created successfully for user: {current_user_from_auth.uid}")
+            return {
+                "success": True,
+                "message": "Profile created successfully",
+                "profile": create_response.data[0]
+            }
+        else:
+            logger.error(f"Failed to create profile: {create_response.error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create profile"
+            )
+            
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Exception creating profile: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while creating profile"
+        )
+
+@router.post("/bootstrap-first-admin")
+async def bootstrap_first_admin(
+    request: dict = Body(..., description="Request body containing email."),
+):
+    """
+    Bootstrap endpoint to create the first admin user.
+    This endpoint can only be used when no superusers exist in the system.
+    """
+    email = request.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is required."
+        )
+    
+    logger.info(f"Bootstrap first admin attempt for email: {email}")
+    supabase = get_supabase_client()
+
+    try:
+        # Check if any superusers already exist
+        existing_superusers = supabase.table("profiles").select("id").eq("is_superuser", True).execute()
+        
+        if existing_superusers.data and len(existing_superusers.data) > 0:
+            logger.warning(f"Bootstrap first admin rejected - superusers already exist")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Cannot bootstrap first admin - superusers already exist in the system."
+            )
+
+        # Find user by email
+        profile_response = supabase.table("profiles").select("id, email, name").eq("email", email).maybe_single().execute()
+        
+        if not profile_response.data:
+            logger.warning(f"Bootstrap first admin: No user found with email {email}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail=f"User with email {email} not found. Please register first."
+            )
+
+        target_user_id = profile_response.data["id"]
+        
+        # Promote user to superuser
+        update_response = supabase.table("profiles").update({
+            "is_superuser": True,
+            "role": "admin"
+        }).eq("id", target_user_id).execute()
+
+        if update_response.data:
+            logger.info(f"First admin successfully bootstrapped: {target_user_id} ({email})")
+            return {
+                "success": True, 
+                "uid": target_user_id, 
+                "email": email,
+                "message": "First admin successfully created. You can now access the admin panel."
+            }
+        else:
+            logger.error(f"Failed to bootstrap first admin for {target_user_id}. Error: {update_response.error}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                detail="Failed to update user admin status."
+            )
+            
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.error(f"Exception during first admin bootstrap: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An unexpected error occurred during admin bootstrap.") 

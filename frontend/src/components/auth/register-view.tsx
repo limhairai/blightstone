@@ -108,12 +108,26 @@ export function RegisterView() {
         return;
       }
 
-      toast({
-        title: "Registration successful!",
-        description: "Please check your email to verify your account before logging in.",
-      });
-
-      router.push('/dashboard'); // Redirect to dashboard
+      // Check if email confirmation is required
+      if (signUpResponse.data.user && !signUpResponse.data.session) {
+        // Email confirmation required - redirect to confirmation page
+        toast({
+          title: "Registration successful!",
+          description: "Please check your email to verify your account.",
+        });
+        router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
+      } else if (signUpResponse.data.user && signUpResponse.data.session) {
+        // User is immediately signed in - redirect to dashboard
+        toast({
+          title: "Registration successful!",
+          description: "Welcome to AdHub!",
+        });
+        router.push('/dashboard');
+      } else {
+        // Unexpected state
+        setError("Registration completed but something went wrong. Please try signing in.");
+        toast({ title: "Registration Issue", description: "Please try signing in with your credentials.", variant: "destructive" });
+      }
 
     } catch (error: any) { // This catch block is now for truly unexpected errors not from supabase.auth.signUp directly
       console.error("Register handleSubmit: Unexpected error caught:", error);
