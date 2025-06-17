@@ -7,7 +7,9 @@ from schemas.business import (
     BusinessUpdate, 
     BusinessRead,
     BusinessStatusUpdate,
-    BusinessDeleteResponse
+    BusinessDeleteResponse,
+    BusinessManagerAssignment,
+    BusinessManagerAssignmentResponse
 )
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -411,4 +413,208 @@ async def admin_update_business_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update business status"
+        )
+
+# Business Manager assignment endpoints
+@router.post("/{business_id}/assign-business-manager", response_model=BusinessManagerAssignmentResponse)
+async def assign_business_manager(
+    business_id: str,
+    assignment: BusinessManagerAssignment,
+    current_user: User = Depends(get_current_user)
+):
+    """Assign a Facebook Business Manager to a business"""
+    logger.info(f"Assigning BM {assignment.facebook_business_manager_id} to business {business_id}")
+    supabase = get_supabase_client()
+    
+    try:
+        # Get business and verify access
+        business_response = (
+            supabase.table("businesses")
+            .select("*")
+            .eq("id", business_id)
+            .single()
+            .execute()
+        )
+        
+        if not business_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Business not found"
+            )
+        
+        business_data = business_response.data
+        
+        # Verify user is admin/owner of the organization OR superuser
+        is_superuser = (
+            supabase.table("profiles")
+            .select("is_superuser")
+            .eq("id", str(current_user.uid))
+            .single()
+            .execute()
+        )
+        
+        member_check = (
+            supabase.table("organization_members")
+            .select("role")
+            .eq("organization_id", business_data["organization_id"])
+            .eq("user_id", str(current_user.uid))
+            .maybe_single()
+            .execute()
+        )
+        
+        has_permission = (
+            (is_superuser.data and is_superuser.data.get("is_superuser", False)) or
+            (member_check.data and member_check.data["role"] in ["owner", "admin"])
+        )
+        
+        if not has_permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to assign Business Manager"
+            )
+        
+        # Check if BM is already assigned to another business
+        existing_assignment = (
+            supabase.table("businesses")
+            .select("id, name")
+            .eq("facebook_business_manager_id", assignment.facebook_business_manager_id)
+            .neq("id", business_id)
+            .maybe_single()
+            .execute()
+        )
+        
+        if existing_assignment.data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Business Manager {assignment.facebook_business_manager_id} is already assigned to business '{existing_assignment.data['name']}'"
+            )
+        
+        # Assign Business Manager
+        assigned_at = datetime.now(timezone.utc)
+        update_data = {
+            "facebook_business_manager_id": assignment.facebook_business_manager_id,
+            "facebook_business_manager_name": assignment.facebook_business_manager_name,
+            "facebook_business_manager_assigned_at": assigned_at.isoformat(),
+            "facebook_business_manager_assigned_by": str(current_user.uid),
+            "updated_at": assigned_at.isoformat()
+        }
+        
+        response = (
+            supabase.table("businesses")
+            .update(update_data)
+            .eq("id", business_id)
+            .execute()
+        )
+        
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to assign Business Manager"
+            )
+        
+        logger.info(f"Successfully assigned BM {assignment.facebook_business_manager_id} to business {business_id}")
+        return BusinessManagerAssignmentResponse(
+            business_id=business_id,
+            facebook_business_manager_id=assignment.facebook_business_manager_id,
+            facebook_business_manager_name=assignment.facebook_business_manager_name,
+            assigned_at=assigned_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error assigning BM to business {business_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to assign Business Manager"
+        )
+
+@router.delete("/{business_id}/business-manager", response_model=dict)
+async def remove_business_manager(
+    business_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Remove Business Manager assignment from a business"""
+    logger.info(f"Removing BM assignment from business {business_id}")
+    supabase = get_supabase_client()
+    
+    try:
+        # Get business and verify access (same permission logic as assign)
+        business_response = (
+            supabase.table("businesses")
+            .select("*")
+            .eq("id", business_id)
+            .single()
+            .execute()
+        )
+        
+        if not business_response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Business not found"
+            )
+        
+        business_data = business_response.data
+        
+        # Verify permissions
+        is_superuser = (
+            supabase.table("profiles")
+            .select("is_superuser")
+            .eq("id", str(current_user.uid))
+            .single()
+            .execute()
+        )
+        
+        member_check = (
+            supabase.table("organization_members")
+            .select("role")
+            .eq("organization_id", business_data["organization_id"])
+            .eq("user_id", str(current_user.uid))
+            .maybe_single()
+            .execute()
+        )
+        
+        has_permission = (
+            (is_superuser.data and is_superuser.data.get("is_superuser", False)) or
+            (member_check.data and member_check.data["role"] in ["owner", "admin"])
+        )
+        
+        if not has_permission:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to remove Business Manager"
+            )
+        
+        # Remove Business Manager assignment
+        update_data = {
+            "facebook_business_manager_id": None,
+            "facebook_business_manager_name": None,
+            "facebook_business_manager_assigned_at": None,
+            "facebook_business_manager_assigned_by": None,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        response = (
+            supabase.table("businesses")
+            .update(update_data)
+            .eq("id", business_id)
+            .execute()
+        )
+        
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to remove Business Manager"
+            )
+        
+        logger.info(f"Successfully removed BM assignment from business {business_id}")
+        return {"status": "success", "message": "Business Manager removed successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error removing BM from business {business_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove Business Manager"
         ) 

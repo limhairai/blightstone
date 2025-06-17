@@ -101,6 +101,54 @@ async def register_user(user_in: UserCreate):
 
         if profile_insert_response.data:
             logger.info(f"Profile created in Supabase 'profiles' table for user ID: {new_supabase_user.id}")
+            
+            # Step 3: Create default organization for the new user
+            default_org_name = f"{user_in.name}'s Organization" if user_in.name else f"{new_supabase_user.email}'s Organization"
+            org_data = {
+                "name": default_org_name,
+                "owner_id": new_supabase_user.id,  # References auth.users.id
+                "plan_id": "starter",  # Default plan
+                "verification_status": "pending"
+            }
+            
+            org_insert_response = supabase.table("organizations").insert(org_data).execute()
+            
+            if org_insert_response.data:
+                org_id = org_insert_response.data[0]["id"]
+                logger.info(f"Default organization created for user {new_supabase_user.id}: {org_id}")
+                
+                # Step 4: Add user as owner in organization_members
+                member_data = {
+                    "organization_id": str(org_id),
+                    "user_id": new_supabase_user.id,
+                    "role": "owner",
+                    "status": "active"
+                }
+                
+                member_insert_response = supabase.table("organization_members").insert(member_data).execute()
+                
+                if not member_insert_response.data:
+                    logger.warning(f"Failed to add user {new_supabase_user.id} as owner of organization {org_id}")
+                else:
+                    logger.info(f"User {new_supabase_user.id} added as owner of organization {org_id}")
+                    
+                # Step 5: Create default wallet for the organization
+                wallet_data = {
+                    "organization_id": str(org_id),
+                    "balance_cents": 0,
+                    "currency": "USD"
+                }
+                
+                wallet_insert_response = supabase.table("wallets").insert(wallet_data).execute()
+                
+                if wallet_insert_response.data:
+                    logger.info(f"Default wallet created for organization {org_id}")
+                else:
+                    logger.warning(f"Failed to create wallet for organization {org_id}")
+                    
+            else:
+                logger.warning(f"Failed to create default organization for user {new_supabase_user.id}")
+            
             # Construct UserRead from the profile data + uid
             # UserRead schema expects 'uid' but our table has 'id' for the user ID
             return UserRead(

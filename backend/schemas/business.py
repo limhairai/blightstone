@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 
 class BusinessBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
@@ -44,6 +44,11 @@ class BusinessRead(BaseModel):
     description: Optional[str] = None
     country: str
     timezone: str
+    # Business Manager mapping fields
+    facebook_business_manager_id: Optional[str] = None
+    facebook_business_manager_name: Optional[str] = None
+    facebook_business_manager_assigned_at: Optional[datetime] = None
+    facebook_business_manager_assigned_by: Optional[str] = None
     created_at: str
     updated_at: str
 
@@ -70,4 +75,19 @@ class BusinessListResponse(BaseModel):
 class BusinessDeleteResponse(BaseModel):
     """Response schema for business deletion"""
     status: str = "success"
-    message: str = "Business deleted successfully" 
+    message: str = "Business deleted successfully"
+
+# Business Manager assignment schemas
+class BusinessManagerAssignment(BaseModel):
+    """Schema for assigning Business Manager to a business"""
+    facebook_business_manager_id: str = Field(..., description="Facebook Business Manager ID")
+    facebook_business_manager_name: Optional[str] = Field(None, description="Facebook Business Manager display name")
+
+class BusinessManagerAssignmentResponse(BaseModel):
+    """Response schema for BM assignment"""
+    status: str = "success"
+    message: str = "Business Manager assigned successfully"
+    business_id: str
+    facebook_business_manager_id: str
+    facebook_business_manager_name: Optional[str] = None
+    assigned_at: datetime 
