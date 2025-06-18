@@ -17,8 +17,8 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 
 // Supabase imports
 import { User as SupabaseUser, Session, AuthError, AuthChangeEvent, AuthSession } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabaseClient'; // Adjusted path assuming lib is at src/lib
-import { config, shouldUseMockData, isDemoMode } from '../lib/config';
+import { supabase } from '../lib/stores/supabase-client';
+import { config, shouldUseMockData, isDemoMode } from '../lib/data/config';
 
 import { useRouter } from 'next/navigation';
 import { toast } from "../components/ui/use-toast"

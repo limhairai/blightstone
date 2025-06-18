@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { useSuperuser } from "../../contexts/SuperuserContext";
+import { useSuperuser } from "../../contexts/ProductionDataContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { Loader } from "../core/Loader";
 import { AdminSidebar } from "./admin-sidebar";

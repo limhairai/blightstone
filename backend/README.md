@@ -1,54 +1,36 @@
-# AdHub Backend API
+# ⚙️ AdHub Backend
 
-A FastAPI-based backend service for AdHub, providing authentication, organization management, and ad account integration.
+FastAPI-based backend service for the AdHub advertising management platform.
 
-## 🏗️ Project Structure
+## 📁 **Project Structure**
 
 ```
 backend/
-├── main.py                 # FastAPI application entry point
-├── requirements.txt        # Python dependencies
-├── requirements-dev.txt    # Development dependencies
-├── Procfile               # Deployment configuration
-│
-├── api/                   # API layer
-│   ├── api.py            # Main API router configuration
-│   ├── deps/             # API dependencies (auth, database, etc.)
-│   └── endpoints/        # API endpoint handlers
-│       ├── auth.py       # Authentication endpoints
-│       ├── organizations.py # Organization management
-│       ├── ad_accounts.py   # Ad account management
-│       ├── wallet.py     # Wallet and transactions
-│       ├── users.py      # User management
-│       ├── invites.py    # Team invitations
-│       ├── projects.py   # Project management
-│       ├── admin.py      # Admin operations
-│       └── twofa.py      # Two-factor authentication
-│
-├── core/                 # Core application logic
-│   ├── config.py        # Configuration settings
-│   ├── supabase_client.py # Supabase database client
-│   └── security.py      # Security utilities
-│
-├── models/              # Data models and schemas
-├── services/            # Business logic services
-├── schemas/             # Pydantic schemas for API
-├── utils/               # Utility functions
-├── tasks/               # Background tasks
-├── db/                  # Database utilities
-│
-├── tests/               # Test files
-└── docs/                # Documentation
+├── app/                     # Main application package
+│   ├── __init__.py         # App package initialization
+│   ├── main.py             # FastAPI application entry point
+│   ├── api/                # API routes and endpoints
+│   ├── core/               # Core functionality and utilities
+│   ├── models/             # Data models and database schemas
+│   ├── services/           # Business logic services
+│   ├── db/                 # Database configuration and utilities
+│   └── schemas/            # Pydantic schemas for API validation
+├── tests/                  # Test suite
+├── docs/                   # Backend-specific documentation
+├── scripts/                # Backend utility scripts
+├── requirements/           # Organized requirements files
+│   ├── base.txt           # Base dependencies
+│   ├── dev.txt            # Development dependencies
+│   └── prod.txt           # Production dependencies
+├── config/                 # Configuration files
+├── Dockerfile             # Docker configuration
+├── Procfile              # Deployment configuration
+└── README.md             # This file
 ```
 
-## 🚀 Getting Started
+## 🚀 **Quick Start**
 
-### Prerequisites
-- Python 3.8+
-- Supabase account and project
-- Environment variables configured
-
-### Installation
+### **Development Setup:**
 
 1. **Create virtual environment:**
    ```bash
@@ -58,85 +40,211 @@ backend/
 
 2. **Install dependencies:**
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements/dev.txt
    ```
 
 3. **Set up environment variables:**
    ```bash
-   cp .env.example .env
-   # Edit .env with your Supabase credentials
+   cp env.example .env
+   # Edit .env with your configuration
    ```
 
-4. **Run the development server:**
+4. **Run development server:**
    ```bash
-   uvicorn main:app --reload --host 0.0.0.0 --port 8000
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
-## 🔧 Configuration
+### **Production Setup:**
 
-The backend uses Supabase as the primary database. Configure these environment variables:
+1. **Install production dependencies:**
+   ```bash
+   pip install -r requirements/prod.txt
+   ```
 
-```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_KEY=your_service_key
-SUPABASE_ANON_KEY=your_anon_key
-```
+2. **Run production server:**
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port $PORT
+   ```
 
-## 📚 API Documentation
+## 📋 **Requirements Management**
 
-Once running, visit:
-- **API Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **Health Check**: http://localhost:8000/health
+### **Base Requirements** (`requirements/base.txt`)
+Core dependencies used across all environments:
+- FastAPI, Uvicorn, Starlette
+- Authentication & Security (JWT, bcrypt, etc.)
+- Database & Supabase integration
+- Data validation (Pydantic)
 
-## 🏢 Core Features
+### **Development Requirements** (`requirements/dev.txt`)
+Extends base with development tools:
+- Testing framework (pytest)
+- Code quality tools (black, isort, flake8, mypy)
+- Development HTTP client (httpx)
+- Additional integrations for testing
 
-### Authentication & Authorization
-- JWT-based authentication via Supabase Auth
-- Role-based access control (Owner, Admin, Member)
-- Two-factor authentication support
+### **Production Requirements** (`requirements/prod.txt`)
+Extends base with production-specific dependencies:
+- Production integrations
+- Monitoring and logging tools (when added)
 
-### Organization Management
-- Multi-tenant organization structure
-- Team member invitations and management
-- Subscription and billing integration
+## 🏗️ **Application Architecture**
 
-### Ad Account Integration
-- Meta (Facebook) Ads API integration
-- Ad account management and monitoring
-- Campaign performance tracking
+### **API Layer** (`app/api/`)
+- RESTful API endpoints
+- Request/response handling
+- Authentication middleware
+- Error handling
 
-### Wallet System
-- Organization wallet management
-- Transaction tracking and history
-- Balance management
+### **Core Layer** (`app/core/`)
+- Application configuration
+- Security utilities
+- Common utilities and helpers
+- Dependency injection
 
-## 🧪 Testing
+### **Services Layer** (`app/services/`)
+- Business logic implementation
+- External service integrations
+- Data processing logic
+- Background tasks
 
-Run tests with:
+### **Models Layer** (`app/models/`)
+- Database models (SQLAlchemy)
+- Data relationships
+- Model utilities
+
+### **Schemas Layer** (`app/schemas/`)
+- Pydantic models for API validation
+- Request/response schemas
+- Data transfer objects
+
+### **Database Layer** (`app/db/`)
+- Database connection and session management
+- Migration utilities
+- Database utilities
+
+## 🧪 **Testing**
+
+### **Run Tests:**
 ```bash
+# Run all tests
 pytest
+
+# Run with coverage
+pytest --cov=app
+
+# Run specific test file
+pytest tests/test_api.py
+
+# Run tests in parallel
+pytest -n auto
 ```
 
-## 🚀 Deployment
+### **Test Structure:**
+```
+tests/
+├── conftest.py           # Test configuration
+├── test_api/            # API endpoint tests
+├── test_services/       # Service layer tests
+├── test_models/         # Model tests
+└── test_core/          # Core functionality tests
+```
 
-The backend is configured for deployment on platforms like Heroku, Railway, or similar:
+## 🚀 **Deployment**
 
+### **Render.com:**
+Uses `Procfile` for deployment configuration:
+```
+web: uvicorn app.main:app --host 0.0.0.0 --port $PORT --forwarded-allow-ips '*'
+```
+
+### **Docker:**
 ```bash
-# Using the Procfile
-web: uvicorn main:app --host 0.0.0.0 --port $PORT
+# Build image
+docker build -t adhub-backend .
+
+# Run container
+docker run -p 8000:8000 adhub-backend
 ```
 
-## 📝 Development Notes
+### **Environment Variables:**
+Required environment variables (see `env.example`):
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_KEY` - Supabase service key
+- `JWT_SECRET_KEY` - JWT signing secret
+- `ENVIRONMENT` - Environment (dev/staging/prod)
 
-- **Database**: Uses Supabase PostgreSQL with Row Level Security
-- **Authentication**: Supabase Auth with JWT tokens
-- **API Framework**: FastAPI with automatic OpenAPI documentation
-- **Code Style**: Follow PEP 8 guidelines
-- **Dependencies**: Keep requirements.txt updated
+## 📊 **API Documentation**
 
-## 🔗 Related
+### **Interactive Documentation:**
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
 
-- **Frontend**: React/Next.js application in `/frontend`
-- **Database**: Supabase migrations in `/supabase/migrations`
-- **Documentation**: Additional docs in `/docs` 
+### **Main Endpoints:**
+- `/api/v1/auth/*` - Authentication endpoints
+- `/api/v1/users/*` - User management
+- `/api/v1/businesses/*` - Business management
+- `/api/v1/ad-accounts/*` - Ad account management
+- `/api/v1/admin/*` - Admin panel endpoints
+
+## 🔧 **Development Tools**
+
+### **Code Quality:**
+```bash
+# Format code
+black app/ tests/
+
+# Sort imports
+isort app/ tests/
+
+# Lint code
+flake8 app/ tests/
+
+# Type checking
+mypy app/
+```
+
+### **Pre-commit Hooks:**
+```bash
+# Install pre-commit hooks
+pre-commit install
+
+# Run hooks manually
+pre-commit run --all-files
+```
+
+## 📁 **Configuration**
+
+### **Environment Files:**
+- `env.example` - Environment variable template
+- `.env` - Local environment variables (not in git)
+
+### **Configuration Classes:**
+Located in `app/core/config.py`:
+- `Settings` - Main application settings
+- `DatabaseSettings` - Database configuration
+- `SecuritySettings` - Security configuration
+
+## 🆘 **Troubleshooting**
+
+### **Common Issues:**
+
+1. **Import errors after restructure:**
+   - Update import paths to use `app.` prefix
+   - Check `__init__.py` files exist
+
+2. **Database connection issues:**
+   - Verify Supabase credentials in `.env`
+   - Check network connectivity
+
+3. **Dependency conflicts:**
+   - Use appropriate requirements file for your environment
+   - Consider using virtual environment
+
+### **Getting Help:**
+- Check API documentation at `/docs`
+- Review test files for usage examples
+- Check configuration in `app/core/config.py`
+
+---
+
+*Backend reorganized for better maintainability and scalability.* 

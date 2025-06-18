@@ -1,6 +1,9 @@
 "use client"
 
 import { useState } from "react"
+
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic'
 import { ArrowDownIcon, ArrowUpIcon, CalendarIcon, DownloadIcon, FilterIcon, SearchIcon, SlidersHorizontal, Receipt } from 'lucide-react'
 import { Button } from "../../../components/ui/button"
 import { Card, CardHeader } from "../../../components/ui/card"

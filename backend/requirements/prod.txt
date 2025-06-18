@@ -1,0 +1,16 @@
+# ⚙️ AdHub Backend - Production Requirements
+# Production dependencies only
+
+# Include base requirements
+-r base.txt
+
+# Production-specific dependencies
+# Telegram Bot (production)
+python-telegram-bot==20.7
+asyncio
+
+# Payment Processing (production)
+stripe==10.12.0
+
+# Production monitoring and logging
+# Add production monitoring tools here if needed 

@@ -1,5 +1,5 @@
 // Supabase business store - real database operations
-import { supabase } from './supabaseClient'
+import { supabase } from './stores/supabase-client'
 
 export interface SupabaseBusiness {
   id: string

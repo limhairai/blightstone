@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from "../ui/theme-provider"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
-import { AppDataProvider, useAppData } from "../../contexts/AppDataContext"
+import { ProductionDataProvider } from "../../contexts/ProductionDataContext"
 import { AppShell } from '../layout/app-shell'
 import { Toaster } from "../ui/sonner"
 import { Loader } from "./Loader"
@@ -73,7 +73,6 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   }
 
   const { user, session, loading: authLoading } = useAuth();
-  const { organizations, loading: dataLoading, error } = useAppData();
   const router = useRouter();
   const [isRouting, setIsRouting] = useState(false);
 
@@ -125,17 +124,26 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     return <FullScreenLoader />;
   }
 
-  // Show error if there's a data error
-  if (error) {
-    return <ErrorScreen message={error} />;
+  // For authenticated users on protected routes, wrap with ProductionDataProvider
+  if (user && session && pathname && !isPublicOrAuthPage(pathname)) {
+    // For admin pages, wrap with ProductionDataProvider (no AppShell)
+    if (isAdminPage(pathname)) {
+      return (
+        <ProductionDataProvider>
+          {children}
+        </ProductionDataProvider>
+      );
+    }
+    
+    // For regular dashboard pages, wrap with ProductionDataProvider and AppShell
+    return (
+      <ProductionDataProvider>
+        <AppShell>{children}</AppShell>
+      </ProductionDataProvider>
+    );
   }
 
-  // For authenticated users on protected routes (but not admin), wrap in AppShell
-  if (user && session && pathname && !isPublicOrAuthPage(pathname) && !isAdminPage(pathname)) {
-    return <AppShell>{children}</AppShell>;
-  }
-
-  // For public pages, return children directly
+  // For public pages, return children directly (no data providers)
   return <>{children}</>;
 }
 
@@ -145,12 +153,10 @@ export function SimpleProviders({ children }: { children: React.ReactNode }) {
       <TooltipProvider>
         <QueryClientProvider client={new QueryClient()}>
           <AuthProvider>
-            <AppDataProvider>
-              <PageTitleProvider>
-                <AppRouter>{children}</AppRouter>
-              </PageTitleProvider>
-              <Toaster />
-            </AppDataProvider>
+            <PageTitleProvider>
+              <AppRouter>{children}</AppRouter>
+            </PageTitleProvider>
+            <Toaster />
           </AuthProvider>
         </QueryClientProvider>
       </TooltipProvider>

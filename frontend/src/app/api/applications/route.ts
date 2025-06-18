@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { config, shouldUseMockData, isDemoMode } from '../../../lib/config';
+import { config, shouldUseMockData, isDemoMode } from '../../../lib/data/config';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 

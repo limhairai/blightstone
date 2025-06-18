@@ -11,6 +11,7 @@ export interface AdAccount {
   metaAccessToken: string;
   metaRefreshToken: string;
   metaTokenExpiresAt: Date;
+  spend?: number; // Optional spend amount for admin views
 }
 
 export interface Campaign {

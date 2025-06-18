@@ -1,4 +1,4 @@
-import { useAdAccounts } from "../../contexts/AdAccountContext";
+import { useAdAccounts } from "../../contexts/ProductionDataContext";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
@@ -41,7 +41,7 @@ export function AdminOrgAccountsTable({ _orgId, isSuperuser }: { _orgId: string,
                         : "bg-gray-100 text-gray-800 border-gray-200"
                     }>{acc.status}</Badge>
                   </td>
-                  <td className="py-2 text-right">${acc.spend?.toLocaleString() ?? '-'}</td>
+                  <td className="py-2 text-right">${acc.spend_7d?.toLocaleString() ?? '-'}</td>
                   <td className="py-2 text-right flex gap-2 justify-end">
                     <Button size="sm" variant="outline">Archive</Button>
                     <Button size="sm" variant="outline">Tag</Button>

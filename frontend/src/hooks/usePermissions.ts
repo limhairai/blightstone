@@ -1,4 +1,4 @@
-import { useAppData } from '../contexts/AppDataContext';
+import { useAppData } from '../contexts/ProductionDataContext';
 
 export function usePermissions() {
   const { 

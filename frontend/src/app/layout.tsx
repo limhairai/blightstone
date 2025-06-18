@@ -8,7 +8,6 @@ import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
 import { Toaster } from "../components/ui/sonner";
 import { DemoProvider } from "../contexts/DemoStateContext";
-import { ProductionDataProvider } from "../contexts/ProductionDataContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -28,10 +27,8 @@ export default function RootLayout({
       <body className={inter.className}>
         <DemoProvider>
           <SimpleProviders>
-            <ProductionDataProvider>
-              {children}
-              <EnvIndicator />
-            </ProductionDataProvider>
+            {children}
+            <EnvIndicator />
             <Toaster />
           </SimpleProviders>
         </DemoProvider>

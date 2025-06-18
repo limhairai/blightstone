@@ -1,7 +1,7 @@
 import { useMemo, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useAppData } from '../contexts/AppDataContext'
-import { supabase } from '../lib/supabaseClient'
+import { useAppData } from '../contexts/ProductionDataContext'
+import { supabase } from '../lib/stores/supabase-client'
 import { 
   getSetupProgress,
   shouldShowOnboarding,

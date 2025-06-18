@@ -1,6 +1,6 @@
 "use client";
 
-import { useSuperuser } from "../../../contexts/SuperuserContext";
+import { useSuperuser } from "../../../contexts/ProductionDataContext";
 import { AdminOrgNotes } from "../../../components/admin/admin-org-notes";
 import { Loader } from "../../../components/core/Loader";
 

@@ -1,58 +1,92 @@
-# AdHub Documentation
+# 📚 AdHub Documentation Hub
 
-This directory contains all project documentation organized by type and purpose.
+Welcome to the AdHub project documentation! This directory contains all documentation organized by topic and component.
 
-## 📁 Directory Structure
+## 🗂️ **Documentation Structure**
 
-### `/guides/`
-Step-by-step guides and tutorials for development and implementation:
-- `BUSINESS_AD_ACCOUNT_UX_REDESIGN.md` - UX redesign guide for business and ad account management
-- `STATUS_COMPONENTS_REFACTOR.md` - Guide for centralizing status components and types
-- `MOCK_DATA_GUIDE.md` - Guide for working with mock data in the application
+### **📋 Admin Panel**
+- [`admin/`](./admin/) - Admin panel documentation and exports
+  - Admin panel component exports for v0 redesign
+  - Complete admin functionality documentation
+  - Access code management guides
 
-### `/summaries/`
-Implementation summaries and project overviews:
-- `FUNCTIONAL_IMPLEMENTATION_SUMMARY.md` - Summary of functional features implemented
-- `IMPLEMENTATION_SUMMARY.md` - General implementation progress summary
-- `INTEGRATION_SUMMARY.md` - Frontend integration progress and achievements
-- `BUSINESS_STORE_README.md` - Business store implementation and architecture
+### **🚀 Deployment & Production**
+- [`deployment/`](./deployment/) - Deployment guides and production setup
+  - Production readiness summaries
+  - Backend setup and deployment guides
+  - Access code migration procedures
+  - Payment integration documentation
 
-### `/exports/`
-Page exports and component exports for external tools (like v0):
-- `SETTINGS_PAGE_EXPORT_FOR_V0.md` - Settings page export for v0 design tool
+### **🔧 Development**
+- [`development/`](./development/) - Development resources and guides
+  - Missing implementation tracking
+  - Interactive bot demos
+  - Development workflows
 
-### `/deployment/`
-Deployment guides and infrastructure documentation:
-- `DEPLOYMENT_GUIDE.md` - Complete deployment guide for production
-- `PROXY_SETUP.md` - Proxy configuration and setup guide
+### **🔗 API Documentation**
+- [`api/`](./api/) - API documentation and references
+  - REST API endpoints
+  - Authentication flows
+  - Data schemas
 
-## 📋 Quick Reference
+### **💻 Frontend**
+- [`frontend/`](./frontend/) - Frontend-specific documentation
+  - Component library
+  - State management
+  - UI/UX guidelines
 
-### For New Developers
-1. Start with `/summaries/FUNCTIONAL_IMPLEMENTATION_SUMMARY.md` for project overview
-2. Read `/guides/MOCK_DATA_GUIDE.md` to understand data structure
-3. Check `/deployment/DEPLOYMENT_GUIDE.md` for setup instructions
+### **⚙️ Backend**
+- [`backend/`](./backend/) - Backend architecture and setup
+  - Database schemas
+  - Service architecture
+  - API implementation details
 
-### For Designers
-1. Review `/guides/BUSINESS_AD_ACCOUNT_UX_REDESIGN.md` for UX patterns
-2. Use `/exports/` files for importing into design tools
+## 🚀 **Quick Start Guides**
 
-### For DevOps
-1. Follow `/deployment/DEPLOYMENT_GUIDE.md` for production setup
-2. Configure proxy using `/deployment/PROXY_SETUP.md`
+### **For Developers:**
+1. Read [`development/MISSING_IMPLEMENTATIONS.md`](./development/MISSING_IMPLEMENTATIONS.md) for current priorities
+2. Check [`deployment/BACKEND_SETUP_GUIDE.md`](./deployment/BACKEND_SETUP_GUIDE.md) for local setup
+3. Review [`admin/`](./admin/) for admin panel functionality
 
-## 🔄 Maintenance
+### **For Deployment:**
+1. Follow [`deployment/PRODUCTION_READINESS_SUMMARY.md`](./deployment/PRODUCTION_READINESS_SUMMARY.md)
+2. Use [`deployment/ACCESS_CODE_MIGRATION_GUIDE.md`](./deployment/ACCESS_CODE_MIGRATION_GUIDE.md) for migrations
+3. Configure payments with [`deployment/PAYMENT_INTEGRATION_GUIDE.md`](./deployment/PAYMENT_INTEGRATION_GUIDE.md)
 
-This documentation structure should be maintained as follows:
-- **Guides**: Step-by-step instructions, tutorials, how-to documents
-- **Summaries**: Progress reports, feature overviews, architecture summaries  
-- **Exports**: Component/page exports for external tools
-- **Deployment**: Infrastructure, deployment, and DevOps documentation
+### **For Admin Panel Redesign:**
+1. Review [`admin/ADMIN_PANEL_EXPORT_FOR_V0.md`](./admin/ADMIN_PANEL_EXPORT_FOR_V0.md)
+2. Use [`admin/ADMIN_PANEL_COMPONENTS_COMPLETE.md`](./admin/ADMIN_PANEL_COMPONENTS_COMPLETE.md)
+3. Reference [`admin/ADMIN_PANEL_CODE_EXPORT.md`](./admin/ADMIN_PANEL_CODE_EXPORT.md)
 
-## 📝 Contributing
+## 📁 **Project Structure**
+
+```
+adhub/
+├── docs/                    # 📚 All documentation (you are here)
+├── scripts/                 # 🔧 Utility scripts
+├── config/                  # ⚙️ Configuration files
+├── tools/                   # 🛠️ External tools and collections
+├── frontend/                # 💻 Next.js frontend application
+├── backend/                 # ⚙️ FastAPI backend application
+├── telegram-bot/            # 🤖 Telegram bot service
+└── supabase/               # 🗄️ Database and authentication
+```
+
+## 🤝 **Contributing**
 
 When adding new documentation:
-1. Choose the appropriate folder based on document type
-2. Use descriptive filenames with UPPERCASE and underscores
-3. Update this README if adding new categories
-4. Keep the root project directory clean of loose markdown files 
+1. Place it in the appropriate category directory
+2. Update this README with links to new docs
+3. Use clear, descriptive filenames
+4. Include a brief description in the relevant section above
+
+## 📞 **Need Help?**
+
+- Check the appropriate category above for your topic
+- Look for `README.md` files in subdirectories
+- Review the main project README in the root directory
+
+---
+
+*Last updated: $(date)*
+*Documentation structure organized for better navigation and maintenance.* 

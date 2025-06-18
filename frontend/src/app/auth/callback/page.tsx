@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "../../../lib/supabaseClient"
+import { supabase } from "../../../lib/stores/supabase-client"
 import { FullPageLoading } from "../../../components/ui/enhanced-loading"
 import { toast } from "../../../components/ui/use-toast"
 
