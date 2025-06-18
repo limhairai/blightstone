@@ -56,6 +56,7 @@ function isAdminPage(pathname: string): boolean {
 function AppRouter({ children }: { children: React.ReactNode }) {
   // Handle build-time rendering gracefully
   const [isMounted, setIsMounted] = useState(false);
+  const pathname = usePathname();
   
   useEffect(() => {
     setIsMounted(true);
@@ -66,10 +67,14 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
+  // For the landing page, render directly without auth checks
+  if (pathname === "/") {
+    return <>{children}</>;
+  }
+
   const { user, session, loading: authLoading } = useAuth();
   const { organizations, loading: dataLoading, error } = useAppData();
   const router = useRouter();
-  const pathname = usePathname();
   const [isRouting, setIsRouting] = useState(false);
 
   useEffect(() => {
