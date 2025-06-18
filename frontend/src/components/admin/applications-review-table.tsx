@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useDemoState } from "../../contexts/DemoStateContext";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
@@ -20,34 +20,107 @@ import {
   ExternalLink,
   Building2,
   Calendar,
-  Globe
+  Globe,
+  Loader2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+
+interface Application {
+  id: string;
+  user_id: string;
+  organization_id: string;
+  business_id: string;
+  account_name: string;
+  spend_limit: number;
+  landing_page_url?: string;
+  facebook_page_url?: string;
+  campaign_description?: string;
+  notes?: string;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
+  assigned_account_id?: string;
+  approved_by?: string;
+  approved_at?: string;
+  rejected_by?: string;
+  rejected_at?: string;
+  rejection_reason?: string;
+  admin_notes?: string;
+  submitted_at: string;
+  created_at: string;
+  updated_at: string;
+  businesses?: {
+    name: string;
+    organization_id: string;
+  };
+  organizations?: {
+    name: string;
+  };
+  users?: {
+    email: string;
+    full_name: string;
+  };
+}
 
 export function ApplicationsReviewTable() {
-  const { state, updateBusiness } = useDemoState();
+  const { session } = useAuth();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
 
-  // Filter applications based on search and status
-  const filteredApplications = state.businesses.filter((business) => {
-    const matchesSearch = business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         business.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         business.description?.toLowerCase().includes(searchTerm.toLowerCase());
+  // Fetch applications from API
+  const fetchApplications = async () => {
+    if (!session) return;
+
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+
+      const response = await fetch(`/api/admin/applications?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${(session as any).access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch applications');
+      }
+
+      const data = await response.json();
+      setApplications(data.applications || []);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+      toast.error('Failed to load applications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchApplications();
+  }, [session, statusFilter]);
+
+  // Filter applications based on search
+  const filteredApplications = applications.filter((application) => {
+    const matchesSearch = 
+      application.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      application.businesses?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      application.organizations?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      application.users?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      application.users?.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || business.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { label: "Pending", variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
       under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-orange-600" },
-      active: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      approved: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
       rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
     };
 
@@ -62,60 +135,93 @@ export function ApplicationsReviewTable() {
     );
   };
 
-  const handleReviewApplication = (application: any) => {
+  const handleReviewApplication = (application: Application) => {
     setSelectedApplication(application);
     setReviewDialogOpen(true);
   };
 
-  const handleViewDetails = (application: any) => {
+  const handleViewDetails = (application: Application) => {
     setSelectedApplication(application);
     setDetailsDialogOpen(true);
   };
 
   const handleApproveApplication = async (applicationId: string, notes?: string) => {
-    const application = state.businesses.find(b => b.id === applicationId);
-    if (application) {
-      await updateBusiness({
-        ...application,
-        status: "provisioning", // Changed from "active" to "provisioning"
-        verification: "verified",
-        reviewNotes: notes,
-        reviewedAt: new Date().toISOString(),
-        // Initialize provisioning workflow
-        provisioningStatus: "not_started",
-        provisioningStartedAt: new Date().toISOString(),
-        provisioningNotes: "Application approved - starting provisioning pipeline",
+    if (!session) return;
+
+    try {
+      const response = await fetch('/api/admin/applications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).access_token}`,
+        },
+        body: JSON.stringify({
+          action: 'approve',
+          application_id: applicationId,
+          admin_notes: notes,
+        }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to approve application');
+      }
+
+      toast.success('Application approved successfully');
+      setReviewDialogOpen(false);
+      fetchApplications(); // Refresh list
+    } catch (error) {
+      console.error('Error approving application:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve application');
     }
-    setReviewDialogOpen(false);
   };
 
   const handleRejectApplication = async (applicationId: string, reason: string) => {
-    const application = state.businesses.find(b => b.id === applicationId);
-    if (application) {
-      await updateBusiness({
-        ...application,
-        status: "rejected",
-        verification: "rejected",
-        rejectionReason: reason,
-        reviewedAt: new Date().toISOString(),
+    if (!session) return;
+
+    try {
+      const response = await fetch('/api/admin/applications', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(session as any).access_token}`,
+        },
+        body: JSON.stringify({
+          action: 'reject',
+          application_id: applicationId,
+          rejection_reason: reason,
+        }),
       });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Failed to reject application');
+      }
+
+      toast.success('Application rejected');
+      setReviewDialogOpen(false);
+      fetchApplications(); // Refresh list
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to reject application');
     }
-    setReviewDialogOpen(false);
   };
 
   const handleRequestMoreInfo = async (applicationId: string, message: string) => {
-    const application = state.businesses.find(b => b.id === applicationId);
-    if (application) {
-      await updateBusiness({
-        ...application,
-        status: "under_review",
-        reviewNotes: message,
-        reviewedAt: new Date().toISOString(),
-      });
-    }
+    // This would require a separate endpoint for requesting more info
+    // For now, we'll show a placeholder
+    toast.info('Request more info feature coming soon');
     setReviewDialogOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Loading applications...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -140,7 +246,7 @@ export function ApplicationsReviewTable() {
             <SelectItem value="all">All Applications</SelectItem>
             <SelectItem value="pending">Pending Review</SelectItem>
             <SelectItem value="under_review">Under Review</SelectItem>
-            <SelectItem value="active">Approved</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
@@ -151,9 +257,9 @@ export function ApplicationsReviewTable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Application</TableHead>
               <TableHead>Business</TableHead>
-              <TableHead>Industry</TableHead>
-              <TableHead>Website</TableHead>
+              <TableHead>User</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Submitted</TableHead>
               <TableHead>Actions</TableHead>
@@ -163,7 +269,7 @@ export function ApplicationsReviewTable() {
             {filteredApplications.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No applications found matching your criteria.
+                  {searchTerm ? 'No applications found matching your search.' : 'No applications found.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -175,37 +281,34 @@ export function ApplicationsReviewTable() {
                         <Building2 className="h-4 w-4 text-white" />
                       </div>
                       <div>
-                        <div className="font-medium text-foreground">{application.name}</div>
+                        <div className="font-medium text-foreground">{application.account_name}</div>
                         <div className="text-sm text-muted-foreground">
-                          ID: {application.id.slice(0, 8)}...
+                          ${application.spend_limit.toLocaleString()} spend limit
                         </div>
                       </div>
                     </div>
                   </TableCell>
                   
                   <TableCell>
-                    <span className="text-sm text-foreground capitalize">
-                      {application.industry || "Not specified"}
-                    </span>
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {application.businesses?.name || 'Unknown Business'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {application.organizations?.name || 'Unknown Organization'}
+                      </div>
+                    </div>
                   </TableCell>
                   
                   <TableCell>
-                    {application.website ? (
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                        <a
-                          href={application.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-                        >
-                          View Site
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {application.users?.full_name || 'Unknown User'}
                       </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">No website</span>
-                    )}
+                      <div className="text-sm text-muted-foreground">
+                        {application.users?.email}
+                      </div>
+                    </div>
                   </TableCell>
                   
                   <TableCell>
@@ -213,12 +316,11 @@ export function ApplicationsReviewTable() {
                   </TableCell>
                   
                   <TableCell>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      {application.dateCreated ? 
-                        formatDistanceToNow(new Date(application.dateCreated), { addSuffix: true }) :
-                        "Unknown"
-                      }
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-foreground">
+                        {formatDistanceToNow(new Date(application.submitted_at), { addSuffix: true })}
+                      </span>
                     </div>
                   </TableCell>
                   
@@ -228,20 +330,30 @@ export function ApplicationsReviewTable() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleViewDetails(application)}
-                        className="h-8"
+                        className="h-8 px-2"
                       >
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
+                        <Eye className="h-4 w-4" />
                       </Button>
                       
-                      {(application.status === "pending" || application.status === "under_review") && (
+                      {application.status === 'pending' && (
                         <Button
-                          variant="default"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleReviewApplication(application)}
-                          className="h-8 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                          className="h-8 px-3 text-blue-600 hover:text-blue-700"
                         >
                           Review
+                        </Button>
+                      )}
+                      
+                      {application.assigned_account_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2"
+                          title="View assigned account"
+                        >
+                          <ExternalLink className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
