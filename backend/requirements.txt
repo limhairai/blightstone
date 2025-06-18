@@ -30,6 +30,9 @@ httplib2==0.22.0
 python-telegram-bot==20.7
 asyncio
 
+# Payment Processing
+stripe==10.12.0
+
 # Utilities
 python-dateutil==2.9.0.post0
 pytz==2025.2

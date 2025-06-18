@@ -21,6 +21,10 @@ from handlers.auth import auth_handler
 from handlers.accounts import accounts_handler
 from handlers.wallet import wallet_handler
 from handlers.admin import ADMIN_COMMANDS
+from handlers.payments import PaymentHandler
+from handlers.interactive_menus import InteractiveMenus
+from handlers.access_codes import access_code_manager
+from handlers.application_commands import application_handler
 from services.supabase_service import SupabaseService
 from services.dolphin_service import DolphinCloudAPI
 
@@ -34,76 +38,20 @@ logger = logging.getLogger(__name__)
 # Initialize services
 supabase_service = SupabaseService()
 dolphin_api = DolphinCloudAPI()
+payment_handler = PaymentHandler()
+interactive_menus = InteractiveMenus()
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Enhanced start command with access code support (like BullX)"""
+    await access_code_manager.handle_start_command(update, context)
+
+async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Show the main interactive menu"""
+    await interactive_menus.show_main_menu(update, context)
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Help command handler"""
-    telegram_id = update.effective_user.id
-    telegram_user = supabase_service.get_user_by_telegram_id(telegram_id)
-    
-    if not telegram_user:
-        help_message = """
-❓ **AdHub Bot Help**
-
-**Getting Started:**
-• `/start` - Welcome message and setup
-• `/link <email>` - Link your AdHub account
-• `/help` - Show this help message
-
-**Need an account?**
-Visit our website to create an AdHub account first, then come back to link it!
-        """
-    else:
-        help_message = f"""
-❓ **AdHub Bot Help**
-
-**Account Management:**
-• `/organizations` - List your organizations
-• `/businesses <org_id>` - List businesses in organization  
-• `/accounts <business_id>` - List ad accounts for business
-• `/whoami` - Show your account information
-
-**Balance & Wallet:**
-• `/wallet <org_id>` - Check organization wallet balance
-• `/balance <account_id>` - Check specific ad account balance
-• `/topup <account_id> <amount>` - Top up ad account
-
-**Utilities:**
-• `/sync <business_id>` - Sync account data from Dolphin Cloud
-• `/help` - Show this help message
-
-**Quick Tips:**
-• Use organization/business IDs from the list commands
-• Only organization owners/admins can top up accounts
-• All balances are in USD
-        """
-        
-        # Check if user is admin
-        admin_user_ids = os.getenv('ADMIN_USER_IDS', '').split(',')
-        user_id = str(update.effective_user.id)
-        
-        if user_id in admin_user_ids:
-            help_message += """
-
-**Admin Commands:**
-• `/admin_stats` - System statistics
-• `/admin_list_clients` - List all clients
-• `/admin_register_client` - Show client registration instructions
-• `/admin_invite_client <email>` - Get invitation message
-
-**Business Manager Management:**
-• `/admin_sync_bms` - Discover Business Managers
-• `/admin_add_bm <org_id> <bm_id> "name"` - Assign BM to organization
-• `/admin_list_bms <org_id>` - List organization's BMs
-• `/admin_remove_bm <org_id> <bm_id>` - Remove BM assignment
-
-**Group Management:**
-• `/admin_add_group <org_id> [name]` - Assign current group
-• `/admin_check_group` - Check current group assignment
-• `/admin_list_groups <org_id>` - List organization's groups
-• `/admin_remove_group <org_id>` - Remove current group
-            """
-    
-    await update.message.reply_text(help_message, parse_mode='Markdown')
+    """Show help menu with buttons"""
+    await interactive_menus.show_help_menu(update, context)
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log the error and send a telegram message to notify the developer."""
@@ -157,8 +105,11 @@ def main() -> None:
     application = Application.builder().token(token).build()
     
     # Add command handlers
-    # Authentication
-    application.add_handler(CommandHandler("start", auth_handler.start_command))
+    # Main interface
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("menu", menu_command))
+    
+    # Authentication (still available via commands)
     application.add_handler(CommandHandler("link", auth_handler.link_command))
     application.add_handler(CommandHandler("unlink", auth_handler.unlink_command))
     application.add_handler(CommandHandler("whoami", auth_handler.whoami_command))
@@ -173,6 +124,21 @@ def main() -> None:
     application.add_handler(CommandHandler("wallet", wallet_handler.wallet_balance))
     application.add_handler(CommandHandler("balance", wallet_handler.check_account_balance))
     application.add_handler(CommandHandler("topup", wallet_handler.topup_account))
+    
+    # Payment Management
+    application.add_handler(CommandHandler("pay", payment_handler.wallet_topup))
+    application.add_handler(CommandHandler("payment_status", payment_handler.check_payment_status))
+    application.add_handler(CommandHandler("payment_help", payment_handler.payment_help))
+    
+    # Application Management
+    application.add_handler(CommandHandler("apply", application_handler.start_application))
+    application.add_handler(CommandHandler("applications", application_handler.list_applications))
+    
+    # Access code callback handlers (check first)
+    application.add_handler(CallbackQueryHandler(access_code_manager.handle_callback_query))
+    
+    # Interactive menu callback handlers
+    application.add_handler(CallbackQueryHandler(interactive_menus.handle_callback))
     
     # Admin Commands (with permission check)
     for command_name in ADMIN_COMMANDS.keys():

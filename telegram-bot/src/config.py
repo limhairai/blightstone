@@ -22,9 +22,25 @@ class BotSettings(BaseSettings):
     SUPABASE_ANON_KEY: Optional[str] = None
     SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
     
-    # Dolphin Cloud API
+    # Dolphin Cloud API (legacy - now handled by backend)
     DOLPHIN_CLOUD_BASE_URL: str = "https://cloud.dolphin.tech"
     DOLPHIN_CLOUD_TOKEN: Optional[str] = None
+    
+    # Backend API Configuration
+    BACKEND_API_URL: Optional[str] = None
+    BACKEND_API_KEY: Optional[str] = None
+    
+    @property
+    def get_backend_api_url(self) -> str:
+        """Get backend API URL with fallback logic"""
+        if self.BACKEND_API_URL:
+            return self.BACKEND_API_URL
+        # Try legacy BACKEND_URL
+        backend_url = os.getenv("BACKEND_URL")
+        if backend_url:
+            return backend_url
+        # Default fallback
+        return "http://localhost:8000"
     
     # Payment Configuration
     PAYMENT_CREDENTIAL_ID: Optional[str] = None

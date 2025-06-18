@@ -67,8 +67,8 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // For the landing page, render directly without auth checks
-  if (pathname === "/") {
+  // For public pages (landing, login, register), render directly without auth checks
+  if (pathname === "/" || pathname === "/login" || pathname === "/register") {
     return <>{children}</>;
   }
 
