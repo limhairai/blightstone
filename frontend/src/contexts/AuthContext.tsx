@@ -36,7 +36,7 @@ interface AuthContextType {
   resendVerification: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -252,7 +252,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Construct the redirect URL. This should point to a page in your app 
     // where users can enter their new password.
     // Example: `${window.location.origin}/update-password`
-    const defaultRedirectTo = `${window.location.origin}/auth/update-password`; 
+    const defaultRedirectTo = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/update-password`
+      : 'https://adhub.tech/auth/update-password'; 
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: options?.redirectTo || defaultRedirectTo,
@@ -280,7 +282,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     // Default redirect: ensure this is a page that handles the auth callback if needed,
     // or simply your main app page after login.
-    const defaultRedirectTo = `${window.location.origin}/`; 
+    const defaultRedirectTo = typeof window !== 'undefined' 
+      ? `${window.location.origin}/`
+      : 'https://adhub.tech/'; 
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -348,9 +352,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
+  // Handle build-time rendering gracefully
+  if (typeof window === 'undefined') {
+    // During build/SSR, return safe defaults
+    return {
+      user: null,
+      session: null,
+      loading: false,
+      signIn: async () => ({ data: null, error: null }),
+      signUp: async () => ({ data: null, error: null }),
+      signOut: async () => ({ error: null }),
+      resetPassword: async () => ({ data: null, error: null }),
+      signInWithGoogle: async () => ({ data: null, error: null }),
+      resendVerification: async () => ({ error: null }),
+    };
+  }
+
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

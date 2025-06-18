@@ -54,6 +54,18 @@ function isAdminPage(pathname: string): boolean {
 }
 
 function AppRouter({ children }: { children: React.ReactNode }) {
+  // Handle build-time rendering gracefully
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // During build time or before mounting, just render children
+  if (!isMounted) {
+    return <>{children}</>;
+  }
+
   const { user, session, loading: authLoading } = useAuth();
   const { organizations, loading: dataLoading, error } = useAppData();
   const router = useRouter();

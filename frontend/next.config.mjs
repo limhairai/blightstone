@@ -10,6 +10,10 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
+  // Disable static optimization completely
+  trailingSlash: false,
+  generateEtags: false,
+  poweredByHeader: false,
   // Force fresh build - clear Vercel cache
 };
 
