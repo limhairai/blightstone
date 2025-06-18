@@ -4,7 +4,6 @@
   "installCommand": "cd frontend && npm install",
   "devCommand": "cd frontend && npm run dev",
   "framework": "nextjs",
-  "rootDirectory": "frontend",
   
   "functions": {
     "frontend/src/app/api/**/*.ts": {
