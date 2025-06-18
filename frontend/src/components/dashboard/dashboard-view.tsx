@@ -44,24 +44,13 @@ export function DashboardView() {
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
-  // Safe hook usage with fallback for when component is rendered outside AppShell context
-  const [fallbackSetupWidgetState, setFallbackSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("collapsed")
-  const [fallbackShowEmptyStateElements, setFallbackShowEmptyStateElements] = useState(false)
-  
-  let setupWidgetState, setSetupWidgetState, showEmptyStateElements, setShowEmptyStateElements
-  try {
-    const setupWidget = useSetupWidget()
-    setupWidgetState = setupWidget.setupWidgetState
-    setSetupWidgetState = setupWidget.setSetupWidgetState
-    showEmptyStateElements = setupWidget.showEmptyStateElements
-    setShowEmptyStateElements = setupWidget.setShowEmptyStateElements
-  } catch (error) {
-    // Fallback when not in AppShell context (e.g., during sign-out)
-    setupWidgetState = fallbackSetupWidgetState
-    setSetupWidgetState = setFallbackSetupWidgetState
-    showEmptyStateElements = fallbackShowEmptyStateElements
-    setShowEmptyStateElements = setFallbackShowEmptyStateElements
-  }
+  // Use setup widget hook (now safe with fallback)
+  const {
+    setupWidgetState,
+    setSetupWidgetState,
+    showEmptyStateElements,
+    setShowEmptyStateElements
+  } = useSetupWidget()
   const balanceChartRef = useRef<HTMLDivElement>(null)
 
   // Auto-refresh dashboard data every 5 minutes

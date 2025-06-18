@@ -30,7 +30,13 @@ const SetupWidgetContext = createContext<SetupWidgetContextType | undefined>(und
 export const useSetupWidget = () => {
   const context = useContext(SetupWidgetContext)
   if (!context) {
-    throw new Error("useSetupWidget must be used within AppShell")
+    // Return safe fallback instead of throwing
+    return {
+      setupWidgetState: "collapsed" as const,
+      setSetupWidgetState: () => {},
+      showEmptyStateElements: false,
+      setShowEmptyStateElements: () => {}
+    }
   }
   return context
 }
