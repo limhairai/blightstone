@@ -27,13 +27,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <DemoProvider>
-          <ProductionDataProvider>
-            <SimpleProviders>
+          <SimpleProviders>
+            <ProductionDataProvider>
               {children}
               <EnvIndicator />
-            </SimpleProviders>
+            </ProductionDataProvider>
             <Toaster />
-          </ProductionDataProvider>
+          </SimpleProviders>
         </DemoProvider>
       </body>
     </html>

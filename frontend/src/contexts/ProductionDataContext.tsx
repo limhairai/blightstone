@@ -176,6 +176,30 @@ export function ProductionDataProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const [state, setState] = useState<ProductionDataState>(initialState);
 
+  // Early return if no session (for public pages like landing)
+  if (!session) {
+    return (
+      <ProductionDataContext.Provider value={{
+        state,
+        fetchOrganizations: async () => {},
+        fetchBusinesses: async () => {},
+        fetchAdAccounts: async () => {},
+        fetchTransactions: async () => {},
+        fetchTeamMembers: async () => {},
+        fetchApplications: async () => {},
+        switchOrganization: () => {},
+        createBusiness: async () => {},
+        updateBusiness: async () => {},
+        deleteBusiness: async () => {},
+        getWalletBalance: () => 0,
+        topUpWallet: async () => {},
+        refresh: async () => {},
+      }}>
+        {children}
+      </ProductionDataContext.Provider>
+    );
+  }
+
   // Helper function to make authenticated API calls
   const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     if (!session) {
