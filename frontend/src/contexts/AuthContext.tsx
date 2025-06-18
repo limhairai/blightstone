@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           environment: process.env.NODE_ENV
         });
 
-        if (event === 'SIGNED_IN' && currentSession?.user && !user) {
+        if (event === 'SIGNED_IN' && currentSession?.user) {
           if (currentSession.user.email_confirmed_at) {
             toast({
               title: "Welcome back!",
@@ -106,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        if (event === 'TOKEN_REFRESHED' && currentSession?.user?.email_confirmed_at && user && !user.email_confirmed_at) {
+        if (event === 'TOKEN_REFRESHED' && currentSession?.user?.email_confirmed_at) {
           toast({
             title: "Email Confirmed!",
             description: "Your email has been successfully verified.",
