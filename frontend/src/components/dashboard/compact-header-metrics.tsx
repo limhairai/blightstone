@@ -1,11 +1,13 @@
-import { MOCK_ACCOUNTS, MOCK_FINANCIAL_DATA } from "../../lib/mock-data"
 import { formatCurrency } from "../../lib/utils"
 import { TrendingUp, Wallet, CreditCard } from "lucide-react"
+import { useProductionData } from "../../contexts/ProductionDataContext"
 
 export function CompactHeaderMetrics() {
-  const totalAccounts = MOCK_ACCOUNTS.length
-  const activeAccounts = MOCK_ACCOUNTS.filter((account) => account.status === "active").length
-  const totalBalance = MOCK_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
+  const { state } = useProductionData()
+  
+  const totalAccounts = state.adAccounts.length
+  const activeAccounts = state.adAccounts.filter((account) => account.status === "active").length
+  const totalBalance = state.adAccounts.reduce((total, account) => total + account.balance, 0)
 
   return (
     <div className="flex items-center gap-6">

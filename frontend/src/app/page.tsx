@@ -2,6 +2,9 @@
 
 import { LandingView } from "../components/landing/landing-view"
 
-export default function Home() {
+// Force dynamic rendering since this page uses authentication context
+export const dynamic = 'force-dynamic'
+
+export default function HomePage() {
   return <LandingView />
 } 

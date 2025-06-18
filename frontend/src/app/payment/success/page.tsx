@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
 import { CheckCircle, Wallet, ArrowRight, Home } from "lucide-react"
+import Link from "next/link"
 
 interface PaymentDetails {
   id: string
@@ -13,6 +14,9 @@ interface PaymentDetails {
   net_amount: number
   created_at: string
 }
+
+// Force dynamic rendering for payment page
+export const dynamic = 'force-dynamic'
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()

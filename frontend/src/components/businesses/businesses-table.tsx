@@ -11,11 +11,11 @@ import { StatusBadge } from "../ui/status-badge"
 import { EditBusinessDialog } from "../dashboard/edit-business-dialog"
 import { BusinessesViewToggle } from "./businesses-view-toggle"
 import { Button } from "../ui/button"
-import { type MockBusiness, getInitials, formatCurrency } from "../../lib/mock-data"
+import { getInitials } from "../../lib/mock-data"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
 import { Search, ArrowRight, Building2, Copy, Edit, MoreHorizontal, Trash2, CheckCircle, XCircle } from "lucide-react"
 import { cn } from "../../lib/utils"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useProductionData, type Business } from "../../contexts/ProductionDataContext"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,17 +35,17 @@ import {
 } from "../ui/alert-dialog"
 
 export function BusinessesTable() {
-  const { state, deleteBusiness, approveBusiness } = useDemoState()
+  const { state, deleteBusiness, updateBusiness } = useProductionData()
   const { theme } = useTheme()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("activity")
   const [view, setView] = useState<"grid" | "list">("list")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [businessToDelete, setBusinessToDelete] = useState<MockBusiness | null>(null)
+  const [businessToDelete, setBusinessToDelete] = useState<Business | null>(null)
   const router = useRouter()
 
-  // Use real-time data from demo state
+  // Use real-time data from production state
   const businesses = state.businesses
 
   // Determine the current theme mode for avatar classes
@@ -58,8 +58,7 @@ export function BusinessesTable() {
       filtered = filtered.filter(
         (business) =>
           business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          business.industry?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (business.bmId && business.bmId.includes(searchQuery)),
+          business.industry?.toLowerCase().includes(searchQuery.toLowerCase()),
       )
     }
 
@@ -73,18 +72,18 @@ export function BusinessesTable() {
         case "name":
           return a.name.localeCompare(b.name)
         case "activity":
-          return new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         case "accounts":
-          return (b.accountsCount || 0) - (a.accountsCount || 0)
+          return 0 // TODO: Add account count logic when available
         case "balance":
-          return (b.totalBalance || 0) - (a.totalBalance || 0)
+          return 0 // TODO: Add balance logic when available
         default:
           return 0
       }
     })
   }, [businesses, searchQuery, statusFilter, sortBy])
 
-  const handleBusinessClick = (business: MockBusiness, e: React.MouseEvent) => {
+  const handleBusinessClick = (business: Business, e: React.MouseEvent) => {
     // Don't navigate if clicking on interactive elements
     const target = e.target as HTMLElement
     if (
@@ -110,7 +109,7 @@ export function BusinessesTable() {
     navigator.clipboard.writeText(bmId)
   }
 
-  const handleBusinessUpdated = (updatedBusiness: MockBusiness) => {
+  const handleBusinessUpdated = (updatedBusiness: Business) => {
     // Use the demo state management to update the business
     // This will automatically trigger re-renders across all components
     console.log("Business updated:", updatedBusiness)
@@ -129,15 +128,16 @@ export function BusinessesTable() {
     }
   }
 
-  const handleApproveBusiness = async (business: MockBusiness) => {
+  const handleApproveBusiness = async (business: Business) => {
     try {
-      await approveBusiness(business.id)
+      // TODO: Implement approve business functionality
+      console.log('Approving business:', business.id)
     } catch (error) {
       console.error('Failed to approve business:', error)
     }
   }
 
-  const openDeleteDialog = (business: MockBusiness, e: React.MouseEvent) => {
+  const openDeleteDialog = (business: Business, e: React.MouseEvent) => {
     e.stopPropagation()
     setBusinessToDelete(business)
     setDeleteDialogOpen(true)
@@ -219,10 +219,10 @@ export function BusinessesTable() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {business.logo ? (
+                  {false ? ( // Logo not available in production data yet
                     <div className="h-8 w-8 rounded-md overflow-hidden bg-muted/50">
                       <img
-                        src={business.logo || "/placeholder.svg"}
+                        src="/placeholder.svg"
                         alt={business.name}
                         className="h-full w-full object-cover"
                       />
@@ -262,19 +262,18 @@ export function BusinessesTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover border-border">
-                        <EditBusinessDialog
-                          business={business}
-                          onBusinessUpdated={handleBusinessUpdated}
-                          trigger={
-                            <DropdownMenuItem 
-                              className="text-popover-foreground hover:bg-accent cursor-pointer"
-                              onSelect={(e) => e.preventDefault()}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Business
-                            </DropdownMenuItem>
-                          }
-                        />
+                        {/* TODO: Update EditBusinessDialog to work with production Business type */}
+                        <DropdownMenuItem 
+                          className="text-popover-foreground hover:bg-accent cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            console.log('Edit business:', business.id)
+                            // TODO: Implement edit business functionality
+                          }}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit Business
+                        </DropdownMenuItem>
                         {business.status === 'pending' && (
                           <DropdownMenuItem 
                             className="text-popover-foreground hover:bg-accent"
@@ -301,38 +300,23 @@ export function BusinessesTable() {
                 </div>
               </div>
 
-              {/* BM ID */}
-              {business.bmId && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 text-xs">
-                    <span className="text-muted-foreground/60">BM ID:</span>
-                    <code className="font-mono text-muted-foreground bg-muted/30 px-1.5 py-0.5 rounded text-xs">{business.bmId}</code>
-                    <button
-                      onClick={(e) => copyBmId(business.bmId!, e)}
-                      className="p-0.5 hover:bg-muted/50 rounded transition-colors duration-150 opacity-0 group-hover:opacity-100"
-                      title="Copy BM ID"
-                    >
-                      <Copy className="h-3 w-3 text-muted-foreground/60" />
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* BM ID - Not available in production data yet */}
 
               {/* Metrics */}
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <div className="text-lg font-semibold text-foreground">{business.accountsCount}</div>
+                                          <div className="text-lg font-semibold text-foreground">0</div>
                   <div className="text-xs text-muted-foreground/70">Ad Accounts</div>
                 </div>
                 <div>
-                  <div className="text-lg font-semibold text-foreground">${formatCurrency(business.totalBalance)}</div>
+                                          <div className="text-lg font-semibold text-foreground">$0</div>
                   <div className="text-xs text-muted-foreground/70">Total Balance</div>
                 </div>
               </div>
 
               {/* Footer */}
               <div className="flex items-center justify-between text-xs text-muted-foreground/60 pt-2 border-t border-border/40">
-                <span>Created {business.dateCreated}</span>
+                <span>Created {new Date(business.created_at).toLocaleDateString()}</span>
                 <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
               </div>
             </div>
@@ -355,10 +339,10 @@ export function BusinessesTable() {
               <div className="flex items-center justify-between">
                 {/* Left: Business Info */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {business.logo ? (
+                  {false ? ( // Logo not available in production data yet
                     <div className="h-8 w-8 rounded-lg overflow-hidden">
                       <img
-                        src={business.logo || "/placeholder.svg"}
+                        src="/placeholder.svg"
                         alt={business.name}
                         className="h-full w-full object-cover"
                       />
@@ -377,7 +361,7 @@ export function BusinessesTable() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{business.industry}</span>
                       <span>•</span>
-                      <span>Created {business.dateCreated}</span>
+                      <span>Created {new Date(business.created_at).toLocaleDateString()}</span>
                       {business.status !== 'active' && (
                         <>
                           <span>•</span>
@@ -386,20 +370,7 @@ export function BusinessesTable() {
                           </span>
                         </>
                       )}
-                      {business.bmId && (
-                        <>
-                          <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <code className="bg-muted px-1 py-0.5 rounded text-xs">{business.bmId}</code>
-                            <button
-                              onClick={(e) => copyBmId(business.bmId!, e)}
-                              className="p-0.5 hover:bg-accent rounded transition-colors"
-                            >
-                              <Copy className="h-2.5 w-2.5" />
-                            </button>
-                          </div>
-                        </>
-                      )}
+                      {/* BM ID not available in production data yet */}
                     </div>
                   </div>
                 </div>
@@ -408,12 +379,12 @@ export function BusinessesTable() {
                 <div className="flex items-center gap-6">
                   <div className="flex flex-col items-center justify-center w-20">
                     <div className="text-xs text-muted-foreground mb-0.5">Accounts</div>
-                    <div className="font-semibold text-foreground text-base">{business.accountsCount}</div>
+                                            <div className="font-semibold text-foreground text-base">0</div>
                   </div>
                   <div className="flex flex-col items-center justify-center w-20">
                     <div className="text-xs text-muted-foreground mb-0.5">Balance</div>
                     <div className="font-semibold text-foreground text-base">
-                      ${formatCurrency(business.totalBalance)}
+                                                $0
                     </div>
                   </div>
                   {business.status === 'active' ? (

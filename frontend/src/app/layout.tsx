@@ -8,6 +8,7 @@ import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
 import { Toaster } from "../components/ui/sonner";
 import { DemoProvider } from "../contexts/DemoStateContext";
+import { ProductionDataProvider } from "../contexts/ProductionDataContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,11 +27,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <DemoProvider>
-        <SimpleProviders>
-          {children}
-          <EnvIndicator />
-        </SimpleProviders>
-          <Toaster />
+          <ProductionDataProvider>
+            <SimpleProviders>
+              {children}
+              <EnvIndicator />
+            </SimpleProviders>
+            <Toaster />
+          </ProductionDataProvider>
         </DemoProvider>
       </body>
     </html>

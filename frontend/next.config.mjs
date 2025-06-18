@@ -6,6 +6,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Disable static optimization for pages that use authentication
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
   // Force fresh build - clear Vercel cache
 };
 

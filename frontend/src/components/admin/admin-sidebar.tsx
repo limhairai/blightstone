@@ -98,6 +98,11 @@ const navItems: NavItem[] = [
     path: "/admin/analytics",
     icon: BarChart3,
   },
+  {
+    name: "Access Codes",
+    path: "/admin/access-codes",
+    icon: ShieldCheck,
+  },
 ]
 
 const bottomNavItems: NavItem[] = [

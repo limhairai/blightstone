@@ -53,23 +53,31 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
     }
 
     try {
-      // Generate realistic account data
-      const accountData = {
-        name: formData.name.trim(),
-        business: approvedBusinesses.find(b => b.id === formData.business)?.name || "",
-        adAccount: `act_${Math.random().toString().slice(2, 17)}`, // Generate realistic ad account ID
-        balance: 0, // New accounts start with $0
-        status: "pending" as const, // New accounts start as pending
-        platform: "Meta" as const,
-        timezone: "America/New_York",
-        spendLimit: formData.spendLimit,
-        quota: formData.quota,
-        spent: 0, // New accounts start with $0 spent
+      // Submit application to real API
+      const applicationData = {
+        business_id: formData.business,
+        account_name: formData.name.trim(),
+        spend_limit: formData.spendLimit,
+        notes: `Requested via client dashboard. Quota: ${formData.quota}`
       }
 
-      await createAccount(accountData)
+      const response = await fetch('/api/applications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(applicationData),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to submit application')
+      }
+
+      const result = await response.json()
       
       setShowSuccess(true)
+      toast.success("Application submitted successfully!")
 
       // Reset form and close dialog after success animation
       setTimeout(() => {
@@ -87,7 +95,8 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
         }
       }, 2000)
     } catch (error) {
-      // Error handling is done in the createAccount function
+      console.error('Error submitting application:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to submit application')
     }
   }
 
