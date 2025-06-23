@@ -1,25 +1,25 @@
+import { ENV_CONFIG } from '../env-config'
+
 // Environment configuration for AdHub
 export const config = {
   environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',
-  useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',
-  demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || 
-          (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),
-  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  useDemoData: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true',
+  apiUrl: ENV_CONFIG.API_URL,
+  supabaseUrl: ENV_CONFIG.SUPABASE_URL,
+  supabaseAnonKey: ENV_CONFIG.SUPABASE_ANON_KEY
 };
 
 // Environment detection helpers
 export const isStaging = () => config.environment === 'staging';
 export const isProduction = () => config.environment === 'production';
 export const isDevelopment = () => config.environment === 'development';
-export const shouldUseAppData = () => config.useMockData || isDevelopment();
-export const isDemoMode = () => config.demoMode;
+export const shouldUseAppData = () => config.useDemoData || isDevelopment();
+export const isDemoMode = () => config.useDemoData;
 
 // API configuration
 export const getApiUrl = () => {
   if (shouldUseAppData()) {
-    return null; // No API calls in mock mode
+    return null; // No API calls in demo mode
   }
   return config.apiUrl;
 };
@@ -28,8 +28,7 @@ export const getApiUrl = () => {
 if (isDevelopment()) {
   console.log('🔧 AdHub Config:', {
     environment: config.environment,
-    useMockData: config.useMockData,
-    demoMode: config.demoMode,
+    useDemoData: config.useDemoData,
     apiUrl: config.apiUrl
   });
-} 
+}

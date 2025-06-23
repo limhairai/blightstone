@@ -3,6 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import httpProxy from 'http-proxy';
 import { parse } from 'url';
 import http from 'http'; // For type checking ServerResponse
+import { ENV_CONFIG } from '../../../lib/env-config';
 
 export const config = {
   api: {
@@ -11,8 +12,8 @@ export const config = {
   },
 };
 
-const PROXY_TARGET = process.env.BACKEND_API_URL || process.env.BACKEND_URL || 
-                    (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
+// ✅ SECURE: Use environment-based URL configuration
+const PROXY_TARGET = ENV_CONFIG.API_URL;
 
 const proxy = httpProxy.createProxyServer({
   target: PROXY_TARGET,
@@ -54,4 +55,4 @@ const proxyHandler = (req: NextApiRequest, res: NextApiResponse) => {
   proxy.web(req, res, {}); // Options are set on the proxy instance
 };
 
-export default proxyHandler; 
+export default proxyHandler;

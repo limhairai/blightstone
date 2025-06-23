@@ -1,3 +1,4 @@
+import { initializeProductionGuard } from '../lib/production-guard'
 // frontend/src/app/layout.tsx
 import type React from "react";
 import type { Metadata } from "next";
@@ -7,13 +8,24 @@ import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
 import { Toaster } from "../components/ui/sonner";
+import * as Sentry from '@sentry/nextjs';
+
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata: Metadata = {
-  title: "AdHub - Ad Account Management Platform",
-  description: "Manage your advertising accounts across multiple platforms",
-  generator: 'v0.dev'
-};
+// Add or edit your "generateMetadata" to include the Sentry trace data:
+export function generateMetadata(): Metadata {
+  return {
+    title: "AdHub - Ad Account Management Platform",
+    description: "Manage your advertising accounts across multiple platforms",
+    generator: 'v0.dev',
+    other: {
+      ...Sentry.getTraceData()
+    }
+  };
+}
+
+// ✅ PRODUCTION GUARD: Initialize security checks
+initializeProductionGuard()
 
 export default function RootLayout({
   children,

@@ -1,90 +1,61 @@
+"""
+🔒 Telegram Bot Configuration
+PRODUCTION-READY configuration with environment-based settings
+"""
+
 import os
-from typing import List, Optional
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from typing import Optional
 
-class BotSettings(BaseSettings):
-    # Telegram Bot Token (get from @BotFather)
-    TELEGRAM_BOT_TOKEN: str
+class Config:
+    """Telegram bot configuration with environment-based URLs"""
     
-    # Bot Configuration
-    BOT_NAME: str = "AdHub Bot"
-    LOG_LEVEL: str = "INFO"
+    # ✅ SECURE: Environment detection
+    ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+    DEBUG = os.getenv("DEBUG", "false").lower() == "true"
     
-    # Admin User IDs (Telegram user IDs who can use admin commands)
-    ADMIN_USER_IDS: Optional[str] = None
+    # ✅ SECURE: Telegram configuration
+    BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    WEBHOOK_URL = os.getenv("TELEGRAM_WEBHOOK_URL", "")
     
-    # Team Lead User IDs (can manage applications and assignments)  
-    TEAM_LEAD_USER_IDS: Optional[str] = None
+    # ✅ SECURE: Backend URL (environment-based, no hardcoded localhost)
+    BACKEND_URL = _get_backend_url()
     
-    # Database connection
-    SUPABASE_URL: str
-    SUPABASE_ANON_KEY: Optional[str] = None
-    SUPABASE_SERVICE_ROLE_KEY: Optional[str] = None
+    # ✅ SECURE: Database configuration
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///telegram_bot.db")
     
-    # Dolphin Cloud API (legacy - now handled by backend)
-    DOLPHIN_CLOUD_BASE_URL: str = "https://cloud.dolphin.tech"
-    DOLPHIN_CLOUD_TOKEN: Optional[str] = None
+    # ✅ SECURE: Security settings
+    SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-change-in-production")
+    API_KEY = os.getenv("API_KEY", "")
     
-    # Backend API Configuration
-    BACKEND_API_URL: Optional[str] = None
-    BACKEND_API_KEY: Optional[str] = None
+    # ✅ SECURE: Rate limiting
+    RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "30"))
+    RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
     
-    @property
-    def get_backend_api_url(self) -> str:
-        """Get backend API URL with fallback logic"""
-        if self.BACKEND_API_URL:
-            return self.BACKEND_API_URL
-        # Try legacy BACKEND_URL
-        backend_url = os.getenv("BACKEND_URL")
-        if backend_url:
-            return backend_url
-        # Default fallback
+    # ✅ SECURE: Logging
+    LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+def _get_backend_url() -> str:
+    """Get backend URL based on environment"""
+    # Check explicit environment variable first
+    if os.getenv("BACKEND_URL"):
+        return os.getenv("BACKEND_URL")
+    
+    environment = os.getenv("ENVIRONMENT", "development")
+    
+    if environment == "production":
+        return "https://api.adhub.com"
+    elif environment == "staging":
+        return "https://api-staging.adhub.tech"
+    else:
         return "http://localhost:8000"
-    
-    # Payment Configuration
-    PAYMENT_CREDENTIAL_ID: Optional[str] = None
-    
-    # Alert Configuration
-    DEFAULT_CRITICAL_THRESHOLD_DAYS: int = 1
-    DEFAULT_WARNING_THRESHOLD_DAYS: int = 3
-    
-    # Webhook settings (for production)
-    WEBHOOK_URL: Optional[str] = None
-    WEBHOOK_PORT: int = 8443
-    
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
-    
-    def get_admin_user_ids(self) -> List[int]:
-        """Parse admin user IDs from comma-separated string"""
-        if not self.ADMIN_USER_IDS:
-            return []
-        try:
-            return [int(uid.strip()) for uid in self.ADMIN_USER_IDS.split(',') if uid.strip()]
-        except ValueError:
-            return []
-    
-    def get_team_lead_user_ids(self) -> List[int]:
-        """Parse team lead user IDs from comma-separated string"""
-        if not self.TEAM_LEAD_USER_IDS:
-            return []
-        try:
-            return [int(uid.strip()) for uid in self.TEAM_LEAD_USER_IDS.split(',') if uid.strip()]
-        except ValueError:
-            return []
 
-# Global settings instance
-bot_settings = BotSettings()
+# ✅ SECURE: Create config instance
+config = Config()
 
-# Bot commands and permissions
-ADMIN_COMMANDS = [
-    "admin_stats", "admin_users", "admin_alerts", 
-    "admin_organizations", "admin_system"
-]
-
-USER_COMMANDS = [
-    "start", "help", "link", "whoami", "organizations",
-    "businesses", "accounts", "wallet", "balance", "topup", "sync"
-] 
+# 🎯 Development logging
+if config.ENVIRONMENT == "development":
+    print(f"🤖 Telegram Bot Configuration:")
+    print(f"  Environment: {config.ENVIRONMENT}")
+    print(f"  Backend URL: {config.BACKEND_URL}")
+    print(f"  Debug: {config.DEBUG}")
+    print(f"  Bot Token: {'Set' if config.BOT_TOKEN else 'Not Set'}")

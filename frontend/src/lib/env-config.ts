@@ -1,73 +1,119 @@
-// Environment Configuration
-// This file manages different environments and data sources
+/**
+ * 🌍 Environment Configuration
+ * PRODUCTION-READY URL management with proper fallbacks
+ */
 
-export const ENV = {
-  // Current environment
-  NODE_ENV: process.env.NODE_ENV || 'development',
+// ✅ SECURE: Environment detection
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
+const IS_STAGING = process.env.VERCEL_ENV === 'preview' || process.env.ENVIRONMENT === 'staging'
+const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'
+
+// ✅ SECURE: Get base URLs from environment variables with proper fallbacks
+function getBaseUrl(): string {
+  // 1. Check explicit environment variable
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL
+  }
   
+  // 2. Production URL
+  if (IS_PRODUCTION) {
+    return 'https://adhub.com'
+  }
+  
+  // 3. Staging URL
+  if (IS_STAGING) {
+    return 'https://staging.adhub.tech'
+  }
+  
+  // 4. Development fallback
+  return 'http://localhost:3000'
+}
+
+function getApiUrl(): string {
+  // 1. Check explicit environment variable
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL
+  }
+  
+  // 2. Production API URL
+  if (IS_PRODUCTION) {
+    return 'https://api.adhub.com'
+  }
+  
+  // 3. Staging API URL
+  if (IS_STAGING) {
+    return 'https://api-staging.adhub.tech'
+  }
+  
+  // 4. Development fallback
+  return 'http://localhost:8000'
+}
+
+// ✅ SECURE: Environment configuration
+export const ENV_CONFIG = {
   // Environment flags
-  isDevelopment: process.env.NODE_ENV === 'development',
-  isStaging: process.env.NEXT_PUBLIC_ENVIRONMENT === 'staging' || process.env.VERCEL_ENV === 'preview', 
-  isProduction: process.env.NODE_ENV === 'production',
+  IS_PRODUCTION,
+  IS_STAGING,
+  IS_DEVELOPMENT,
   
-  // Data source configuration
-  USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',
-  USE_SUPABASE: process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  // Base URLs
+  BASE_URL: getBaseUrl(),
+  API_URL: getApiUrl(),
+  
+  // Derived URLs
+  FRONTEND_URL: getBaseUrl(),
+  BACKEND_URL: getApiUrl(),
   
   // API endpoints
-  API_BASE_URL: process.env.NEXT_PUBLIC_APP_URL || 
-                (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),
+  API_BASE_URL: getApiUrl(),
+  WS_URL: getApiUrl().replace('http', 'ws'),
   
-  // Supabase config
-  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  // Domain for cookies
+  DOMAIN: IS_PRODUCTION ? 'adhub.com' : (IS_STAGING ? 'staging.adhub.tech' : 'localhost'),
   
   // Feature flags
-  ENABLE_ADMIN_PANEL: process.env.NEXT_PUBLIC_ENABLE_ADMIN_PANEL !== 'false', // Default enabled
-  ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
-  ENABLE_PAYMENTS: process.env.NEXT_PUBLIC_ENABLE_PAYMENTS === 'true',
-} as const
-
-// Data source strategy
-export const DATA_STRATEGY = {
-  // For development: Always use demo data
-  development: 'demo',
+  USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true',
+  ENABLE_DEBUG: process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true' || IS_DEVELOPMENT,
   
-  // For staging: Use real database with test data
-  staging: 'supabase',
+  // Security
+  SECURE_COOKIES: IS_PRODUCTION || IS_STAGING,
   
-  // For production: Use real database with real data
-  production: 'supabase',
-} as const
-
-// Get current data source
-export function getCurrentDataSource(): 'demo' | 'supabase' {
-  // Force demo data if flag is set
-  if (ENV.USE_DEMO_DATA) {
-    return 'demo'
-  }
-  
-  // Use environment-based strategy
-  return DATA_STRATEGY[ENV.NODE_ENV as keyof typeof DATA_STRATEGY] || 'demo'
+  // External services
+  STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
 }
 
-// Environment info for debugging
-export function getEnvInfo() {
-  return {
-    environment: ENV.NODE_ENV,
-    dataSource: getCurrentDataSource(),
-    useDemoData: ENV.USE_DEMO_DATA,
-    useSupabase: ENV.USE_SUPABASE,
-    apiBaseUrl: ENV.API_BASE_URL,
-    features: {
-      adminPanel: ENV.ENABLE_ADMIN_PANEL,
-      analytics: ENV.ENABLE_ANALYTICS,
-      payments: ENV.ENABLE_PAYMENTS,
-    }
-  }
+// ✅ SECURE: Validation
+if (IS_PRODUCTION && !process.env.NEXT_PUBLIC_APP_URL) {
+  console.warn('⚠️ NEXT_PUBLIC_APP_URL not set in production')
 }
 
-// Log environment info in development
-if (ENV.isDevelopment) {
-  console.log('🔧 Environment Info:', getEnvInfo())
-} 
+if (IS_PRODUCTION && !process.env.NEXT_PUBLIC_API_URL) {
+  console.warn('⚠️ NEXT_PUBLIC_API_URL not set in production')
+}
+
+// 🎯 Development logging
+if (IS_DEVELOPMENT) {
+  console.log('🌍 Environment Configuration:', {
+    NODE_ENV: process.env.NODE_ENV,
+    BASE_URL: ENV_CONFIG.BASE_URL,
+    API_URL: ENV_CONFIG.API_URL,
+    USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,
+  })
+}
+
+// ✅ SECURE: Export for backward compatibility
+export const {
+  BASE_URL,
+  API_URL,
+  FRONTEND_URL,
+  BACKEND_URL,
+  API_BASE_URL,
+  DOMAIN,
+  USE_DEMO_DATA,
+  ENABLE_DEBUG,
+  SECURE_COOKIES,
+} = ENV_CONFIG
+
+export default ENV_CONFIG 

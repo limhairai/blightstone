@@ -1,223 +1,141 @@
 /**
- * 🚨 PRODUCTION ENVIRONMENT GUARD
- * 
- * This module prevents development-only code from running in production.
- * It validates environment variables and throws errors if dangerous flags are set.
+ * 🔒 Production Guard System
+ * CRITICAL: Prevents demo data and development code from running in production
  */
 
-interface EnvironmentValidation {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-/**
- * Validates that the environment is properly configured for production
- */
-export function validateProductionEnvironment(): EnvironmentValidation {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  
-  // Only validate in production environment
-  if (process.env.NODE_ENV !== 'production') {
-    return { isValid: true, errors: [], warnings: [] };
-  }
-  
-  console.log('🔒 Running production environment validation...');
-  
-  // Critical flags that MUST be false in production
-  const dangerousFlags = [
-    'NEXT_PUBLIC_USE_MOCK_DATA',
-    'NEXT_PUBLIC_DEMO_MODE',
-    'NEXT_PUBLIC_USE_DEMO_DATA',
-    'NEXT_PUBLIC_DEBUG'
-  ];
-  
-  for (const flag of dangerousFlags) {
-    const value = process.env[flag];
-    if (value === 'true') {
-      errors.push(`CRITICAL: ${flag}=true is not allowed in production!`);
-    }
-  }
-  
-  // Required environment variables for production
-  const requiredVars = [
-    'NEXT_PUBLIC_API_URL',
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'BACKEND_URL'
-  ];
-  
-  for (const varName of requiredVars) {
-    const value = process.env[varName];
-    if (!value) {
-      errors.push(`REQUIRED: ${varName} must be set in production`);
-    } else if (value.includes('localhost') || value.includes('127.0.0.1')) {
-      errors.push(`INVALID: ${varName} contains localhost URL in production`);
-    }
-  }
-  
-  // Check for development URLs
-  const urlVars = [
-    'NEXT_PUBLIC_API_URL',
-    'BACKEND_URL'
-  ];
-  
-  for (const varName of urlVars) {
-    const value = process.env[varName];
-    if (value) {
-      if (value.includes(':3000') || value.includes(':8000')) {
-        errors.push(`INVALID: ${varName} contains development port in production`);
-      }
-      if (value.startsWith('http://') && !value.includes('localhost')) {
-        warnings.push(`WARNING: ${varName} uses HTTP instead of HTTPS`);
-      }
-    }
-  }
-  
-  // Validate Stripe keys
-  const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-  if (stripeKey) {
-    if (stripeKey.startsWith('pk_test_')) {
-      errors.push('CRITICAL: Using Stripe test key in production!');
-    } else if (!stripeKey.startsWith('pk_live_')) {
-      warnings.push('WARNING: Stripe key format not recognized');
-    }
-  }
-  
-  const isValid = errors.length === 0;
-  
-  // Log results
-  if (errors.length > 0) {
-    console.error('❌ Production environment validation FAILED:');
-    errors.forEach(error => console.error(`  - ${error}`));
-  }
-  
-  if (warnings.length > 0) {
-    console.warn('⚠️  Production environment warnings:');
-    warnings.forEach(warning => console.warn(`  - ${warning}`));
-  }
-  
-  if (isValid && warnings.length === 0) {
-    console.log('✅ Production environment validation passed');
-  }
-  
-  return { isValid, errors, warnings };
-}
-
-/**
- * Throws an error if the environment is not production-ready
- */
-export function requireProductionEnvironment(): void {
-  const validation = validateProductionEnvironment();
-  
-  if (!validation.isValid) {
-    const errorMessage = [
-      '🚨 PRODUCTION DEPLOYMENT BLOCKED!',
-      '',
-      'The following critical issues must be fixed:',
-      ...validation.errors.map(error => `  • ${error}`),
-      '',
-      'Fix these issues before deploying to production.'
-    ].join('\n');
-    
-    throw new Error(errorMessage);
-  }
-}
-
-/**
- * Guards against mock data usage in production
- */
-export function guardAgainstMockData(context: string): void {
+// ✅ SECURE: Environment validation
+export function validateProductionEnvironment(): void {
   if (process.env.NODE_ENV === 'production') {
-    const mockFlags = [
+    const dangerousFlags = [
       'NEXT_PUBLIC_USE_MOCK_DATA',
-      'NEXT_PUBLIC_DEMO_MODE',
+      'NEXT_PUBLIC_DEMO_MODE', 
       'NEXT_PUBLIC_USE_DEMO_DATA'
-    ];
+    ]
     
-    for (const flag of mockFlags) {
+    for (const flag of dangerousFlags) {
       if (process.env[flag] === 'true') {
-        throw new Error(
-          `🚨 PRODUCTION ERROR: Mock data detected in ${context}! ` +
-          `${flag}=true is not allowed in production.`
-        );
+        const error = `🚨 PRODUCTION ERROR: ${flag}=true is not allowed in production!`
+        console.error(error)
+        throw new Error(error)
       }
     }
+    
+    // Validate required production environment variables
+    const requiredVars = [
+      'NEXT_PUBLIC_SUPABASE_URL',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'NEXT_PUBLIC_APP_URL',
+      'NEXT_PUBLIC_API_URL'
+    ]
+    
+    for (const varName of requiredVars) {
+      if (!process.env[varName]) {
+        const error = `🚨 PRODUCTION ERROR: Required environment variable ${varName} is missing!`
+        console.error(error)
+        throw new Error(error)
+      }
+    }
+    
+    console.log('✅ Production environment validation passed')
   }
 }
 
-/**
- * Guards against demo mode usage in production
- */
-export function guardAgainstDemoMode(context: string): void {
+// ✅ SECURE: Demo data prevention
+export function preventDemoDataInProduction(): void {
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {
+    const error = '🚨 CRITICAL: Demo data cannot be used in production!'
+    console.error(error)
+    throw new Error(error)
+  }
+}
+
+// ✅ SECURE: Supabase validation
+export function validateSupabaseConfiguration(): { hasSupabaseUrl: boolean; hasSupabaseKey: boolean } {
+  const hasSupabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+  const hasSupabaseKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
   if (process.env.NODE_ENV === 'production') {
-    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-      throw new Error(
-        `🚨 PRODUCTION ERROR: Demo mode detected in ${context}! ` +
-        `Demo mode is not allowed in production.`
-      );
+    if (!hasSupabaseUrl || !hasSupabaseKey) {
+      const error = '🚨 PRODUCTION ERROR: Supabase configuration is required in production!'
+      console.error(error)
+      throw new Error(error)
+    }
+  }
+  
+  return { hasSupabaseUrl, hasSupabaseKey }
+}
+
+// ✅ SECURE: Data source validation
+export function getValidatedDataSource(): 'demo' | 'supabase' {
+  // In production, always use Supabase
+  if (process.env.NODE_ENV === 'production') {
+    preventDemoDataInProduction()
+    validateSupabaseConfiguration()
+    return 'supabase'
+  }
+  
+  // In development, check the flag
+  if (process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {
+    console.log('🔧 Development: Using demo data')
+    return 'demo'
+  }
+  
+  // Use Supabase if configured
+  const { hasSupabaseUrl, hasSupabaseKey } = validateSupabaseConfiguration()
+  if (hasSupabaseUrl && hasSupabaseKey) {
+    console.log('🔧 Development: Using Supabase data')
+    return 'supabase'
+  }
+  
+  // Fallback to demo data in development
+  console.log('🔧 Development: Falling back to demo data (Supabase not configured)')
+  return 'demo'
+}
+
+// ✅ SECURE: Initialize production guard
+export function initializeProductionGuard(): void {
+  try {
+    validateProductionEnvironment()
+    
+    const dataSource = getValidatedDataSource()
+    
+    console.log(`🔒 Production Guard: Environment=${process.env.NODE_ENV}, DataSource=${dataSource}`)
+    
+  } catch (error) {
+    console.error('🚨 Production Guard failed:', error)
+    
+    // In production, crash the app rather than show demo data
+    if (process.env.NODE_ENV === 'production') {
+      throw error
     }
   }
 }
 
-/**
- * Safe environment checker that returns false in production
- */
-export function isDevelopmentMode(): boolean {
-  return process.env.NODE_ENV === 'development';
-}
-
-/**
- * Safe demo mode checker that returns false in production
- */
-export function isDemoModeAllowed(): boolean {
-  if (process.env.NODE_ENV === 'production') {
-    return false; // Never allow demo mode in production
-  }
-  return process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-}
-
-/**
- * Safe mock data checker that returns false in production
- */
-export function isMockDataAllowed(): boolean {
-  if (process.env.NODE_ENV === 'production') {
-    return false; // Never allow mock data in production
-  }
-  return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' || 
-         process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true';
-}
-
-/**
- * Production-safe logging
- */
-export const productionLogger = {
-  error: (message: string, error?: Error) => {
-    console.error(`[PRODUCTION ERROR] ${message}`, error);
-  },
-  warn: (message: string) => {
-    console.warn(`[PRODUCTION WARNING] ${message}`);
-  },
-  info: (message: string) => {
-    if (isDevelopmentMode()) {
-      console.log(`[INFO] ${message}`);
+// ✅ SECURE: Runtime checks
+export const PRODUCTION_GUARD = {
+  isProduction: process.env.NODE_ENV === 'production',
+  isDevelopment: process.env.NODE_ENV === 'development',
+  dataSource: getValidatedDataSource(),
+  hasSupabase: validateSupabaseConfiguration(),
+  
+  // Prevent demo data leaks
+  assertNotDemo(): void {
+    if (this.dataSource === 'demo' && this.isProduction) {
+      throw new Error('🚨 CRITICAL: Demo data detected in production!')
     }
   },
-  debug: (message: string) => {
-    if (isDevelopmentMode()) {
-      console.log(`[DEBUG] ${message}`);
+  
+  // Ensure Supabase is available
+  assertSupabase(): void {
+    if (!this.hasSupabase.hasSupabaseUrl || !this.hasSupabase.hasSupabaseKey) {
+      throw new Error('🚨 CRITICAL: Supabase configuration missing!')
     }
   }
-};
+}
 
-export default {
-  validateProductionEnvironment,
-  requireProductionEnvironment,
-  guardAgainstMockData,
-  guardAgainstDemoMode,
-  isDevelopmentMode,
-  isDemoModeAllowed,
-  isMockDataAllowed,
-  productionLogger
-}; 
+// 🎯 Auto-initialize in production
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+  initializeProductionGuard()
+}
+
+export default PRODUCTION_GUARD

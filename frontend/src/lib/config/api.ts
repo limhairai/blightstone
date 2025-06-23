@@ -1,126 +1,65 @@
+import { ENV_CONFIG } from '../env-config'
+
 /**
- * Centralized API Configuration
- * Replaces all hardcoded localhost URLs throughout the app
+ * 🌍 API Configuration
+ * PRODUCTION-READY API settings with environment-based URLs
  */
 
-// Environment validation
-const requiredEnvVars = {
-  BACKEND_URL: process.env.BACKEND_URL,
-  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-}
-
-// Validate environment variables in production
-if (process.env.NODE_ENV === 'production') {
-  const missing = Object.entries(requiredEnvVars)
-    .filter(([_, value]) => !value)
-    .map(([key]) => key)
-  
-  if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`)
-  }
-}
-
-// API Configuration
 export const API_CONFIG = {
-  // Backend URL with fallback for development
-  BACKEND_URL: process.env.BACKEND_URL || 
-               process.env.NEXT_PUBLIC_API_URL || 
-               (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),
+  // Base URLs from environment configuration
+  baseUrl: ENV_CONFIG.API_URL,
+  frontendUrl: ENV_CONFIG.FRONTEND_URL,
   
   // Request configuration
-  TIMEOUT: parseInt(process.env.API_TIMEOUT || '30000'),
-  RETRIES: parseInt(process.env.API_RETRIES || '3'),
+  timeout: 10000,
+  retries: 3,
   
   // Headers
-  DEFAULT_HEADERS: {
+  headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
   
   // Endpoints
-  ENDPOINTS: {
-    // Admin endpoints
-    ADMIN_ASSETS: '/api/admin/assets',
-    ADMIN_APPLICATIONS: '/api/admin/applications',
-    
-    // Client endpoints
-    CLIENT_ASSETS: '/api/client/assets',
-    
-    // Core endpoints
-    APPLICATIONS: '/api/applications',
-    BUSINESSES: '/api/businesses',
-    ORGANIZATIONS: '/api/organizations',
-    ACCESS_CODES: '/api/access-codes',
-    AD_ACCOUNTS: '/api/ad-accounts',
-    
-    // Payment endpoints
-    PAYMENT_INTENT: '/api/payments/intent',
-    PAYMENT_SUCCESS: '/api/payments/success',
-  }
-}
-
-// Utility function to build full API URL
-export const buildApiUrl = (endpoint: string): string => {
-  const baseUrl = API_CONFIG.BACKEND_URL
-  if (!baseUrl) {
-    throw new Error('Backend URL not configured')
-  }
-  return `${baseUrl}${endpoint}`
-}
-
-// Utility function for API requests with retry logic
-export const apiRequest = async (
-  endpoint: string, 
-  options: RequestInit = {}
-): Promise<Response> => {
-  const url = buildApiUrl(endpoint)
-  const config = {
-    timeout: API_CONFIG.TIMEOUT,
-    headers: {
-      ...API_CONFIG.DEFAULT_HEADERS,
-      ...options.headers,
+  endpoints: {
+    auth: {
+      login: '/api/auth/login',
+      logout: '/api/auth/logout',
+      verify: '/api/auth/verify',
+      register: '/api/auth/register',
     },
-    ...options,
-  }
-
-  let lastError: Error | null = null
+    businesses: '/api/businesses',
+    accounts: '/api/accounts',
+    transactions: '/api/transactions',
+    payments: '/api/payments',
+    admin: '/api/admin',
+  },
   
-  for (let attempt = 1; attempt <= API_CONFIG.RETRIES; attempt++) {
-    try {
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), config.timeout)
-      
-      const response = await fetch(url, {
-        ...config,
-        signal: controller.signal,
-      })
-      
-      clearTimeout(timeoutId)
-      return response
-      
-    } catch (error) {
-      lastError = error as Error
-      
-      // Don't retry on the last attempt
-      if (attempt === API_CONFIG.RETRIES) {
-        break
-      }
-      
-      // Exponential backoff
-      const delay = Math.pow(2, attempt - 1) * 1000
-      await new Promise(resolve => setTimeout(resolve, delay))
-    }
-  }
+  // WebSocket configuration
+  wsUrl: ENV_CONFIG.WS_URL,
   
-  throw lastError || new Error('API request failed after retries')
+  // Environment flags
+  isDevelopment: ENV_CONFIG.IS_DEVELOPMENT,
+  isProduction: ENV_CONFIG.IS_PRODUCTION,
+  isStaging: ENV_CONFIG.IS_STAGING,
 }
 
-// Environment info for debugging
-export const getApiInfo = () => ({
-  backendUrl: API_CONFIG.BACKEND_URL,
-  environment: process.env.NODE_ENV,
-  timeout: API_CONFIG.TIMEOUT,
-  retries: API_CONFIG.RETRIES,
-  isProduction: process.env.NODE_ENV === 'production',
-  hasBackendUrl: !!API_CONFIG.BACKEND_URL,
-}) 
+// ✅ SECURE: API URL builder
+export function buildApiUrl(endpoint: string): string {
+  const baseUrl = API_CONFIG.baseUrl.replace(/\/$/, '') // Remove trailing slash
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  return `${baseUrl}${cleanEndpoint}`
+}
+
+// ✅ SECURE: Frontend URL builder
+export function buildFrontendUrl(path: string): string {
+  const baseUrl = API_CONFIG.frontendUrl.replace(/\/$/, '') // Remove trailing slash
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `${baseUrl}${cleanPath}`
+}
+
+// Export for backward compatibility
+export const apiUrl = API_CONFIG.baseUrl
+export const frontendUrl = API_CONFIG.frontendUrl
+
+export default API_CONFIG

@@ -1,3 +1,4 @@
+import { PRODUCTION_GUARD } from './production-guard'
 import { type AppBusiness, type AppAccount, type AppTransaction } from '../contexts/AppDataContext'
 
 // Types for pricing plans
@@ -1058,6 +1059,10 @@ export const APP_CONSTANTS = {
 }
 
 // Mock businesses data - organized by organization
+// ✅ PRODUCTION GUARD: Prevent mock data in production
+if (PRODUCTION_GUARD.isProduction) {
+  throw new Error('🚨 CRITICAL: Mock data cannot be imported in production!')
+}
 export const APP_BUSINESSES: AppBusiness[] = [
   // Businesses for Startup Project (org_VrfbN6vMc2MCvaZELhfJ)
   {
@@ -1156,6 +1161,10 @@ export const APP_BUSINESSES: AppBusiness[] = [
 ]
 
 // Businesses for other organizations (these would be loaded when switching orgs)
+// ✅ PRODUCTION GUARD: Prevent mock data in production
+if (PRODUCTION_GUARD.isProduction) {
+  throw new Error('🚨 CRITICAL: Mock data cannot be imported in production!')
+}
 export const APP_BUSINESSES_BY_ORG: Record<string, AppBusiness[]> = {
   "org_VrfbN6vMc2MCvaZELhfJ": APP_BUSINESSES, // Startup Project
   "org_PersonalAccount123": [
@@ -1310,6 +1319,78 @@ export const APP_ACCOUNTS: AppAccount[] = [
     spent: 450,
     platform: "TikTok",
     timezone: "America/Los_Angeles",
+  },
+  // Missing accounts for E-Commerce Plus (needs 2 accounts, balance total: 1500)
+  {
+    id: "6",
+    name: "E-Commerce Main Account",
+    business: "E-Commerce Plus",
+    adAccount: "6789012345678901",
+    status: "active",
+    balance: 900.0,
+    spendLimit: 4000.0,
+    dateAdded: "Mar 8, 2024",
+    quota: 10000,
+    spent: 2100,
+    platform: "Meta",
+    timezone: "America/New_York",
+  },
+  {
+    id: "7",
+    name: "E-Commerce Secondary",
+    business: "E-Commerce Plus",
+    adAccount: "7890123456789012",
+    status: "pending",
+    balance: 600.0,
+    spendLimit: 2500.0,
+    dateAdded: "Mar 9, 2024",
+    quota: 5000,
+    spent: 1100,
+    platform: "Google",
+    timezone: "America/New_York",
+  },
+  // Missing accounts for FinTech Innovations (needs 3 accounts, balance total: 2200)
+  {
+    id: "8",
+    name: "FinTech Primary Campaign",
+    business: "FinTech Innovations",
+    adAccount: "8901234567890123",
+    status: "active",
+    balance: 1000.0,
+    spendLimit: 6000.0,
+    dateAdded: "Mar 12, 2024",
+    quota: 15000,
+    spent: 2500,
+    platform: "Meta",
+    timezone: "America/New_York",
+  },
+  {
+    id: "9",
+    name: "FinTech B2B Outreach",
+    business: "FinTech Innovations",
+    adAccount: "9012345678901234",
+    status: "active",
+    balance: 700.0,
+    spendLimit: 3500.0,
+    dateAdded: "Mar 13, 2024",
+    quota: 8000,
+    spent: 1200,
+    platform: "LinkedIn",
+    timezone: "America/New_York",
+  },
+  {
+    id: "10",
+    name: "FinTech Brand Awareness",
+    business: "FinTech Innovations",
+    adAccount: "0123456789012345",
+    status: "pending",
+    balance: 500.0,
+    spendLimit: 2000.0,
+    dateAdded: "Mar 14, 2024",
+    quota: 5000,
+    spent: 800,
+    platform: "Google",
+    timezone: "America/New_York",
   },
 ]
 

@@ -8,7 +8,7 @@ export * from './assets'
 export * from './financial'
 export * from './pricing-management'
 
-import { API_CONFIG, getApiInfo } from './api'
+import { API_CONFIG } from './api'
 import { ASSETS, getAssetInfo } from './assets'
 import { DISPLAY_CONFIG } from './financial'
 
@@ -78,7 +78,7 @@ export const getConfigDiagnostics = () => {
     debug: CONFIG.APP.DEBUG,
     features: CONFIG.FEATURES,
     validation,
-    api: getApiInfo(),
+    api: API_CONFIG,
     assets: getAssetInfo(),
     financial: { currency: DISPLAY_CONFIG.CURRENCY, symbol: DISPLAY_CONFIG.CURRENCY_SYMBOL },
     services: {
@@ -102,7 +102,7 @@ if (!validation.valid && CONFIG.APP.ENVIRONMENT === 'production') {
 if (CONFIG.APP.DEBUG) {
   console.log('🔧 Configuration loaded:', {
     environment: CONFIG.APP.ENVIRONMENT,
-    backendUrl: CONFIG.API.BACKEND_URL,
+    backendUrl: CONFIG.API.baseUrl,
     useDemoData: CONFIG.FEATURES.USE_DEMO_DATA,
     hasSupabase: !!(CONFIG.SERVICES.SUPABASE_URL && CONFIG.SERVICES.SUPABASE_ANON_KEY),
   })

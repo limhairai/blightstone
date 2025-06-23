@@ -54,77 +54,58 @@ function isAdminPage(pathname: string): boolean {
 }
 
 function AppRouter({ children }: { children: React.ReactNode }) {
-  // Handle build-time rendering gracefully
   const [isMounted, setIsMounted] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const pathname = usePathname();
-  
-  // ALL HOOKS MUST BE CALLED AT THE TOP - NEVER CONDITIONALLY
   const { user, session, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [isRouting, setIsRouting] = useState(false);
-  
-  // ALL useEffect hooks must also be at the top
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Handle redirects in useEffect
   useEffect(() => {
-    // Don't redirect while loading or if no pathname or not mounted
-    if (!isMounted || authLoading || !pathname) return;
+    if (!isMounted || authLoading || isRedirecting) return;
 
     const isPublicPage = isPublicOrAuthPage(pathname);
+    const isAuthenticated = !!(user && session);
 
-    // Debug logging
-    // // 🚨 SECURITY: Removed dangerous console log - console.log('Simplified Router:', { 
-    //   user...
-    // });
-
-    // SIMPLE RULE 1: Not authenticated → Login
-    if (!user || !session) {
-      if (!isPublicPage) {
-        // 🚨 SECURITY: Removed dangerous console log - console.log('Redirecting to login: not authenticat...;
-        setIsRouting(true);
-        router.replace("/login");
-        return;
-      }
-      setIsRouting(false);
+    // If authenticated user is on login/register, redirect to dashboard
+    if (isAuthenticated && (pathname === "/login" || pathname === "/register")) {
+      setIsRedirecting(true);
+      router.push("/dashboard");
       return;
     }
 
-    // SIMPLE RULE 2: Authenticated and on public page → Dashboard
-    if (isPublicPage) {
-      // 🚨 SECURITY: Removed dangerous console log - // 🚨 SECURITY: Removed dangerous console log - console.log('Redirecting to dashboard: authenticat...;
-      router.replace("/dashboard");
+    // If unauthenticated user is on protected page, redirect to login
+    if (!isAuthenticated && !isPublicPage) {
+      setIsRedirecting(true);
+      router.push("/login");
       return;
     }
+  }, [isMounted, authLoading, user, session, pathname, router]);
 
-    // SIMPLE RULE 3: Authenticated and on protected page → Allow access
-    setIsRouting(false);
-  }, [isMounted, user, session, authLoading, pathname, router]);
-
-  // Clear routing state when pathname changes
+  // Reset redirecting flag when pathname changes
   useEffect(() => {
-    setIsRouting(false);
+    setIsRedirecting(false);
   }, [pathname]);
 
-  // During build time or before mounting, just render children
-  if (!isMounted) {
-    return <>{children}</>;
-  }
-
-  // For public pages (landing, login, register), render directly without auth checks
-  if (pathname === "/" || pathname === "/login" || pathname === "/register") {
-    return <>{children}</>;
-  }
-
-  // Show loading while auth is loading or routing
-  if (authLoading || isRouting) {
+  // Don't render anything until mounted and auth is ready
+  if (!isMounted || authLoading || isRedirecting) {
     return <FullScreenLoader />;
   }
 
-  // For authenticated users on protected routes, wrap with appropriate providers
-  if (user && session && pathname && !isPublicOrAuthPage(pathname)) {
-    // For admin pages, wrap with AppDataProvider (no AppShell)
+  const isPublicPage = isPublicOrAuthPage(pathname);
+  const isAuthenticated = !!(user && session);
+
+  // For public pages, render directly
+  if (isPublicPage) {
+    return <>{children}</>;
+  }
+
+  // For authenticated users on protected routes
+  if (isAuthenticated) {
     if (isAdminPage(pathname)) {
       return (
         <AppDataProvider>
@@ -133,7 +114,6 @@ function AppRouter({ children }: { children: React.ReactNode }) {
       );
     }
     
-    // For regular dashboard pages, wrap with AppDataProvider and AppShell
     return (
       <AppDataProvider>
         <AppShell>{children}</AppShell>
@@ -141,13 +121,9 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // // 🚨 SECURITY: Removed dangerous console log - console.log('Not wrapping with ProductionDataProvi... 
-  // });
-  
-  // For public pages, return children directly (no data providers)
-  return <>{children}</>;
+  // Show loading while redirecting
+  return <FullScreenLoader />;
 }
-
 export function SimpleProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

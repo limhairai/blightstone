@@ -1,16 +1,16 @@
 # 🚨 Production Readiness Audit Report
 
-Generated: 2025-06-23T07:45:32.014Z
+Generated: 2025-06-23T10:47:33.378Z
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 520 |
-| Medium | 267 |
-| Low | 25 |
-| **Total** | **812** |
+| High | 539 |
+| Medium | 276 |
+| Low | 23 |
+| **Total** | **838** |
 
 ## ⚠️ Production Status: CAUTION
 
@@ -232,6 +232,57 @@ Debug code that should be removed for production
 - Line 71: `console.error('Error fetching applications:', error);`
 - Line 110: `console.error('Error submitting application:', error);`
 
+### src/app/api/auth/login/route.ts
+
+#### MOCK_DATA (HIGH)
+Mock data references that could leak into production
+
+- Line 59: `// ✅ SECURE: Mock authentication (replace with real authentication)`
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 62: `// This is demo/development authentication`
+- Line 65: `// Demo users for development`
+- Line 66: `const demoUsers = [`
+- Line 89: `const user = demoUsers.find(u => u.email === email && u.password === password)`
+- Line 62: `// This is demo/development authentication`
+- Line 64: `if (process.env.NODE_ENV === 'development') {`
+- Line 65: `// Demo users for development`
+- Line 62: `// This is demo/development authentication`
+- Line 64: `if (process.env.NODE_ENV === 'development') {`
+- Line 65: `// Demo users for development`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 51: `console.error('Login error:', error)`
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 61: `// TODO: Replace with real database authentication`
+
+#### ENV_LEAKS (HIGH)
+Environment variables that force development behavior
+
+- Line 64: `if (process.env.NODE_ENV === 'development') {`
+- Line 64: `if (process.env.NODE_ENV === 'development') {`
+
+### src/app/api/auth/logout/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 16: `console.error('Logout error:', error)`
+
+### src/app/api/auth/verify/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 28: `console.error('Auth verification error:', error)`
+
 ### src/app/api/businesses/route.ts
 
 #### MOCK_DATA (HIGH)
@@ -307,6 +358,14 @@ Debug code that should be removed for production
 Debug code that should be removed for production
 
 - Line 34: `console.error('Error fetching payment success details:', error)`
+
+### src/app/api/security/csp-report/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 30: `console.error('CSP Violation:', {`
+- Line 63: `console.error('Error processing CSP report:', error)`
 
 ### src/app/auth/callback/page.tsx
 
@@ -384,12 +443,12 @@ Demo mode code that should not run in production
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 15: `generator: 'v0.dev'`
+- Line 16: `generator: 'v0.dev'`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 8: `import { EnvIndicator } from "../components/debug/env-indicator";`
+- Line 9: `import { EnvIndicator } from "../components/debug/env-indicator";`
 
 ### src/app/payment/success/page.tsx
 
@@ -1317,63 +1376,55 @@ Mock data references that could leak into production
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 16: `MOCK_TEAM_MEMBERS_BY_ORG`
-- Line 17: `} from '../lib/mock-data'`
-- Line 477: `const orgTeamMembers = MOCK_TEAM_MEMBERS_BY_ORG[action.payload] || []`
-- Line 637: `// Helper functions to convert mock data to app data`
-- Line 638: `function convertAppBusinessesToAppBusinesses(mockBusinesses: any[]): AppBusiness[] {`
-- Line 639: `return mockBusinesses.map(b => ({`
-- Line 667: `function convertAppAccountsToAppAccounts(mockAccounts: any[]): AppAccount[] {`
-- Line 668: `return mockAccounts.map(a => ({`
-- Line 690: `function convertAppTransactionsToAppTransactions(mockTransactions: any[]): AppTransaction[] {`
-- Line 691: `return mockTransactions.map(t => ({`
-- Line 712: `function convertFinancialData(mockFinancialData: any): AppState['financialData'] {`
-- Line 714: `totalBalance: mockFinancialData.walletBalance || 0,`
-- Line 715: `totalRevenue: mockFinancialData.monthlyAdSpend * 12 || 0, // Estimate annual revenue`
-- Line 716: `totalSpend: mockFinancialData.monthlyAdSpend || 0,`
-- Line 717: `monthlyRevenue: mockFinancialData.monthlyAdSpend || 0,`
-- Line 718: `monthlySpend: mockFinancialData.monthlyAdSpend || 0,`
-- Line 719: `growthRate: mockFinancialData.monthlyGrowth || 0`
-- Line 723: `function convertAppOrganizationsToAppOrganizations(mockOrgs: any[]): AppOrganization[] {`
-- Line 724: `return mockOrgs.map(o => ({`
-- Line 755: `dispatch({ type: 'SET_TEAM_MEMBERS', payload: MOCK_TEAM_MEMBERS_BY_ORG[orgId] || [] })`
-- Line 1072: `activeTeams: Object.keys(MOCK_TEAM_MEMBERS_BY_ORG).length,`
+- Line 17: `MOCK_TEAM_MEMBERS_BY_ORG`
+- Line 18: `} from '../lib/mock-data'`
+- Line 455: `const orgTeamMembers = MOCK_TEAM_MEMBERS_BY_ORG[action.payload] || []`
+- Line 615: `// Helper functions to convert mock data to app data`
+- Line 616: `function convertAppBusinessesToAppBusinesses(mockBusinesses: any[]): AppBusiness[] {`
+- Line 617: `return mockBusinesses.map(b => ({`
+- Line 645: `function convertAppAccountsToAppAccounts(mockAccounts: any[]): AppAccount[] {`
+- Line 646: `return mockAccounts.map(a => ({`
+- Line 668: `function convertAppTransactionsToAppTransactions(mockTransactions: any[]): AppTransaction[] {`
+- Line 669: `return mockTransactions.map(t => ({`
+- Line 690: `function convertFinancialData(mockFinancialData: any): AppState['financialData'] {`
+- Line 692: `totalBalance: mockFinancialData.walletBalance || 0,`
+- Line 693: `totalRevenue: mockFinancialData.monthlyAdSpend * 12 || 0, // Estimate annual revenue`
+- Line 694: `totalSpend: mockFinancialData.monthlyAdSpend || 0,`
+- Line 695: `monthlyRevenue: mockFinancialData.monthlyAdSpend || 0,`
+- Line 696: `monthlySpend: mockFinancialData.monthlyAdSpend || 0,`
+- Line 697: `growthRate: mockFinancialData.monthlyGrowth || 0`
+- Line 701: `function convertAppOrganizationsToAppOrganizations(mockOrgs: any[]): AppOrganization[] {`
+- Line 702: `return mockOrgs.map(o => ({`
+- Line 733: `dispatch({ type: 'SET_TEAM_MEMBERS', payload: MOCK_TEAM_MEMBERS_BY_ORG[orgId] || [] })`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
+- Line 6: `import { USE_DEMO_DATA } from '../lib/env-config'`
 - Line 29: `// Unified interfaces that work with both demo and production data`
 - Line 37: `// Extended properties (rich data from demo mode)`
 - Line 64: `// Extended properties (rich data from demo mode)`
 - Line 86: `// Extended properties (rich data from demo mode)`
 - Line 149: `dataSource: 'demo' | 'supabase'`
 - Line 212: `| { type: 'SET_DATA_SOURCE'; payload: 'demo' | 'supabase' }`
-- Line 746: `if (state.dataSource === 'demo') {`
-- Line 747: `// Load demo data`
-- Line 758: `// Set demo user profile`
-- Line 760: `id: 'demo-user-123',`
-- Line 761: `name: 'Demo Admin',`
-- Line 768: `// Set demo setup progress`
-- Line 867: `// Fallback to demo data on error`
-- Line 868: `dispatch({ type: 'SET_DATA_SOURCE', payload: 'demo' })`
-- Line 885: `// Demo mode`
-- Line 903: `// Demo mode`
-- Line 1169: `export const useDemoState = useAppData // For components still using this`
+- Line 724: `if (state.dataSource === 'demo') {`
+- Line 725: `// Load demo data`
+- Line 736: `// Set demo user profile`
+- Line 738: `id: 'demo-user-123',`
+- Line 739: `name: 'Demo Admin',`
+- Line 746: `// Set demo setup progress`
+- Line 755: `// Simulate API call for demo mode`
+- Line 858: `// Fallback to demo data on error`
+- Line 859: `dispatch({ type: 'SET_DATA_SOURCE', payload: 'demo' })`
+- Line 884: `// Simulate API call for demo mode`
+- Line 6: `import { USE_DEMO_DATA } from '../lib/env-config'`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 1212: `console.log('Wallet top-up:', amount)`
-- Line 864: `console.error('Error loading Supabase data:', error)`
-- Line 895: `console.error('Error creating business:', error)`
-- Line 913: `console.error('Error creating account:', error)`
-- Line 933: `console.error('Error updating wallet balance:', error)`
-- Line 943: `console.error('Error updating business:', error)`
-- Line 954: `console.error('Error deleting business:', error)`
-- Line 965: `console.error('Error updating account:', error)`
-- Line 976: `console.error('Error deleting account:', error)`
-- Line 987: `console.error('Error adding transaction:', error)`
-- Line 1006: `console.error('Error creating organization:', error)`
+- Line 766: `console.log('No authenticated user for Supabase data loading')`
+- Line 855: `console.error('Error loading Supabase data:', error)`
+- Line 890: `console.error('Error creating business:', error)`
 
 ### src/contexts/AuthContext.tsx
 
@@ -1502,36 +1553,8 @@ Environment variables that force development behavior
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 25: `// Backend URL with fallback for development`
-- Line 28: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 25: `// Backend URL with fallback for development`
-- Line 28: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 118: `// Environment info for debugging`
-
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
-
-- Line 3: `* Replaces all hardcoded localhost URLs throughout the app`
-- Line 28: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 28: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-
-#### TODO_FIXME (LOW)
-Development comments that need attention
-
-- Line 88: `for (let attempt = 1; attempt <= API_CONFIG.RETRIES; attempt++) {`
-- Line 104: `// Don't retry on the last attempt`
-- Line 105: `if (attempt === API_CONFIG.RETRIES) {`
-- Line 110: `const delay = Math.pow(2, attempt - 1) * 1000`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 28: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 28: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
+- Line 42: `isDevelopment: ENV_CONFIG.IS_DEVELOPMENT,`
+- Line 42: `isDevelopment: ENV_CONFIG.IS_DEVELOPMENT,`
 
 ### src/lib/config/assets.ts
 
@@ -1614,49 +1637,39 @@ Debug code that should be removed for production
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 4: `useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',`
-- Line 16: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
-- Line 22: `return null; // No API calls in mock mode`
-- Line 31: `useMockData: config.useMockData,`
+- Line 6: `useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',`
+- Line 17: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
+- Line 23: `return null; // No API calls in mock mode`
+- Line 32: `useMockData: config.useMockData,`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 5: `demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',`
-- Line 17: `export const isDemoMode = () => config.demoMode;`
-- Line 32: `demoMode: config.demoMode,`
-- Line 3: `environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',`
-- Line 7: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 15: `export const isDevelopment = () => config.environment === 'development';`
-- Line 16: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
-- Line 27: `// Debug logging (only in development)`
-- Line 28: `if (isDevelopment()) {`
-- Line 3: `environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',`
-- Line 7: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 15: `export const isDevelopment = () => config.environment === 'development';`
-- Line 16: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
-- Line 27: `// Debug logging (only in development)`
-- Line 28: `if (isDevelopment()) {`
+- Line 7: `demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',`
+- Line 18: `export const isDemoMode = () => config.demoMode;`
+- Line 33: `demoMode: config.demoMode,`
+- Line 5: `environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',`
+- Line 16: `export const isDevelopment = () => config.environment === 'development';`
+- Line 17: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
+- Line 28: `// Debug logging (only in development)`
+- Line 29: `if (isDevelopment()) {`
+- Line 5: `environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',`
+- Line 16: `export const isDevelopment = () => config.environment === 'development';`
+- Line 17: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
+- Line 28: `// Debug logging (only in development)`
+- Line 29: `if (isDevelopment()) {`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 29: `console.log('🔧 AdHub Config:', {`
-- Line 27: `// Debug logging (only in development)`
-
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
-
-- Line 7: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 7: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
+- Line 30: `console.log('🔧 AdHub Config:', {`
+- Line 28: `// Debug logging (only in development)`
 
 #### ENV_LEAKS (HIGH)
 Environment variables that force development behavior
 
-- Line 7: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 7: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : ''),`
-- Line 4: `useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',`
-- Line 5: `demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',`
+- Line 6: `useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',`
+- Line 7: `demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',`
 
 ### src/lib/data/mock-data.ts
 
@@ -1677,57 +1690,50 @@ Mock data references that could leak into production
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 14: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',`
-- Line 33: `// For development: Always use demo data`
-- Line 34: `development: 'demo',`
-- Line 44: `export function getCurrentDataSource(): 'demo' | 'supabase' {`
-- Line 45: `// Force demo data if flag is set`
-- Line 46: `if (ENV.USE_DEMO_DATA) {`
-- Line 47: `return 'demo'`
-- Line 51: `return DATA_STRATEGY[ENV.NODE_ENV as keyof typeof DATA_STRATEGY] || 'demo'`
-- Line 59: `useDemoData: ENV.USE_DEMO_DATA,`
-- Line 6: `NODE_ENV: process.env.NODE_ENV || 'development',`
-- Line 9: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 14: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',`
-- Line 19: `(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),`
-- Line 33: `// For development: Always use demo data`
-- Line 34: `development: 'demo',`
-- Line 70: `// Log environment info in development`
-- Line 71: `if (ENV.isDevelopment) {`
-- Line 6: `NODE_ENV: process.env.NODE_ENV || 'development',`
-- Line 9: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 14: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',`
-- Line 19: `(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),`
-- Line 33: `// For development: Always use demo data`
-- Line 34: `development: 'demo',`
-- Line 70: `// Log environment info in development`
-- Line 71: `if (ENV.isDevelopment) {`
-- Line 14: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',`
-- Line 46: `if (ENV.USE_DEMO_DATA) {`
-- Line 59: `useDemoData: ENV.USE_DEMO_DATA,`
+- Line 75: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true',`
+- Line 102: `USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,`
+- Line 114: `USE_DEMO_DATA,`
+- Line 9: `const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 28: `// 4. Development fallback`
+- Line 48: `// 4. Development fallback`
+- Line 57: `IS_DEVELOPMENT,`
+- Line 76: `ENABLE_DEBUG: process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true' || IS_DEVELOPMENT,`
+- Line 96: `// 🎯 Development logging`
+- Line 97: `if (IS_DEVELOPMENT) {`
+- Line 9: `const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 28: `// 4. Development fallback`
+- Line 48: `// 4. Development fallback`
+- Line 57: `IS_DEVELOPMENT,`
+- Line 76: `ENABLE_DEBUG: process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true' || IS_DEVELOPMENT,`
+- Line 96: `// 🎯 Development logging`
+- Line 97: `if (IS_DEVELOPMENT) {`
+- Line 75: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true',`
+- Line 102: `USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,`
+- Line 114: `USE_DEMO_DATA,`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 72: `console.log('🔧 Environment Info:', getEnvInfo())`
-- Line 54: `// Environment info for debugging`
+- Line 98: `console.log('🌍 Environment Configuration:', {`
+- Line 89: `console.warn('⚠️ NEXT_PUBLIC_APP_URL not set in production')`
+- Line 93: `console.warn('⚠️ NEXT_PUBLIC_API_URL not set in production')`
+- Line 76: `ENABLE_DEBUG: process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true' || IS_DEVELOPMENT,`
+- Line 115: `ENABLE_DEBUG,`
 
 #### HARDCODED_VALUES (HIGH)
 Hardcoded localhost/development URLs
 
-- Line 19: `(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),`
-- Line 19: `(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),`
+- Line 29: `return 'http://localhost:3000'`
+- Line 49: `return 'http://localhost:8000'`
+- Line 72: `DOMAIN: IS_PRODUCTION ? 'adhub.com' : (IS_STAGING ? 'staging.adhub.tech' : 'localhost'),`
+- Line 29: `return 'http://localhost:3000'`
+- Line 49: `return 'http://localhost:8000'`
 
 #### ENV_LEAKS (HIGH)
 Environment variables that force development behavior
 
-- Line 6: `NODE_ENV: process.env.NODE_ENV || 'development',`
-- Line 9: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 14: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',`
-- Line 19: `(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),`
-- Line 9: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 14: `USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true' || process.env.NODE_ENV === 'development',`
-- Line 19: `(process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : ''),`
+- Line 9: `const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 9: `const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
 
 ### src/lib/external-links.ts
 
@@ -1827,148 +1833,244 @@ Test email addresses and sample data
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 418: `// Mock pricing plans data`
-- Line 519: `// Mock news data`
-- Line 556: `// Mock transactions data`
-- Line 676: `// Mock accounts data`
-- Line 869: `// Business type and mock businesses`
-- Line 884: `// Centralized mock data for consistent values across the application`
-- Line 1060: `// Mock businesses data - organized by organization`
-- Line 1242: `// Mock accounts data - updated to match businesses`
-- Line 1409: `// Mock transactions data (most recent first)`
-- Line 1593: `// Mock chart data for balance over time`
-- Line 1603: `// Mock chart data for spending over time`
-- Line 1708: `console.warn('Mock data validation errors:', validation.errors)`
-- Line 1710: `console.log('✅ Mock data validation passed')`
-- Line 1718: `export const MOCK_TEAM_MEMBERS_BY_ORG: Record<string, any[]> = {`
-- Line 1933: `// Generate mock profile teams`
-- Line 1999: `// Generate mock business managers with team assignments`
+- Line 419: `// Mock pricing plans data`
+- Line 520: `// Mock news data`
+- Line 557: `// Mock transactions data`
+- Line 677: `// Mock accounts data`
+- Line 870: `// Business type and mock businesses`
+- Line 885: `// Centralized mock data for consistent values across the application`
+- Line 1061: `// Mock businesses data - organized by organization`
+- Line 1062: `// ✅ PRODUCTION GUARD: Prevent mock data in production`
+- Line 1064: `throw new Error('🚨 CRITICAL: Mock data cannot be imported in production!')`
+- Line 1164: `// ✅ PRODUCTION GUARD: Prevent mock data in production`
+- Line 1166: `throw new Error('🚨 CRITICAL: Mock data cannot be imported in production!')`
+- Line 1251: `// Mock accounts data - updated to match businesses`
+- Line 1418: `// Mock transactions data (most recent first)`
+- Line 1602: `// Mock chart data for balance over time`
+- Line 1612: `// Mock chart data for spending over time`
+- Line 1717: `console.warn('Mock data validation errors:', validation.errors)`
+- Line 1719: `console.log('✅ Mock data validation passed')`
+- Line 1727: `export const MOCK_TEAM_MEMBERS_BY_ORG: Record<string, any[]> = {`
+- Line 1942: `// Generate mock profile teams`
+- Line 2008: `// Generate mock business managers with team assignments`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 101: `// Centralized organization data - multiple organizations for demo`
-- Line 1076: `description: "Leading software development and consulting company",`
-- Line 1704: `// Run validation in development`
-- Line 1705: `if (process.env.NODE_ENV === 'development') {`
-- Line 1076: `description: "Leading software development and consulting company",`
-- Line 1704: `// Run validation in development`
-- Line 1705: `if (process.env.NODE_ENV === 'development') {`
+- Line 102: `// Centralized organization data - multiple organizations for demo`
+- Line 1081: `description: "Leading software development and consulting company",`
+- Line 1713: `// Run validation in development`
+- Line 1714: `if (process.env.NODE_ENV === 'development') {`
+- Line 1081: `description: "Leading software development and consulting company",`
+- Line 1713: `// Run validation in development`
+- Line 1714: `if (process.env.NODE_ENV === 'development') {`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 1710: `console.log('✅ Mock data validation passed')`
-- Line 1708: `console.warn('Mock data validation errors:', validation.errors)`
+- Line 1719: `console.log('✅ Mock data validation passed')`
+- Line 1717: `console.warn('Mock data validation errors:', validation.errors)`
 
 #### TEST_DATA (MEDIUM)
 Test email addresses and sample data
 
-- Line 244: `email: "personal@example.com",`
-- Line 289: `email: "personal@example.com",`
-- Line 1174: `website: "https://personal.example.com",`
-- Line 1178: `domains: [{ domain: "personal.example.com", verified: true }],`
-- Line 1799: `email: "personal@example.com",`
+- Line 245: `email: "personal@example.com",`
+- Line 290: `email: "personal@example.com",`
+- Line 1183: `website: "https://personal.example.com",`
+- Line 1187: `domains: [{ domain: "personal.example.com", verified: true }],`
+- Line 1808: `email: "personal@example.com",`
 
 #### ENV_LEAKS (HIGH)
 Environment variables that force development behavior
 
-- Line 1705: `if (process.env.NODE_ENV === 'development') {`
-- Line 1705: `if (process.env.NODE_ENV === 'development') {`
+- Line 1714: `if (process.env.NODE_ENV === 'development') {`
+- Line 1714: `if (process.env.NODE_ENV === 'development') {`
 
 ### src/lib/production-guard.ts
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 30: `'NEXT_PUBLIC_USE_MOCK_DATA',`
-- Line 129: `* Guards against mock data usage in production`
-- Line 131: `export function guardAgainstMockData(context: string): void {`
-- Line 133: `const mockFlags = [`
-- Line 134: `'NEXT_PUBLIC_USE_MOCK_DATA',`
-- Line 139: `for (const flag of mockFlags) {`
-- Line 142: ``🚨 PRODUCTION ERROR: Mock data detected in ${context}! ` +`
-- Line 182: `* Safe mock data checker that returns false in production`
-- Line 184: `export function isMockDataAllowed(): boolean {`
-- Line 186: `return false; // Never allow mock data in production`
-- Line 188: `return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' ||`
-- Line 217: `guardAgainstMockData,`
-- Line 221: `isMockDataAllowed,`
+- Line 10: `'NEXT_PUBLIC_USE_MOCK_DATA',`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 31: `'NEXT_PUBLIC_DEMO_MODE',`
-- Line 32: `'NEXT_PUBLIC_USE_DEMO_DATA',`
-- Line 135: `'NEXT_PUBLIC_DEMO_MODE',`
-- Line 136: `'NEXT_PUBLIC_USE_DEMO_DATA'`
-- Line 151: `* Guards against demo mode usage in production`
-- Line 153: `export function guardAgainstDemoMode(context: string): void {`
-- Line 155: `if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {`
-- Line 157: ``🚨 PRODUCTION ERROR: Demo mode detected in ${context}! ` +`
-- Line 158: ``Demo mode is not allowed in production.``
-- Line 172: `* Safe demo mode checker that returns false in production`
-- Line 174: `export function isDemoModeAllowed(): boolean {`
-- Line 176: `return false; // Never allow demo mode in production`
-- Line 178: `return process.env.NEXT_PUBLIC_DEMO_MODE === 'true';`
-- Line 189: `process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true';`
-- Line 218: `guardAgainstDemoMode,`
-- Line 220: `isDemoModeAllowed,`
-- Line 4: `* This module prevents development-only code from running in production.`
-- Line 60: `// Check for development URLs`
-- Line 70: `errors.push(`INVALID: ${varName} contains development port in production`);`
-- Line 167: `export function isDevelopmentMode(): boolean {`
-- Line 168: `return process.env.NODE_ENV === 'development';`
-- Line 203: `if (isDevelopmentMode()) {`
-- Line 208: `if (isDevelopmentMode()) {`
-- Line 219: `isDevelopmentMode,`
-- Line 4: `* This module prevents development-only code from running in production.`
-- Line 60: `// Check for development URLs`
-- Line 70: `errors.push(`INVALID: ${varName} contains development port in production`);`
-- Line 167: `export function isDevelopmentMode(): boolean {`
-- Line 168: `return process.env.NODE_ENV === 'development';`
-- Line 203: `if (isDevelopmentMode()) {`
-- Line 208: `if (isDevelopmentMode()) {`
-- Line 219: `isDevelopmentMode,`
-- Line 32: `'NEXT_PUBLIC_USE_DEMO_DATA',`
-- Line 136: `'NEXT_PUBLIC_USE_DEMO_DATA'`
-- Line 189: `process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true';`
+- Line 3: `* CRITICAL: Prevents demo data and development code from running in production`
+- Line 11: `'NEXT_PUBLIC_DEMO_MODE',`
+- Line 12: `'NEXT_PUBLIC_USE_DEMO_DATA'`
+- Line 43: `// ✅ SECURE: Demo data prevention`
+- Line 44: `export function preventDemoDataInProduction(): void {`
+- Line 45: `if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
+- Line 46: `const error = '🚨 CRITICAL: Demo data cannot be used in production!'`
+- Line 69: `export function getValidatedDataSource(): 'demo' | 'supabase' {`
+- Line 72: `preventDemoDataInProduction()`
+- Line 78: `if (process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
+- Line 79: `console.log('🔧 Development: Using demo data')`
+- Line 80: `return 'demo'`
+- Line 90: `// Fallback to demo data in development`
+- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
+- Line 92: `return 'demo'`
+- Line 107: `// In production, crash the app rather than show demo data`
+- Line 121: `// Prevent demo data leaks`
+- Line 122: `assertNotDemo(): void {`
+- Line 123: `if (this.dataSource === 'demo' && this.isProduction) {`
+- Line 124: `throw new Error('🚨 CRITICAL: Demo data detected in production!')`
+- Line 3: `* CRITICAL: Prevents demo data and development code from running in production`
+- Line 77: `// In development, check the flag`
+- Line 79: `console.log('🔧 Development: Using demo data')`
+- Line 86: `console.log('🔧 Development: Using Supabase data')`
+- Line 90: `// Fallback to demo data in development`
+- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
+- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
+- Line 3: `* CRITICAL: Prevents demo data and development code from running in production`
+- Line 77: `// In development, check the flag`
+- Line 79: `console.log('🔧 Development: Using demo data')`
+- Line 86: `console.log('🔧 Development: Using Supabase data')`
+- Line 90: `// Fallback to demo data in development`
+- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
+- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
+- Line 12: `'NEXT_PUBLIC_USE_DEMO_DATA'`
+- Line 45: `if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
+- Line 78: `if (process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 26: `console.log('🔒 Running production environment validation...');`
-- Line 102: `console.log('✅ Production environment validation passed');`
-- Line 204: `console.log(`[INFO] ${message}`);`
-- Line 209: `console.log(`[DEBUG] ${message}`);`
-- Line 97: `console.warn('⚠️  Production environment warnings:');`
-- Line 98: `warnings.forEach(warning => console.warn(`  - ${warning}`));`
-- Line 200: `console.warn(`[PRODUCTION WARNING] ${message}`);`
-- Line 92: `console.error('❌ Production environment validation FAILED:');`
-- Line 93: `errors.forEach(error => console.error(`  - ${error}`));`
-- Line 197: `console.error(`[PRODUCTION ERROR] ${message}`, error);`
-- Line 33: `'NEXT_PUBLIC_DEBUG'`
-- Line 207: `debug: (message: string) => {`
-- Line 209: `console.log(`[DEBUG] ${message}`);`
-
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
-
-- Line 55: `} else if (value.includes('localhost') || value.includes('127.0.0.1')) {`
-- Line 56: `errors.push(`INVALID: ${varName} contains localhost URL in production`);`
-- Line 72: `if (value.startsWith('http://') && !value.includes('localhost')) {`
-- Line 55: `} else if (value.includes('localhost') || value.includes('127.0.0.1')) {`
-- Line 69: `if (value.includes(':3000') || value.includes(':8000')) {`
-- Line 69: `if (value.includes(':3000') || value.includes(':8000')) {`
+- Line 39: `console.log('✅ Production environment validation passed')`
+- Line 79: `console.log('🔧 Development: Using demo data')`
+- Line 86: `console.log('🔧 Development: Using Supabase data')`
+- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
+- Line 102: `console.log(`🔒 Production Guard: Environment=${process.env.NODE_ENV}, DataSource=${dataSource}`)`
+- Line 18: `console.error(error)`
+- Line 34: `console.error(error)`
+- Line 47: `console.error(error)`
+- Line 60: `console.error(error)`
+- Line 105: `console.error('🚨 Production Guard failed:', error)`
 
 #### ENV_LEAKS (HIGH)
 Environment variables that force development behavior
 
-- Line 168: `return process.env.NODE_ENV === 'development';`
-- Line 168: `return process.env.NODE_ENV === 'development';`
-- Line 188: `return process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true' ||`
-- Line 155: `if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {`
-- Line 178: `return process.env.NEXT_PUBLIC_DEMO_MODE === 'true';`
+- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
+- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
+
+### src/lib/secure-env.ts
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 34: `USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,`
+- Line 90: `useDemoData: SECURE_CONFIG.USE_DEMO_DATA,`
+- Line 14: `IS_DEVELOPMENT: ENV_CONFIG.IS_DEVELOPMENT,`
+- Line 15: `NODE_ENV: process.env.NODE_ENV || 'development',`
+- Line 84: `isDevelopment: RUNTIME_ENV.IS_DEVELOPMENT,`
+- Line 95: `// 🎯 Development logging`
+- Line 96: `if (RUNTIME_ENV.IS_DEVELOPMENT) {`
+- Line 14: `IS_DEVELOPMENT: ENV_CONFIG.IS_DEVELOPMENT,`
+- Line 15: `NODE_ENV: process.env.NODE_ENV || 'development',`
+- Line 84: `isDevelopment: RUNTIME_ENV.IS_DEVELOPMENT,`
+- Line 95: `// 🎯 Development logging`
+- Line 96: `if (RUNTIME_ENV.IS_DEVELOPMENT) {`
+- Line 34: `USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,`
+- Line 90: `useDemoData: SECURE_CONFIG.USE_DEMO_DATA,`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 99: `console.log('🔒 Secure Environment Configuration:', getClientSafeEnvInfo())`
+- Line 102: `console.warn('⚠️ Environment validation warnings:', validation.errors)`
+- Line 35: `ENABLE_DEBUG: ENV_CONFIG.ENABLE_DEBUG,`
+- Line 91: `enableDebug: SECURE_CONFIG.ENABLE_DEBUG,`
+
+#### HARDCODED_VALUES (HIGH)
+Hardcoded localhost/development URLs
+
+- Line 23: `// URLs (no hardcoded localhost)`
+
+#### ENV_LEAKS (HIGH)
+Environment variables that force development behavior
+
+- Line 15: `NODE_ENV: process.env.NODE_ENV || 'development',`
+
+### src/lib/security/csp.ts
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 28: `"'unsafe-inline'", // Required for Next.js development - remove in production with nonces`
+- Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
+- Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 76: `* Development CSP Configuration - More permissive for development`
+- Line 78: `export const DEVELOPMENT_CSP: CSPConfig = {`
+- Line 83: `"'unsafe-eval'", // Required for development`
+- Line 129: `return "production" === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
+- Line 195: `// Prevent search engines from indexing in development`
+- Line 196: `...((process.env.NODE_ENV === "development") && {`
+- Line 28: `"'unsafe-inline'", // Required for Next.js development - remove in production with nonces`
+- Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
+- Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 76: `* Development CSP Configuration - More permissive for development`
+- Line 78: `export const DEVELOPMENT_CSP: CSPConfig = {`
+- Line 83: `"'unsafe-eval'", // Required for development`
+- Line 129: `return "production" === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
+- Line 195: `// Prevent search engines from indexing in development`
+- Line 196: `...((process.env.NODE_ENV === "development") && {`
+
+#### HARDCODED_VALUES (HIGH)
+Hardcoded localhost/development URLs
+
+- Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
+- Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 95: `"ws://localhost:*",`
+- Line 96: `"http://localhost:*",`
+- Line 97: `"ws://127.0.0.1:*",`
+- Line 98: `"http://127.0.0.1:*"`
+
+#### ENV_LEAKS (HIGH)
+Environment variables that force development behavior
+
+- Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
+- Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 196: `...((process.env.NODE_ENV === "development") && {`
+- Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
+- Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 196: `...((process.env.NODE_ENV === "development") && {`
+
+### src/lib/security/rate-limiter.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 186: `console.error('Rate limiting error:', error)`
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 88: `maxRequests: 5,            // 5 attempts per 15 minutes`
+
+### src/lib/server-auth.ts
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 199: `if (process.env.NODE_ENV === 'development') {`
+- Line 199: `if (process.env.NODE_ENV === 'development') {`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 200: `console.log('🔒 JWT Authentication System loaded - PRODUCTION READY');`
+- Line 70: `console.error('JWT verification failed:', error)`
+- Line 87: `console.error('Failed to get user from request:', error)`
+- Line 103: `console.error('Admin role verification failed:', error)`
+- Line 125: `console.error('Failed to get user role:', error)`
+- Line 141: `console.error('Permission verification failed:', error)`
+
+#### ENV_LEAKS (HIGH)
+Environment variables that force development behavior
+
+- Line 199: `if (process.env.NODE_ENV === 'development') {`
+- Line 199: `if (process.env.NODE_ENV === 'development') {`
 
 ### src/lib/stores/supabase-client.ts
 
@@ -2011,35 +2113,25 @@ Development comments that need attention
 
 - Line 20: `tooManyRequests: { description: "Too many login attempts. Please wait a moment and try again." },`
 
-### src/pages/api/proxy/[...path].ts
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 15: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');`
-- Line 15: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');`
+### src/middleware.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 32: `console.error('[PROXY ERROR] Proxying error:', err);`
+- Line 43: `console.log(`🔒 Security middleware: ${request.method} ${pathname}`)`
+- Line 82: `console.error('JWT verification failed:', error)`
 
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
+### src/pages/api/proxy/[...path].ts
 
-- Line 15: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');`
-- Line 15: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');`
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 33: `console.error('[PROXY ERROR] Proxying error:', err);`
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 46: `// http-proxy might have already handled or attempted to handle it.`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 15: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');`
-- Line 15: `(process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');`
+- Line 47: `// http-proxy might have already handled or attempted to handle it.`
 
 ### src/scripts/audit-ui-states.ts
 

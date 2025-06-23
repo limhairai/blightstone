@@ -1,0 +1,73 @@
+// Environment Configuration
+// This file manages different environments and data sources
+
+export const ENV = {
+  // Current environment
+  NODE_ENV: (typeof window === "undefined" ? process.env.NODE_ENV : "production") || 'development',
+  
+  // Environment flags
+  isDevelopment: (typeof window === "undefined" ? process.env.NODE_ENV : "production") === 'development',
+  isStaging: process.env.ENVIRONMENT === 'staging' || process.env.VERCEL_ENV === 'preview', 
+  isProduction: (typeof window === "undefined" ? process.env.NODE_ENV : "production") === 'production',
+  
+  // Data source configuration
+  USE_DEMO_DATA: (((typeof window === "undefined" ? process.env.NODE_ENV : "production") === "development")) === 'true' || (typeof window === "undefined" ? process.env.NODE_ENV : "production") === 'development',
+  USE_SUPABASE: process.env.SUPABASE_URL // Server-side only && process.env.SUPABASE_ANON_KEY // Server-side only,
+  
+  // API endpoints
+  API_BASE_URL: process.env.APP_URL || 
+                ((typeof window === "undefined" ? process.env.NODE_ENV : "production") === 'development' ? 'http://localhost:3000' : ''),
+  
+  // Supabase config
+  SUPABASE_URL: process.env.SUPABASE_URL // Server-side only,
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY // Server-side only,
+  
+  // Feature flags
+  ENABLE_ADMIN_PANEL: process.env.ENABLE_ADMIN_PANEL !== 'false', // Default enabled
+  ENABLE_ANALYTICS: process.env.ENABLE_ANALYTICS === 'true',
+  ENABLE_PAYMENTS: process.env.ENABLE_PAYMENTS === 'true',
+} as const
+
+// Data source strategy
+export const DATA_STRATEGY = {
+  // For development: Always use demo data
+  development: 'demo',
+  
+  // For staging: Use real database with test data
+  staging: 'supabase',
+  
+  // For production: Use real database with real data
+  production: 'supabase',
+} as const
+
+// Get current data source
+export function getCurrentDataSource(): 'demo' | 'supabase' {
+  // Force demo data if flag is set
+  if (ENV.USE_DEMO_DATA) {
+    return 'demo'
+  }
+  
+  // Use environment-based strategy
+  return DATA_STRATEGY[ENV.NODE_ENV as keyof typeof DATA_STRATEGY] || 'demo'
+}
+
+// Environment info for debugging
+export function getEnvInfo() {
+  return {
+    environment: ENV.NODE_ENV,
+    dataSource: getCurrentDataSource(),
+    useDemoData: ENV.USE_DEMO_DATA,
+    useSupabase: ENV.USE_SUPABASE,
+    apiBaseUrl: ENV.API_BASE_URL,
+    features: {
+      adminPanel: ENV.ENABLE_ADMIN_PANEL,
+      analytics: ENV.ENABLE_ANALYTICS,
+      payments: ENV.ENABLE_PAYMENTS,
+    }
+  }
+}
+
+// Log environment info in development
+if (ENV.isDevelopment) {
+  console.log('🔧 Environment Info:', getEnvInfo())
+} 

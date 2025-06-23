@@ -43,8 +43,161 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // ALL HOOKS AND FUNCTIONS MUST BE AT THE TOP - NEVER CONDITIONALLY
+  
+  // Sign out function
+  const signOut = useCallback(async () => {
+    // In demo mode, just clear local state
+    if (isDemoMode() || shouldUseAppData()) {
+      setUser(null);
+      setSession(null);
+      
+      return { error: null };
+    }
+
+    // Production sign out
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Error signing out:", error);
+      toast({ title: "Sign Out Error", description: error.message, variant: "destructive" });
+    }
+    setUser(null);
+    setSession(null);
+    localStorage.removeItem("adhub_current_org");
+    
+    return { error };
+  }, [router]);
+
+  // Auth functions - moved to top
+  const signUp = useCallback(async (email: string, password: string, options?: { data?: Record<string, any> }) => {
+    setLoading(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        ...(options ? { data: options.data } : {}),
+      },
+    });
+
+    if (error) {
+      console.error("Error signing up:", error);
+      toast({ title: "Sign Up Error", description: error.message, variant: "destructive" });
+      setLoading(false);
+      return { data: null, error };
+    }
+
+    if (data.user && !data.session) {
+      setLoading(false);
+      return { data: { user: data.user, session: data.session }, error: null };
+    }
+    
+    setLoading(false);
+    return { data: { user: data.user, session: data.session }, error: null };
+  }, []);
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    setLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error("❌ Error signing in:", error, {
+        message: error.message,
+        status: error.status,
+        environment: process.env.NODE_ENV
+      });
+      setLoading(false);
+      return { data: null, error };
+    }
+
+    setLoading(false);
+    return { data: { user: data.user, session: data.session }, error: null };
+  }, []);
+
+  const resetPassword = useCallback(async (email: string, options?: { redirectTo?: string }) => {
+    setLoading(true);
+    const defaultRedirectTo = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/update-password`
+      : 'https://adhub.tech/auth/update-password'; 
+
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: options?.redirectTo || defaultRedirectTo,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      console.error("Error sending password reset email:", error);
+      toast({ title: "Password Reset Error", description: error.message, variant: "destructive" });
+      return { data: null, error };
+    }
+
+    toast({ 
+        title: "Password Reset Email Sent", 
+        description: "If an account exists for this email, a password reset link has been sent. Please check your inbox.", 
+        variant: "default",
+        duration: 10000,
+    });
+    return { data: data || {}, error: null }; 
+  }, []);
+
+  const signInWithGoogle = useCallback(async (options?: { redirectTo?: string }) => {
+    setLoading(true);
+    const defaultRedirectTo = typeof window !== 'undefined' 
+      ? `${window.location.origin}/`
+      : 'https://adhub.tech/'; 
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: options?.redirectTo || defaultRedirectTo,
+      },
+    });
+
+    if (error) {
+      console.error("Error initiating Google sign-in:", error);
+      toast({ title: "Google Sign-In Error", description: error.message, variant: "destructive" });
+      setLoading(false);
+      return { data: null, error };
+    }
+
+    return { data, error: null }; 
+  }, []);
+
+  const resendVerification = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+    });
+
+    if (error) {
+      console.error("Error resending verification email:", error);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return { error };
+    }
+
+    toast({ 
+      title: "Verification Email Sent", 
+      description: "Please check your email for the verification link.", 
+      variant: "default",
+      duration: 5000,
+    });
+    return { error: null };
+  }, []);
+
+  // Hydration effect - runs only on client
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
+    // Don't run auth logic until hydrated
+    if (!isHydrated) return;
+
     // In demo mode, provide mock user and session
     if (isDemoMode() || shouldUseAppData()) {
       const mockUser: SupabaseUser = {
@@ -113,211 +266,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       authSubscriptionData?.subscription?.unsubscribe();
     };
-  }, []);
+  }, [isHydrated]);
 
-  // Sign out function
-  const signOut = useCallback(async () => {
-    // In demo mode, just clear local state
-    if (isDemoMode() || shouldUseAppData()) {
-      setUser(null);
-      setSession(null);
-      router.push('/login');
-      return { error: null };
-    }
-
-    // Production sign out
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("Error signing out:", error);
-      toast({ title: "Sign Out Error", description: error.message, variant: "destructive" });
-    }
-    setUser(null);
-    setSession(null);
-    localStorage.removeItem("adhub_current_org");
-    router.push('/login');
-    return { error };
-  }, [router]);
-
-  // Inactivity timer (30 minutes) - uses the new signOut
+  // Inactivity timer (30 minutes)
   useEffect(() => {
     let timer: NodeJS.Timeout;
     const resetTimer = () => {
       if (timer) clearTimeout(timer);
-      // Only set timer if user is logged in
       if (session) { 
         timer = setTimeout(() => {
           toast({ title: "Logged out due to inactivity", description: "You have been logged out after 30 minutes of inactivity.", variant: "default" });
           signOut();
-        }, 30 * 60 * 1000); // 30 minutes
+        }, 30 * 60 * 1000);
       }
     };
     const events = ["mousemove", "keydown", "mousedown", "touchstart"];
-    if (session) { // Only add/remove listeners if there's a session
+    if (session) {
         events.forEach((event) => window.addEventListener(event, resetTimer));
-        resetTimer(); // Initialize timer on mount if user is logged in
+        resetTimer();
     }
     return () => {
       if (timer) clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, resetTimer));
     };
-  }, [session, signOut]); // Now depends on session and signOut
+  }, [session, signOut]);
 
-  // Placeholder functions for auth operations - to be implemented next
-  const signUp = async (email: string, password: string, options?: { data?: Record<string, any> }) => {
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        // emailRedirectTo: `${window.location.origin}/auth/callback`, // Optional: if you have a specific redirect after email confirmation
-        ...(options ? { data: options.data } : {}), // Pass through user_metadata
-      },
-    });
-
-    if (error) {
-      console.error("Error signing up:", error);
-      toast({ title: "Sign Up Error", description: error.message, variant: "destructive" });
-      setLoading(false);
-      return { data: null, error };
-    }
-
-    // User object is in data.user, session in data.session
-    // onAuthStateChange will handle setting user and session state if signUp was successful 
-    // and if email confirmation is not required or is auto-confirmed.
-    // If email confirmation is required, data.session will be null here.
-    // The user object (data.user) will contain the new user details.
-    // Our handle_new_user trigger in Postgres should create the profile.
-    
-    // It's generally better to let onAuthStateChange handle the state updates for user/session.
-    // setLoading(false); // onAuthStateChange will set loading to false.
-    
-    // If sign up is successful and an email needs to be confirmed, 
-    // the component will handle the redirect to email confirmation page.
-    // We don't show a toast here since the component will handle the UX.
-    if (data.user && !data.session) {
-      setLoading(false);
-      return { data: { user: data.user, session: data.session }, error: null };
-    }
-    
-    setLoading(false);
-    return { data: { user: data.user, session: data.session }, error: null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      console.error("❌ Error signing in:", error, {
-        message: error.message,
-        status: error.status,
-        environment: process.env.NODE_ENV
-      });
-      setLoading(false);
-      
-      // Return the error to let the login component handle the UI feedback
-      return { data: null, error };
-    }
-
-    // If signIn is successful, data.user and data.session will be populated.
-    // onAuthStateChange will automatically pick this up and update the context state.
-    // Set loading to false immediately for better UX
-    setLoading(false);
-
-    // For now, we rely on onAuthStateChange to update user and session.
-    // The component consuming the context might want to redirect to the dashboard here.
-
-    return { data: { user: data.user, session: data.session }, error: null };
-  };
-
-  const resetPassword = async (email: string, options?: { redirectTo?: string }) => {
-    setLoading(true);
-    // Construct the redirect URL. This should point to a page in your app 
-    // where users can enter their new password.
-    // Example: `${window.location.origin}/update-password`
-    const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/update-password`
-      : 'https://adhub.tech/auth/update-password'; 
-
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: options?.redirectTo || defaultRedirectTo,
-    });
-
-    setLoading(false); // Set loading false after the call, regardless of onAuthStateChange for this one
-
-    if (error) {
-      console.error("Error sending password reset email:", error);
-      toast({ title: "Password Reset Error", description: error.message, variant: "destructive" });
-      return { data: null, error }; // Supabase v2 returns {data: {}, error} or {data: null, error}
-    }
-
-    toast({ 
-        title: "Password Reset Email Sent", 
-        description: "If an account exists for this email, a password reset link has been sent. Please check your inbox.", 
-        variant: "default",
-        duration: 10000,
-    });
-    // Supabase v2 returns {data (usually {} or specific info), error}
-    return { data: data || {}, error: null }; 
-  };
-
-  const signInWithGoogle = async (options?: { redirectTo?: string }) => {
-    setLoading(true);
-    // Default redirect: ensure this is a page that handles the auth callback if needed,
-    // or simply your main app page after login.
-    const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/`
-      : 'https://adhub.tech/'; 
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: options?.redirectTo || defaultRedirectTo,
-        // scopes: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile', // Optional: request specific Google scopes
-      },
-    });
-
-    // setLoading(false); // For OAuth, redirection happens, so user interaction with current page stops.
-                        // setLoading will be handled by onAuthStateChange when user returns.
-
-    if (error) {
-      console.error("Error initiating Google sign-in:", error);
-      toast({ title: "Google Sign-In Error", description: error.message, variant: "destructive" });
-      setLoading(false); // Set loading false only if there was an immediate error before redirect
-      return { data: null, error };
-    }
-
-    // If successful, data.url contains the URL to redirect the user to Google.
-    // The browser will navigate away. If data.url is null, something went wrong before redirect.
-    // No explicit toast for success here as the user is redirected immediately.
-    // Supabase signInWithOAuth returns { data: { provider, url }, error }
-    return { data, error: null }; 
-  };
-
-  const resendVerification = async (email: string) => {
-    const { error } = await supabase.auth.resend({
-      type: 'signup',
-      email: email,
-    });
-
-    if (error) {
-      console.error("Error resending verification email:", error);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return { error };
-    }
-
-    toast({ 
-      title: "Verification Email Sent", 
-      description: "Please check your email for the verification link.", 
-      variant: "default",
-      duration: 5000,
-    });
-    return { error: null };
-  };
-  // End placeholder functions
+  // Show loading during SSR and initial hydration
+  if (!isHydrated) {
+    return <Loader fullScreen />;
+  }
 
   const value = {
     user,

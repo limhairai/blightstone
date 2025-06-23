@@ -1,61 +1,65 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'path';
 
-const PROJECT_ROOT = __dirname; // Assumes playwright.config.ts is in project root which is adhub/
-const FRONTEND_DIR = path.join(PROJECT_ROOT, 'frontend');
-const BACKEND_DIR = path.join(PROJECT_ROOT, 'backend');
+// ✅ SECURE: Environment-based URL configuration (no hardcoded localhost)
+const getBaseUrl = () => {
+  // 1. Check explicit environment variable
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
+  
+  // 2. Environment-based URLs
+  if (process.env.NODE_ENV === 'production') return 'https://adhub.com'
+  if (process.env.NODE_ENV === 'staging') return 'https://staging.adhub.tech'
+  
+  // 3. Development fallback
+  return 'http://localhost:3000'
+}
 
-// Environment-based URLs
-const FRONTEND_URL = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-const BACKEND_URL = process.env.BACKEND_URL || process.env.BACKEND_API_URL || 'http://localhost:8000';
+const getBackendUrl = () => {
+  // 1. Check explicit environment variable
+  if (process.env.BACKEND_URL) return process.env.BACKEND_URL
+  if (process.env.BACKEND_API_URL) return process.env.BACKEND_API_URL
+  
+  // 2. Environment-based URLs
+  if (process.env.NODE_ENV === 'production') return 'https://api.adhub.com'
+  if (process.env.NODE_ENV === 'staging') return 'https://api-staging.adhub.tech'
+  
+  // 3. Development fallback
+  return 'http://localhost:8000'
+}
+
+const FRONTEND_URL = getBaseUrl()
+const BACKEND_URL = getBackendUrl()
 
 export default defineConfig({
-  testDir: './tests', // Create a 'tests' folder in adhub/ for your spec files
-  timeout: 5 * 60 * 1000, 
-  expect: {
-    timeout: 20 * 1000, // Increased default timeout for expect assertions
-  },
+  testDir: './tests',
+  fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: 1, 
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
     baseURL: FRONTEND_URL,
     trace: 'on-first-retry',
-    actionTimeout: 25 * 1000, // Default timeout for actions like page.click()
-    navigationTimeout: 45 * 1000, // Default timeout for page.goto()
   },
+
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-  ],
-  webServer: [
     {
-      command: `${path.join(BACKEND_DIR, 'venv', 'bin', 'python')} -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`,
-      cwd: BACKEND_DIR,
-      url: `${BACKEND_URL}/docs`, 
-      reuseExistingServer: false,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 90 * 1000,
-      env: {
-        PYTHONUNBUFFERED: "1",
-        PYTHONIOENCODING: "UTF-8"
-      }
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
     },
     {
-      command: 'npm run dev',
-      cwd: FRONTEND_DIR,
-      url: FRONTEND_URL,
-      reuseExistingServer: !process.env.CI,
-      stdout: 'pipe',
-      stderr: 'pipe',
-      timeout: 120 * 1000, 
-      env: {
-        // Environment variables will be loaded from .env files
-      }
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
     },
   ],
-}); 
+
+  webServer: {
+    command: 'cd frontend && npm run dev',
+    url: FRONTEND_URL,
+    reuseExistingServer: !process.env.CI,
+  },
+});
