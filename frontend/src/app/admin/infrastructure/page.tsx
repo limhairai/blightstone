@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -28,7 +31,7 @@ import {
   Eye,
   Settings
 } from "lucide-react";
-import { MOCK_PROFILE_TEAMS, MOCK_TEAM_BUSINESS_MANAGERS, ProfileTeam, TeamBusinessManager } from "../../../lib/mock-data";
+import { APP_PROFILE_TEAMS, APP_TEAM_BUSINESS_MANAGERS, ProfileTeam, TeamBusinessManager } from "../../../lib/mock-data";
 import { useState, useMemo } from "react";
 import {
   Select,
@@ -45,8 +48,8 @@ export default function InfrastructureMonitoringPage() {
   
   // Calculate team metrics
   const teamMetrics = useMemo(() => {
-    return MOCK_PROFILE_TEAMS.map(team => {
-      const teamBMs = MOCK_TEAM_BUSINESS_MANAGERS.filter(bm => bm.assignedTeamId === team.id);
+    return APP_PROFILE_TEAMS.map(team => {
+      const teamBMs = APP_TEAM_BUSINESS_MANAGERS.filter(bm => bm.assignedTeamId === team.id);
       const totalAdAccounts = teamBMs.reduce((sum, bm) => sum + bm.currentAdAccounts, 0);
       const totalSpend = teamBMs.reduce((sum, bm) => sum + bm.monthlySpend, 0);
       const totalAlerts = teamBMs.reduce((sum, bm) => sum + bm.alerts, 0);
@@ -87,13 +90,13 @@ export default function InfrastructureMonitoringPage() {
 
   // Overall system metrics
   const systemMetrics = useMemo(() => {
-    const totalTeams = MOCK_PROFILE_TEAMS.length;
-    const activeTeams = MOCK_PROFILE_TEAMS.filter(t => t.status === 'active').length;
-    const totalBMs = MOCK_TEAM_BUSINESS_MANAGERS.length;
-    const totalAdAccounts = MOCK_TEAM_BUSINESS_MANAGERS.reduce((sum, bm) => sum + bm.currentAdAccounts, 0);
-    const totalAlerts = MOCK_TEAM_BUSINESS_MANAGERS.reduce((sum, bm) => sum + bm.alerts, 0);
-    const healthyBMs = MOCK_TEAM_BUSINESS_MANAGERS.filter(bm => bm.healthStatus === 'healthy').length;
-    const totalCapacity = MOCK_PROFILE_TEAMS.length * 20;
+    const totalTeams = APP_PROFILE_TEAMS.length;
+    const activeTeams = APP_PROFILE_TEAMS.filter(t => t.status === 'active').length;
+    const totalBMs = APP_TEAM_BUSINESS_MANAGERS.length;
+    const totalAdAccounts = APP_TEAM_BUSINESS_MANAGERS.reduce((sum, bm) => sum + bm.currentAdAccounts, 0);
+    const totalAlerts = APP_TEAM_BUSINESS_MANAGERS.reduce((sum, bm) => sum + bm.alerts, 0);
+    const healthyBMs = APP_TEAM_BUSINESS_MANAGERS.filter(bm => bm.healthStatus === 'healthy').length;
+    const totalCapacity = APP_PROFILE_TEAMS.length * 20;
     const utilizationPercent = (totalBMs / totalCapacity) * 100;
     
     return {
@@ -371,7 +374,7 @@ export default function InfrastructureMonitoringPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {MOCK_TEAM_BUSINESS_MANAGERS
+              {APP_TEAM_BUSINESS_MANAGERS
                 .filter(bm => bm.alerts > 0)
                 .slice(0, 5)
                 .map((bm) => (

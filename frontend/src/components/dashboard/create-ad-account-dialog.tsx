@@ -16,10 +16,11 @@ import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Label } from "../ui/label"
 import { useToast } from "../../hooks/use-toast"
-import { Check, Loader2 } from "lucide-react"
+import { Check, Loader2, Building2 } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
 import { validateAdAccountForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
+import { EmptyState } from "../ui/comprehensive-states"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
@@ -45,6 +46,23 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
   ]
 
   const approvedBusinesses = businesses.filter((b) => b.status === "active")
+
+  // If no approved businesses, show empty state
+  if (approvedBusinesses.length === 0) {
+    return (
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <EmptyState
+            icon={Building2}
+            title="No Approved Businesses"
+            description="You need at least one approved business before creating ad accounts. Please create and get approval for a business first."
+            type="first-time"
+          />
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

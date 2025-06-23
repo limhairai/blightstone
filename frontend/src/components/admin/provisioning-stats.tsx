@@ -1,19 +1,17 @@
 "use client";
 
-import { useDemoState } from "../../contexts/DemoStateContext";
+import { useAppData } from "../../contexts/AppDataContext"
 import { CreditCard, CheckCircle, Clock, AlertTriangle, Users } from "lucide-react";
 
 export function ProvisioningStats() {
-  const { state } = useDemoState();
+  const { state } = useAppData();
   
-  // Calculate provisioning statistics
-  const approvedBusinesses = state.businesses.filter(b => b.status === "active").length;
-  const totalAccounts = state.businesses.reduce((total, business) => total + (business.adAccountIds?.length || 0), 0);
-  const activeAccounts = state.businesses.reduce((total, business) => 
-    total + (business.adAccountIds?.length || 0), 0); // Simplified since we don't have detailed account status
-  const pendingAccounts = 0; // Simplified since we don't have detailed account status
-  const totalSpend = state.businesses.reduce((total, business) => 
-    total + 5000, 0); // Mock spend data
+  // Calculate provisioning statistics using proper admin statuses
+  const approvedBusinesses = state.businesses.filter(b => b.status === "approved").length;
+  const totalAccounts = state.accounts.length;
+  const activeAccounts = state.accounts.filter(acc => acc.status === "active").length;
+  const pendingAccounts = state.accounts.filter(acc => acc.status === "pending").length;
+  const totalSpend = state.accounts.reduce((total, account) => total + (account.spend || 0), 0);
 
   const stats = [
     {

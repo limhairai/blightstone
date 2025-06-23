@@ -1,7 +1,7 @@
 import { cn } from "../../lib/utils"
 
 interface StatusDotProps {
-  status: "active" | "pending" | "inactive" | "suspended" | "error" | "paused"
+  status: "active" | "pending" | "inactive" | "suspended" | "error" | "pending"
   size?: "sm" | "md"
 }
 
@@ -14,7 +14,7 @@ export function StatusDot({ status, size = "md" }: StatusDotProps) {
         return "bg-[hsl(36,93%,60%)]" // Brighter amber for dark
       case "error":
         return "bg-[hsl(0,84%,65%)]" // Brighter red for dark
-      case "paused":
+      case "pending":
       case "inactive":
         return "bg-[hsl(240,3%,60%)]" // Brighter gray for dark
       case "suspended":

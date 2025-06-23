@@ -6,7 +6,7 @@ import { CircularProgress } from "../ui/circular-progress"
 import { CompactHeaderMetrics } from "./compact-header-metrics"
 import { OrganizationSelector } from "./organization-selector"
 import { TopUpDialog } from "./top-up-dialog"
-import { MOCK_FINANCIAL_DATA } from "../../lib/mock-data"
+import { APP_FINANCIAL_DATA } from "../../lib/mock-data"
 import { formatCurrency } from "../../lib/utils"
 import { Bell, Plus, User, Settings, LogOut, Wallet } from "lucide-react"
 import {
@@ -53,7 +53,7 @@ export function Topbar() {
           {/* Main Balance */}
           <div className="hidden md:flex bg-muted rounded-full px-4 py-1.5 items-center border border-border">
             <span className="text-sm font-medium text-foreground">
-              ${formatCurrency(MOCK_FINANCIAL_DATA.walletBalance)}
+              ${formatCurrency(APP_FINANCIAL_DATA.walletBalance)}
             </span>
           </div>
 
@@ -86,7 +86,7 @@ export function Topbar() {
                 <div className="font-medium text-popover-foreground">John Doe</div>
                 <div className="text-sm text-muted-foreground">john@example.com</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Balance: ${formatCurrency(MOCK_FINANCIAL_DATA.walletBalance)}
+                  Balance: ${formatCurrency(APP_FINANCIAL_DATA.walletBalance)}
                 </div>
               </div>
               <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
@@ -112,7 +112,7 @@ export function Topbar() {
         account={null} // For main wallet top-up
         open={topUpDialogOpen}
         onOpenChange={setTopUpDialogOpen}
-        mainBalance={MOCK_FINANCIAL_DATA.walletBalance}
+        mainBalance={APP_FINANCIAL_DATA.walletBalance}
       />
     </div>
   )

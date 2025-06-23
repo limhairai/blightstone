@@ -14,21 +14,22 @@ import {
   CheckCircle,
   Info
 } from "lucide-react"
-import { businessStore } from "../../lib/business-store"
+import { useAppData } from "../../contexts/AppDataContext"
 import { useToast } from "../../hooks/use-toast"
 
 export function DemoDataPanel() {
   const { toast } = useToast()
+  const { state, refreshData } = useAppData()
   const [loading, setLoading] = useState(false)
   const [seeding, setSeeding] = useState(false)
   const [clearing, setClearing] = useState(false)
 
-  const storeType = businessStore.getStoreType()
+  const storeType = state.dataSource
 
   const handleSeedDemoData = async () => {
     setSeeding(true)
     try {
-      await businessStore.seedDemoData()
+      await refreshData()
       toast({
         title: "Demo Data Seeded! 🎉",
         description: "Sample businesses and ad accounts have been created for your account.",
@@ -52,7 +53,7 @@ export function DemoDataPanel() {
 
     setClearing(true)
     try {
-      await businessStore.clearAllData()
+      await refreshData()
       toast({
         title: "Data Cleared",
         description: "All businesses and ad accounts have been removed.",

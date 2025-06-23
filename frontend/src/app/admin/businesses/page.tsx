@@ -1,6 +1,9 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Input } from "../../../components/ui/input";
@@ -39,7 +42,7 @@ import {
 } from "../../../components/ui/select";
 import React from "react";
 import { useDebouncedSearch } from "../../../hooks/useDebouncedSearch";
-import { adminMockData, MockBusiness, MockAdAccount } from "../../../lib/mock-data/admin-mock-data";
+import { adminAppData, AppBusiness, AppAdAccount } from "../../../lib/mock-data/admin-mock-data";
 
 export default function BusinessesPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -52,8 +55,8 @@ export default function BusinessesPage() {
   const { debouncedTerm } = useDebouncedSearch(searchTerm, 300);
 
   // Get all business data
-  const allBusinesses = adminMockData.getBusinesses();
-  const allAdAccounts = adminMockData.getAdAccounts();
+  const allBusinesses = adminAppData.getBusinesses();
+  const allAdAccounts = adminAppData.getAdAccounts();
 
   // Filter and sort data
   const filteredData = useMemo(() => {
@@ -190,7 +193,7 @@ export default function BusinessesPage() {
     });
   };
 
-  const getBusinessAdAccounts = (businessId: string): MockAdAccount[] => {
+  const getBusinessAdAccounts = (businessId: string): AppAdAccount[] => {
     return allAdAccounts.filter(account => account.businessId === businessId);
   };
 
@@ -205,7 +208,7 @@ export default function BusinessesPage() {
   };
 
   // Render expanded content for businesses (show ad accounts)
-  const renderExpandedContent = (business: MockBusiness) => {
+  const renderExpandedContent = (business: AppBusiness) => {
     const adAccounts = getBusinessAdAccounts(business.id);
     
     if (adAccounts.length === 0) {

@@ -1,8 +1,9 @@
 "use client"
 
-// import { useState } from "react" // useState will be removed if isSubmitting is removed and no other state is used.
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog"
 import { TopUpWallet } from "./top-up-wallet"
+import { useAppData } from "../../contexts/AppDataContext"
+import { toast } from "sonner"
 
 interface AddFundsDialogProps {
   open: boolean
@@ -10,16 +11,27 @@ interface AddFundsDialogProps {
 }
 
 export function AddFundsDialog({ open, onOpenChange }: AddFundsDialogProps) {
-  // const [isSubmitting, setIsSubmitting] = useState(false); // Removed unused state
+  const { updateWalletBalance, addTransaction } = useAppData()
 
-  const handleTopUp = (_amount: number) => { // Marked amount as unused
-    // setIsSubmitting(true); // Removed as isSubmitting state is removed
-
-    // Simulate API call
-    setTimeout(() => {
-      // setIsSubmitting(false); // Removed as isSubmitting state is removed
-      onOpenChange(false) // Close dialog after timeout
-    }, 1500)
+  const handleTopUp = async (amount: number, paymentMethod = "card") => {
+    try {
+      // 1. Add funds to wallet balance
+      await updateWalletBalance(amount, 'add')
+      
+      // 2. Add transaction record
+      await addTransaction({
+        type: 'topup',
+        amount: amount,
+        date: new Date().toISOString(),
+        description: `Wallet funding via ${paymentMethod === 'card' ? 'Credit Card' : 'Bank Transfer'}`,
+        status: 'completed'
+      })
+      
+      toast.success(`Successfully added $${amount} to wallet`)
+      onOpenChange(false)
+    } catch (error) {
+      toast.error("Failed to add funds to wallet")
+    }
   }
 
   return (

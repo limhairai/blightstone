@@ -1,15 +1,15 @@
 "use client";
 
-import { useDemoState } from "../../contexts/DemoStateContext";
+import { useAppData } from "../../contexts/AppDataContext"
 import { Clock, CheckCircle, XCircle, AlertTriangle, FileText } from "lucide-react";
 
 export function ApplicationsStats() {
-  const { state } = useDemoState();
+  const { state } = useAppData();
   
-  // Calculate application statistics
+  // Calculate application statistics using proper admin statuses
   const totalApplications = state.businesses.length;
   const pendingApplications = state.businesses.filter(b => b.status === "pending").length;
-  const approvedApplications = state.businesses.filter(b => b.status === "active").length;
+  const approvedApplications = state.businesses.filter(b => b.status === "approved" || b.status === "active").length;
   const rejectedApplications = state.businesses.filter(b => b.status === "rejected").length;
   const underReviewApplications = state.businesses.filter(b => b.status === "under_review").length;
 

@@ -1,4 +1,4 @@
-import { MOCK_ACCOUNTS } from "../lib/mock-data"
+import { APP_ACCOUNTS } from "../lib/mock-data"
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -8,5 +8,5 @@ export function formatCurrency(amount: number): string {
 }
 
 export function getTotalAccountsBalance(): number {
-  return MOCK_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
+  return APP_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
 }

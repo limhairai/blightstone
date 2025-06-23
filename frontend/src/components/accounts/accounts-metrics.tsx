@@ -3,8 +3,8 @@
 import { ArrowUpRight, Wallet, FolderKanban, CreditCard } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { 
-  MOCK_ACCOUNTS, 
-  MOCK_FINANCIAL_DATA,
+  APP_ACCOUNTS, 
+  APP_FINANCIAL_DATA,
   formatCurrency,
   getTotalAccountsBalance,
   getActiveAccountsCount
@@ -12,7 +12,7 @@ import {
 
 export default function AccountMetrics() {
   // Use centralized mock data
-  const totalAccounts = MOCK_ACCOUNTS.length
+  const totalAccounts = APP_ACCOUNTS.length
   const totalBalance = getTotalAccountsBalance()
   const businesses = 3 // Mock business count - could be centralized too
   const accountLimit = 50 // Mock limit

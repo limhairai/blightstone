@@ -18,47 +18,74 @@ import { toast } from "sonner"
 import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings } from 'lucide-react'
 import { Progress } from "../ui/progress"
 import { pricingPlans } from "../../lib/mock-data"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { gradientTokens } from "../../lib/design-tokens"
 
 export function OrganizationSettings() {
-  const { state, updateOrganization } = useDemoState()
+  const { state, dispatch } = useAppData()
+  
+  // Safety check - render nothing if no current organization
+  if (!state.currentOrganization) {
+    return <div>No organization selected</div>
+  }
   const [editOrgOpen, setEditOrgOpen] = useState(false)
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false)
   const [billingHistoryOpen, setBillingHistoryOpen] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false)
   const [confirmDeleteText, setConfirmDeleteText] = useState("")
+  const [loading, setLoading] = useState(false)
 
   // Get actual counts from demo state
   const totalBusinesses = state.businesses.length
   const totalAccounts = state.accounts.length
   const totalTeamMembers = state.teamMembers.length
-  const currentPlan = pricingPlans.find(plan => plan.id.toLowerCase() === state.currentOrganization.plan.toLowerCase()) || pricingPlans[1] // Use current org's plan
+  const currentPlan = pricingPlans.find(plan => plan.id.toLowerCase() === state.currentOrganization!.plan.toLowerCase()) || pricingPlans[1] // Use current org's plan
 
   const [formData, setFormData] = useState({
-    name: state.currentOrganization.name,
+    name: state.currentOrganization!.name,
   })
 
   // Update formData when organization changes
   useEffect(() => {
-    setFormData({
-      name: state.currentOrganization.name,
-    })
-  }, [state.currentOrganization.name])
+          setFormData({
+        name: state.currentOrganization!.name,
+      })
+    }, [state.currentOrganization!.name])
 
-  const handleSaveOrgDetails = () => {
+  const handleSaveOrgDetails = async () => {
     if (!formData.name.trim()) {
       toast.error("Organization name cannot be empty.")
       return
     }
 
-    updateOrganization({ name: formData.name })
-    setEditOrgOpen(false)
+    setLoading(true)
+    try {
+      // Update organization in context
+      const updatedOrganization = {
+        ...state.currentOrganization!,
+        name: formData.name.trim()
+      }
+      
+      dispatch({ type: 'SET_CURRENT_ORGANIZATION', payload: updatedOrganization })
+      
+      // Also update in organizations list
+      const updatedOrganizations = state.organizations.map(org => 
+        org.id === state.currentOrganization!.id ? updatedOrganization : org
+      )
+      dispatch({ type: 'SET_ORGANIZATIONS', payload: updatedOrganizations })
+      
+      toast.success("Organization details updated successfully.")
+      setEditOrgOpen(false)
+    } catch (error) {
+      toast.error("Failed to update organization. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleDeleteOrg = () => {
-    if (confirmDeleteText !== state.currentOrganization.name) {
+    if (confirmDeleteText !== state.currentOrganization!.name) {
       toast.error("Please type the organization name correctly to confirm deletion.")
       return
     }
@@ -69,7 +96,7 @@ export function OrganizationSettings() {
   }
 
   // Use organization-specific billing history
-  const billingHistory = state.currentOrganization.billing.billingHistory
+  const billingHistory = (state.currentOrganization as any).billing?.billingHistory || []
 
   // Use centralized pricing plans
   const availablePlans = pricingPlans.map(plan => ({
@@ -80,14 +107,14 @@ export function OrganizationSettings() {
     adAccountsLimit: plan.id === "bronze" ? 20 : plan.id === "silver" ? 50 : plan.id === "gold" ? 100 : 200,
     teamMembersLimit: plan.id === "bronze" ? 3 : plan.id === "silver" ? 10 : plan.id === "gold" ? 25 : 50,
     features: plan.features,
-    current: plan.id.toLowerCase() === state.currentOrganization.plan.toLowerCase(), // Use current org's plan
+          current: plan.id.toLowerCase() === state.currentOrganization!.plan.toLowerCase(), // Use current org's plan
   }))
 
   // Calculate plan limits based on current organization's plan
   const planLimits = {
-    businessesLimit: state.currentOrganization.limits.businesses,
+    businessesLimit: (state.currentOrganization as any).limits?.businesses || 5,
     adAccountsLimit: (state.currentOrganization as any).limits?.adAccounts || 100,
-    teamMembersLimit: state.currentOrganization.limits.teamMembers,
+    teamMembersLimit: (state.currentOrganization as any).limits?.teamMembers || 10,
   }
 
   return (
@@ -190,11 +217,11 @@ export function OrganizationSettings() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Next payment</span>
-                    <span className="text-foreground font-medium">{state.currentOrganization.billing.nextPayment}</span>
+                    <span className="text-foreground font-medium">{(state.currentOrganization as any).billing?.nextPayment || "N/A"}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Billing cycle</span>
-                    <span className="text-foreground font-medium">{state.currentOrganization.billing.billingCycle}</span>
+                    <span className="text-foreground font-medium">{(state.currentOrganization as any).billing?.billingCycle || "monthly"}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Businesses limit</span>
@@ -296,7 +323,7 @@ export function OrganizationSettings() {
           <div className="space-y-3 py-4">
             <div className="p-3 bg-red-950/20 border border-red-800/30 rounded-md">
               <p className="text-sm text-red-400">
-                Please type <strong>{state.currentOrganization.name}</strong> to confirm deletion.
+                Please type <strong>{state.currentOrganization!.name}</strong> to confirm deletion.
               </p>
             </div>
             <div className="space-y-2">
@@ -319,7 +346,7 @@ export function OrganizationSettings() {
             >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDeleteOrg} disabled={confirmDeleteText !== state.currentOrganization.name}>
+                          <Button variant="destructive" onClick={handleDeleteOrg} disabled={confirmDeleteText !== state.currentOrganization!.name}>
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Organization
             </Button>
@@ -348,7 +375,7 @@ export function OrganizationSettings() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {billingHistory.map((invoice) => (
+                  {billingHistory.map((invoice: any) => (
                     <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
                       <td className="py-2 px-4">
                         <code className="text-xs bg-muted px-1 py-0.5 rounded">{invoice.id}</code>

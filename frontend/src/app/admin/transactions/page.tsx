@@ -1,6 +1,9 @@
 "use client";
 
-import { useSuperuser } from "../../../contexts/ProductionDataContext";
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
+import { useSuperuser } from "../../../contexts/AppDataContext"
 import { AdminOrgTransactionsTable } from "../../../components/admin/admin-org-transactions-table";
 import { Loader } from "../../../components/core/Loader";
 

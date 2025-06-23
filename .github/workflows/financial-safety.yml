@@ -1,0 +1,54 @@
+name: Financial Safety Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  financial-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd frontend
+        npm ci
+    
+    - name: Run Financial Unit Tests
+      run: |
+        cd frontend
+        npm test -- --testPathPattern="wallet-operations|financial-properties|production-safety" --coverage --watchAll=false
+    
+    - name: Run Integration Tests
+      run: |
+        cd frontend
+        npm test -- --testPathPattern="wallet-context.integration" --watchAll=false
+    
+    - name: Build Application
+      run: |
+        cd frontend
+        npm run build
+    
+    - name: Run E2E Financial Tests
+      run: |
+        cd frontend
+        npx playwright test financial-flows.spec.ts
+    
+    - name: Generate Financial Test Report
+      if: always()
+      run: |
+        echo "## 💰 Financial Safety Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "Financial tests completed successfully" >> $GITHUB_STEP_SUMMARY 

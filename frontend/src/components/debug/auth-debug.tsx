@@ -1,12 +1,13 @@
 "use client"
 
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/ProductionDataContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { useState } from "react"
 
 export function AuthDebug() {
   const { user, session, loading: authLoading } = useAuth()
-  const { appUser, loading: appDataLoading, error: appDataError } = useAppData()
+  const { state } = useAppData()
+  const appDataLoading = state.loading.organizations
   const [testResult, setTestResult] = useState<string>("")
 
   const testBackendConnection = async () => {
@@ -47,8 +48,8 @@ export function AuthDebug() {
         <hr className="my-2" />
         
         <div>AppData Loading: {appDataLoading ? "Yes" : "No"}</div>
-        <div>AppUser: {appUser ? `${appUser.email}` : "None"}</div>
-        <div>AppData Error: {appDataError || "None"}</div>
+        <div>User Profile: {state.userProfile ? `${state.userProfile.email}` : "None"}</div>
+        <div>Data Source: {state.dataSource}</div>
         
         <hr className="my-2" />
         

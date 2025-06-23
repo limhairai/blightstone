@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from 'react'
 import { Check, ChevronDown, Plus, Search, Building2 } from "lucide-react"
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { cn } from "../../lib/utils"
+import { getPlaceholderUrl } from '@/lib/config/assets'
 
 // Update the Organization interface to remove accountCount
 interface Organization {
@@ -37,7 +38,7 @@ export function OrganizationSelector() {
   const [selectedOrg, setSelectedOrg] = useState<Organization>({
     id: "3",
     name: "Startup Project",
-    avatar: "/placeholder.svg?height=32&width=32&text=SP",
+    avatar: "getPlaceholderUrl()?height=32&width=32&text=SP",
     role: "Member",
     businessCount: 3,
   })
@@ -56,14 +57,14 @@ export function OrganizationSelector() {
     {
       id: "2",
       name: "Acme Corporation",
-      avatar: "/placeholder.svg?height=32&width=32&text=AC",
+      avatar: "getPlaceholderUrl()?height=32&width=32&text=AC",
       role: "Admin",
       businessCount: 2,
     },
     {
       id: "3",
       name: "Startup Project",
-      avatar: "/placeholder.svg?height=32&width=32&text=SP",
+      avatar: "getPlaceholderUrl()?height=32&width=32&text=SP",
       role: "Member",
       businessCount: 3,
     },
@@ -120,7 +121,7 @@ export function OrganizationSelector() {
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
                 {selectedOrg.avatar ? (
-                  <AvatarImage src={selectedOrg.avatar || "/placeholder.svg"} alt={selectedOrg.name} />
+                  <AvatarImage src={selectedOrg.avatar || "getPlaceholderUrl()"} alt={selectedOrg.name} />
                 ) : (
                   <AvatarFallback className="bg-muted text-muted-foreground">
                     {selectedOrg.name.charAt(0)}
@@ -176,7 +177,7 @@ export function OrganizationSelector() {
                   <div className="flex items-center flex-1 min-w-0">
                     <Avatar className="h-8 w-8 mr-3">
                       {org.avatar ? (
-                        <AvatarImage src={org.avatar || "/placeholder.svg"} alt={org.name} />
+                        <AvatarImage src={org.avatar || "getPlaceholderUrl()"} alt={org.name} />
                       ) : (
                         <AvatarFallback className="bg-muted text-muted-foreground">{org.name.charAt(0)}</AvatarFallback>
                       )}

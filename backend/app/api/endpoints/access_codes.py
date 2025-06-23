@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 import secrets
 import string
 from supabase import Client
-from core.supabase_client import get_supabase_client
-from core.security import get_current_user
+from backend.app.core.supabase_client import get_supabase_client
+from backend.app.core.security import get_current_user
 import logging
 
 logger = logging.getLogger(__name__)

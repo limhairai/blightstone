@@ -7,7 +7,7 @@ import { Checkbox } from "../ui/checkbox"
 import { ScrollArea } from "../ui/scroll-area"
 import { formatCurrency } from "../../lib/mock-data"
 import { ArrowUpDown, Info } from 'lucide-react'
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import React from "react"
 
 interface ConsolidateFundsDialogProps {
@@ -24,7 +24,7 @@ interface AdAccountSelection {
 }
 
 export function ConsolidateFundsDialog({ open, onOpenChange }: ConsolidateFundsDialogProps) {
-  const { state, consolidateToWallet } = useDemoState()
+  const { state, consolidateFunds } = useAppData()
   
   // Convert ad accounts to selection format, only include accounts with balance > 0
   const [adAccounts, setAdAccounts] = useState<AdAccountSelection[]>(() => 
@@ -33,7 +33,7 @@ export function ConsolidateFundsDialog({ open, onOpenChange }: ConsolidateFundsD
       .map(account => ({
         id: account.id.toString(),
         name: account.name,
-        business: account.business,
+        business: account.businessId?.toString() || 'Unknown',
         balance: account.balance,
         selected: true // Default to selected
       }))
@@ -49,7 +49,7 @@ export function ConsolidateFundsDialog({ open, onOpenChange }: ConsolidateFundsD
         .map(account => ({
           id: account.id.toString(),
           name: account.name,
-          business: account.business,
+          business: account.businessId?.toString() || 'Unknown',
           balance: account.balance,
           selected: adAccounts.find(acc => acc.id === account.id.toString())?.selected ?? true
         }))
@@ -83,18 +83,22 @@ export function ConsolidateFundsDialog({ open, onOpenChange }: ConsolidateFundsD
 
     const selectedAccountIds = adAccounts
       .filter((account) => account.selected)
-      .map((account) => parseInt(account.id))
+      .map((account) => parseInt(account.id)) // Convert string IDs to numbers
 
     if (selectedAccountIds.length === 0) return
 
     try {
-      // Use the demo state consolidateToWallet function
-      await consolidateToWallet(selectedAccountIds, totalToConsolidate)
+      setIsLoading(true)
+      
+      // Use the context method to consolidate funds
+      await consolidateFunds(selectedAccountIds)
       
       // Success - close dialog
       onOpenChange(false)
     } catch (error) {
       console.error('Consolidation failed:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 

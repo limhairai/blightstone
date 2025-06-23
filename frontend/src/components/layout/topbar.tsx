@@ -15,10 +15,9 @@ import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
 import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"
 import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/ProductionDataContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { useTheme } from "next-themes"
 import Link from "next/link"
-import { useDemoState } from "../../contexts/DemoStateContext"
 import { formatCurrency } from "../../lib/mock-data"
 import { useState, useEffect } from "react"
 import { gradientTokens } from "../../lib/design-tokens"
@@ -48,8 +47,7 @@ export function Topbar({
 }: TopbarProps) {
   const { pageTitle } = usePageTitle()
   const { user, signOut } = useAuth()
-  const { appUser } = useAppData()
-  const { state } = useDemoState()
+  const { state } = useAppData()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
@@ -70,9 +68,9 @@ export function Topbar({
 
   // Use real user data from demo state
   const userProfile = state.userProfile
-  const userInitial = userProfile.firstName.charAt(0) + userProfile.lastName.charAt(0)
-  const userEmail = userProfile.email
-  const userName = `${userProfile.firstName} ${userProfile.lastName}`
+  const userInitial = userProfile?.name ? userProfile.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2) : 'DA'
+  const userEmail = userProfile?.email || 'admin@adhub.tech'
+  const userName = userProfile?.name || 'Demo Admin'
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme)
@@ -122,7 +120,7 @@ export function Topbar({
         {/* Main Account Balance & Top Up - Now with real-time data */}
         <div className="hidden md:flex bg-muted rounded-full px-4 py-1.5 items-center border border-border">
           <span className="text-sm font-medium text-foreground">
-            ${formatCurrency(state.financialData.walletBalance)}
+            ${formatCurrency(state.financialData.totalBalance)}
           </span>
         </div>
 
@@ -131,7 +129,7 @@ export function Topbar({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userProfile.avatar} alt="User" />
+                <AvatarImage src={userProfile?.avatar} alt="User" />
                 <AvatarFallback className={gradientTokens.avatar}>
                   {userInitial}
                 </AvatarFallback>
@@ -143,7 +141,7 @@ export function Topbar({
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium text-popover-foreground">{userName}</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
-                <p className="text-xs text-muted-foreground">{state.currentOrganization.plan} Plan</p>
+                <p className="text-xs text-muted-foreground">{state.currentOrganization?.plan || 'Free'} Plan</p>
               </div>
             </div>
 

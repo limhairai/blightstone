@@ -4,10 +4,10 @@ Handles client requests for new ad accounts and admin approval process
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query, status
-from core.security import get_current_user, require_superuser
-from core.supabase_client import get_supabase_client
-from schemas.user import UserRead as User
-from schemas.application import (
+from backend.app.core.security import get_current_user, require_superuser
+from backend.app.core.supabase_client import get_supabase_client
+from backend.app.schemas.user import UserRead as User
+from backend.app.schemas.application import (
     ApplicationCreate,
     ApplicationRead,
     ApplicationUpdate,

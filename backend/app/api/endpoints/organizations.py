@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from fastapi.concurrency import run_in_threadpool
-# from core.firebase import get_firestore  # TODO: Migrate to Supabase
-from core.security import get_current_user, require_superuser
-from core.supabase_client import get_supabase_client
-from schemas.user import UserRead as User
-from schemas.organization import (
+# from backend.app.core.firebase import get_firestore  # TODO: Migrate to Supabase
+from backend.app.core.security import get_current_user, require_superuser
+from backend.app.core.supabase_client import get_supabase_client
+from backend.app.schemas.user import UserRead as User
+from backend.app.schemas.organization import (
     OrganizationCreate, 
     OrganizationRead, 
     OrganizationUpdate,

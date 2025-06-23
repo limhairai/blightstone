@@ -1,7 +1,7 @@
 // Mock data store for businesses and ad accounts
 // This simulates the backend functionality until we connect to real APIs
 
-export interface MockBusiness {
+export interface AppBusiness {
   id: string
   name: string
   businessId: string
@@ -39,10 +39,10 @@ export interface MockBusiness {
   facebookPageId?: string
   pixelId?: string
   
-  adAccounts: MockAdAccount[]
+  adAccounts: AppAdAccount[]
 }
 
-export interface MockAdAccount {
+export interface AppAdAccount {
   id: string
   name: string
   accountId: string
@@ -57,7 +57,7 @@ export interface MockAdAccount {
 }
 
 // Initial mock data
-let mockBusinesses: MockBusiness[] = [
+let mockBusinesses: AppBusiness[] = [
   {
     id: "1",
     name: "My E-Commerce Store",
@@ -355,14 +355,14 @@ const formatDate = (date: Date) => {
 }
 
 // Business operations
-export const mockBusinessStore = {
+export const appBusinessStore = {
   // Get all businesses
-  getBusinesses: (): MockBusiness[] => {
+  getBusinesses: (): AppBusiness[] => {
     return [...mockBusinesses]
   },
 
   // Get business by ID
-  getBusiness: (id: string): MockBusiness | undefined => {
+  getBusiness: (id: string): AppBusiness | undefined => {
     return mockBusinesses.find(b => b.id === id)
   },
 
@@ -374,8 +374,8 @@ export const mockBusinessStore = {
     businessType?: string
     description?: string
     country?: string
-  }): MockBusiness => {
-    const newBusiness: MockBusiness = {
+  }): AppBusiness => {
+    const newBusiness: AppBusiness = {
       id: generateId(),
       name: data.name,
       businessId: generateBusinessId(),
@@ -420,7 +420,7 @@ export const mockBusinessStore = {
     businessId: string
     name?: string
     spendLimit?: number
-  }): MockAdAccount => {
+  }): AppAdAccount => {
     const business = mockBusinesses.find(b => b.id === data.businessId)
     if (!business) {
       throw new Error("Business not found")
@@ -431,7 +431,7 @@ export const mockBusinessStore = {
     }
 
     const accountNumber = business.adAccounts.length + 1
-    const newAdAccount: MockAdAccount = {
+    const newAdAccount: AppAdAccount = {
       id: generateId(),
       name: data.name || `Ad Account ${accountNumber}`,
       accountId: generateAdAccountId(),
@@ -466,18 +466,18 @@ export const mockBusinessStore = {
   },
 
   // Get approved businesses (for ad account creation)
-  getApprovedBusinesses: (): MockBusiness[] => {
+  getApprovedBusinesses: (): AppBusiness[] => {
     return mockBusinesses.filter(b => b.status === "active" && b.verification === "verified")
   },
 
   // Get ad accounts for a business
-  getAdAccountsForBusiness: (businessId: string): MockAdAccount[] => {
+  getAdAccountsForBusiness: (businessId: string): AppAdAccount[] => {
     const business = mockBusinesses.find(b => b.id === businessId)
     return business ? business.adAccounts : []
   },
 
   // Update business status (for admin use)
-  updateBusinessStatus: (businessId: string, status: MockBusiness['status'], verification?: MockBusiness['verification']) => {
+  updateBusinessStatus: (businessId: string, status: AppBusiness['status'], verification?: AppBusiness['verification']) => {
     const business = mockBusinesses.find(b => b.id === businessId)
     if (business) {
       business.status = status
@@ -488,7 +488,7 @@ export const mockBusinessStore = {
   },
 
   // Update ad account status
-  updateAdAccountStatus: (accountId: string, status: MockAdAccount['status']) => {
+  updateAdAccountStatus: (accountId: string, status: AppAdAccount['status']) => {
     for (const business of mockBusinesses) {
       const account = business.adAccounts.find(a => a.id === accountId)
       if (account) {

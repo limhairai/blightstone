@@ -11,13 +11,13 @@ import { InfoIcon, AlertCircle, Wallet } from "lucide-react"
 import { formatCurrency } from "../../lib/mock-data"
 import { contentTokens } from "../../lib/content-tokens"
 import { layout } from "../../lib/layout-utils"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface TopUpDialogProps {
   isOpen: boolean
   onClose: () => void
-  accountId: string | number
+  accountId: string
   accountName: string
   onTopUp?: (amount: number) => void
 }
@@ -31,10 +31,10 @@ const CUSTOMER_TIERS = {
 }
 
 export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }: TopUpDialogProps) {
-  const { state, topUpAccount } = useDemoState()
+  const { state, addTransaction, updateAccount, updateWalletBalance } = useAppData()
   
   // Use real-time wallet balance from demo state
-  const walletBalance = state.financialData.walletBalance
+  const walletBalance = state.financialData.totalBalance
   const customerTier = "BASIC"
   const commissionRate = CUSTOMER_TIERS[customerTier].commissionRate
 
@@ -84,17 +84,36 @@ export function TopUpDialog({ isOpen, onClose, accountId, accountName, onTopUp }
     }
 
     try {
-      // Convert accountId to number if it's a string
-      const numericAccountId = typeof accountId === 'string' ? parseInt(accountId) : accountId
+      // Find the account to update
+      const account = state.accounts.find(acc => acc.id === accountId)
+      if (!account) {
+        throw new Error('Account not found')
+      }
 
-      // Use the actual topUpAccount function from state management
-      await topUpAccount(numericAccountId, amount)
+      // 1. Subtract the original amount from wallet balance (before commission)
+      await updateWalletBalance(amount, 'subtract')
 
-      showSuccessToast("Account Topped Up!", `$${amount} has been added to ${accountName}.`)
+      // 2. Create transaction record
+      await addTransaction({
+        type: 'topup',
+        amount: finalAmount,
+        date: new Date().toISOString(),
+        description: `Top up for ${accountName}`,
+        status: 'completed',
+        toAccount: accountId
+      })
+
+      // 3. Update account balance with final amount (after commission)
+      await updateAccount({
+        ...account,
+        balance: account.balance + finalAmount
+      })
+
+      showSuccessToast("Account Topped Up!", `$${finalAmount.toFixed(2)} has been added to ${accountName}.`)
 
       // Call the optional callback
       if (onTopUp) {
-        onTopUp(amount)
+        onTopUp(finalAmount)
       }
 
       onClose()

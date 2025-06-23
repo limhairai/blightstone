@@ -34,7 +34,7 @@ import {
 import { useRouter } from "next/navigation"
 import { gradients } from "../../lib/design-system"
 import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
-import { businessStore, type Business, type AdAccount } from "../../lib/business-store"
+import { useAppData, type AppBusiness, type AppAccount } from "../../contexts/AppDataContext"
 import { useToast } from "../../hooks/use-toast"
 
 interface BusinessDetailViewProps {
@@ -44,56 +44,22 @@ interface BusinessDetailViewProps {
 export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const { state } = useAppData()
   const [searchQuery, setSearchQuery] = useState("")
-  const [business, setBusiness] = useState<Business | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  // Load business data from unified store
-  const loadBusiness = useCallback(async () => {
-    try {
-      setLoading(true)
-      const businessData = await businessStore.getBusiness(businessId)
-      
-      if (!businessData) {
-        setNotFound(true)
-        setLoading(false)
-        return
-      }
+  // Find business from state
+  const business = state.businesses.find(b => b.id.toString() === businessId)
+  const businessAccounts = state.accounts.filter(acc => acc.businessId?.toString() === businessId)
 
-      setBusiness(businessData)
-    } catch (error) {
-      console.error("Failed to load business:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load business data. Please try again.",
-        variant: "destructive",
-      })
+  // Load business data
+  useEffect(() => {
+    setLoading(false)
+    if (!business) {
       setNotFound(true)
-    } finally {
-      setLoading(false)
     }
-  }, [businessId, toast])
-
-  // Load business on component mount
-  useEffect(() => {
-    loadBusiness()
-  }, [businessId, loadBusiness])
-
-  // Listen for ad account activation events
-  useEffect(() => {
-    const handleAdAccountActivated = (event: CustomEvent) => {
-      if (event.detail.businessId === businessId) {
-        loadBusiness() // Refresh the business data when an ad account is activated
-      }
-    }
-
-    window.addEventListener('adAccountActivated', handleAdAccountActivated as EventListener)
-
-    return () => {
-      window.removeEventListener('adAccountActivated', handleAdAccountActivated as EventListener)
-    }
-  }, [businessId, loadBusiness])
+  }, [business])
 
   if (loading) {
     return (
@@ -144,17 +110,17 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
   }
 
   // Filter ad accounts based on search
-  const filteredAccounts = business.adAccounts.filter((account) =>
+  const filteredAccounts = businessAccounts.filter((account) =>
     account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    account.accountId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    account.platform.toLowerCase().includes(searchQuery.toLowerCase())
+    (account.accountId || account.id.toString()).toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (account.platform || 'Facebook').toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   // Calculate metrics
-  const totalBalance = business.adAccounts.reduce((sum, acc) => sum + acc.balance, 0)
-  const totalSpent = business.adAccounts.reduce((sum, acc) => sum + acc.spent, 0)
-  const activeAccounts = business.adAccounts.filter(acc => acc.status === 'active').length
-  const pendingAccounts = business.adAccounts.filter(acc => acc.status === 'pending').length
+  const totalBalance = businessAccounts.reduce((sum, acc) => sum + acc.balance, 0)
+  const totalSpent = businessAccounts.reduce((sum, acc) => sum + (acc.spent || 0), 0)
+  const activeAccounts = businessAccounts.filter(acc => acc.status === 'active').length
+  const pendingAccounts = businessAccounts.filter(acc => acc.status === 'pending').length
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -162,7 +128,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
         return <CheckCircle className="h-4 w-4 text-green-500" />
       case "pending":
         return <Clock className="h-4 w-4 text-yellow-500" />
-      case "paused":
+      case "pending":
         return <AlertCircle className="h-4 w-4 text-orange-500" />
       case "error":
         return <AlertCircle className="h-4 w-4 text-red-500" />
@@ -200,7 +166,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
                 <h1 className="text-2xl font-medium">{business.name}</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-sm text-muted-foreground font-mono">
-                    Business ID: {business.businessId}
+                    Business ID: {business.id}
                   </span>
                   <div className="flex items-center gap-2">
                     {getStatusIcon(business.status)}
@@ -306,14 +272,13 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
           </div>
           {canCreateAdAccounts && (
             <CreateAdAccountDialog
-              businessId={business.id}
+              businessId={business.id.toString()}
               trigger={
                 <Button className={`${gradients.primary} text-primary-foreground hover:opacity-90 h-8 text-xs`}>
                   <PlusCircle className="h-3 w-3 mr-1" />
                   Create Ad Account
                 </Button>
               }
-              onAccountCreated={loadBusiness}
             />
           )}
         </div>
@@ -324,7 +289,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
             <CardContent className="p-3">
               <div className="flex flex-col">
                 <span className="text-xs text-[#888888]">Total accounts</span>
-                <span className="text-sm font-medium">{business.adAccounts.length}</span>
+                <span className="text-sm font-medium">{businessAccounts.length}</span>
               </div>
             </CardContent>
           </Card>
@@ -369,7 +334,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
         </div>
 
         {/* Ad Accounts Table */}
-        {filteredAccounts.length === 0 && business.adAccounts.length === 0 ? (
+        {filteredAccounts.length === 0 && businessAccounts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-border rounded-lg">
             <div className="rounded-full bg-muted p-3 mb-4">
               <DollarSign className="h-10 w-10 text-muted-foreground" />
@@ -383,14 +348,13 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
             </p>
             {canCreateAdAccounts && (
               <CreateAdAccountDialog
-                businessId={business.id}
+                businessId={business.id.toString()}
                 trigger={
                   <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-white border-0">
                     <PlusCircle className="h-4 w-4 mr-2" />
                     Create Ad Account
                   </Button>
                 }
-                onAccountCreated={loadBusiness}
               />
             )}
           </div>
@@ -420,14 +384,14 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
                         <div>
                           <div className="font-medium text-sm">{account.name}</div>
                           <div className="text-xs text-[#667085] dark:text-[#888888]">
-                            Created {account.dateCreated} • Meta
+                            Created {account.dateAdded} • Meta
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs text-[#667085] dark:text-[#888888]">
-                        {account.accountId}
+                        {account.accountId || account.id.toString()}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -444,21 +408,21 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <span className="text-sm font-medium">
-                          ${account.spent.toLocaleString()}
+                          ${account.spent?.toLocaleString() || '0'}
                         </span>
-                        {account.spent > 0 && (
+                        {account.spent && account.spent > 0 && (
                           <TrendingUp className="h-3 w-3 text-green-500" />
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm">
-                        ${account.spendLimit.toLocaleString()}
+                        ${account.spendLimit?.toLocaleString() || '0'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-[#667085] dark:text-[#888888]">
-                        {account.lastActivity}
+                        {account.dateAdded}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -498,7 +462,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
         {/* Results Summary */}
         {filteredAccounts.length > 0 && (
           <div className="text-xs text-[#888888]">
-            Showing {filteredAccounts.length} of {business.adAccounts.length} ad accounts
+            Showing {filteredAccounts.length} of {businessAccounts.length} ad accounts
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@
 import { Wallet } from 'lucide-react'
 import { formatCurrency } from '../../lib/mock-data'
 import { typographyTokens } from '../../lib/design-tokens'
-import { useProductionData } from '../../contexts/ProductionDataContext'
+import { useAppData } from "../../contexts/AppDataContext"
 
 interface BalanceCardProps {
   balance?: number
@@ -11,9 +11,9 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ balance, growth }: BalanceCardProps) {
-  const { getWalletBalance } = useProductionData()
+  const { state } = useAppData()
   
-  const actualBalance = balance ?? getWalletBalance()
+  const actualBalance = balance ?? state.financialData.totalBalance
   const actualGrowth = growth ?? 0 // TODO: Calculate from transaction history
   
   return (

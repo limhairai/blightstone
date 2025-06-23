@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from api.endpoints import auth, ad_accounts, organizations, invites, admin, twofa, wallet, users, health, businesses, payments, access_codes, applications
+from backend.app.api.endpoints import auth, ad_accounts, organizations, invites, admin, twofa, wallet, users, health, businesses, payments, access_codes, applications, dolphin_assets
 
 api_router = APIRouter()
 
@@ -15,4 +15,5 @@ api_router.include_router(wallet.router, prefix="/wallet", tags=["wallet"])
 api_router.include_router(payments.router, prefix="/payments", tags=["payments"])
 api_router.include_router(access_codes.router, prefix="/access-codes", tags=["access-codes"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
-api_router.include_router(health.router, prefix="/health", tags=["health"]) 
+api_router.include_router(health.router, prefix="/health", tags=["health"])
+api_router.include_router(dolphin_assets.router, prefix="/dolphin-assets", tags=["dolphin-assets"]) 

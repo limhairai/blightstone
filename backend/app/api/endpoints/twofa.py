@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from core.supabase_client import get_supabase_client
-from core.security import get_current_user
-from schemas.user import UserRead as User
+from backend.app.core.supabase_client import get_supabase_client
+from backend.app.core.security import get_current_user
+from backend.app.schemas.user import UserRead as User
 from pydantic import BaseModel
 import pyotp
 import qrcode

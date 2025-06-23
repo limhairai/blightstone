@@ -30,7 +30,7 @@ import {
   DollarSign
 } from "lucide-react"
 import { formatCurrency, transactionColors } from "../../lib/mock-data"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { toast } from "sonner"
 import { format } from "date-fns"
 
@@ -50,7 +50,7 @@ interface TransactionFilters {
 }
 
 export function AdvancedTransactionManager() {
-  const { state } = useDemoState()
+  const { state } = useAppData()
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set())
   const [viewTransaction, setViewTransaction] = useState<any>(null)
   const [filters, setFilters] = useState<TransactionFilters>({
@@ -72,11 +72,11 @@ export function AdvancedTransactionManager() {
       status: Math.random() > 0.1 ? "completed" : Math.random() > 0.5 ? "pending" : "failed",
       fee: Math.round(Math.abs(tx.amount) * 0.025), // 2.5% fee
       reference: `TXN-${tx.id.toString().padStart(6, '0')}`,
-      description: tx.type === "deposit" ? "Wallet top-up" : 
+      description: tx.type === "topup" ? "Wallet top-up" : 
                   tx.type === "withdrawal" ? "Account funding" :
                   tx.type === "spend" ? "Ad spend" : "Internal transfer",
       category: tx.type === "spend" ? "advertising" : "funding",
-      paymentMethod: tx.type === "deposit" ? "Credit Card" : "Bank Transfer"
+      paymentMethod: tx.type === "topup" ? "Credit Card" : "Bank Transfer"
     }))
   }, [state.transactions])
 
@@ -84,9 +84,9 @@ export function AdvancedTransactionManager() {
   const filteredTransactions = useMemo(() => {
     let filtered = enhancedTransactions.filter(tx => {
       // Search filter
-      if (filters.search && !tx.name.toLowerCase().includes(filters.search.toLowerCase()) &&
+      if (filters.search && !tx.description.toLowerCase().includes(filters.search.toLowerCase()) &&
           !tx.reference.toLowerCase().includes(filters.search.toLowerCase()) &&
-          !tx.account.toLowerCase().includes(filters.search.toLowerCase())) {
+          !(tx.fromAccount || tx.toAccount || '').toLowerCase().includes(filters.search.toLowerCase())) {
         return false
       }
 
@@ -109,7 +109,7 @@ export function AdvancedTransactionManager() {
       }
 
       // Account filter
-      if (filters.account !== "all" && tx.account !== filters.account) {
+      if (filters.account !== "all" && (tx.fromAccount || tx.toAccount) !== filters.account) {
         return false
       }
 
@@ -147,7 +147,7 @@ export function AdvancedTransactionManager() {
 
   const getTransactionIcon = (type: string, amount: number) => {
     switch (type) {
-      case "deposit":
+      case "topup":
         return (
           <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.deposit.bg}`}>
             <ArrowDownIcon className={`h-4 w-4 ${transactionColors.deposit.icon}`} />
@@ -240,7 +240,11 @@ export function AdvancedTransactionManager() {
     })
   }
 
-  const uniqueAccounts = [...new Set(enhancedTransactions.map(tx => tx.account))]
+  const uniqueAccounts = [...new Set(
+    enhancedTransactions
+      .flatMap(tx => [tx.fromAccount, tx.toAccount])
+      .filter((account): account is string => Boolean(account))
+  )]
 
   return (
     <div className="space-y-6">
@@ -456,11 +460,11 @@ export function AdvancedTransactionManager() {
                   {getTransactionIcon(transaction.type, transaction.amount)}
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">{transaction.name}</span>
+                      <span className="font-medium">{transaction.description}</span>
                       {getStatusBadge(transaction.status)}
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      {transaction.reference} • {transaction.account} • {transaction.paymentMethod}
+                      {transaction.reference} • {transaction.fromAccount || transaction.toAccount || 'Unknown'} • {transaction.paymentMethod}
                     </div>
                   </div>
                 </div>
@@ -478,7 +482,7 @@ export function AdvancedTransactionManager() {
                   <div className="text-right">
                     <div className="text-sm font-medium">{transaction.date}</div>
                     <div className="text-xs text-muted-foreground">
-                      {transaction.timestamp.toLocaleTimeString()}
+                      {new Date(transaction.date).toLocaleTimeString()}
                     </div>
                   </div>
                   
@@ -515,7 +519,7 @@ export function AdvancedTransactionManager() {
                             </div>
                             <div>
                               <label className="text-sm font-medium text-muted-foreground">Account</label>
-                              <p>{viewTransaction.account}</p>
+                              <p>{viewTransaction.fromAccount || viewTransaction.toAccount || 'Unknown'}</p>
                             </div>
                             <div>
                               <label className="text-sm font-medium text-muted-foreground">Payment Method</label>

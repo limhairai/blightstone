@@ -11,7 +11,8 @@ export const config = {
   },
 };
 
-const PROXY_TARGET = process.env.BACKEND_API_URL || 'http://localhost:8000';
+const PROXY_TARGET = process.env.BACKEND_API_URL || process.env.BACKEND_URL || 
+                    (process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : '');
 
 const proxy = httpProxy.createProxyServer({
   target: PROXY_TARGET,

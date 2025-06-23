@@ -7,8 +7,6 @@ import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
 import { Toaster } from "../components/ui/sonner";
-import { DemoProvider } from "../contexts/DemoStateContext";
-
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -25,13 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <DemoProvider>
-          <SimpleProviders>
-            {children}
-            <EnvIndicator />
-            <Toaster />
-          </SimpleProviders>
-        </DemoProvider>
+        <SimpleProviders>
+          {children}
+          <EnvIndicator />
+          <Toaster />
+        </SimpleProviders>
       </body>
     </html>
   );

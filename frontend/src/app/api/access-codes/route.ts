@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildApiUrl } from '@/lib/config/api';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+// Using centralized API config
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${BACKEND_URL}/api/access-codes?organization_id=${organizationId}`,
+      buildApiUrl('/api/access-codes?organization_id=${organizationId}'),
       {
         headers: {
           'Authorization': authHeader,
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/access-codes`, {
+    const response = await fetch(buildApiUrl('/api/access-codes'), {
       method: 'POST',
       headers: {
         'Authorization': authHeader,

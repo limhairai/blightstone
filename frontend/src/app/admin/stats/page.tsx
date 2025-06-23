@@ -1,3 +1,8 @@
+"use client";
+
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
 export default function AdminStatsPage() {
   return (
     <div>

@@ -1,7 +1,7 @@
 // Centralized mock data for admin panel - consistent across all pages
 // Scale: 1,247 clients, 3,500+ ad accounts, 12,847 transactions
 
-export interface MockClient {
+export interface AppClient {
   id: string;
   name: string;
   email: string;
@@ -22,7 +22,7 @@ export interface MockClient {
   tags: string[];
 }
 
-export interface MockBusiness {
+export interface AppBusiness {
   id: string;
   clientId: string;
   clientName: string;
@@ -48,7 +48,7 @@ export interface MockBusiness {
   businessType: 'llc' | 'corporation' | 'partnership' | 'sole_proprietorship';
 }
 
-export interface MockAdAccount {
+export interface AppAdAccount {
   id: string;
   name: string;
   businessId: string;
@@ -70,7 +70,7 @@ export interface MockAdAccount {
   monthlySpend: number;
 }
 
-export interface MockApplication {
+export interface AppApplication {
   id: string;
   clientId: string;
   clientName: string;
@@ -89,7 +89,7 @@ export interface MockApplication {
   estimatedProcessingTime: number;
 }
 
-export interface MockTransaction {
+export interface AppTransaction {
   id: string;
   clientId: string;
   clientName: string;
@@ -107,7 +107,7 @@ export interface MockTransaction {
   netAmount: number;
 }
 
-export interface MockInventoryItem {
+export interface AppInventoryItem {
   id: string;
   type: 'ad_account' | 'business_manager' | 'page' | 'pixel' | 'domain';
   provider: string;
@@ -121,24 +121,24 @@ export interface MockInventoryItem {
 }
 
 // Generate consistent mock data
-export class AdminMockDataGenerator {
-  private static instance: AdminMockDataGenerator;
-  private clients: MockClient[] = [];
-  private businesses: MockBusiness[] = [];
-  private adAccounts: MockAdAccount[] = [];
-  private applications: MockApplication[] = [];
-  private transactions: MockTransaction[] = [];
-  private inventory: MockInventoryItem[] = [];
+export class AdminAppDataGenerator {
+  private static instance: AdminAppDataGenerator;
+  private clients: AppClient[] = [];
+  private businesses: AppBusiness[] = [];
+  private adAccounts: AppAdAccount[] = [];
+  private applications: AppApplication[] = [];
+  private transactions: AppTransaction[] = [];
+  private inventory: AppInventoryItem[] = [];
 
   private constructor() {
     this.generateAllData();
   }
 
-  public static getInstance(): AdminMockDataGenerator {
-    if (!AdminMockDataGenerator.instance) {
-      AdminMockDataGenerator.instance = new AdminMockDataGenerator();
+  public static getInstance(): AdminAppDataGenerator {
+    if (!AdminAppDataGenerator.instance) {
+      AdminAppDataGenerator.instance = new AdminAppDataGenerator();
     }
-    return AdminMockDataGenerator.instance;
+    return AdminAppDataGenerator.instance;
   }
 
   private generateAllData() {
@@ -150,7 +150,7 @@ export class AdminMockDataGenerator {
     this.inventory = this.generateInventory(4200); // Larger inventory pool
   }
 
-  private generateClients(count: number): MockClient[] {
+  private generateClients(count: number): AppClient[] {
     const tiers = ['starter', 'professional', 'enterprise'];
     const statuses = ['active', 'suspended', 'pending', 'inactive'];
     const countries = ['US', 'CA', 'UK', 'AU', 'DE', 'FR', 'ES', 'IT', 'NL', 'SE'];
@@ -187,18 +187,18 @@ export class AdminMockDataGenerator {
     });
   }
 
-  private generateBusinesses(clients: MockClient[]): MockBusiness[] {
+  private generateBusinesses(clients: AppClient[]): AppBusiness[] {
     const industries = ['E-commerce', 'SaaS', 'Healthcare', 'Finance', 'Education', 'Real Estate', 'Travel', 'Food & Beverage'];
     const statuses = ['active', 'suspended', 'pending', 'rejected'];
     const verificationStatuses = ['verified', 'pending', 'rejected', 'not_verified'];
     const businessTypes = ['llc', 'corporation', 'partnership', 'sole_proprietorship'];
 
-    const businesses: MockBusiness[] = [];
+    const businesses: AppBusiness[] = [];
     let businessId = 0;
 
     clients.forEach(client => {
       for (let i = 0; i < client.businessCount; i++) {
-        const business: MockBusiness = {
+        const business: AppBusiness = {
           id: `business_${businessId.toString().padStart(4, '0')}`,
           clientId: client.id,
           clientName: client.name,
@@ -230,11 +230,11 @@ export class AdminMockDataGenerator {
     return businesses;
   }
 
-  private generateAdAccounts(businesses: MockBusiness[]): MockAdAccount[] {
+  private generateAdAccounts(businesses: AppBusiness[]): AppAdAccount[] {
     const providers = ['Meta', 'Google', 'TikTok', 'Snapchat', 'Twitter'];
     const statuses = ['active', 'banned', 'restricted', 'pending', 'suspended'];
 
-    const adAccounts: MockAdAccount[] = [];
+    const adAccounts: AppAdAccount[] = [];
     let accountId = 0;
 
     businesses.forEach(business => {
@@ -242,7 +242,7 @@ export class AdminMockDataGenerator {
         const monthlySpend = Math.floor(business.monthlySpend / business.adAccountCount);
         const limit = monthlySpend * (1.2 + Math.random() * 0.8); // 120-200% of spend
         
-        const adAccount: MockAdAccount = {
+        const adAccount: AppAdAccount = {
           id: `ad_account_${accountId.toString().padStart(4, '0')}`,
           name: `${business.name} Ad Account ${i + 1}`,
           businessId: business.id,
@@ -271,7 +271,7 @@ export class AdminMockDataGenerator {
     return adAccounts;
   }
 
-  private generateApplications(clients: MockClient[], businesses: MockBusiness[]): MockApplication[] {
+  private generateApplications(clients: AppClient[], businesses: AppBusiness[]): AppApplication[] {
     const types = ['new_business', 'ad_account'];
     const stages = ['received', 'document_prep', 'submitted', 'under_review', 'approved', 'rejected'];
     const reps = ['rep_1', 'rep_2', 'rep_3', null];
@@ -322,7 +322,7 @@ export class AdminMockDataGenerator {
     });
   }
 
-  private generateTransactions(clients: MockClient[], businesses: MockBusiness[]): MockTransaction[] {
+  private generateTransactions(clients: AppClient[], businesses: AppBusiness[]): AppTransaction[] {
     const types = ['deposit', 'withdrawal', 'spend', 'refund', 'fee', 'commission'];
     const statuses = ['completed', 'pending', 'failed', 'cancelled'];
     const paymentMethods = ['Credit Card', 'Bank Transfer', 'Wire Transfer', 'ACH'];
@@ -353,7 +353,7 @@ export class AdminMockDataGenerator {
     });
   }
 
-  private generateInventory(count: number): MockInventoryItem[] {
+  private generateInventory(count: number): AppInventoryItem[] {
     const types = ['ad_account', 'business_manager', 'page', 'pixel', 'domain'];
     const statuses = ['available', 'assigned', 'suspended', 'maintenance'];
 
@@ -376,30 +376,30 @@ export class AdminMockDataGenerator {
   }
 
   // Public getters
-  public getClients(): MockClient[] { return this.clients; }
-  public getBusinesses(): MockBusiness[] { return this.businesses; }
-  public getAdAccounts(): MockAdAccount[] { return this.adAccounts; }
-  public getApplications(): MockApplication[] { return this.applications; }
-  public getTransactions(): MockTransaction[] { return this.transactions; }
-  public getInventory(): MockInventoryItem[] { return this.inventory; }
+  public getClients(): AppClient[] { return this.clients; }
+  public getBusinesses(): AppBusiness[] { return this.businesses; }
+  public getAdAccounts(): AppAdAccount[] { return this.adAccounts; }
+  public getApplications(): AppApplication[] { return this.applications; }
+  public getTransactions(): AppTransaction[] { return this.transactions; }
+  public getInventory(): AppInventoryItem[] { return this.inventory; }
 
   // Filtered getters
-  public getClientById(id: string): MockClient | undefined {
+  public getClientById(id: string): AppClient | undefined {
     return this.clients.find(c => c.id === id);
   }
 
-  public getBusinessesByClientId(clientId: string): MockBusiness[] {
+  public getBusinessesByClientId(clientId: string): AppBusiness[] {
     return this.businesses.filter(b => b.clientId === clientId);
   }
 
-  public getAdAccountsByBusinessId(businessId: string): MockAdAccount[] {
+  public getAdAccountsByBusinessId(businessId: string): AppAdAccount[] {
     return this.adAccounts.filter(a => a.businessId === businessId);
   }
 
-  public getTransactionsByClientId(clientId: string): MockTransaction[] {
+  public getTransactionsByClientId(clientId: string): AppTransaction[] {
     return this.transactions.filter(t => t.clientId === clientId);
   }
 }
 
 // Export singleton instance
-export const adminMockData = AdminMockDataGenerator.getInstance(); 
+export const adminAppData = AdminAppDataGenerator.getInstance(); 

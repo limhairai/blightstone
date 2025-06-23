@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Label } from "../ui/label"
 import { Input } from "../ui/input"
 import { Check, Loader2 } from "lucide-react"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { toast } from "sonner"
 
 interface CreateAdAccountDialogProps {
@@ -26,7 +26,7 @@ interface CreateAdAccountDialogProps {
 }
 
 export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }: CreateAdAccountDialogProps) {
-  const { state, createAccount } = useDemoState()
+  const { state, createAccount } = useAppData()
   const [open, setOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [formData, setFormData] = useState({
@@ -157,7 +157,7 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border">
                   {approvedBusinesses.map((business) => (
-                    <SelectItem key={business.id} value={business.id} className="text-popover-foreground hover:bg-accent">
+                    <SelectItem key={business.id} value={business.id.toString()} className="text-popover-foreground hover:bg-accent">
                       {business.name}
                     </SelectItem>
                   ))}

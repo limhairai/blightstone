@@ -2,7 +2,7 @@
 
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { MOCK_BUSINESSES, MOCK_ACCOUNTS } from "../../lib/mock-data"
+import { APP_BUSINESSES, APP_ACCOUNTS } from "../../lib/mock-data"
 import { Search } from "lucide-react"
 
 interface CompactFiltersProps {
@@ -29,8 +29,8 @@ export function CompactFilters({ filters, onFiltersChange }: CompactFiltersProps
   }
 
   // Get unique businesses and platforms from mock data
-  const businesses = Array.from(new Set(MOCK_ACCOUNTS.map(account => account.business)))
-  const platforms = Array.from(new Set(MOCK_ACCOUNTS.map(account => account.platform)))
+  const businesses = Array.from(new Set(APP_ACCOUNTS.map(account => account.business).filter(Boolean))) as string[]
+  const platforms = Array.from(new Set(APP_ACCOUNTS.map(account => account.platform).filter(Boolean))) as string[]
 
   return (
     <div className="flex flex-col lg:flex-row gap-3">
@@ -62,7 +62,7 @@ export function CompactFilters({ filters, onFiltersChange }: CompactFiltersProps
             <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
               Pending
             </SelectItem>
-            <SelectItem value="paused" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
               Paused
             </SelectItem>
             <SelectItem value="error" className="text-popover-foreground hover:bg-accent">

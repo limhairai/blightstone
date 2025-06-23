@@ -8,11 +8,12 @@ import { Label } from "../ui/label"
 import { Separator } from "../ui/separator"
 import { useToast } from "../../hooks/use-toast"
 import { formatCurrency } from "../../lib/utils"
-import { MOCK_FINANCIAL_DATA, type MockAccount } from "../../lib/mock-data"
+import { APP_FINANCIAL_DATA } from "../../lib/mock-data"
+import { type AppAccount } from "../../contexts/AppDataContext"
 import { ArrowUpRight, DollarSign, Check, Loader2, AlertTriangle } from "lucide-react"
 
 interface WithdrawBalanceDialogProps {
-  account: MockAccount | null
+  account: AppAccount | null
   open: boolean
   onOpenChange: (open: boolean) => void
   mainBalance?: number
@@ -22,7 +23,7 @@ export function WithdrawBalanceDialog({
   account,
   open,
   onOpenChange,
-  mainBalance = MOCK_FINANCIAL_DATA.walletBalance,
+  mainBalance = APP_FINANCIAL_DATA.walletBalance,
 }: WithdrawBalanceDialogProps) {
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -154,7 +155,7 @@ export function WithdrawBalanceDialog({
             <label className="text-xs text-muted-foreground uppercase tracking-wide">Account</label>
             <div className="p-3 bg-muted rounded-lg border border-border">
               <div className="font-medium text-foreground">{account.name}</div>
-              <div className="text-xs text-muted-foreground font-mono">{account.adAccount}</div>
+              <div className="text-xs text-muted-foreground font-mono">ID: {account.id}</div>
             </div>
           </div>
 

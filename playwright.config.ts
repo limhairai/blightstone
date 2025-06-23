@@ -4,7 +4,10 @@ import path from 'path';
 const PROJECT_ROOT = __dirname; // Assumes playwright.config.ts is in project root which is adhub/
 const FRONTEND_DIR = path.join(PROJECT_ROOT, 'frontend');
 const BACKEND_DIR = path.join(PROJECT_ROOT, 'backend');
-// const SCRIPTS_DIR = path.join(PROJECT_ROOT, 'scripts'); // No longer needed if manage_emulators.sh is removed
+
+// Environment-based URLs
+const FRONTEND_URL = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const BACKEND_URL = process.env.BACKEND_URL || process.env.BACKEND_API_URL || 'http://localhost:8000';
 
 export default defineConfig({
   testDir: './tests', // Create a 'tests' folder in adhub/ for your spec files
@@ -17,7 +20,7 @@ export default defineConfig({
   workers: 1, 
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: FRONTEND_URL,
     trace: 'on-first-retry',
     actionTimeout: 25 * 1000, // Default timeout for actions like page.click()
     navigationTimeout: 45 * 1000, // Default timeout for page.goto()
@@ -29,11 +32,10 @@ export default defineConfig({
     },
   ],
   webServer: [
-    // Removed webServer entry for manage_emulators.sh
     {
       command: `${path.join(BACKEND_DIR, 'venv', 'bin', 'python')} -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`,
       cwd: BACKEND_DIR,
-      url: 'http://localhost:8000/docs', 
+      url: `${BACKEND_URL}/docs`, 
       reuseExistingServer: false,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -41,19 +43,18 @@ export default defineConfig({
       env: {
         PYTHONUNBUFFERED: "1",
         PYTHONIOENCODING: "UTF-8"
-        // FIRESTORE_EMULATOR_HOST and FIREBASE_AUTH_EMULATOR_HOST removed
       }
     },
     {
       command: 'npm run dev',
       cwd: FRONTEND_DIR,
-      url: 'http://localhost:3000',
+      url: FRONTEND_URL,
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 120 * 1000, 
       env: {
-        // NEXT_PUBLIC_USE_FIREBASE_EMULATOR, NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST, NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST removed
+        // Environment variables will be loaded from .env files
       }
     },
   ],

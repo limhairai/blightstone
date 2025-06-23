@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildApiUrl } from '@/lib/config/api';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+// Using centralized API config
 
 export async function DELETE(
   request: NextRequest,
@@ -18,7 +19,7 @@ export async function DELETE(
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/api/access-codes/${id}`, {
+    const response = await fetch(buildApiUrl(`/api/access-codes/${id}`), {
       method: 'DELETE',
       headers: {
         'Authorization': authHeader,

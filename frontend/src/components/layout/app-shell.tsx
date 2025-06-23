@@ -127,7 +127,6 @@ export function AppShell({ children }: AppShellProps) {
           <SetupGuideWidget 
             widgetState={setupWidgetState} 
             onStateChange={setSetupWidgetState}
-            setupProgress={setupProgress}
           />
         )}
       </div>

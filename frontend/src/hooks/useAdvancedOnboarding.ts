@@ -1,7 +1,7 @@
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useAppData } from '../contexts/ProductionDataContext'
-import { supabase } from '../lib/stores/supabase-client'
+import { useAppData } from "../contexts/AppDataContext"
+import { OnboardingService } from '../services/supabase-service'
 import { 
   getSetupProgress,
   shouldShowOnboarding,
@@ -10,7 +10,6 @@ import {
   OnboardingPersistence,
   SetupProgress
 } from '../lib/state-utils'
-import { MOCK_FINANCIAL_DATA, MOCK_ACCOUNTS } from '../lib/mock-data'
 
 export interface UseAdvancedOnboardingReturn {
   // State
@@ -22,47 +21,91 @@ export interface UseAdvancedOnboardingReturn {
   // Visibility flags
   shouldShowOnboarding: boolean
   
+  // Loading states
+  loading: boolean
+  
   // Actions
   dismissOnboarding: () => Promise<void>
   markStepCompleted: (stepId: string) => Promise<void>
   resetOnboarding: () => Promise<void>
+  refreshOnboarding: () => Promise<void>
 }
 
 export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
   const { user } = useAuth()
-  const { currentOrg, organizations } = useAppData()
+  const { state } = useAppData()
+  const [persistence, setPersistence] = useState<OnboardingPersistence | null>(null)
+  const [loading, setLoading] = useState(false)
 
   // Get current setup progress
   const setupProgress = useMemo(() => {
-    const realBalance = currentOrg?.balance || MOCK_FINANCIAL_DATA.walletBalance
-    const accountsCount = MOCK_ACCOUNTS.length
+    const realBalance = state.currentOrganization?.balance || state.financialData.totalBalance
+    const accountsCount = state.accounts.length
 
     return getSetupProgress(
       !!user?.email_confirmed_at,
       realBalance > 0,
-      organizations.length > 0,
+      state.organizations.length > 0,
       accountsCount > 0
     )
-  }, [user?.email_confirmed_at, currentOrg?.balance, organizations.length])
+  }, [user?.email_confirmed_at, state.currentOrganization?.balance, state.financialData.totalBalance, state.organizations.length, state.accounts.length])
 
-  // Get persistence data (in real app, this would come from database)
-  const persistence = useMemo((): OnboardingPersistence | null => {
-    if (!user) return null
+  // Load onboarding persistence data from Supabase
+  const loadOnboardingData = useCallback(async () => {
+    if (!user?.id || state.dataSource !== 'supabase') {
+      // For demo mode, use simulated persistence data
+      const realBalance = state.currentOrganization?.balance || state.financialData.totalBalance
+      const accountsCount = state.accounts.length
 
-    // TODO: Replace with actual database calls
-    // For now, simulate based on current data
-    const realBalance = currentOrg?.balance || MOCK_FINANCIAL_DATA.walletBalance
-    const accountsCount = MOCK_ACCOUNTS.length
-
-    return {
-      hasEverCompletedEmail: !!user.email_confirmed_at,
-      hasEverFundedWallet: realBalance > 0, // This should come from DB
-      hasEverCreatedBusiness: organizations.length > 0, // This should come from DB
-      hasEverCreatedAccount: accountsCount > 0, // This should come from DB
-      hasExplicitlyDismissedOnboarding: false, // This should come from DB
-      accountCreatedAt: user.created_at || new Date().toISOString()
+      setPersistence({
+        hasEverCompletedEmail: !!user?.email_confirmed_at,
+        hasEverFundedWallet: realBalance > 0,
+        hasEverCreatedBusiness: state.organizations.length > 0,
+        hasEverCreatedAccount: accountsCount > 0,
+        hasExplicitlyDismissedOnboarding: false,
+        accountCreatedAt: user?.created_at || new Date().toISOString()
+      })
+      return
     }
-  }, [user, currentOrg?.balance, organizations.length])
+
+    try {
+      setLoading(true)
+      const onboardingData = await OnboardingService.getOnboardingProgress(user.id)
+      
+      if (onboardingData?.onboardingState) {
+        const state = onboardingData.onboardingState
+        setPersistence({
+          hasEverCompletedEmail: state.hasEverCompletedEmail || false,
+          hasEverFundedWallet: state.hasEverFundedWallet || false,
+          hasEverCreatedBusiness: state.hasEverCreatedBusiness || false,
+          hasEverCreatedAccount: state.hasEverCreatedAccount || false,
+          hasExplicitlyDismissedOnboarding: state.hasExplicitlyDismissedOnboarding || false,
+          accountCreatedAt: onboardingData.accountCreatedAt || new Date().toISOString()
+        })
+      }
+    } catch (error) {
+      console.error('Error loading onboarding data:', error)
+      // Fallback to current state-based persistence
+      const realBalance = state.currentOrganization?.balance || state.financialData.totalBalance
+      const accountsCount = state.accounts.length
+
+      setPersistence({
+        hasEverCompletedEmail: !!user?.email_confirmed_at,
+        hasEverFundedWallet: realBalance > 0,
+        hasEverCreatedBusiness: state.organizations.length > 0,
+        hasEverCreatedAccount: accountsCount > 0,
+        hasExplicitlyDismissedOnboarding: false,
+        accountCreatedAt: user?.created_at || new Date().toISOString()
+      })
+    } finally {
+      setLoading(false)
+    }
+  }, [user, state])
+
+  // Load onboarding data on mount and when dependencies change
+  useEffect(() => {
+    loadOnboardingData()
+  }, [loadOnboardingData])
 
   // Calculate derived data
   const completion = useMemo(() => 
@@ -82,26 +125,31 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
     if (!user?.id) return
 
     try {
-      // Call database function to dismiss onboarding
-      const { error } = await supabase.rpc('dismiss_onboarding', {
-        p_user_id: user.id
-      })
-
-      if (error) {
-        console.error('Failed to dismiss onboarding:', error)
-        throw error
+      setLoading(true)
+      
+      if (state.dataSource === 'supabase') {
+        await OnboardingService.dismissOnboarding(user.id)
       }
-
-      // TODO: Update local state or refetch data
+      
+      // Update local state
+      setPersistence(prev => prev ? {
+        ...prev,
+        hasExplicitlyDismissedOnboarding: true
+      } : null)
+      
     } catch (error) {
       console.error('Error dismissing onboarding:', error)
+    } finally {
+      setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, state.dataSource])
 
   const markStepCompleted = useCallback(async (stepId: string) => {
     if (!user?.id) return
 
     try {
+      setLoading(true)
+      
       // Map step IDs to database fields
       const fieldMap: Record<string, string> = {
         'email-verification': 'hasEverCompletedEmail',
@@ -113,53 +161,53 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
       const field = fieldMap[stepId]
       if (!field) return
 
-      // Call database function to update onboarding state
-      const { error } = await supabase.rpc('update_user_onboarding_state', {
-        p_user_id: user.id,
-        p_field: field,
-        p_value: true
-      })
-
-      if (error) {
-        console.error('Failed to mark step completed:', error)
-        throw error
+      if (state.dataSource === 'supabase') {
+        await OnboardingService.updateOnboardingStep(user.id, field, true)
       }
-
-      // TODO: Update local state or refetch data
+      
+      // Update local state
+      setPersistence(prev => prev ? {
+        ...prev,
+        [field]: true
+      } : null)
+      
     } catch (error) {
       console.error('Error marking step completed:', error)
+    } finally {
+      setLoading(false)
     }
-  }, [user?.id])
+  }, [user?.id, state.dataSource])
 
   const resetOnboarding = useCallback(async () => {
     if (!user?.id) return
 
     try {
-      // Reset onboarding state in database
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({
-          onboarding_state: {
-            hasEverCompletedEmail: !!user.email_confirmed_at,
-            hasEverFundedWallet: false,
-            hasEverCreatedBusiness: false,
-            hasEverCreatedAccount: false,
-            hasExplicitlyDismissedOnboarding: false,
-            onboardingVersion: '1.0'
-          }
-        })
-        .eq('user_id', user.id)
-
-      if (error) {
-        console.error('Failed to reset onboarding:', error)
-        throw error
+      setLoading(true)
+      
+      if (state.dataSource === 'supabase') {
+        await OnboardingService.resetOnboarding(user.id)
       }
-
-      // TODO: Update local state or refetch data
+      
+      // Reset local state
+      setPersistence({
+        hasEverCompletedEmail: !!user.email_confirmed_at,
+        hasEverFundedWallet: false,
+        hasEverCreatedBusiness: false,
+        hasEverCreatedAccount: false,
+        hasExplicitlyDismissedOnboarding: false,
+        accountCreatedAt: user.created_at || new Date().toISOString()
+      })
+      
     } catch (error) {
       console.error('Error resetting onboarding:', error)
+    } finally {
+      setLoading(false)
     }
-  }, [user?.id, user?.email_confirmed_at])
+  }, [user?.id, user?.email_confirmed_at, user?.created_at, state.dataSource])
+
+  const refreshOnboarding = useCallback(async () => {
+    await loadOnboardingData()
+  }, [loadOnboardingData])
 
   return {
     setupProgress,
@@ -167,8 +215,10 @@ export function useAdvancedOnboarding(): UseAdvancedOnboardingReturn {
     completion,
     nextStep,
     shouldShowOnboarding: showOnboarding,
+    loading,
     dismissOnboarding,
     markStepCompleted,
-    resetOnboarding
+    resetOnboarding,
+    refreshOnboarding
   }
 } 

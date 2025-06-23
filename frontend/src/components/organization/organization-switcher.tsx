@@ -18,15 +18,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../ui/popover"
-import { useAppData } from "../../contexts/ProductionDataContext";
+import { useAppData } from "../../contexts/AppDataContext"
 import { contentTokens } from "../../lib/content-tokens"
+import { toast } from "sonner"
 
 interface OrganizationSwitcherProps {
   className?: string
 }
 
 export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
-  const { organizations, currentOrg, setCurrentOrg, loading, createOrganization } = useAppData();
+  const { state, switchOrganization, createOrganization } = useAppData();
   const [open, setOpen] = useState(false)
   const [showNewOrgDialog, setShowNewOrgDialog] = useState(false)
   const [newOrgName, setNewOrgName] = useState("")
@@ -37,19 +38,26 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     
     setIsCreating(true)
     try {
-      await createOrganization(newOrgName.trim())
+      // Use the real createOrganization method from context
+      await createOrganization({
+        name: newOrgName.trim(),
+        plan: 'Bronze',
+        balance: 0,
+        verification_status: 'verified'
+      })
+      
       setNewOrgName("")
       setShowNewOrgDialog(false)
       setOpen(false)
     } catch (error) {
       console.error('Failed to create organization:', error)
-      // You might want to show a toast notification here
+      toast.error('Failed to create organization. Please try again.')
     } finally {
       setIsCreating(false)
     }
   }
 
-  if (loading) {
+  if (state.loading.organizations) {
     return (
       <div className={cn("flex items-center space-x-2", className)}>
         <div className="h-8 w-8 animate-pulse rounded bg-muted" />
@@ -68,7 +76,7 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
           aria-label="Select organization"
           className={cn("w-[200px] justify-between", className)}
         >
-          {currentOrg?.name || "Select organization..."}
+                      {state.currentOrganization?.name || "Select organization..."}
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -78,20 +86,20 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
             <CommandInput placeholder="Search organizations..." />
             <CommandEmpty>No organizations found.</CommandEmpty>
             <CommandGroup>
-              {organizations.map((org) => (
+              {state.organizations.map((org) => (
                 <CommandItem
                   key={org.id}
-                  onSelect={() => {
-                    setCurrentOrg(org)
-                    setOpen(false)
-                  }}
+                                      onSelect={() => {
+                      switchOrganization(org.id)
+                      setOpen(false)
+                    }}
                   className="text-sm"
                 >
                   {org.name}
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      currentOrg?.id === org.id ? "opacity-100" : "opacity-0"
+                      state.currentOrganization?.id === org.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useSuperuser } from "../../contexts/ProductionDataContext"
+import { useSuperuser } from "../../contexts/AppDataContext"
 import { AdminOrgAccountsTable } from "./admin-org-accounts-table"
 import { Loader } from "../core/Loader"
 

@@ -169,4 +169,19 @@ cd frontend
 npm run dev
 ```
 
-**After these steps, the system will be 100% production ready!** 
+**After these steps, the system will be 100% production ready!**
+
+# Missing Implementations & Development Notes
+
+## 🚧 Critical Missing Features
+
+### Authentication & User Management
+- [ ] **Password Reset Flow**: Email-based password reset functionality
+- [ ] **Email Verification**: Complete email verification system with resend capability
+- [ ] **User Profile Management**: Edit profile, change password, account settings
+
+### Onboarding & Setup
+- [x] **Auto-Organization Creation**: Organizations are automatically created when users sign up (implemented via database trigger)
+- [ ] **Welcome Flow**: Complete the welcome onboarding modal with proper API integration
+- [ ] **Setup Progress Tracking**: Persistent tracking of user setup completion
+- [ ] **Email Verification Banner**: Persistent banner until email is verified 

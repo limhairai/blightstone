@@ -19,14 +19,17 @@ import { StatusBadge } from "../ui/status-badge"
 import { AccountTransactionsDialog } from "./account-transactions-dialog"
 import { WithdrawBalanceDialog } from "./withdraw-balance-dialog"
 import { TopUpDialog } from "./top-up-dialog"
-import { MOCK_BUSINESSES, type MockAccount } from "../../lib/mock-data"
-import { formatCurrency } from "../../lib/utils"
-import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2, RefreshCw } from "lucide-react"
+import { APP_BUSINESSES } from "../../lib/mock-data"
+import { type AppAccount } from "../../contexts/AppDataContext"
+import { formatCurrency } from "../../lib/config/financial"
+import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2, RefreshCw, CreditCard } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { toast } from "sonner"
+import { LoadingState, ErrorState, EmptyState } from "../ui/comprehensive-states"
+import { showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 import { ViewDetailsDialog } from "./view-details-dialog"
 import { BulkTopUpDialog } from "./bulk-top-up-dialog"
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
@@ -37,7 +40,7 @@ interface AccountsTableProps {
 }
 
 export function AccountsTable({ initialBusinessFilter = "all", businessId }: AccountsTableProps) {
-  const { state, pauseAccount, resumeAccount, deleteAccount } = useDemoState()
+  const { state, updateAccount, deleteAccount } = useAppData()
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -46,16 +49,16 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
     enabled: true,
     interval: REFRESH_INTERVALS.SLOW,
     onRefresh: async () => {
-      // The accounts data is reactive through useDemoState, so we don't need to do anything
+      // The accounts data is reactive through useAppData, so we don't need to do anything
       // This is just to show the refresh indicator
     },
     dependencies: [businessId] // Restart refresh when business filter changes
   })
   
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
-  const [viewAccount, setViewAccount] = useState<any>(null)
-  const [withdrawAccount, setWithdrawAccount] = useState<any>(null)
-  const [transactionsAccount, setTransactionsAccount] = useState<any>(null)
+  const [viewAccount, setViewAccount] = useState<AppAccount | null>(null)
+  const [withdrawAccount, setWithdrawAccount] = useState<AppAccount | null>(null)
+  const [transactionsAccount, setTransactionsAccount] = useState<AppAccount | null>(null)
   const [bulkTopUpOpen, setBulkTopUpOpen] = useState(false)
   const [filters, setFilters] = useState({
     search: "",
@@ -77,15 +80,15 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
     return state.accounts.map(account => ({
       id: account.id.toString(),
       name: account.name,
-      accountId: account.adAccount,
-      business: account.business,
-      status: account.status === "paused" ? "inactive" : account.status as "active" | "pending" | "inactive" | "suspended",
+      accountId: account.accountId || account.id.toString(),
+      business: account.business || 'Unknown',
+      status: account.status === "pending" ? "inactive" : account.status as "active" | "pending" | "inactive" | "suspended",
       balance: account.balance,
-      spendLimit: account.spendLimit,
+      spendLimit: account.spendLimit || 5000,
       dateAdded: account.dateAdded,
-      quota: Math.round((account.spent / account.quota) * 100),
-      spent: account.spent,
-      platform: account.platform,
+      spend: account.spend || account.spent || 0,
+      quota: Math.round((account.spend || 0) / (account.spendLimit || 5000) * 100),
+      platform: account.platform || 'Facebook',
     }))
   }, [state.accounts])
 
@@ -120,7 +123,10 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
   const handleBulkPause = async () => {
     try {
       for (const accountId of selectedAccounts) {
-        await pauseAccount(Number(accountId))
+        const account = state.accounts.find(a => a.id === accountId)
+        if (account) {
+          await updateAccount({ ...account, status: 'paused' })
+        }
       }
       setSelectedAccounts([])
       toast.success(`Paused ${selectedAccounts.length} account(s)`)
@@ -132,7 +138,10 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
   const handleBulkResume = async () => {
     try {
       for (const accountId of selectedAccounts) {
-        await resumeAccount(Number(accountId))
+        const account = state.accounts.find(a => a.id === accountId)
+        if (account) {
+          await updateAccount({ ...account, status: 'active' })
+        }
       }
       setSelectedAccounts([])
       toast.success(`Resumed ${selectedAccounts.length} account(s)`)
@@ -148,7 +157,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
     
     try {
       for (const accountId of selectedAccounts) {
-        await deleteAccount(Number(accountId))
+        await deleteAccount(accountId)
       }
       setSelectedAccounts([])
       toast.success(`Deleted ${selectedAccounts.length} account(s)`)
@@ -174,30 +183,30 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
   }
 
   const handleViewTransactions = (account: any) => {
-    // Convert back to MockAccount format for the dialog
-    const mockAccount: MockAccount = {
+    // Convert to AppAccount format for the dialog
+    const appAccount: AppAccount = {
       ...account,
-      id: Number(account.id)
+      id: account.id
     }
-    setTransactionsAccount(mockAccount)
+    setTransactionsAccount(appAccount)
   }
 
   const handleWithdrawBalance = (account: any) => {
-    // Convert back to MockAccount format for the dialog
-    const mockAccount: MockAccount = {
+    // Convert to AppAccount format for the dialog
+    const appAccount: AppAccount = {
       ...account,
-      id: Number(account.id)
+      id: account.id
     }
-    setWithdrawAccount(mockAccount)
+    setWithdrawAccount(appAccount)
   }
 
   const handleTopUp = (account: any) => {
-    // Convert back to MockAccount format for the dialog
-    const mockAccount: MockAccount = {
+    // Convert to AppAccount format for the dialog
+    const appAccount: AppAccount = {
       ...account,
-      id: Number(account.id)
+      id: account.id
     }
-    setTransactionsAccount(mockAccount)
+    setTransactionsAccount(appAccount)
   }
 
   const handleCopyAccountId = (accountId: string) => {
@@ -233,23 +242,23 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
     return timezone
   }
 
-  const handlePauseAccount = async (account: MockAccount) => {
+  const handlePauseAccount = async (account: AppAccount) => {
     try {
-      await pauseAccount(account.id)
+      await updateAccount({ ...account, status: 'paused' })
     } catch (error) {
-      // Error handling is done in the pauseAccount function
+      console.error('Failed to pause account:', error)
     }
   }
 
-  const handleResumeAccount = async (account: MockAccount) => {
+  const handleResumeAccount = async (account: AppAccount) => {
     try {
-      await resumeAccount(account.id)
+      await updateAccount({ ...account, status: 'active' })
     } catch (error) {
-      // Error handling is done in the resumeAccount function
+      console.error('Failed to resume account:', error)
     }
   }
 
-  const handleDeleteAccount = async (account: MockAccount) => {
+  const handleDeleteAccount = async (account: AppAccount) => {
     if (window.confirm(`Are you sure you want to delete "${account.name}"? This action cannot be undone.`)) {
       try {
         await deleteAccount(account.id)
@@ -324,7 +333,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
                 <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
                   All Businesses
                 </SelectItem>
-                {Array.from(new Set(state.accounts.map((account) => account.business))).map((business) => (
+                {Array.from(new Set(state.accounts.map((account) => account.business || 'Unknown'))).map((business) => (
                   <SelectItem key={business} value={business} className="text-popover-foreground hover:bg-accent">
                     {business}
                   </SelectItem>
@@ -540,7 +549,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-border" />
                     {(() => {
-                      const originalAccount = state.accounts.find(acc => acc.id === Number(account.id))
+                      const originalAccount = state.accounts.find(acc => acc.id === account.id)
                       return originalAccount?.status === 'active' ? (
                         <DropdownMenuItem 
                           className="text-popover-foreground hover:bg-accent"
@@ -562,7 +571,7 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
                     <DropdownMenuItem 
                       className="text-destructive hover:bg-destructive/10"
                       onClick={() => {
-                        const originalAccount = state.accounts.find(acc => acc.id === Number(account.id))
+                        const originalAccount = state.accounts.find(acc => acc.id === account.id)
                         if (originalAccount) handleDeleteAccount(originalAccount)
                       }}
                     >
@@ -625,9 +634,9 @@ export function AccountsTable({ initialBusinessFilter = "all", businessId }: Acc
 
       <BulkTopUpDialog
         selectedAccounts={selectedAccounts.map(id => {
-          const originalAccount = state.accounts.find(acc => acc.id === Number(id))
+          const originalAccount = state.accounts.find(acc => acc.id === id)
           return originalAccount
-        }).filter((account): account is MockAccount => account !== undefined)}
+        }).filter((account): account is AppAccount => account !== undefined)}
         open={bulkTopUpOpen}
         onOpenChange={setBulkTopUpOpen}
         onTopUpComplete={() => {

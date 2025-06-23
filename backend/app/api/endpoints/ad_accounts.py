@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query, Depends
-from core.supabase_client import get_supabase_client
-from services.dolphin_service import DolphinCloudAPI
+from backend.app.core.supabase_client import get_supabase_client
+from backend.app.services.dolphin_service import DolphinCloudAPI
 from datetime import datetime, timezone
 import os
 import requests
 import time
-from core.security import get_current_user
-from schemas.user import UserRead as User
+from backend.app.core.security import get_current_user
+from backend.app.schemas.user import UserRead as User
 from typing import List, Optional
 from collections import defaultdict
 import logging

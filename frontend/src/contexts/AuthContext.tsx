@@ -18,7 +18,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 // Supabase imports
 import { User as SupabaseUser, Session, AuthError, AuthChangeEvent, AuthSession } from '@supabase/supabase-js';
 import { supabase } from '../lib/stores/supabase-client';
-import { config, shouldUseMockData, isDemoMode } from '../lib/data/config';
+import { config, shouldUseAppData, isDemoMode } from '../lib/data/config';
 
 import { useRouter } from 'next/navigation';
 import { toast } from "../components/ui/use-toast"
@@ -46,13 +46,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // In demo mode, provide mock user and session
-    if (isDemoMode() || shouldUseMockData()) {
-      console.log('AuthContext: Demo mode detected, providing mock user session');
-      
+    if (isDemoMode() || shouldUseAppData()) {
       const mockUser: SupabaseUser = {
-        id: 'demo-admin-user-123',
+        id: 'demo-user-123',
         email: 'admin@adhub.tech',
-        email_confirmed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         app_metadata: { provider: 'demo' },
@@ -89,13 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: authSubscriptionData } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, currentSession: AuthSession | null) => {
-        console.log("🔐 Supabase auth event:", event, {
-          hasSession: !!currentSession,
-          hasUser: !!currentSession?.user,
-          userId: currentSession?.user?.id,
-          environment: process.env.NODE_ENV
-        });
-
         if (event === 'SIGNED_IN' && currentSession?.user) {
           if (currentSession.user.email_confirmed_at) {
             toast({
@@ -115,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        setUser(currentSession?.user || null);
         setLoading(false);
       }
     );
@@ -128,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Sign out function
   const signOut = useCallback(async () => {
     // In demo mode, just clear local state
-    if (isDemoMode() || shouldUseMockData()) {
+    if (isDemoMode() || shouldUseAppData()) {
       setUser(null);
       setSession(null);
       router.push('/login');
@@ -205,17 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // the component will handle the redirect to email confirmation page.
     // We don't show a toast here since the component will handle the UX.
     if (data.user && !data.session) {
-        console.log("SignUp successful - email confirmation required");
+      setLoading(false);
+      return { data: { user: data.user, session: data.session }, error: null };
     }
-
-    // The AuthContextType expects a specific return structure.
-    // Supabase signUp returns { data: { user, session, ... }, error }
-    // Let's align with that for the context consumer.
+    
+    setLoading(false);
     return { data: { user: data.user, session: data.session }, error: null };
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log("🚀 Starting sign in attempt:", { email, environment: process.env.NODE_ENV });
     setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -229,8 +217,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         environment: process.env.NODE_ENV
       });
       setLoading(false);
-      
-
       
       // Return the error to let the login component handle the UI feedback
       return { data: null, error };

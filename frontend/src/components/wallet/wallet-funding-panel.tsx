@@ -9,11 +9,11 @@ import { Building2, ArrowUpDown, Shuffle, CreditCard, Wallet } from 'lucide-reac
 import { toast } from "sonner"
 import { ConsolidateFundsDialog } from "./consolidate-funds-dialog"
 import { DistributeFundsDialog } from "./distribute-funds-dialog"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { formatCurrency } from "../../lib/mock-data"
 
 export function WalletFundingPanel() {
-  const { state, fundWallet, withdrawFromWallet } = useDemoState()
+  const { state, addTransaction, updateWalletBalance } = useAppData()
   const [mode, setMode] = useState<"add" | "withdraw">("add")
   const [amount, setAmount] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("bank")
@@ -28,7 +28,7 @@ export function WalletFundingPanel() {
   // Handle max amount
   const handleMaxAmount = () => {
     if (mode === "withdraw") {
-      setAmount(state.financialData.walletBalance.toString())
+      setAmount(state.financialData.totalBalance.toString())
     } else {
       setAmount("10000") // Max add amount
     }
@@ -44,13 +44,36 @@ export function WalletFundingPanel() {
 
     try {
       if (mode === "add") {
-        await fundWallet(numAmount, getPaymentMethodLabel())
+        // 1. Add funds to wallet balance
+        await updateWalletBalance(numAmount, 'add')
+        
+        // 2. Add transaction record
+        await addTransaction({
+          type: 'topup',
+          amount: numAmount,
+          date: new Date().toISOString(),
+          description: `Wallet funding via ${getPaymentMethodLabel()}`,
+          status: 'completed'
+        })
+        toast.success(`Successfully added $${numAmount} to wallet`)
       } else {
-        if (numAmount > state.financialData.walletBalance) {
+        if (numAmount > state.financialData.totalBalance) {
           toast.error("Amount exceeds available balance")
           return
         }
-        await withdrawFromWallet(numAmount, getPaymentMethodLabel())
+        
+        // 1. Subtract funds from wallet balance
+        await updateWalletBalance(numAmount, 'subtract')
+        
+        // 2. Add transaction record
+        await addTransaction({
+          type: 'withdrawal',
+          amount: numAmount,
+          date: new Date().toISOString(),
+          description: `Wallet withdrawal via ${getPaymentMethodLabel()}`,
+          status: 'completed'
+        })
+        toast.success(`Successfully withdrew $${numAmount} from wallet`)
       }
       
       // Reset amount after successful action
@@ -89,7 +112,7 @@ export function WalletFundingPanel() {
   }
 
   const PaymentIcon = getPaymentMethodIcon()
-  const isLoading = state.loading.wallet
+  const isLoading = state.loading.actions
 
   return (
     <>
@@ -97,7 +120,7 @@ export function WalletFundingPanel() {
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold text-foreground">Fund Wallet</CardTitle>
           <div className="text-sm text-muted-foreground">
-            Available: ${formatCurrency(state.financialData.walletBalance)}
+            Available: ${formatCurrency(state.financialData.totalBalance)}
           </div>
         </CardHeader>
         <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
@@ -251,7 +274,7 @@ export function WalletFundingPanel() {
       <DistributeFundsDialog 
         open={showDistributeDialog} 
         onOpenChange={setShowDistributeDialog}
-        walletBalance={state.financialData.walletBalance}
+        walletBalance={state.financialData.totalBalance}
       />
     </>
   )

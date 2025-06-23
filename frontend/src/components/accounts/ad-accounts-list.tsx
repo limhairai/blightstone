@@ -4,15 +4,15 @@ import { useState } from "react"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
-import { MOCK_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
+import { APP_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
 
 export function AdAccountsList() {
   // Use centralized mock data and convert to the format expected by this component
-  const accounts = MOCK_ACCOUNTS.slice(0, 4).map((account) => ({
+  const accounts = APP_ACCOUNTS.slice(0, 4).map((account) => ({
     id: `acc_${account.id}`,
     name: account.name,
     status: account.status === "active" ? "Active" : 
-            account.status === "pending" ? "Pending" : 
+            account.status === "under_review" ? "Under Review" : 
             account.status === "paused" ? "Paused" : "Inactive",
     balance: `$${formatCurrency(account.balance)}`,
     platform: account.platform,
@@ -42,7 +42,7 @@ export function AdAccountsList() {
                 <span className="text-sm text-muted-foreground">Status:</span>
                 <Badge
                   variant={
-                    account.status === "Active" ? "default" : account.status === "Pending" ? "outline" : "secondary"
+                    account.status === "Active" ? "default" : account.status === "Under Review" ? "outline" : "secondary"
                   }
                 >
                   {account.status}
@@ -64,4 +64,4 @@ export function AdAccountsList() {
   )
 }
 
-export default AdAccountsList 
+export default AdAccountsList

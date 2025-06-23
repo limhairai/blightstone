@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -61,7 +64,7 @@ import {
 } from "../../../components/ui/select";
 import { VirtualizedTable } from "../../../components/admin/VirtualizedTable";
 import { useDebouncedSearch } from "../../../hooks/useDebouncedSearch";
-import { adminMockData, MockTransaction, MockClient } from "../../../lib/mock-data/admin-mock-data";
+import { adminAppData, AppTransaction, AppClient } from "../../../lib/mock-data/admin-mock-data";
 
 export default function BillingPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,8 +78,8 @@ export default function BillingPage() {
   const { debouncedTerm } = useDebouncedSearch(searchTerm, 300);
 
   // Get all financial data
-  const allTransactions = adminMockData.getTransactions();
-  const allClients = adminMockData.getClients();
+  const allTransactions = adminAppData.getTransactions();
+  const allClients = adminAppData.getClients();
 
   // Enhanced transaction data with risk scoring
   const enhancedTransactions = useMemo(() => {

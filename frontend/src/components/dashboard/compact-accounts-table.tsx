@@ -14,49 +14,46 @@ import { StatusBadge } from "../ui/status-badge"
 import { CompactFilters } from "./compact-filters"
 import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
 import { TopUpDialog } from "./top-up-dialog"
-import { MOCK_ACCOUNTS, type MockAccount } from "../../lib/mock-data"
-import { formatCurrency } from "../../lib/utils"
+import { APP_ACCOUNTS } from "../../lib/mock-data"
+import { useAppData, type AppAccount } from "../../contexts/AppDataContext"
+import { formatCurrency } from '@/lib/config/financial'
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Plus, TrendingUp, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react"
 import { cn } from "../../lib/utils"
 
 export function CompactAccountsTable() {
-  const [accounts, setAccounts] = useState<MockAccount[]>(MOCK_ACCOUNTS)
+  const { state } = useAppData()
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
     platform: "all",
     business: "all",
   })
-  const [selectedAccount, setSelectedAccount] = useState<MockAccount | null>(null)
+  const [selectedAccount, setSelectedAccount] = useState<AppAccount | null>(null)
   const [topUpDialogOpen, setTopUpDialogOpen] = useState(false)
 
   const filteredAccounts = useMemo(() => {
-    return accounts.filter((account) => {
+    return state.accounts.filter((account) => {
       const matchesSearch = 
         account.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        account.business.toLowerCase().includes(filters.search.toLowerCase()) ||
-        account.adAccount.includes(filters.search)
+        (account.business && account.business.toLowerCase().includes(filters.search.toLowerCase())) ||
+        account.id.toString().includes(filters.search)
       
       const matchesStatus = filters.status === "all" || account.status === filters.status
-      const matchesPlatform = filters.platform === "all" || account.platform === filters.platform
+      const matchesPlatform = filters.platform === "all" || (account.platform || "Facebook") === filters.platform
       const matchesBusiness = filters.business === "all" || account.business === filters.business
       
       return matchesSearch && matchesStatus && matchesPlatform && matchesBusiness
     })
-  }, [accounts, filters])
+  }, [state.accounts, filters])
 
-  const getStatusIcon = (status: MockAccount["status"]) => {
+  const getStatusIcon = (status: AppAccount["status"]) => {
     switch (status) {
       case "active":
         return <CheckCircle className="h-4 w-4 text-emerald-500" />
       case "pending":
-        return <Clock className="h-4 w-4 text-yellow-500" />
-      case "paused":
         return <AlertCircle className="h-4 w-4 text-orange-500" />
-      case "error":
+      case "suspended":
         return <XCircle className="h-4 w-4 text-red-500" />
-      case "inactive":
-        return <XCircle className="h-4 w-4 text-gray-500" />
       default:
         return <AlertCircle className="h-4 w-4 text-gray-500" />
     }
@@ -70,7 +67,7 @@ export function CompactAccountsTable() {
     return "bg-emerald-500"
   }
 
-  const handleTopUp = (account: MockAccount) => {
+  const handleTopUp = (account: AppAccount) => {
     setSelectedAccount(account)
     setTopUpDialogOpen(true)
   }
@@ -115,7 +112,7 @@ export function CompactAccountsTable() {
                 {getStatusIcon(account.status)}
                 <div>
                   <h3 className="font-semibold text-foreground text-sm">{account.name}</h3>
-                  <p className="text-xs text-muted-foreground">{account.business}</p>
+                  <p className="text-xs text-muted-foreground">{account.business || 'Unknown'}</p>
                 </div>
               </div>
               <StatusBadge status={account.status} size="sm" />
@@ -124,7 +121,7 @@ export function CompactAccountsTable() {
             {/* Account ID */}
             <div className="mb-3">
               <p className="text-xs text-muted-foreground">Account ID</p>
-              <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{account.adAccount}</code>
+              <code className="text-xs bg-muted px-2 py-1 rounded font-mono">{account.id}</code>
             </div>
 
             {/* Balance & Spend Limit */}
@@ -135,7 +132,7 @@ export function CompactAccountsTable() {
               </div>
               <div className="text-center p-2 bg-muted/30 rounded-md">
                 <p className="text-xs text-muted-foreground mb-1">Spend Limit</p>
-                <p className="font-semibold text-foreground">${formatCurrency(account.spendLimit)}</p>
+                <p className="font-semibold text-foreground">${formatCurrency(account.spendLimit || 5000)}</p>
               </div>
             </div>
 
@@ -144,20 +141,20 @@ export function CompactAccountsTable() {
               <div className="flex justify-between items-center mb-1">
                 <span className="text-xs text-muted-foreground">Quota Usage</span>
                 <span className="text-xs text-muted-foreground">
-                  ${formatCurrency(account.spent)} / ${formatCurrency(account.quota)}
+                  ${formatCurrency(account.spend || 0)} / ${formatCurrency(account.spendLimit || 5000)}
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
                 <div
                   className={cn(
                     "h-2 rounded-full transition-all duration-300",
-                    getQuotaUsageColor(account.spent, account.quota)
+                    getQuotaUsageColor(account.spend || 0, account.spendLimit || 10000)
                   )}
-                  style={{ width: `${Math.min((account.spent / account.quota) * 100, 100)}%` }}
+                  style={{ width: `${Math.min(((account.spend || 0) / (account.spendLimit || 10000)) * 100, 100)}%` }}
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {((account.spent / account.quota) * 100).toFixed(1)}% used
+                {(((account.spend || 0) / (account.spendLimit || 10000)) * 100).toFixed(1)}% used
               </p>
             </div>
 
@@ -165,7 +162,7 @@ export function CompactAccountsTable() {
             <div className="flex justify-between items-center text-xs text-muted-foreground mb-3">
               <span className="flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
-                {account.platform}
+                {account.platform || 'Facebook'}
               </span>
               <span>Added {account.dateAdded}</span>
             </div>
@@ -209,7 +206,7 @@ export function CompactAccountsTable() {
 
       {/* Results count */}
       <div className="text-xs text-muted-foreground">
-        Showing {filteredAccounts.length} of {accounts.length} accounts
+        Showing {filteredAccounts.length} of {state.accounts.length} accounts
       </div>
 
       {/* Top Up Dialog */}

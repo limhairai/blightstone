@@ -1,18 +1,21 @@
 "use client"
 
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
 import { Button } from '../../../components/ui/button';
 import { Badge } from '../../../components/ui/badge';
 import { ArrowLeft, Workflow, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { adminMockData } from '../../../lib/mock-data/admin-mock-data';
+import { adminAppData } from '../../../lib/mock-data/admin-mock-data';
 
 export default function WorkflowPage() {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   // Get real application data
-  const allApplications = adminMockData.getApplications();
+  const allApplications = adminAppData.getApplications();
 
   // Group applications by stage
   const applicationsByStage = useMemo(() => {

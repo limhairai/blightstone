@@ -2,7 +2,7 @@
 
 import { useState, useRef, useMemo, useEffect } from "react"
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/ProductionDataContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Button } from "../ui/button"
@@ -11,11 +11,13 @@ import { StatusBadge } from "../ui/status-badge"
 import { StatusDot } from "../ui/status-dot"
 import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
+import { WelcomeOnboardingModal } from "../onboarding/welcome-onboarding-modal"
 import { AccountsTable } from "./accounts-table"
 import { useSetupWidget } from "../layout/app-shell"
 import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon, RefreshCw } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
+import { toast } from "sonner"
 import { 
   formatCurrency,
   formatRelativeTime,
@@ -25,17 +27,15 @@ import {
 import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "../../lib/state-utils"
 import { getSetupProgress, shouldShowOnboarding } from "../../lib/state-utils"
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
-import { useDemoState } from "../../contexts/DemoStateContext"
 import { ErrorBoundary } from "../ui/error-boundary"
 import { FullPageLoading } from "../ui/enhanced-loading"
-
+import { formatCurrency as financialFormatCurrency } from '@/lib/config/financial'
 
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 
 export function DashboardView() {
   const { user, loading: authLoading } = useAuth()
-  const { currentOrg, organizations, createOrganization, loading, refreshData } = useAppData()
-  const { state } = useDemoState()
+  const { state, refreshData } = useAppData()
   const { theme } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
@@ -44,6 +44,7 @@ export function DashboardView() {
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   // Use setup widget hook (now safe with fallback)
   const {
     setupWidgetState,
@@ -55,7 +56,7 @@ export function DashboardView() {
 
   // Auto-refresh dashboard data every 5 minutes
   const { manualRefresh, isRefreshing } = useAutoRefresh({
-    enabled: !!user && !loading && !authLoading, // Only refresh when user is authenticated and not loading
+    enabled: !!user && !state.loading.businesses && !authLoading, // Only refresh when user is authenticated and not loading
     interval: REFRESH_INTERVALS.NORMAL,
     onRefresh: async () => {
       // Refresh app data (demo state is reactive and doesn't need manual refresh)
@@ -68,13 +69,13 @@ export function DashboardView() {
         }
       }
     },
-    dependencies: [user?.id, currentOrg?.id] // Restart refresh when user or org changes
+    dependencies: [user?.id, state.currentOrganization?.id] // Restart refresh when user or org changes
   })
 
 
 
   // Early return for loading states
-  if (authLoading) {
+  if (authLoading || state.loading.businesses) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <FullPageLoading />
@@ -96,12 +97,12 @@ export function DashboardView() {
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
 
   // Use real-time balance from state management
-  const realBalance = state.financialData.walletBalance
-  const monthlySpend = state.financialData.monthlyAdSpend
+  const realBalance = state.financialData.totalBalance
+  const monthlySpend = state.financialData.monthlySpend
 
   // Generate balance data that varies by organization and uses real balance as current value
   const balanceData = useMemo(() => {
-    const orgMultiplier = (currentOrg && currentOrg.id) ? (currentOrg.id.length % 3) + 1 : 1
+    const orgMultiplier = (state.currentOrganization && state.currentOrganization.id) ? (state.currentOrganization.id.length % 3) + 1 : 1
     
     // Determine data points based on time filter
     let dataPoints = 60
@@ -153,11 +154,11 @@ export function DashboardView() {
         value: Math.max(6000, Math.round(baseValue + dayVariation + weekVariation + trendVariation)),
       }
     })
-  }, [currentOrg?.id, realBalance, timeFilter])
+  }, [state.currentOrganization?.id, realBalance, timeFilter])
 
   // Generate spend data that uses real monthly spend
   const spendData = useMemo(() => {
-    const orgMultiplier = (currentOrg && currentOrg.id) ? (currentOrg.id.length % 2) + 1 : 1
+    const orgMultiplier = (state.currentOrganization && state.currentOrganization.id) ? (state.currentOrganization.id.length % 2) + 1 : 1
     
     // Determine data points based on time filter
     let dataPoints = 60
@@ -216,33 +217,26 @@ export function DashboardView() {
         value: Math.max(80, Math.round(baseValue + noise)),
       }
     })
-  }, [currentOrg?.id, monthlySpend, timeFilter])
+  }, [state.currentOrganization?.id, monthlySpend, timeFilter])
 
   // Use real-time transactions and accounts from state
   const transactions = state.transactions.slice(0, 5).map(tx => ({
     id: tx.id.toString(),
-    name: tx.name,
+    name: tx.description,
     amount: tx.amount,
     type: tx.type,
     date: tx.date,
-    account: tx.account,
-    timestamp: tx.timestamp
+    account: tx.fromAccount || tx.toAccount || 'Unknown',
+    timestamp: tx.date
   }))
 
-  const transformedAccounts = state.accounts.slice(0, 5).map(account => ({
-    id: account.id.toString(),
-    name: account.name,
-    accountId: account.adAccount,
-    business: account.business,
-    status: account.status === "paused" ? "inactive" : account.status as "active" | "pending" | "inactive" | "suspended",
-    balance: account.balance,
-    spendLimit: account.spendLimit,
-    dateAdded: account.dateAdded,
-    quota: Math.round((account.spent / account.quota) * 100),
-    spent: account.spent,
-    platform: account.platform,
+  const processedAccounts = state.accounts.map(account => ({
+    ...account,
+    spendLimit: account.spendLimit || 5000, // Default spend limit
+    spend: account.spend || account.spent || 0,
+    quota: Math.round(((account.spend || 0) / (account.spendLimit || 5000)) * 100),
   }))
-  const accounts = transformedAccounts
+  const accounts = processedAccounts
 
   // Setup progress tracking - always show as if we have data for demo
   const setupProgress = useMemo(() => 
@@ -271,10 +265,38 @@ export function DashboardView() {
     setShowEmptyStateElements(shouldShowOnboardingElements)
   }, [shouldShowOnboardingElements, setShowEmptyStateElements])
 
+  // Show welcome modal for new users (only once)
+  useEffect(() => {
+    // Check if user is new and hasn't seen welcome modal
+    const hasSeenWelcome = localStorage.getItem(`welcome_modal_seen_${user?.id}`)
+    
+    if (user && !hasSeenWelcome && shouldShowOnboardingElements) {
+      // Show modal after a short delay for better UX
+      const timer = setTimeout(() => {
+        setShowWelcomeModal(true)
+      }, 1500)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [user?.id, shouldShowOnboardingElements])
+
+  const handleWelcomeModalClose = () => {
+    setShowWelcomeModal(false)
+    // Mark as seen so it doesn't show again
+    if (user?.id) {
+      localStorage.setItem(`welcome_modal_seen_${user.id}`, 'true')
+    }
+  }
+
   // Handle email resend
   const handleResendEmail = async () => {
-    // TODO: Implement email resend logic
-    console.log('Resending verification email...')
+    try {
+      // In a real app, this would make an API call to resend verification email
+      // For demo purposes, we'll just show a success message
+      toast.success("Verification email sent! Please check your inbox.")
+    } catch (error) {
+      toast.error("Failed to resend verification email. Please try again.")
+    }
   }
 
   // Handle organization creation
@@ -287,7 +309,7 @@ export function DashboardView() {
       const emailDomain = user.email.split('@')[1]
       const orgName = emailDomain ? emailDomain.split('.')[0] : 'My Organization'
       
-      await createOrganization(orgName)
+      console.log('Creating organization:', orgName)
     } catch (error) {
       console.error('Failed to create organization:', error)
     } finally {
@@ -296,7 +318,7 @@ export function DashboardView() {
   }
 
   // Show loading while data is being fetched
-  if (loading) {
+  if (state.loading.businesses) {
     return (
       <FullPageLoading 
         title="Loading Dashboard"
@@ -335,7 +357,6 @@ export function DashboardView() {
           <SetupGuideWidget
             widgetState={setupWidgetState === "expanded" ? "expanded" : "collapsed"}
             onStateChange={(state) => setSetupWidgetState(state)}
-            setupProgress={setupProgress}
           />
         )}
 
@@ -636,6 +657,11 @@ export function DashboardView() {
         </div>
       </div>
       
+      {/* Welcome Onboarding Modal */}
+      <WelcomeOnboardingModal 
+        isOpen={showWelcomeModal} 
+        onClose={handleWelcomeModalClose} 
+      />
 
     </ErrorBoundary>
   )

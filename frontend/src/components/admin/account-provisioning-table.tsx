@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDemoState } from "../../contexts/DemoStateContext";
+import { useAppData } from "../../contexts/AppDataContext"
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
@@ -22,25 +22,25 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 export function AccountProvisioningTable() {
-  const { state } = useDemoState();
+  const { state } = useAppData();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
   const [createAccountDialogOpen, setCreateAccountDialogOpen] = useState(false);
 
   // Filter only approved businesses
-  const approvedBusinesses = state.businesses.filter(business => business.status === "active");
+  const approvedBusinesses = state.businesses.filter(business => business.status === "approved");
 
   // Apply search and filters
   const filteredBusinesses = approvedBusinesses.filter((business) => {
     const matchesSearch = business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         business.businessType?.toLowerCase().includes(searchTerm.toLowerCase());
+                         business.type?.toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesStatus = true;
     if (statusFilter === "with_accounts") {
-      matchesStatus = (business.adAccountIds?.length || 0) > 0;
+      matchesStatus = state.accounts.filter(acc => acc.businessId === business.id).length > 0;
     } else if (statusFilter === "no_accounts") {
-      matchesStatus = (business.adAccountIds?.length || 0) === 0;
+      matchesStatus = state.accounts.filter(acc => acc.businessId === business.id).length === 0;
     }
     
     return matchesSearch && matchesStatus;
@@ -134,7 +134,7 @@ export function AccountProvisioningTable() {
                       <div>
                         <div className="font-medium text-foreground">{business.name}</div>
                         <div className="text-sm text-muted-foreground capitalize">
-                          {business.businessType || "Other"}
+                          {business.type || "Other"}
                         </div>
                       </div>
                     </div>
@@ -142,23 +142,30 @@ export function AccountProvisioningTable() {
                   
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="text-sm font-medium text-foreground">
-                        {(business.adAccountIds?.length || 0)} account{(business.adAccountIds?.length || 0) !== 1 ? 's' : ''}
-                      </div>
-                      {(business.adAccountIds?.length || 0) > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {(business.adAccountIds || []).slice(0, 2).map((accountId: string, index: number) => (
-                            <div key={accountId} className="flex items-center gap-1">
-                              {getAccountStatusBadge("active")}
+                      {(() => {
+                        const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                        return (
+                          <>
+                            <div className="text-sm font-medium text-foreground">
+                              {businessAccounts.length} account{businessAccounts.length !== 1 ? 's' : ''}
                             </div>
-                          ))}
-                          {(business.adAccountIds?.length || 0) > 2 && (
-                            <span className="text-xs text-muted-foreground">
-                              +{(business.adAccountIds?.length || 0) - 2} more
-                            </span>
-                          )}
-                        </div>
-                      )}
+                            {businessAccounts.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {businessAccounts.slice(0, 2).map((account, index) => (
+                                  <div key={account.id} className="flex items-center gap-1">
+                                    {getAccountStatusBadge(account.status)}
+                                  </div>
+                                ))}
+                                {businessAccounts.length > 2 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    +{businessAccounts.length - 2} more
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </TableCell>
                   
@@ -166,7 +173,11 @@ export function AccountProvisioningTable() {
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
-                        ${getTotalSpend([]).toLocaleString()}
+                        ${(() => {
+                          const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                          const totalSpend = businessAccounts.reduce((total, acc) => total + (acc.spend || 0), 0);
+                          return totalSpend.toLocaleString();
+                        })()}
                       </span>
                     </div>
                   </TableCell>
@@ -175,7 +186,11 @@ export function AccountProvisioningTable() {
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
-                        ${getTotalBalance([]).toLocaleString()}
+                        ${(() => {
+                          const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                          const totalBalance = businessAccounts.reduce((total, acc) => total + (acc.balance || 0), 0);
+                          return totalBalance.toLocaleString();
+                        })()}
                       </span>
                     </div>
                   </TableCell>
@@ -183,13 +198,14 @@ export function AccountProvisioningTable() {
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      {(business.adAccountIds?.length || 0) > 0 ? (
-                        <span>
-                          Recent activity
-                        </span>
-                      ) : (
-                        <span>No activity</span>
-                      )}
+                      {(() => {
+                        const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                        return businessAccounts.length > 0 ? (
+                          <span>Recent activity</span>
+                        ) : (
+                          <span>No activity</span>
+                        );
+                      })()}
                     </div>
                   </TableCell>
                   
@@ -205,15 +221,18 @@ export function AccountProvisioningTable() {
                         Add Account
                       </Button>
                       
-                      {(business.adAccountIds?.length || 0) > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </Button>
-                      )}
+                      {(() => {
+                        const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                        return businessAccounts.length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8"
+                          >
+                            <Settings className="h-4 w-4" />
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </TableCell>
                 </TableRow>

@@ -1,13 +1,13 @@
 import { formatCurrency } from "../../lib/utils"
 import { TrendingUp, Wallet, CreditCard } from "lucide-react"
-import { useProductionData } from "../../contexts/ProductionDataContext"
+import { useAppData } from "../../contexts/AppDataContext"
 
 export function CompactHeaderMetrics() {
-  const { state } = useProductionData()
+  const { state } = useAppData()
   
-  const totalAccounts = state.adAccounts.length
-  const activeAccounts = state.adAccounts.filter((account) => account.status === "active").length
-  const totalBalance = state.adAccounts.reduce((total, account) => total + account.balance, 0)
+  const totalAccounts = state.accounts.length
+  const activeAccounts = state.accounts.filter((account) => account.status === "active").length
+  const totalBalance = state.accounts.reduce((total, account) => total + account.balance, 0)
 
   return (
     <div className="flex items-center gap-6">

@@ -18,18 +18,18 @@ import { CreateAdAccountDialog } from "./create-ad-account-dialog"
 import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
 import { AccountsTable } from "./accounts-table"
 import { AccountsCardGrid } from "./accounts-card-grid"
-import { MOCK_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
+import { APP_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
 
 export function AccountsManagement() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [currentTab, setCurrentTab] = useState("all")
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["active", "pending", "paused", "error"])
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(["active", "pending", "pending", "error"])
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 
   // Convert centralized mock data to the format expected by this component
-  const mockAccounts = MOCK_ACCOUNTS.map((account) => ({
+  const mockAccounts = APP_ACCOUNTS.map((account) => ({
     id: account.id.toString(),
     name: account.name,
     accountId: account.adAccount,
@@ -43,19 +43,19 @@ export function AccountsManagement() {
     estimated: `$${formatCurrency(account.balance * 1.2)}`,
     holds: "$0.00",
     balance: `$${formatCurrency(account.balance)}`,
-    totalSpend: `$${formatCurrency(account.spent)}`,
+    totalSpend: `$${formatCurrency(account.spent || 0)}`,
     spendToday: `$${formatCurrency(Math.random() * 500)}`,
-    spendLimit: `$${formatCurrency(account.spendLimit)}`,
-    usagePercent: Math.floor((account.spent / account.spendLimit) * 100),
+    spendLimit: `$${formatCurrency(account.spendLimit || 0)}`,
+    usagePercent: Math.floor(((account.spent || 0) / (account.spendLimit || 1)) * 100),
     expiresIn: `${Math.floor(Math.random() * 36) + 12} months`,
-    hasIssues: account.status === "error",
+    hasIssues: account.status === "suspended" || account.status === "disabled",
   }))
 
   // Filter accounts based on search query and current tab
   const filteredAccounts = mockAccounts.filter((account) => {
     const matchesSearch =
       account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      account.accountId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (account.accountId || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       account.status.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = selectedStatuses.includes(account.status)
@@ -291,15 +291,15 @@ export function AccountsManagement() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex items-center gap-2 cursor-pointer text-xs"
-                    onClick={() => toggleStatusFilter("pending")}
+                    onClick={() => toggleStatusFilter("under_review")}
                   >
                     <input
                       type="checkbox"
-                      checked={selectedStatuses.includes("pending")}
+                      checked={selectedStatuses.includes("under_review")}
                       readOnly
                       className="rounded-sm"
                     />
-                    <span>Pending</span>
+                    <span>Under Review</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex items-center gap-2 cursor-pointer text-xs"
@@ -315,15 +315,15 @@ export function AccountsManagement() {
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="flex items-center gap-2 cursor-pointer text-xs"
-                    onClick={() => toggleStatusFilter("error")}
+                    onClick={() => toggleStatusFilter("suspended")}
                   >
                     <input
                       type="checkbox"
-                      checked={selectedStatuses.includes("error")}
+                      checked={selectedStatuses.includes("suspended")}
                       readOnly
                       className="rounded-sm"
                     />
-                    <span>Error</span>
+                    <span>Suspended</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -419,11 +419,11 @@ export function AccountsManagement() {
                             rounded-full px-2 py-1 text-xs font-medium
                             ${account.status === "active" ? "bg-green-950/30 text-green-400 border-green-900/50" : ""}
                             ${
-                              account.status === "paused" || account.status === "pending"
+                              account.status === "paused" || account.status === "under_review"
                                 ? "bg-yellow-950/30 text-yellow-400 border-yellow-900/50"
                                 : ""
                             }
-                            ${account.status === "error" ? "bg-red-950/30 text-red-400 border-red-900/50" : ""}
+                            ${account.status === "suspended" || account.status === "disabled" ? "bg-red-950/30 text-red-400 border-red-900/50" : ""}
                           `}
                         >
                           {account.status.charAt(0).toUpperCase() + account.status.slice(1)}
@@ -488,7 +488,7 @@ export function AccountsManagement() {
           isOpen={isTopUpDialogOpen}
           onClose={() => setIsTopUpDialogOpen(false)}
           accountName={selectedAccount.name}
-          accountId={selectedAccount.accountId}
+          accountId={selectedAccount.accountId || selectedAccount.id.toString()}
           currentBalance={selectedAccount.balance}
         />
       )}

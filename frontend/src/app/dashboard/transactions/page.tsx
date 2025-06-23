@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Popover, PopoverContent, PopoverTrigger } from "../../../components/ui/popover"
 import { Calendar } from "../../../components/ui/calendar"
 import { format } from "date-fns"
-import { formatCurrency, MOCK_BUSINESSES } from "../../../lib/mock-data"
-import { useDemoState } from "../../../contexts/DemoStateContext"
+import { formatCurrency, APP_BUSINESSES } from "../../../lib/mock-data"
+import { useAppData } from "../../../contexts/AppDataContext"
 import { usePageTitle } from "../../../components/core/simple-providers"
 import { useEffect } from "react"
 import { ErrorBoundary } from "../../../components/ui/error-boundary"
@@ -41,7 +41,7 @@ interface Business {
 
 export default function TransactionsPage() {
   const { setPageTitle } = usePageTitle()
-  const { state } = useDemoState()
+  const { state } = useAppData()
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -55,8 +55,8 @@ export default function TransactionsPage() {
   }, [setPageTitle])
 
   // Get businesses for the filter dropdown
-  const businesses: Business[] = MOCK_BUSINESSES.map((business) => ({
-    id: business.id,
+  const businesses: Business[] = APP_BUSINESSES.map((business) => ({
+    id: business.id.toString(),
     name: business.name,
   }))
 
@@ -75,25 +75,35 @@ export default function TransactionsPage() {
     let businessName: string | undefined
     
     // Simple mapping based on account names - you can make this more sophisticated
-    if (tx.account.includes("TechFlow") || tx.account.includes("Primary")) {
+    if (tx.toAccount?.includes("TechFlow") || tx.description?.includes("Primary")) {
       businessId = "1"
       businessName = "TechFlow Solutions"
-    } else if (tx.account.includes("Digital") || tx.account.includes("Secondary")) {
+    } else if (tx.toAccount?.includes("Digital") || tx.description?.includes("Secondary")) {
       businessId = "2" 
       businessName = "Digital Marketing Co"
-    } else if (tx.account.includes("Startup") || tx.account.includes("Campaign")) {
+    } else if (tx.toAccount?.includes("Startup") || tx.description?.includes("Campaign")) {
       businessId = "3"
       businessName = "StartupHub Inc"
     }
 
+    // Map AppTransaction type to Transaction type
+    let transactionType: "deposit" | "withdrawal" | "transfer" = "deposit"
+    if (tx.type === "topup") {
+      transactionType = "deposit"
+    } else if (tx.type === "withdrawal") {
+      transactionType = "withdrawal"
+    } else if (tx.type === "transfer") {
+      transactionType = "transfer"
+    }
+
     return {
       id: tx.id.toString(),
-      date: new Date(tx.timestamp),
-      description: tx.name,
+      date: new Date(tx.date),
+      description: tx.description,
       amount: tx.amount,
-      type: tx.type === "spend" ? "withdrawal" : tx.type,
-      status: generateStatus(),
-      account: tx.account,
+      type: transactionType,
+      status: tx.status,
+      account: tx.toAccount || tx.fromAccount || "Main Wallet",
       reference: `REF${tx.id.toString().padStart(6, '0')}`,
       businessId,
       businessName,

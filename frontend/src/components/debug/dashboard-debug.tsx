@@ -1,14 +1,13 @@
 "use client"
 
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/ProductionDataContext"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { isDemoMode } from "../../lib/data/config"
 
 export function DashboardDebug() {
   const { user, session, loading: authLoading } = useAuth()
-  const { appUser, organizations, currentOrg, loading: appDataLoading, error } = useAppData()
-  const { state: demoState } = useDemoState()
+  const { state } = useAppData()
+  const appDataLoading = state.loading.organizations
 
   return (
     <div className="fixed bottom-4 right-4 p-4 bg-background border rounded-lg shadow-lg text-xs max-w-sm">
@@ -27,22 +26,20 @@ export function DashboardDebug() {
           <strong>App Data:</strong> {appDataLoading ? "Loading..." : "✓"}
         </div>
         
-        {error && (
-          <div className="text-red-500">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-        
         <div>
-          <strong>User:</strong> {appUser?.email || "None"}
+          <strong>User:</strong> {state.userProfile?.email || "None"}
         </div>
         
         <div>
-          <strong>Orgs:</strong> {organizations?.length || 0}
+          <strong>Orgs:</strong> {state.organizations?.length || 0}
         </div>
         
         <div>
-          <strong>Current Org:</strong> {currentOrg?.name || "None"}
+          <strong>Current Org:</strong> {state.currentOrganization?.name || "None"}
+        </div>
+        
+        <div>
+          <strong>Data Source:</strong> {state.dataSource}
         </div>
         
                  <div>

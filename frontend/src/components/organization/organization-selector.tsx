@@ -18,9 +18,9 @@ import { cn } from "../../lib/utils"
 import { getInitials } from "../../lib/mock-data"
 import { getAvatarClasses } from "../../lib/design-tokens"
 import { useTheme } from "next-themes"
-import { useDemoState } from "../../contexts/DemoStateContext"
-import { MOCK_BUSINESSES_BY_ORG } from "../../lib/mock-data"
-import { MOCK_ACCOUNTS_BY_ORG } from "../../lib/mock-data"
+import { useAppData } from "../../contexts/AppDataContext"
+import { APP_BUSINESSES_BY_ORG } from "../../lib/mock-data"
+import { APP_ACCOUNTS_BY_ORG } from "../../lib/mock-data"
 
 interface Organization {
   id: string
@@ -41,16 +41,16 @@ interface Business {
 export function OrganizationSelector() {
   const { theme } = useTheme()
   const router = useRouter()
-  const { state, switchOrganization } = useDemoState()
+  const { state, switchOrganization } = useAppData()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
   const [isLoading, setIsLoading] = useState(false)
   
   // Use real organization data from demo state
   const selectedOrg = useMemo<Organization>(() => ({
-    id: state.currentOrganization.id,
-    name: state.currentOrganization.name,
-    avatar: state.currentOrganization.avatar,
+    id: state.currentOrganization?.id || "default",
+    name: state.currentOrganization?.name || "Default Organization",
+    avatar: state.currentOrganization?.avatar,
     role: "Owner", // Could be derived from user's role in the organization
     businessCount: state.businesses.length,
   }), [state.currentOrganization, state.businesses.length])
@@ -69,10 +69,10 @@ export function OrganizationSelector() {
       id: org.id,
       name: org.name,
       avatar: org.avatar,
-      role: org.id === state.currentOrganization.id ? "Owner" : "Member", // Current org is owner, others are member
-      businessCount: org.id === state.currentOrganization.id ? state.businesses.length : (MOCK_BUSINESSES_BY_ORG[org.id]?.length || 0) // Real count for all orgs
+      role: org.id === state.currentOrganization?.id ? "Owner" : "Member", // Current org is owner, others are member
+      businessCount: org.id === state.currentOrganization?.id ? state.businesses.length : (APP_BUSINESSES_BY_ORG[org.id]?.length || 0) // Real count for all orgs
     }))
-  }, [state.organizations, state.currentOrganization.id, state.businesses.length])
+  }, [state.organizations, state.currentOrganization?.id, state.businesses.length])
 
   // Convert demo state businesses to the format expected by the component
   const businesses: Business[] = useMemo(() => {
@@ -80,14 +80,14 @@ export function OrganizationSelector() {
     const allBusinesses: Business[] = []
     
     // Add businesses from all organizations
-    Object.entries(MOCK_BUSINESSES_BY_ORG).forEach(([orgId, orgBusinesses]) => {
+    Object.entries(APP_BUSINESSES_BY_ORG).forEach(([orgId, orgBusinesses]) => {
       orgBusinesses.forEach(business => {
         // Count accounts for this business from the appropriate organization
-        const orgAccounts = MOCK_ACCOUNTS_BY_ORG[orgId] || []
+        const orgAccounts = APP_ACCOUNTS_BY_ORG[orgId] || []
         const accountCount = orgAccounts.filter(account => account.business === business.name).length
         
         allBusinesses.push({
-          id: business.id,
+          id: business.id.toString(),
           name: business.name,
           organizationId: orgId,
           status: business.status === 'under_review' || business.status === 'provisioning' || business.status === 'ready' 
@@ -225,7 +225,7 @@ export function OrganizationSelector() {
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
                 {selectedOrg.avatar ? (
-                  <AvatarImage src={selectedOrg.avatar || "/placeholder.svg"} alt={selectedOrg.name} />
+                  <AvatarImage src={selectedOrg.avatar || "getPlaceholderUrl()"} alt={selectedOrg.name} />
                 ) : (
                   <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
                     {getInitials(selectedOrg.name)}
@@ -282,7 +282,7 @@ export function OrganizationSelector() {
                   <div className="flex items-center flex-1 min-w-0">
                     <Avatar className="h-8 w-8 mr-3">
                       {org.avatar ? (
-                        <AvatarImage src={org.avatar || "/placeholder.svg"} alt={org.name} />
+                        <AvatarImage src={org.avatar || "getPlaceholderUrl()"} alt={org.name} />
                       ) : (
                         <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
                           {getInitials(org.name)}

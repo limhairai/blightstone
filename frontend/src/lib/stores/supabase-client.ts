@@ -13,11 +13,32 @@ console.log('Supabase Environment Check:', {
 })
 
 // Create a mock client for development when env vars are not set
-const createMockClient = (): SupabaseClient => {
+const createAppClient = (): SupabaseClient => {
   console.warn('🚨 Using Supabase MOCK client - authentication will not work!')
   return {
     auth: {
       getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signInWithPassword: () => Promise.resolve({ 
+        data: { user: null, session: null }, 
+        error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }
+      }),
+      signUp: () => Promise.resolve({ 
+        data: { user: null, session: null }, 
+        error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }
+      }),
+      signOut: () => Promise.resolve({ error: null }),
+      signInWithOAuth: () => Promise.resolve({ 
+        data: { provider: null, url: null }, 
+        error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }
+      }),
+      resetPasswordForEmail: () => Promise.resolve({ 
+        data: {}, 
+        error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }
+      }),
+      resend: () => Promise.resolve({ 
+        error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }
+      }),
+      onAuthStateChange: () => ({ data: { subscription: null }, error: null }),
     },
     from: () => ({
       select: () => ({ data: [], error: null }),
@@ -33,6 +54,6 @@ const createMockClient = (): SupabaseClient => {
 export const supabase: SupabaseClient = 
   supabaseUrl && supabaseAnonKey 
     ? createClient(supabaseUrl, supabaseAnonKey)
-    : createMockClient()
+    : createAppClient()
 
 console.log('Supabase client created:', supabase ? 'Success' : 'Failed')

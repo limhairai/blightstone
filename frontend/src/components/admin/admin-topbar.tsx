@@ -1,166 +1,162 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Bell, Search, Settings, LogOut, User, Shield, Home } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Badge } from '../ui/badge';
-import { useAuth } from '../../contexts/AuthContext';
+import { Bell, ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X } from 'lucide-react';
+import { useAppData } from '@/contexts/AppDataContext';
+import { getPlaceholderUrl } from '@/lib/config/assets';
 
-interface AdminTopBarProps {
-  user: any;
+interface AdminTopbarProps {
+  pageTitle?: string;
 }
 
-export function AdminTopBar({ user }: AdminTopBarProps) {
+export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const pathname = usePathname();
-  const { signOut } = useAuth();
+  const router = useRouter();
+  const hasNotifications = true;
+  const userInitial = "A";
+  const userEmail = "admin@adhub.com";
 
-  // Get page title based on current path
+  // Get page title from pathname if not provided
   const getPageTitle = () => {
-    if (pathname === '/admin') return 'Dashboard';
-    if (pathname === '/admin/applications') return 'Applications';
-    if (pathname === '/admin/organizations') return 'Organizations';
-    if (pathname === '/admin/businesses') return 'Businesses';
-    if (pathname === '/admin/infrastructure') return 'Infrastructure';
-    if (pathname === '/admin/assets') return 'Assets';
-    if (pathname === '/admin/workflow') return 'Workflow';
-    if (pathname === '/admin/finances') return 'Finances';
-    if (pathname === '/admin/analytics') return 'Analytics';
-    if (pathname === '/admin/settings') return 'Settings';
-    return 'Admin Panel';
+    if (pageTitle) return pageTitle;
+    if (!pathname) return "Admin Dashboard";
+
+    const pathSegments = pathname.split("/").filter(Boolean);
+    if (pathSegments.length <= 1) return "Admin Dashboard";
+
+    const lastSegment = pathSegments[pathSegments.length - 1];
+    return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace("-", " ");
   };
 
-  const handleSignOut = async () => {
-    await signOut();
+  const signOut = () => {
+    console.log("Admin sign out");
   };
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
-      {/* Left Section - Page Title & Breadcrumb */}
-      <div className="flex items-center space-x-4">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{getPageTitle()}</h1>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Link href="/admin" className="hover:text-foreground">
-              Admin
-            </Link>
-            {pathname !== '/admin' && (
-              <>
-                <span>/</span>
-                <span className="text-foreground">{getPageTitle()}</span>
-              </>
-            )}
-          </div>
-        </div>
+    <div className="sticky top-0 z-50 h-16 border-b border-border/20 flex items-center justify-between px-3 md:px-4 bg-card/80 backdrop-blur-md">
+      {/* Left: Page Title */}
+      <div className="flex items-center gap-3 ml-4">
+        <h1 className="text-xl font-semibold text-foreground">{getPageTitle()}</h1>
       </div>
 
-      {/* Center Section - Search */}
-      <div className="flex-1 max-w-md mx-8">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search users, businesses, accounts..."
-            className="pl-10 bg-background"
-          />
-        </div>
-      </div>
-
-      {/* Right Section - Actions & User Menu */}
-      <div className="flex items-center space-x-4">
-        {/* Notifications */}
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-5 w-5" />
-          <Badge 
-            variant="destructive" 
-            className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
-          >
-            3
-          </Badge>
+      {/* Right: Admin Controls */}
+      <div className="flex items-center gap-2 md:gap-3 ml-auto">
+        {/* Notification Bell */}
+        <Button variant="ghost" size="icon" className="relative hover:bg-accent">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          {hasNotifications && (
+            <>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full" />
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-600 hover:bg-red-700 text-white border-2 border-background"
+              >
+                90+
+              </Badge>
+            </>
+          )}
         </Button>
 
-        {/* Quick Actions */}
-        <Link href="/dashboard">
-          <Button variant="outline" size="sm">
-            <Home className="h-4 w-4 mr-2" />
-            Exit Admin
-          </Button>
-        </Link>
-
-        {/* User Menu */}
+        {/* Admin Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.avatar} alt={user?.name || user?.email} />
-                <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-black">
-                  {user?.name?.charAt(0) || user?.email?.charAt(0) || 'A'}
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="getPlaceholderUrl()?height=32&width=32&text=A" alt="Admin" />
+                <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-white">
+                  {userInitial}
                 </AvatarFallback>
               </Avatar>
-              <Badge 
-                variant="secondary" 
-                className="absolute -bottom-1 -right-1 h-5 w-5 flex items-center justify-center p-0"
-              >
-                <Shield className="h-3 w-3" />
-              </Badge>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
+          <DropdownMenuContent align="end" className="w-64 bg-popover border-border p-0">
+            <div className="px-4 py-3 border-b border-border">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">
-                  {user?.name || 'Admin User'}
-                </p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email}
-                </p>
-                <div className="flex items-center space-x-1 mt-1">
-                  <Shield className="h-3 w-3 text-green-600" />
-                  <span className="text-xs text-green-600 font-medium">Super Admin</span>
+                <p className="text-sm font-medium text-popover-foreground">{userEmail}</p>
+                <div className="flex items-center gap-2">
+                  <Crown className="h-3 w-3 text-yellow-500" />
+                  <p className="text-xs text-muted-foreground">System Administrator</p>
                 </div>
               </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/admin/settings" className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/admin/settings" className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Admin Settings</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="cursor-pointer">
-                <Home className="mr-2 h-4 w-4" />
-                <span>Back to Dashboard</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              className="cursor-pointer text-red-600 focus:text-red-600"
-              onClick={handleSignOut}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sign Out</span>
-            </DropdownMenuItem>
+            </div>
+
+            <div className="py-2">
+              <DropdownMenuItem
+                className="text-popover-foreground hover:bg-accent px-4 py-2"
+                onClick={() => (window.location.href = "/admin/settings/account")}
+              >
+                <User className="h-4 w-4 mr-2" />
+                Admin Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-popover-foreground hover:bg-accent px-4 py-2"
+                onClick={() => (window.location.href = "/admin/settings")}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                System Settings
+              </DropdownMenuItem>
+            </div>
+
+            <DropdownMenuSeparator className="bg-border" />
+
+            <div className="py-2">
+              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
+                <Moon className="h-4 w-4 mr-2" />
+                Theme
+                <div className="ml-auto flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-sm">
+                    <Monitor className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-sm">
+                    <Sun className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-sm bg-accent">
+                    <Moon className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </DropdownMenuItem>
+            </div>
+
+            <DropdownMenuSeparator className="bg-border" />
+
+            <div className="py-2">
+              <DropdownMenuItem
+                className="text-popover-foreground hover:bg-accent px-4 py-2"
+                onClick={() => (window.location.href = "/dashboard")}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Switch to Client View
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Log out
+              </DropdownMenuItem>
+            </div>
+
+            <div className="p-2 border-t border-border">
+              <Button
+                className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0 w-full"
+                size="sm"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Admin Dashboard
+              </Button>
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </div>
   );
 } 

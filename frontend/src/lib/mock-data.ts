@@ -1,3 +1,5 @@
+import { type AppBusiness, type AppAccount, type AppTransaction } from '../contexts/AppDataContext'
+
 // Types for pricing plans
 export interface PricingPlan {
   id: string
@@ -14,7 +16,7 @@ export interface PricingPlan {
 }
 
 // Organization data structure
-export interface MockOrganization {
+export interface AppOrganization {
   id: string
   name: string
   slug: string
@@ -97,7 +99,7 @@ export interface MockOrganization {
 }
 
 // Centralized organization data - multiple organizations for demo
-export const MOCK_ORGANIZATIONS: MockOrganization[] = [
+export const APP_ORGANIZATIONS: AppOrganization[] = [
   {
     id: "org_VrfbN6vMc2MCvaZELhfJ",
     name: "Startup Project",
@@ -401,7 +403,7 @@ export const MOCK_ORGANIZATIONS: MockOrganization[] = [
 ]
 
 // Default organization (first one for backwards compatibility)
-export const MOCK_ORGANIZATION: MockOrganization = MOCK_ORGANIZATIONS[0]
+export const APP_ORGANIZATION: AppOrganization = APP_ORGANIZATIONS[0]
 
 // Avatar utilities for consistent placeholder styling
 export const getInitials = (name: string): string => {
@@ -548,11 +550,11 @@ export interface Transaction {
   amount: number
   status: "completed" | "pending" | "failed"
   type: "deposit" | "withdrawal" | "transfer"
-  accountId: string
+  account: string
 }
 
 // Mock transactions data
-export const mockTransactions: Transaction[] = [
+export const appTransactions: Transaction[] = [
   {
     id: "1",
     date: "Apr 28, 2025",
@@ -560,7 +562,7 @@ export const mockTransactions: Transaction[] = [
     amount: 500,
     status: "completed",
     type: "deposit",
-    accountId: "1",
+    account: "1",
   },
   {
     id: "2",
@@ -569,7 +571,7 @@ export const mockTransactions: Transaction[] = [
     amount: -120.5,
     status: "completed",
     type: "withdrawal",
-    accountId: "1",
+    account: "1",
   },
   {
     id: "3",
@@ -578,7 +580,7 @@ export const mockTransactions: Transaction[] = [
     amount: 1000,
     status: "pending",
     type: "deposit",
-    accountId: "1",
+    account: "1",
   },
   {
     id: "4",
@@ -587,7 +589,7 @@ export const mockTransactions: Transaction[] = [
     amount: -250,
     status: "completed",
     type: "withdrawal",
-    accountId: "2",
+    account: "2",
   },
   {
     id: "5",
@@ -596,7 +598,7 @@ export const mockTransactions: Transaction[] = [
     amount: 250,
     status: "completed",
     type: "deposit",
-    accountId: "2",
+    account: "2",
   },
   {
     id: "6",
@@ -605,7 +607,7 @@ export const mockTransactions: Transaction[] = [
     amount: -100,
     status: "completed",
     type: "withdrawal",
-    accountId: "1",
+    account: "1",
   },
   {
     id: "7",
@@ -614,7 +616,7 @@ export const mockTransactions: Transaction[] = [
     amount: 500,
     status: "completed",
     type: "deposit",
-    accountId: "1",
+    account: "1",
   },
   {
     id: "8",
@@ -623,7 +625,7 @@ export const mockTransactions: Transaction[] = [
     amount: -75,
     status: "completed",
     type: "withdrawal",
-    accountId: "2",
+    account: "2",
   },
   {
     id: "9",
@@ -632,7 +634,7 @@ export const mockTransactions: Transaction[] = [
     amount: 100,
     status: "failed",
     type: "deposit",
-    accountId: "1",
+    account: "1",
   },
   {
     id: "10",
@@ -641,7 +643,7 @@ export const mockTransactions: Transaction[] = [
     amount: -50,
     status: "completed",
     type: "withdrawal",
-    accountId: "2",
+    account: "2",
   },
 ]
 
@@ -649,7 +651,7 @@ export const mockTransactions: Transaction[] = [
 export interface Account {
   id: string
   name: string
-  accountId: string
+  account: string
   status: "active" | "pending" | "disabled" | "idle" | "archived"
   users?: number
   billings?: number
@@ -676,7 +678,7 @@ export const accounts: Account[] = [
   {
     id: "1",
     name: "Primary Ad Account",
-    accountId: "123456789",
+    account: "123456789",
     status: "active",
     users: 3,
     billings: 2,
@@ -699,7 +701,7 @@ export const accounts: Account[] = [
   {
     id: "2",
     name: "Secondary Campaign",
-    accountId: "987654321",
+    account: "987654321",
     status: "active",
     users: 2,
     billings: 1,
@@ -722,7 +724,7 @@ export const accounts: Account[] = [
   {
     id: "3",
     name: "Test Account",
-    accountId: "456789123",
+    account: "456789123",
     status: "idle",
     users: 1,
     billings: 1,
@@ -745,7 +747,7 @@ export const accounts: Account[] = [
   {
     id: "4",
     name: "Product Launch",
-    accountId: "567891234",
+    account: "567891234",
     status: "active",
     users: 2,
     billings: 1,
@@ -768,7 +770,7 @@ export const accounts: Account[] = [
   {
     id: "5",
     name: "New Marketing Campaign",
-    accountId: "234567890",
+    account: "234567890",
     status: "pending",
     users: 0,
     billings: 0,
@@ -790,7 +792,7 @@ export const accounts: Account[] = [
   {
     id: "6",
     name: "Q3 Promotion",
-    accountId: "345678901",
+    account: "345678901",
     status: "disabled",
     users: 0,
     billings: 0,
@@ -813,11 +815,11 @@ export const accounts: Account[] = [
 
 // Helper functions
 export const getTransactionsByAccount = (accountId: string) => {
-  return mockTransactions.filter((transaction) => transaction.accountId === accountId)
+  return appTransactions.filter((transaction) => transaction.account === accountId)
 }
 
 export const calculateTotalByType = (type: string): number => {
-  return mockTransactions.reduce((sum, tx) => {
+  return appTransactions.reduce((sum, tx) => {
     if (tx.type === type) {
       return sum + tx.amount
     }
@@ -881,7 +883,8 @@ export const businesses: Business[] = [
 
 // Centralized mock data for consistent values across the application
 
-export interface MockTransaction {
+// Legacy interfaces - use unified types from context instead
+export interface LegacyAppTransaction {
   id: number
   name: string
   amount: number
@@ -891,7 +894,7 @@ export interface MockTransaction {
   timestamp: Date
 }
 
-export interface MockAccount {
+export interface LegacyAppAccount {
   id: number
   name: string
   business: string
@@ -906,7 +909,7 @@ export interface MockAccount {
   timezone?: string
 }
 
-export interface MockBusiness {
+export interface LegacyAppBusiness {
   id: string;
   name: string;
   businessType: string;
@@ -954,13 +957,16 @@ export interface MockBusiness {
   pixelId?: string;
 }
 
-export interface MockChartData {
+// Import the unified interface from the context
+// export type { AppBusiness, AppAccount, AppTransaction, AppOrganization } from '../contexts/AppDataContext'
+
+export interface AppChartData {
   date: string
   value: number
 }
 
 // Core financial data - this is the source of truth
-export const MOCK_FINANCIAL_DATA = {
+export const APP_FINANCIAL_DATA = {
   // Main wallet balance (shown in topbar and wallet page)
   walletBalance: 45231.89,
   
@@ -975,7 +981,7 @@ export const MOCK_FINANCIAL_DATA = {
 }
 
 // Organization-specific financial data
-export const MOCK_FINANCIAL_DATA_BY_ORG: Record<string, typeof MOCK_FINANCIAL_DATA> = {
+export const APP_FINANCIAL_DATA_BY_ORG: Record<string, typeof APP_FINANCIAL_DATA> = {
   "org_VrfbN6vMc2MCvaZELhfJ": { // Startup Project
     walletBalance: 45231.89,
     monthlyAdSpend: 12450.00,
@@ -1052,13 +1058,14 @@ export const APP_CONSTANTS = {
 }
 
 // Mock businesses data - organized by organization
-export const MOCK_BUSINESSES: MockBusiness[] = [
+export const APP_BUSINESSES: AppBusiness[] = [
   // Businesses for Startup Project (org_VrfbN6vMc2MCvaZELhfJ)
   {
     id: "1",
     name: "TechFlow Solutions",
     businessType: "Technology",
     status: "active",
+    balance: 6700.0,
     dateCreated: "Feb 15, 2024",
     accountsCount: 2,
     totalBalance: 6700.0,
@@ -1079,6 +1086,7 @@ export const MOCK_BUSINESSES: MockBusiness[] = [
     name: "Digital Marketing Co",
     businessType: "Marketing",
     status: "active",
+    balance: 1200.0,
     dateCreated: "Jan 28, 2024",
     accountsCount: 2,
     totalBalance: 1200.0,
@@ -1096,6 +1104,7 @@ export const MOCK_BUSINESSES: MockBusiness[] = [
     name: "StartupHub Inc",
     businessType: "Startup Incubator",
     status: "pending",
+    balance: 800.0,
     dateCreated: "Mar 5, 2024",
     accountsCount: 1,
     totalBalance: 800.0,
@@ -1107,19 +1116,57 @@ export const MOCK_BUSINESSES: MockBusiness[] = [
     logo: "/placeholder.svg?height=40&width=40&text=SH",
     domains: [{ domain: "startuphub.inc", verified: false }],
   },
+  {
+    id: "4",
+    name: "E-Commerce Plus",
+    businessType: "E-commerce",
+    status: "pending",
+    balance: 1500.0,
+    dateCreated: "Mar 8, 2024",
+    accountsCount: 2,
+    totalBalance: 1500.0,
+    totalSpend: 3200,
+    monthlyQuota: 15000,
+    industry: "E-commerce",
+    website: "https://ecommerceplus.com",
+    description: "Multi-brand e-commerce platform",
+    logo: "/placeholder.svg?height=40&width=40&text=EC",
+    domains: [
+      { domain: "ecommerceplus.com", verified: true },
+      { domain: "shop.ecommerceplus.com", verified: false }
+    ],
+  },
+  {
+    id: "5",
+    name: "FinTech Innovations",
+    businessType: "Financial Technology",
+    status: "under_review",
+    balance: 2200.0,
+    dateCreated: "Mar 12, 2024",
+    accountsCount: 3,
+    totalBalance: 2200.0,
+    totalSpend: 4500,
+    monthlyQuota: 25000,
+    industry: "FinTech",
+    website: "https://fintechinnovations.co",
+    description: "Revolutionary financial technology solutions",
+    logo: "/placeholder.svg?height=40&width=40&text=FI",
+    domains: [{ domain: "fintechinnovations.co", verified: true }],
+  },
 ]
 
 // Businesses for other organizations (these would be loaded when switching orgs)
-export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
-  "org_VrfbN6vMc2MCvaZELhfJ": MOCK_BUSINESSES, // Startup Project
+export const APP_BUSINESSES_BY_ORG: Record<string, AppBusiness[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": APP_BUSINESSES, // Startup Project
   "org_PersonalAccount123": [
     {
       id: "p1",
       name: "Personal Projects",
       businessType: "Personal",
       status: "active",
+      balance: 500.0,
       dateCreated: "Apr 1, 2024",
-      accountsCount: 1, // Matches the 1 account in MOCK_ACCOUNTS_BY_ORG
+      accountsCount: 1, // Matches the 1 account in APP_ACCOUNTS_BY_ORG
       totalBalance: 500.0, // Matches the account balance
       totalSpend: 800,
       monthlyQuota: 2000,
@@ -1137,6 +1184,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
       name: "Acme Marketing",
       businessType: "Marketing",
       status: "active",
+      balance: 23500.0,
       dateCreated: "Jun 15, 2023",
       accountsCount: 2, // 2 accounts: Enterprise Marketing Campaign + Brand Awareness - Marketing
       totalBalance: 23500.0, // 15000 + 8500
@@ -1157,6 +1205,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
       name: "Acme Sales",
       businessType: "Sales",
       status: "active",
+      balance: 12000.0,
       dateCreated: "Jul 20, 2023",
       accountsCount: 1, // 1 account: Lead Generation - Sales
       totalBalance: 12000.0, // Matches the account balance
@@ -1174,6 +1223,7 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
       name: "Acme Enterprise",
       businessType: "Enterprise",
       status: "active",
+      balance: 23000.0,
       dateCreated: "Aug 10, 2023",
       accountsCount: 2, // 2 accounts: B2B Campaigns - Enterprise + Product Launch - Enterprise
       totalBalance: 23000.0, // 18000 + 5000
@@ -1190,9 +1240,9 @@ export const MOCK_BUSINESSES_BY_ORG: Record<string, MockBusiness[]> = {
 }
 
 // Mock accounts data - updated to match businesses
-export const MOCK_ACCOUNTS: MockAccount[] = [
+export const APP_ACCOUNTS: AppAccount[] = [
   {
-    id: 1,
+    id: "1",
     name: "Primary Campaign Account",
     business: "TechFlow Solutions",
     adAccount: "1234567890123456",
@@ -1206,7 +1256,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     timezone: "America/New_York",
   },
   {
-    id: 2,
+    id: "2",
     name: "Brand Awareness Account",
     business: "Digital Marketing Co",
     adAccount: "2345678901234567",
@@ -1220,7 +1270,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     timezone: "America/Los_Angeles",
   },
   {
-    id: 3,
+    id: "3",
     name: "E-commerce Campaigns",
     business: "TechFlow Solutions",
     adAccount: "3456789012345678",
@@ -1234,7 +1284,7 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     timezone: "America/New_York",
   },
   {
-    id: 4,
+    id: "4",
     name: "Lead Generation",
     business: "StartupHub Inc",
     adAccount: "4567890123456789",
@@ -1248,11 +1298,11 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
     timezone: "America/Chicago",
   },
   {
-    id: 5,
+    id: "5",
     name: "Social Media Boost",
     business: "Digital Marketing Co",
     adAccount: "5678901234567890",
-    status: "error",
+    status: "suspended",
     balance: 0.0,
     spendLimit: 1500.0,
     dateAdded: "Mar 5, 2024",
@@ -1264,11 +1314,11 @@ export const MOCK_ACCOUNTS: MockAccount[] = [
 ]
 
 // Organization-specific accounts data
-export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
-  "org_VrfbN6vMc2MCvaZELhfJ": MOCK_ACCOUNTS, // Startup Project (existing accounts)
+export const APP_ACCOUNTS_BY_ORG: Record<string, AppAccount[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": APP_ACCOUNTS, // Startup Project (existing accounts)
   "org_PersonalAccount123": [ // Personal Account
     {
-      id: 101,
+      id: "101",
       name: "Personal Blog Ads",
       business: "Personal Projects",
       adAccount: "9876543210987654",
@@ -1284,7 +1334,7 @@ export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
   ],
   "org_AcmeCorp456": [ // Acme Corporation
     {
-      id: 201,
+      id: "201",
       name: "Enterprise Marketing Campaign",
       business: "Acme Marketing",
       adAccount: "1111222233334444",
@@ -1298,7 +1348,7 @@ export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
       timezone: "America/New_York",
     },
     {
-      id: 202,
+      id: "202",
       name: "Brand Awareness - Marketing",
       business: "Acme Marketing",
       adAccount: "1111222233334445",
@@ -1312,7 +1362,7 @@ export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
       timezone: "America/New_York",
     },
     {
-      id: 203,
+      id: "203",
       name: "Lead Generation - Sales",
       business: "Acme Sales",
       adAccount: "5555666677778888",
@@ -1326,7 +1376,7 @@ export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
       timezone: "America/New_York",
     },
     {
-      id: 204,
+      id: "204",
       name: "B2B Campaigns - Enterprise",
       business: "Acme Enterprise",
       adAccount: "9999000011112222",
@@ -1340,7 +1390,7 @@ export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
       timezone: "America/New_York",
     },
     {
-      id: 205,
+      id: "205",
       name: "Product Launch - Enterprise",
       business: "Acme Enterprise",
       adAccount: "9999000011112223",
@@ -1357,189 +1407,207 @@ export const MOCK_ACCOUNTS_BY_ORG: Record<string, MockAccount[]> = {
 }
 
 // Mock transactions data (most recent first)
-export const MOCK_TRANSACTIONS: MockTransaction[] = [
+export const APP_TRANSACTIONS: AppTransaction[] = [
   {
-    id: 1,
-    name: "Ad Spend",
-    amount: -251.77, // Negative for outgoing money (ad spend)
+    id: "1",
     type: "spend",
-    date: "Ad Account Top-up",
-    account: "Primary Ad Account",
+    amount: -251.77, // Negative for outgoing money (ad spend)
+    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().split("T")[0],
+    description: "Ad Spend - Primary Ad Account",
+    status: "completed",
+    name: "Ad Spend",
+    account: "1",
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
   },
   {
-    id: 2,
-    name: "Ad Spend", 
+    id: "2",
+    description: "Ad Spend", 
     amount: -531.45,
     type: "spend",
-    date: "Ad Account Top-up",
-    account: "Secondary Ad Account",
+    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().split("T")[0],
+    account: "2",
+    status: "completed",
     timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
   },
   {
-    id: 3,
-    name: "Ad Spend",
+    id: "3",
+    description: "Ad Spend",
     amount: -213.52,
     type: "spend", 
-    date: "Ad Account Top-up",
-    account: "Campaign Ad Account",
+    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().split("T")[0],
+    account: "3",
+    status: "completed",
     timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
   },
   {
-    id: 4,
-    name: "Wallet",
+    id: "4",
+    description: "Wallet Deposit",
     amount: 5000.00, // Positive for deposits (money coming in)
-    type: "deposit",
-    date: "Deposit",
-    account: "Main Wallet",
+    type: "topup",
+    date: new Date().toISOString().split("T")[0],
+    account: "1",
+    status: "completed",
     timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
   },
   {
-    id: 5,
-    name: "Ad Spend",
+    id: "5",
+    description: "Ad Spend",
     amount: -146.96,
     type: "spend",
-    date: "Ad Account Top-up", 
-    account: "Promotions Ad Account",
+    date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().split("T")[0], 
+    account: "4",
+    status: "completed",
     timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
   },
   {
-    id: 6,
-    name: "Ad Spend",
+    id: "6",
+    description: "Ad Spend",
     amount: -892.33,
     type: "spend",
-    date: "Campaign Funding",
-    account: "Main Ad Account",
+    date: new Date().toISOString().split("T")[0],
+    account: "5",
+    status: "completed",
     timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
   },
   {
-    id: 7,
-    name: "Wallet",
+    id: "7",
+    description: "Wallet Deposit",
     amount: 10000.00,
-    type: "deposit", 
-    date: "Credit Card Payment",
-    account: "Main Wallet",
+    type: "topup", 
+    date: new Date().toISOString().split("T")[0],
+    account: "1",
+    status: "completed",
     timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 1 week ago
   },
   {
-    id: 8,
-    name: "Ad Spend",
+    id: "8",
+    description: "Ad Spend",
     amount: -500.00,
     type: "spend",
-    date: "Top up - Credit Card",
-    account: "Main Wallet",
+    date: new Date().toISOString().split("T")[0],
+    account: "2",
+    status: "completed",
     timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
   },
 ]
 
 // Organization-specific transactions data
-export const MOCK_TRANSACTIONS_BY_ORG: Record<string, MockTransaction[]> = {
-  "org_VrfbN6vMc2MCvaZELhfJ": MOCK_TRANSACTIONS, // Startup Project (existing transactions)
+export const APP_TRANSACTIONS_BY_ORG: Record<string, AppTransaction[]> = {
+  "org_VrfbN6vMc2MCvaZELhfJ": APP_TRANSACTIONS, // Startup Project (existing transactions)
   "org_PersonalAccount123": [ // Personal Account
     {
-      id: 101,
-      name: "Ad Spend",
+      id: "101",
+      description: "Ad Spend",
       amount: -45.50,
       type: "spend",
-      date: "Ad Account Top-up",
-      account: "Personal Blog Ads",
+      date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().split("T")[0],
+      account: "101",
+      status: "completed",
       timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
     },
     {
-      id: 102,
-      name: "Wallet",
+      id: "102",
+      description: "Wallet Deposit",
       amount: 500.00,
-      type: "deposit",
-      date: "Credit Card Payment",
-      account: "Main Wallet",
+      type: "topup",
+      date: new Date().toISOString().split("T")[0],
+      account: "1",
+      status: "completed",
       timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     },
     {
-      id: 103,
-      name: "Ad Spend",
+      id: "103",
+      description: "Ad Spend",
       amount: -125.75,
       type: "spend",
-      date: "Ad Account Top-up",
-      account: "Personal Blog Ads",
+      date: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString().split("T")[0],
+      account: "101",
+      status: "completed",
       timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     }
   ],
   "org_AcmeCorp456": [ // Acme Corporation
     {
-      id: 201,
-      name: "Ad Spend",
+      id: "201",
+      description: "Ad Spend",
       amount: -2500.00,
       type: "spend",
-      date: "Enterprise Campaign",
-      account: "Enterprise Marketing Campaign",
+      date: new Date().toISOString().split("T")[0],
+      account: "201",
+      status: "completed",
       timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
     },
     {
-      id: 202,
-      name: "Ad Spend",
+      id: "202",
+      description: "Ad Spend",
       amount: -1800.00,
       type: "spend",
-      date: "Brand Campaign",
-      account: "Brand Awareness - Marketing",
+      date: new Date().toISOString().split("T")[0],
+      account: "202",
+      status: "completed",
       timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
     },
     {
-      id: 203,
-      name: "Ad Spend",
+      id: "203",
+      description: "Ad Spend",
       amount: -950.00,
       type: "spend",
-      date: "Lead Generation",
-      account: "Lead Generation - Sales",
+      date: new Date().toISOString().split("T")[0],
+      account: "203",
+      status: "completed",
       timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
     },
     {
-      id: 204,
-      name: "Wallet",
+      id: "204",
+      description: "Wallet Deposit",
       amount: 50000.00,
-      type: "deposit",
-      date: "Bank Transfer",
-      account: "Main Wallet",
+      type: "topup",
+      date: new Date().toISOString().split("T")[0],
+      account: "1",
+      status: "completed",
       timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
     },
     {
-      id: 205,
-      name: "Ad Spend",
+      id: "205",
+      description: "Ad Spend",
       amount: -3200.00,
       type: "spend",
-      date: "B2B Campaign",
-      account: "B2B Campaigns - Enterprise",
+      date: new Date().toISOString().split("T")[0],
+      account: "204",
+      status: "completed",
       timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     },
     {
-      id: 206,
-      name: "Ad Spend",
+      id: "206",
+      description: "Ad Spend",
       amount: -1500.00,
       type: "spend",
-      date: "Marketing Campaign",
-      account: "Enterprise Marketing Campaign",
+      date: new Date().toISOString().split("T")[0],
+      account: "205",
+      status: "completed",
       timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     }
   ]
 }
 
 // Mock chart data for balance over time
-export const MOCK_BALANCE_DATA: MockChartData[] = [
+export const APP_BALANCE_DATA: AppChartData[] = [
   { date: "Feb 23", value: 35000 },
   { date: "Mar 10", value: 38500 },
   { date: "Mar 25", value: 36800 },
   { date: "Apr 09", value: 41200 },
   { date: "Apr 24", value: 43900 },
-  { date: "May 09", value: MOCK_FINANCIAL_DATA.walletBalance }, // Current balance
+  { date: "May 09", value: APP_FINANCIAL_DATA.walletBalance }, // Current balance
 ]
 
 // Mock chart data for spending over time
-export const MOCK_SPEND_DATA: MockChartData[] = [
+export const APP_SPEND_DATA: AppChartData[] = [
   { date: "Feb 23", value: 8500 },
   { date: "Mar 10", value: 9200 },
   { date: "Mar 25", value: 7800 },
   { date: "Apr 09", value: 10500 },
   { date: "Apr 24", value: 11200 },
-  { date: "May 09", value: MOCK_FINANCIAL_DATA.monthlyAdSpend },
+  { date: "May 09", value: APP_FINANCIAL_DATA.monthlyAdSpend },
 ]
 
 // Helper functions
@@ -1573,51 +1641,52 @@ export const formatRelativeTime = (timestamp: Date): string => {
 
 // Calculate derived values
 export const getTotalAccountsBalance = (): number => {
-  return MOCK_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
+  return APP_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
 }
 
 export const getActiveAccountsCount = (): number => {
-  return MOCK_ACCOUNTS.filter(account => account.status === "active").length
+  return APP_ACCOUNTS.filter(account => account.status === "active").length
 }
 
 export const getTotalSpentThisMonth = (): number => {
   const thisMonth = new Date().getMonth()
-  return MOCK_TRANSACTIONS
-    .filter(t => t.type === "spend" && t.timestamp.getMonth() === thisMonth)
+  return APP_TRANSACTIONS
+    .filter(t => t.type === "spend" && t.timestamp && new Date(t.timestamp).getMonth() === thisMonth)
     .reduce((total, t) => total + t.amount, 0)
 }
 
-export const getRecentTransactions = (limit: number = 5): MockTransaction[] => {
-  return MOCK_TRANSACTIONS
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+export const getRecentTransactions = (limit: number = 5): AppTransaction[] => {
+  return APP_TRANSACTIONS
+    .filter(t => t.timestamp) // Filter out transactions without timestamp
+    .sort((a, b) => new Date(b.timestamp!).getTime() - new Date(a.timestamp!).getTime())
     .slice(0, limit)
 }
 
 // Data validation and consistency checks
-export const validateMockData = () => {
+export const validateAppData = () => {
   const errors: string[] = []
   
   // Check that business names in accounts match business names in businesses
-  const businessNames = new Set(MOCK_BUSINESSES.map(b => b.name))
-  const accountBusinessNames = new Set(MOCK_ACCOUNTS.map(a => a.business))
+  const businessNames = new Set(APP_BUSINESSES.map(b => b.name))
+  const accountBusinessNames = new Set(APP_ACCOUNTS.map(a => a.business).filter(Boolean))
   
   for (const businessName of accountBusinessNames) {
-    if (!businessNames.has(businessName)) {
+    if (businessName && !businessNames.has(businessName)) {
       errors.push(`Account references unknown business: ${businessName}`)
     }
   }
   
   // Check that account counts in businesses match actual accounts
-  for (const business of MOCK_BUSINESSES) {
-    const actualAccountCount = MOCK_ACCOUNTS.filter(a => a.business === business.name).length
+  for (const business of APP_BUSINESSES) {
+    const actualAccountCount = APP_ACCOUNTS.filter(a => a.business === business.name).length
     if (business.accountsCount !== actualAccountCount) {
       errors.push(`Business "${business.name}" claims ${business.accountsCount} accounts but has ${actualAccountCount}`)
     }
   }
   
   // Check that business total balances match sum of account balances
-  for (const business of MOCK_BUSINESSES) {
-    const actualBalance = MOCK_ACCOUNTS
+  for (const business of APP_BUSINESSES) {
+    const actualBalance = APP_ACCOUNTS
       .filter(a => a.business === business.name)
       .reduce((sum, a) => sum + a.balance, 0)
     
@@ -1634,7 +1703,7 @@ export const validateMockData = () => {
 
 // Run validation in development
 if (process.env.NODE_ENV === 'development') {
-  const validation = validateMockData()
+  const validation = validateAppData()
   if (!validation.isValid) {
     console.warn('Mock data validation errors:', validation.errors)
   } else {
@@ -1814,7 +1883,7 @@ export interface BusinessManager {
 
 export interface AdAccountInventory {
   id: string;
-  accountId: string;
+  account: string;
   source: "hk_provider" | "other";
   status: "available" | "assigned" | "active" | "suspended";
   assignedBusinessId?: string;
@@ -1862,7 +1931,7 @@ export interface ProfileTeam {
 }
 
 // Generate mock profile teams
-export const MOCK_PROFILE_TEAMS: ProfileTeam[] = Array.from({ length: 8 }, (_, i) => {
+export const APP_PROFILE_TEAMS: ProfileTeam[] = Array.from({ length: 8 }, (_, i) => {
   const teamNumber = i + 1;
   const currentBMs = Math.min(20, Math.floor(Math.random() * 22)); // Some teams at capacity
   
@@ -1928,11 +1997,11 @@ export interface TeamBusinessManager {
 }
 
 // Generate mock business managers with team assignments
-export const MOCK_TEAM_BUSINESS_MANAGERS: TeamBusinessManager[] = (() => {
+export const APP_TEAM_BUSINESS_MANAGERS: TeamBusinessManager[] = (() => {
   const managers: TeamBusinessManager[] = [];
   let bmIndex = 0;
   
-  MOCK_PROFILE_TEAMS.forEach(team => {
+  APP_PROFILE_TEAMS.forEach(team => {
     for (let i = 0; i < team.currentBusinessManagers; i++) {
       const adAccountCount = Math.floor(Math.random() * 6) + 1;
       const monthlySpend = Math.floor(Math.random() * 50000) + 5000;

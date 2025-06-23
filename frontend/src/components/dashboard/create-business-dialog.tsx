@@ -19,7 +19,7 @@ import { Label } from "../ui/label"
 import { Check, Loader2, Building2 } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { cn } from "../../lib/utils"
 import { validateBusinessForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
@@ -29,7 +29,7 @@ interface CreateBusinessDialogProps {
 }
 
 export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusinessDialogProps) {
-  const { createBusiness, state } = useDemoState()
+  const { createBusiness, state } = useAppData()
   const [open, setOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [formData, setFormData] = useState({
@@ -115,11 +115,11 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
       // Use demo state management to create business
             await createBusiness({
         name: formData.name,
-        businessType: formData.industry, // Use industry as businessType
-        industry: formData.industry,
+        type: formData.industry, // Map industry to type
         website: formData.website ? normalizeUrl(formData.website) : undefined,
         description: formData.description || undefined,
         status: 'pending', // New businesses start as pending
+        balance: 0, // New businesses start with 0 balance
       })
 
       showSuccessToast("Application Submitted!", "Your business application has been submitted for review.")

@@ -1,5 +1,6 @@
 "use client"
 
+import React from 'react'
 import { useState } from "react"
 import { Card, CardContent, CardHeader } from "../ui/card"
 import { Button } from "../ui/button"
@@ -23,6 +24,7 @@ import { useRouter } from "next/navigation"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
 import { useToast } from "../../hooks/use-toast"
+import { getPlaceholderUrl } from '@/lib/config/assets'
 
 interface AdAccountSummary {
   total: number
@@ -128,7 +130,7 @@ export function EnhancedBusinessCard({
             {business.logo ? (
               <div className="h-12 w-12 rounded-lg overflow-hidden">
                 <img
-                  src={business.logo || "/placeholder.svg"}
+                  src={business.logo || "getPlaceholderUrl()"}
                   alt={business.name}
                   className="h-full w-full object-cover"
                 />

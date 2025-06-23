@@ -1,4 +1,4 @@
-export interface MockAccount {
+export interface AppAccount {
   id: number
   name: string
   business: string

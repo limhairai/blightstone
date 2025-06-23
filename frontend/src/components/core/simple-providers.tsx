@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from "../ui/theme-provider"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
-import { ProductionDataProvider } from "../../contexts/ProductionDataContext"
+import { AppDataProvider } from "../../contexts/AppDataContext"
 import { AppShell } from '../layout/app-shell'
 import { Toaster } from "../ui/sonner"
 import { Loader } from "./Loader"
@@ -58,9 +58,54 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
   
+  // ALL HOOKS MUST BE CALLED AT THE TOP - NEVER CONDITIONALLY
+  const { user, session, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [isRouting, setIsRouting] = useState(false);
+  
+  // ALL useEffect hooks must also be at the top
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    // Don't redirect while loading or if no pathname or not mounted
+    if (!isMounted || authLoading || !pathname) return;
+
+    const isPublicPage = isPublicOrAuthPage(pathname);
+
+    // Debug logging
+    // // 🚨 SECURITY: Removed dangerous console log - console.log('Simplified Router:', { 
+    //   user...
+    // });
+
+    // SIMPLE RULE 1: Not authenticated → Login
+    if (!user || !session) {
+      if (!isPublicPage) {
+        // 🚨 SECURITY: Removed dangerous console log - console.log('Redirecting to login: not authenticat...;
+        setIsRouting(true);
+        router.replace("/login");
+        return;
+      }
+      setIsRouting(false);
+      return;
+    }
+
+    // SIMPLE RULE 2: Authenticated and on public page → Dashboard
+    if (isPublicPage) {
+      // 🚨 SECURITY: Removed dangerous console log - // 🚨 SECURITY: Removed dangerous console log - console.log('Redirecting to dashboard: authenticat...;
+      router.replace("/dashboard");
+      return;
+    }
+
+    // SIMPLE RULE 3: Authenticated and on protected page → Allow access
+    setIsRouting(false);
+  }, [isMounted, user, session, authLoading, pathname, router]);
+
+  // Clear routing state when pathname changes
+  useEffect(() => {
+    setIsRouting(false);
+  }, [pathname]);
 
   // During build time or before mounting, just render children
   if (!isMounted) {
@@ -72,77 +117,33 @@ function AppRouter({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const { user, session, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const [isRouting, setIsRouting] = useState(false);
-
-  useEffect(() => {
-    // Don't redirect while loading or if no pathname
-    if (authLoading || !pathname) return;
-
-    const isPublicPage = isPublicOrAuthPage(pathname);
-
-    console.log('Simplified Router:', { 
-      user: !!user, 
-      session: !!session, 
-      pathname, 
-      isPublicPage,
-      authLoading
-    });
-
-    // SIMPLE RULE 1: Not authenticated → Login
-    if (!user || !session) {
-      if (!isPublicPage) {
-        console.log('Redirecting to login: not authenticated');
-        setIsRouting(true);
-        router.replace("/login");
-        return;
-      }
-      setIsRouting(false);
-      return;
-    }
-
-    // SIMPLE RULE 2: Authenticated and on public page → Dashboard
-    if (isPublicPage) {
-      console.log('Redirecting to dashboard: authenticated user on public page');
-      setIsRouting(true);
-      router.replace("/dashboard");
-      return;
-    }
-
-    // SIMPLE RULE 3: Authenticated and on protected page → Allow access
-    setIsRouting(false);
-  }, [user, session, authLoading, pathname, router]);
-
-  // Clear routing state when pathname changes
-  useEffect(() => {
-    setIsRouting(false);
-  }, [pathname]);
-
   // Show loading while auth is loading or routing
   if (authLoading || isRouting) {
     return <FullScreenLoader />;
   }
 
-  // For authenticated users on protected routes, wrap with ProductionDataProvider
+  // For authenticated users on protected routes, wrap with appropriate providers
   if (user && session && pathname && !isPublicOrAuthPage(pathname)) {
-    // For admin pages, wrap with ProductionDataProvider (no AppShell)
+    // For admin pages, wrap with AppDataProvider (no AppShell)
     if (isAdminPage(pathname)) {
       return (
-        <ProductionDataProvider>
+        <AppDataProvider>
           {children}
-        </ProductionDataProvider>
+        </AppDataProvider>
       );
     }
     
-    // For regular dashboard pages, wrap with ProductionDataProvider and AppShell
+    // For regular dashboard pages, wrap with AppDataProvider and AppShell
     return (
-      <ProductionDataProvider>
+      <AppDataProvider>
         <AppShell>{children}</AppShell>
-      </ProductionDataProvider>
+      </AppDataProvider>
     );
   }
 
+  // // 🚨 SECURITY: Removed dangerous console log - console.log('Not wrapping with ProductionDataProvi... 
+  // });
+  
   // For public pages, return children directly (no data providers)
   return <>{children}</>;
 }

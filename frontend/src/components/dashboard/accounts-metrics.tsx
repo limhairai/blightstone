@@ -1,12 +1,12 @@
-import { MOCK_ACCOUNTS } from "../../lib/mock-data"
+import { APP_ACCOUNTS } from "../../lib/mock-data"
 import { formatCurrency } from "../../lib/utils"
 import { CreditCard, Wallet, TrendingUp, AlertCircle } from "lucide-react"
 
 export function AccountsMetrics() {
-  const totalAccounts = MOCK_ACCOUNTS.length
-  const activeAccounts = MOCK_ACCOUNTS.filter((account) => account.status === "active").length
-  const totalBalance = MOCK_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
-  const totalSpent = MOCK_ACCOUNTS.reduce((total, account) => total + account.spent, 0)
+  const totalAccounts = APP_ACCOUNTS.length
+  const activeAccounts = APP_ACCOUNTS.filter((account) => account.status === "active").length
+  const totalBalance = APP_ACCOUNTS.reduce((total, account) => total + account.balance, 0)
+  const totalSpent = APP_ACCOUNTS.reduce((total, account) => total + (account.spent || 0), 0)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

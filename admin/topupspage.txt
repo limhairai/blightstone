@@ -1,0 +1,163 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import { Button } from "@/components/ui/button"
+import { StatusBadge } from "@/components/status-badge"
+import { CheckCircle, XCircle, Eye } from "lucide-react"
+import { DataTable } from "@/components/ui/data-table"
+import type { ColumnDef } from "@tanstack/react-table"
+import { MOCK_DATA } from "@/data/mock-admin-data"
+import type { TopUpRequest } from "@/data/mock-admin-data"
+
+export default function TopupRequestsPage() {
+  const [topupRequests] = useState(MOCK_DATA.extended.topups)
+  const [statusFilter, setStatusFilter] = useState("all")
+
+  const filteredRequests = useMemo(() => {
+    return topupRequests.filter((request) => {
+      const matchesStatus = statusFilter === "all" || request.status === statusFilter
+      return matchesStatus
+    })
+  }, [topupRequests, statusFilter])
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
+  const handleApproveTopup = (requestId: string) => {
+    console.log("Approving top-up:", requestId)
+    alert("Top-up request approved!")
+  }
+
+  const handleRejectTopup = (requestId: string) => {
+    console.log("Rejecting top-up:", requestId)
+    alert("Top-up request rejected")
+  }
+
+  const columns: ColumnDef<TopUpRequest>[] = [
+    {
+      accessorKey: "id",
+      header: "Request ID",
+      size: 150,
+      cell: ({ row }) => {
+        const request = row.original
+        return (
+          <div className="min-w-0">
+            <div className="font-mono text-sm">{request.id}</div>
+            <div className="text-xs text-gray-500 truncate">{request.organizationName}</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "businessName",
+      header: "Business",
+      size: 200,
+      cell: ({ row }) => {
+        const request = row.original
+        return (
+          <div className="min-w-0">
+            <div className="font-medium truncate">{request.businessName}</div>
+            <div className="text-sm text-gray-500 truncate">{request.adAccountName}</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "amount",
+      header: "Amount",
+      size: 100,
+      cell: ({ row }) => <div className="font-medium text-green-600">{formatCurrency(row.original.amount)}</div>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      size: 100,
+      cell: ({ row }) => (
+        <StatusBadge
+          status={
+            row.original.status === "completed" ? "active" : row.original.status === "failed" ? "failed" : "pending"
+          }
+          size="sm"
+        />
+      ),
+    },
+    {
+      accessorKey: "teamName",
+      header: "Team",
+      size: 120,
+      cell: ({ row }) => <div className="text-sm truncate">{row.original.teamName}</div>,
+    },
+    {
+      accessorKey: "requestedAt",
+      header: "Date",
+      size: 120,
+      cell: ({ row }) => <div className="text-sm">{formatDate(row.original.requestedAt)}</div>,
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      size: 200,
+      cell: ({ row }) => {
+        const request = row.original
+        return (
+          <div className="flex items-center gap-2">
+            {request.status === "pending" && (
+              <>
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                  onClick={() => handleApproveTopup(request.id)}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Approve
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => handleRejectTopup(request.id)}>
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Reject
+                </Button>
+              </>
+            )}
+            <Button variant="ghost" size="sm">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        )
+      },
+    },
+  ]
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-shrink-0 p-4 pb-0">
+        <div className="flex items-center justify-end">
+          <div className="text-sm text-muted-foreground">
+            {filteredRequests.filter((r) => r.status === "pending").length} pending requests
+          </div>
+        </div>
+      </div>
+      <div className="flex-1 min-h-0 px-6 pb-6">
+        <DataTable
+          columns={columns}
+          data={filteredRequests}
+          searchKey="businessName"
+          searchPlaceholder="Search requests..."
+        />
+      </div>
+    </div>
+  )
+}

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { config, shouldUseMockData, isDemoMode } from '../../../lib/data/config';
+import { config, shouldUseAppData, isDemoMode } from '../../../lib/data/config';
+import { headers } from 'next/headers';
+import { buildApiUrl } from '@/lib/config/api';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+// Using centralized API config
 
 // Create Supabase client for server-side auth (only in production)
 const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY ? createClient(
@@ -12,7 +14,7 @@ const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY ? createClient(
 
 async function getAuthToken(request: NextRequest) {
   // In demo mode, return a mock token
-  if (isDemoMode() || shouldUseMockData()) {
+  if (isDemoMode() || shouldUseAppData()) {
     return 'demo-access-token-123';
   }
 
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
     const businessId = searchParams.get('business_id');
     const status = searchParams.get('status');
 
-    let url = `${BACKEND_URL}/api/ad-accounts`;
+    let url = buildApiUrl('/api/ad-accounts');
     const params = new URLSearchParams();
     
     if (organizationId) params.append('organization_id', organizationId);
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_URL}/api/ad-accounts`, {
+    const response = await fetch(buildApiUrl('/api/ad-accounts'), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

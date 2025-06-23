@@ -10,7 +10,7 @@ interface AdminClientAccount {
   id: string
   name: string
   platform: string
-  status: "active" | "pending" | "paused" | "suspended"
+  status: "active" | "pending" | "pending" | "suspended"
   balance: string
   spendLimit: string
   dateCreated: string
@@ -48,7 +48,7 @@ export function AdminClientAccountsTable({ _clientId, _isSuperuser }: AdminClien
       id: "acct_003",
       name: "Brand Awareness",
       platform: "TikTok",
-      status: "paused",
+      status: "pending",
       balance: "$1,890.00",
       spendLimit: "$5,000.00",
       dateCreated: "Mar 12, 2025",
@@ -88,7 +88,7 @@ export function AdminClientAccountsTable({ _clientId, _isSuperuser }: AdminClien
             Pending
           </Badge>
         )
-      case "paused":
+      case "pending":
         return (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
             Paused

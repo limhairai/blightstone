@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.api import api_router
+from backend.app.api.api import api_router
 
 app = FastAPI(title="AdHub API", version="1.0.0")
 

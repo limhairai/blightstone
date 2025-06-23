@@ -1,7 +1,7 @@
 import { cn } from "../../lib/utils"
 
 interface StatusBadgeProps {
-  status: "active" | "pending" | "inactive" | "suspended" | "error" | "paused"
+  status: "active" | "pending" | "inactive" | "suspended" | "error" | "pending"
   size?: "sm" | "md"
 }
 
@@ -14,7 +14,7 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
         return "bg-[hsl(45,100%,12%)] text-[hsl(32,90%,55%)] border-[hsl(36,93%,60%)]"
       case "error":
         return "bg-[hsl(0,80%,12%)] text-[hsl(0,70%,60%)] border-[hsl(0,84%,65%)]"
-      case "paused":
+      case "pending":
       case "inactive":
         return "bg-[hsl(210,17%,12%)] text-[hsl(220,13%,70%)] border-[hsl(240,3%,60%)]"
       case "suspended":
@@ -26,7 +26,7 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "paused":
+      case "pending":
         return "Inactive"
       case "error":
         return "Failed"

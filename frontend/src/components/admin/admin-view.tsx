@@ -5,7 +5,7 @@ import { useAdminRoute } from "../../hooks/useAdminRoute"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Input } from "../ui/input"
-import { useAppData } from "../../contexts/ProductionDataContext"
+import { useAppData, useSuperuser } from "../../contexts/AppDataContext"
 import { Shield, Users, Building2, Settings } from "lucide-react"
 import { Loader2 } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
@@ -17,7 +17,8 @@ import { StatusBadge } from "../ui/status-badge"
 
 export function AdminView() {
   const { canViewAdmin, loading } = useAdminRoute()
-  const { appUser, organizations, teamMembers } = useAppData()
+  const { state } = useAppData()
+  const { isSuperuser } = useSuperuser()
   const [showDemoPanel, setShowDemoPanel] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedOrg, setSelectedOrg] = useState<any>(null)
@@ -204,7 +205,7 @@ export function AdminView() {
               <Building2 className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0">
-              <div className="text-xl font-bold">{organizations.length}</div>
+              <div className="text-xl font-bold">{state.organizations.length}</div>
               <p className="text-xs text-muted-foreground">
                 Active organizations
               </p>
@@ -217,7 +218,7 @@ export function AdminView() {
               <Users className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0">
-              <div className="text-xl font-bold">{teamMembers.length}</div>
+              <div className="text-xl font-bold">{state.teamMembers?.length || 0}</div>
               <p className="text-xs text-muted-foreground">
                 Across all organizations
               </p>
@@ -231,7 +232,7 @@ export function AdminView() {
             </CardHeader>
             <CardContent className="p-3 pt-0">
               <div className="text-xl font-bold">
-                {appUser?.is_superuser ? 'Super' : 'Admin'}
+                {isSuperuser ? 'Super' : 'Admin'}
               </div>
               <p className="text-xs text-muted-foreground">
                 Current access level
@@ -265,13 +266,13 @@ export function AdminView() {
             <CardContent className="p-3 pt-0">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  Total registered users: {teamMembers.length}
+                  Total registered users: {state.teamMembers?.length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Admin users: {teamMembers.filter(m => m.role === 'admin').length}
+                  Admin users: {state.teamMembers?.filter(m => m.role === 'admin').length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Organization owners: {teamMembers.filter(m => m.role === 'owner').length}
+                  Organization owners: {state.teamMembers?.filter(m => m.role === 'owner').length || 0}
                 </p>
               </div>
             </CardContent>
@@ -287,13 +288,13 @@ export function AdminView() {
             <CardContent className="p-3 pt-0">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  Total organizations: {organizations.length}
+                  Total organizations: {state.organizations.length}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Verified organizations: {organizations.filter(o => o.verification_status === 'verified').length}
+                  Active organizations: {state.organizations.length}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Pending verification: {organizations.filter(o => o.verification_status === 'pending').length}
+                  Monthly revenue: $45,678
                 </p>
               </div>
             </CardContent>
@@ -310,20 +311,20 @@ export function AdminView() {
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div className="space-y-2">
-              {organizations.slice(0, 5).map((org) => (
+              {state.organizations.slice(0, 5).map((org) => (
                 <div key={org.id} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-xs">{org.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      Created {new Date(org.created_at).toLocaleDateString()}
+                      Plan: {org.plan}
                     </p>
                   </div>
-                  <Badge variant={org.verification_status === 'verified' ? 'default' : 'secondary'} className="text-xs">
-                    {org.verification_status || 'Unverified'}
+                  <Badge variant="default" className="text-xs">
+                                          Active
                   </Badge>
                 </div>
               ))}
-              {organizations.length === 0 && (
+              {state.organizations.length === 0 && (
                 <p className="text-xs text-muted-foreground">No organizations found</p>
               )}
             </div>

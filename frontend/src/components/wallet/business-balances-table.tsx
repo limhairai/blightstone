@@ -7,7 +7,7 @@ import { formatCurrency, getInitials } from "../../lib/mock-data"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
 import { ChevronUp, ChevronDown, MoreHorizontal } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { useTheme } from "next-themes"
 
 interface BusinessBalance {
@@ -22,15 +22,15 @@ interface BusinessBalance {
 }
 
 export function BusinessBalancesTable() {
-  const { state } = useDemoState()
+  const { state } = useAppData()
   const router = useRouter()
   const { theme } = useTheme()
   const [isExpanded, setIsExpanded] = useState(true)
 
   // Calculate total balance from all businesses to determine percentages
-  const totalAllocated = state.businesses.reduce((sum, business) => sum + (business.totalBalance || 0), 0)
-  const unallocatedAmount = Math.max(0, state.financialData.walletBalance - totalAllocated)
-  const totalBalance = state.financialData.walletBalance
+  const totalAllocated = state.businesses.reduce((sum, business) => sum + (business.balance || 0), 0)
+  const unallocatedAmount = Math.max(0, state.financialData.totalBalance - totalAllocated)
+  const totalBalance = state.financialData.totalBalance
 
   // Convert businesses to BusinessBalance format
   const businessBalances: BusinessBalance[] = [
@@ -44,15 +44,15 @@ export function BusinessBalancesTable() {
       isUnallocated: true,
     },
     ...state.businesses
-      .filter(business => business.status === "active" || business.status === "pending")
+      .filter(business => business.status === "approved" || business.status === "active")
       .map(business => ({
-        id: business.id,
+        id: business.id.toString(),
         name: business.name,
         logo: getInitials(business.name),
-        balance: business.totalBalance || 0,
-        allocationPercent: totalBalance > 0 ? ((business.totalBalance || 0) / totalBalance) * 100 : 0,
-        accounts: business.accountsCount || 0,
-        bmId: business.bmId || "",
+        balance: business.balance || 0,
+        allocationPercent: totalBalance > 0 ? ((business.balance || 0) / totalBalance) * 100 : 0,
+        accounts: 0,
+        bmId: business.id.toString(),
       }))
   ]
 

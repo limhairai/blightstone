@@ -28,17 +28,14 @@ export function PromoteUser() {
 
     setChecking(true);
     try {
-      console.log("🔍 Checking if user exists in profiles table:", email);
-      
-      const response = await fetch("/api/proxy/users/profile", {
+      const response = await fetch(`/api/proxy/auth/check-user-profile?email=${encodeURIComponent(email)}`, {
+        method: "GET",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${session?.access_token}`,
         },
       });
 
       const data = await response.json();
-      console.log("👤 User profile check:", { status: response.status, data });
 
       if (response.ok) {
         toast({
@@ -77,8 +74,6 @@ export function PromoteUser() {
 
     setCreating(true);
     try {
-      console.log("👤 Creating profile for current user...");
-      
       const response = await fetch("/api/proxy/auth/create-profile", {
         method: "POST",
         headers: {
@@ -137,7 +132,7 @@ export function PromoteUser() {
     setLoading(true);
 
     try {
-      console.log("🚀 Starting promotion process for:", email);
+      // 🚨 SECURITY: Removed dangerous console log - console.log("🚀 Starting promotion process for:", ...;
       
       // First try the bootstrap endpoint (for first admin)
       console.log("📡 Trying bootstrap endpoint...");

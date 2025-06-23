@@ -1,6 +1,9 @@
 "use client";
 
-import { useSuperuser } from "../../../contexts/ProductionDataContext";
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
+import { useSuperuser } from "../../../contexts/AppDataContext"
 import { AdminOrgFiles } from "../../../components/admin/admin-org-files";
 import { Loader } from "../../../components/core/Loader";
 

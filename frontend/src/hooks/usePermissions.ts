@@ -1,20 +1,20 @@
-import { useAppData } from '../contexts/ProductionDataContext';
+import { useAppData } from "../contexts/AppDataContext"
+import { useAuth } from "../contexts/AuthContext"
 
 export function usePermissions() {
-  const { 
-    isAppAdmin, 
-    isOrgOwner, 
-    isOrgAdmin, 
-    canManageTeam, 
-    canViewAdmin,
-    appUser,
-    currentOrg,
-    teamMembers
-  } = useAppData();
+  const { state } = useAppData();
+  const { user } = useAuth();
+
+  // Simple permission logic for demo mode
+  const isAppAdmin = state.dataSource === 'demo' || user?.email === 'admin@adhub.tech';
+  const isOrgOwner = true; // In demo mode, user is always owner
+  const isOrgAdmin = true; // In demo mode, user is always admin
+  const canManageTeam = true; // In demo mode, user can manage team
+  const canViewAdmin = isAppAdmin;
 
   // Get current user's role in the organization
-  const currentUserMember = teamMembers.find(m => m.user_id === appUser?.id);
-  const orgRole = currentUserMember?.role || null;
+  const currentUserMember = state.teamMembers.find(m => m.email === user?.email);
+  const orgRole = currentUserMember?.role || 'owner';
 
   return {
     // App-level permissions
@@ -28,16 +28,16 @@ export function usePermissions() {
     orgRole,
     
     // User info
-    userId: appUser?.id,
-    userEmail: appUser?.email,
-    userName: appUser?.name,
+    userId: user?.id,
+    userEmail: user?.email,
+    userName: user?.user_metadata?.name || state.userProfile?.name,
     
     // Organization info
-    orgId: currentOrg?.id,
-    orgName: currentOrg?.name,
+    orgId: state.currentOrganization?.id,
+    orgName: state.currentOrganization?.name,
     
     // Team info
-    teamMembers,
+    teamMembers: state.teamMembers,
     
     // Permission helpers
     canInviteMembers: canManageTeam,

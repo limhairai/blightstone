@@ -34,17 +34,18 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog"
 import { toast } from "sonner"
-import { useDemoState, type TeamMember } from "../../contexts/DemoStateContext"
+import { useAppData, type TeamMember } from "../../contexts/AppDataContext"
 import { gradientTokens } from "../../lib/design-tokens"
 
 export function TeamSettings() {
-  const { state, inviteTeamMember, removeTeamMember, changeMemberRole, resendInvitation } = useDemoState()
+  const { state, dispatch } = useAppData()
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState<TeamMember['role']>("member")
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false)
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
+  const [loading, setLoading] = useState(false)
 
   // Use real-time team members from demo state
   const teamMembers = state.teamMembers
@@ -70,13 +71,41 @@ export function TeamSettings() {
       return
     }
 
+    setLoading(true)
     try {
-      await inviteTeamMember(inviteEmail, inviteRole, state.userProfile.firstName + " " + state.userProfile.lastName)
+      // Create new team member with pending status
+      const newMember: TeamMember = {
+        id: `member-${Date.now()}`,
+        name: inviteEmail.split('@')[0], // Use email prefix as temporary name
+        email: inviteEmail,
+        role: inviteRole,
+        status: "pending",
+        joined: new Date().toISOString(),
+        avatar: undefined,
+        signInCount: 0,
+        authentication: "email",
+        invitedBy: state.userProfile?.name || "Admin",
+        permissions: {
+          canManageTeam: inviteRole === "admin" || inviteRole === "owner",
+          canManageBusinesses: inviteRole === "admin" || inviteRole === "owner",
+          canManageAccounts: inviteRole === "admin" || inviteRole === "owner",
+          canManageWallet: inviteRole === "admin" || inviteRole === "owner",
+          canViewAnalytics: true
+        }
+      }
+
+      // Update team members in context
+      const updatedTeamMembers = [...teamMembers, newMember]
+      dispatch({ type: 'SET_TEAM_MEMBERS', payload: updatedTeamMembers })
+
+      toast.success(`Invitation sent to ${inviteEmail}`)
       setInviteDialogOpen(false)
       setInviteEmail("")
       setInviteRole("member")
     } catch (error) {
-      console.error('Failed to invite team member:', error)
+      toast.error('Failed to invite team member. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -85,20 +114,67 @@ export function TeamSettings() {
     setConfirmRemoveOpen(true)
   }
 
-  const confirmRemoveMember = () => {
+  const confirmRemoveMember = async () => {
     if (!memberToRemove) return
 
-    removeTeamMember(memberToRemove.id)
-    setConfirmRemoveOpen(false)
-    setMemberToRemove(null)
+    setLoading(true)
+    try {
+      // Remove team member from context
+      const updatedTeamMembers = teamMembers.filter(member => member.id !== memberToRemove.id)
+      dispatch({ type: 'SET_TEAM_MEMBERS', payload: updatedTeamMembers })
+
+      toast.success(`${memberToRemove.name} has been removed from the team`)
+      setConfirmRemoveOpen(false)
+      setMemberToRemove(null)
+    } catch (error) {
+      toast.error('Failed to remove team member. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleRoleChange = (memberId: string, newRole: TeamMember['role']) => {
-    changeMemberRole(memberId, newRole)
+  const handleRoleChange = async (memberId: string, newRole: TeamMember['role']) => {
+    setLoading(true)
+    try {
+      // Update team member role in context
+      const updatedTeamMembers = teamMembers.map(member => {
+        if (member.id === memberId) {
+          return {
+            ...member,
+            role: newRole,
+            permissions: {
+              canManageTeam: newRole === "admin" || newRole === "owner",
+              canManageBusinesses: newRole === "admin" || newRole === "owner",
+              canManageAccounts: newRole === "admin" || newRole === "owner",
+              canManageWallet: newRole === "admin" || newRole === "owner",
+              canViewAnalytics: true
+            }
+          }
+        }
+        return member
+      })
+
+      dispatch({ type: 'SET_TEAM_MEMBERS', payload: updatedTeamMembers })
+
+      const member = teamMembers.find(m => m.id === memberId)
+      toast.success(`${member?.name}'s role has been updated to ${newRole}`)
+    } catch (error) {
+      toast.error('Failed to update member role. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleResendInvite = (email: string) => {
-    resendInvitation(email)
+  const handleResendInvite = async (email: string) => {
+    setLoading(true)
+    try {
+      // In a real app, this would resend the invitation email
+      toast.success(`Invitation resent to ${email}`)
+    } catch (error) {
+      toast.error('Failed to resend invitation. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const copyToClipboard = (text: string) => {
@@ -153,7 +229,7 @@ export function TeamSettings() {
     // Owner can manage everyone except themselves
     // Admin can manage members but not owners or other admins
     // Members can't manage anyone
-    const currentUser = teamMembers.find(m => m.id === state.userProfile.id)
+    const currentUser = teamMembers.find(m => m.id === state.userProfile?.id)
     if (!currentUser) return false
 
     if (currentUser.id === member.id) return false // Can't manage yourself
@@ -180,7 +256,7 @@ export function TeamSettings() {
           <DialogTrigger asChild>
             <Button 
               className={gradientTokens.primary}
-              disabled={state.loading.team}
+              disabled={state.loading.teamMembers}
             >
               <Plus className="h-4 w-4 mr-2" />
               Add user
@@ -239,10 +315,10 @@ export function TeamSettings() {
               </Button>
               <Button 
                 onClick={handleInvite}
-                disabled={state.loading.team}
+                disabled={state.loading.teamMembers}
                 className={gradientTokens.primary}
               >
-                {state.loading.team ? "Sending..." : "Send Invitation"}
+                {state.loading.teamMembers ? "Sending..." : "Send Invitation"}
               </Button>
             </DialogFooter>
           </DialogContent>

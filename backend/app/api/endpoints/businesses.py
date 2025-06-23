@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from core.security import get_current_user, require_superuser
-from core.supabase_client import get_supabase_client
-from schemas.user import UserRead as User
-from schemas.business import (
+from backend.app.core.security import get_current_user, require_superuser
+from backend.app.core.supabase_client import get_supabase_client
+from backend.app.schemas.user import UserRead as User
+from backend.app.schemas.business import (
     BusinessCreate,
     BusinessUpdate, 
     BusinessRead,

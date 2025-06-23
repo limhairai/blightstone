@@ -21,19 +21,20 @@ import { Check, Loader2, Building2, Upload, X, Plus } from "lucide-react"
 import type { Business } from "../../types/business"
 import { Badge } from "../ui/badge"
 import { toast } from "sonner"
-import { getInitials, type MockBusiness } from "../../lib/mock-data"
+import { getInitials } from "../../lib/mock-data"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData, type AppBusiness } from "../../contexts/AppDataContext"
 import { useTheme } from "next-themes"
+import { getPlaceholderUrl } from '@/lib/config/assets'
 
 interface EditBusinessDialogProps {
-  business: MockBusiness
+  business: AppBusiness
   trigger: React.ReactNode
-  onBusinessUpdated?: (updatedBusiness: MockBusiness) => void
+  onBusinessUpdated?: (updatedBusiness: AppBusiness) => void
 }
 
 export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: EditBusinessDialogProps) {
-  const { state, updateBusiness } = useDemoState()
+  const { state, updateBusiness } = useAppData()
   const { theme } = useTheme()
   const [open, setOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -41,7 +42,7 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
 
   const [formData, setFormData] = useState({
     name: business.name,
-    industry: business.industry,
+    industry: business.type || "",
     website: business.website || "",
     description: business.description || "",
     logo: null as File | null,
@@ -56,11 +57,11 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
     if (business) {
       setFormData({
         name: business.name,
-        industry: business.industry,
+        industry: business.type || "",
         website: business.website || "",
         description: business.description || "",
         logo: null,
-        logoPreview: business.logo || "",
+        logoPreview: "",
       })
     }
   }, [business, open])
@@ -103,13 +104,12 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
 
     try {
       // Create updated business object
-      const updatedBusiness: MockBusiness = {
+      const updatedBusiness: AppBusiness = {
         ...business,
         name: formData.name,
-        industry: formData.industry,
+        type: formData.industry,
         website: formData.website || undefined,
         description: formData.description || undefined,
-        logo: formData.logoPreview || undefined,
       }
 
       // Use demo state management to update business
@@ -186,7 +186,7 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
                 <div className="relative">
                   <div className="h-16 w-16 rounded-full overflow-hidden bg-muted">
                     <img
-                      src={formData.logoPreview || "/placeholder.svg"}
+                      src={formData.logoPreview || "getPlaceholderUrl()"}
                       alt="Logo preview"
                       className="h-full w-full object-cover"
                     />
@@ -306,7 +306,7 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
               </Button>
             </div>
             <div className="space-y-2 max-h-24 overflow-y-auto">
-              {business.domains?.map((domain, index) => (
+              {(business as any).domains?.map((domain: any, index: number) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-2 bg-muted/30 rounded border border-border"
@@ -367,14 +367,14 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
           </div>
 
           {/* BM ID (read-only) */}
-          {business.bmId && (
+          {(business as any).bmId && (
             <div className="space-y-2">
               <Label htmlFor="bmId" className="text-foreground">
                 Business Manager ID
               </Label>
               <Input
                 id="bmId"
-                value={business.bmId}
+                value={(business as any).bmId}
                 readOnly
                 className="bg-muted border-border text-foreground font-mono"
               />

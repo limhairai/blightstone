@@ -15,7 +15,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { StatusBadge } from "../ui/status-badge"
 import { StatusDot } from "../ui/status-dot"
-import { MOCK_ACCOUNTS } from "../../lib/mock-data"
+import { APP_ACCOUNTS } from "../../lib/mock-data"
 import { formatCurrency } from "../../lib/mock-data"
 import { Search, MoreHorizontal, Eye, Edit, Trash2, Pause, Play, CreditCard, Plus } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
@@ -36,7 +36,7 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
 
   // Filter accounts by business name first
   const businessAccounts = useMemo(() => {
-    return MOCK_ACCOUNTS.filter((account) => account.business === businessName)
+    return APP_ACCOUNTS.filter((account) => account.business === businessName)
   }, [businessName])
 
   // Transform filtered accounts
@@ -46,7 +46,7 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
       name: account.name,
       accountId: account.adAccount,
       business: account.business,
-      status: account.status === "paused" ? "inactive" : account.status,
+      status: account.status === "pending" ? "inactive" : account.status,
       balance: account.balance,
       spendLimit: account.spendLimit,
       dateAdded: account.dateAdded,
@@ -63,7 +63,7 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
     if (searchQuery) {
       filtered = filtered.filter(
         (account) =>
-          account.name.toLowerCase().includes(searchQuery.toLowerCase()) || account.accountId.includes(searchQuery),
+          account.name.toLowerCase().includes(searchQuery.toLowerCase()) || (account.accountId || '').includes(searchQuery),
       )
     }
 
@@ -86,7 +86,7 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
       case "dateAdded":
         return sorted.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
       case "quota":
-        return sorted.sort((a, b) => b.quota - a.quota)
+        return sorted.sort((a, b) => (b.quota || 0) - (a.quota || 0))
       default:
         return sorted
     }
@@ -241,7 +241,7 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
                   </div>
                 </TableCell>
                 <TableCell className="font-medium text-foreground">${formatCurrency(account.balance)}</TableCell>
-                <TableCell className="text-muted-foreground">${formatCurrency(account.spendLimit)}</TableCell>
+                <TableCell className="text-muted-foreground">${formatCurrency(account.spendLimit || 0)}</TableCell>
                 <TableCell className="text-muted-foreground">{account.platform}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

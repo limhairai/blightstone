@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildApiUrl } from '@/lib/config/api';
 
 export async function GET(
   request: NextRequest,
@@ -8,10 +9,10 @@ export async function GET(
     const paymentIntentId = params.id
     
     // In production, this would fetch from your backend
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
+    // Using centralized API config
     
     const response = await fetch(
-      `${backendUrl}/api/payments/intent/${paymentIntentId}`,
+      buildApiUrl(`/api/payments/intent/${paymentIntentId}`),
       {
         headers: {
           'Content-Type': 'application/json',

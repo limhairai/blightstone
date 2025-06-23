@@ -1,11 +1,14 @@
 "use client"
 
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
 import { useState, useMemo, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "../../../../../components/ui/button"
 import { Badge } from "../../../../../components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../../../../components/ui/dropdown-menu"
-import { formatCurrency, MOCK_BUSINESSES } from "../../../../../lib/mock-data"
+import { formatCurrency, APP_BUSINESSES } from "../../../../../lib/mock-data"
 import { ArrowLeft, TrendingUp, TrendingDown, ChevronDown, Calendar, Info, ExternalLink } from 'lucide-react'
 import { layout } from "../../../../../lib/layout-utils"
 import { contentTokens } from "../../../../../lib/content-tokens"
@@ -22,7 +25,7 @@ export default function BusinessDetailPage() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   // Find business from mock data
-  const business = MOCK_BUSINESSES.find(b => b.id === businessId) || {
+  const business = APP_BUSINESSES.find(b => b.id === businessId) || {
     id: businessId,
     name: "TechFlow Solutions",
     industry: "Technology",

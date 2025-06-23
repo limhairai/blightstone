@@ -8,7 +8,7 @@ import { ScrollArea } from "../ui/scroll-area"
 import { Slider } from "../ui/slider"
 import { formatCurrency } from "../../lib/mock-data"
 import { Shuffle, Info, Percent, DollarSign, Trash2 } from 'lucide-react'
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import React from "react"
 
 interface DistributeFundsDialogProps {
@@ -27,7 +27,7 @@ interface AdAccountDistribution {
 }
 
 export function DistributeFundsDialog({ open, onOpenChange, walletBalance }: DistributeFundsDialogProps) {
-  const { state, distributeFromWallet } = useDemoState()
+  const { state, distributeFunds } = useAppData()
   const [isLoading, setIsLoading] = useState(false)
   const [distributionMode, setDistributionMode] = useState<"percentage" | "fixed">("percentage")
   const [totalAmount, setTotalAmount] = useState(walletBalance)
@@ -37,7 +37,7 @@ export function DistributeFundsDialog({ open, onOpenChange, walletBalance }: Dis
     state.accounts.map((account, index) => ({
       id: account.id.toString(),
       name: account.name,
-      business: account.business,
+      business: account.businessId?.toString() || 'Unknown',
       currentBalance: account.balance,
       amount: 0,
       percentage: index < 4 ? [40, 30, 20, 10][index] : 0 // Default percentages for first 4 accounts
@@ -50,7 +50,7 @@ export function DistributeFundsDialog({ open, onOpenChange, walletBalance }: Dis
       state.accounts.map((account, index) => ({
         id: account.id.toString(),
         name: account.name,
-        business: account.business,
+        business: account.businessId?.toString() || 'Unknown',
         currentBalance: account.balance,
         amount: adAccounts.find(acc => acc.id === account.id.toString())?.amount ?? 0,
         percentage: adAccounts.find(acc => acc.id === account.id.toString())?.percentage ?? (index < 4 ? [40, 30, 20, 10][index] : 0)
@@ -129,19 +129,23 @@ export function DistributeFundsDialog({ open, onOpenChange, walletBalance }: Dis
     if (totalDistributed <= 0) return
 
     try {
+      setIsLoading(true)
+      
       // Calculate final distribution amounts
       const distributionData = adAccounts.map((a) => ({
         accountId: parseInt(a.id),
         amount: distributionMode === "percentage" ? (a.percentage / 100) * totalAmount : a.amount
       })).filter(item => item.amount > 0)
 
-      // Use the demo state distributeFromWallet function
-      await distributeFromWallet(distributionData)
+      // Use the context method to distribute funds
+      await distributeFunds(distributionData)
       
       // Success - close dialog
       onOpenChange(false)
     } catch (error) {
       console.error('Distribution failed:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 

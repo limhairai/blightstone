@@ -8,26 +8,26 @@ import { Label } from "../ui/label"
 import { Separator } from "../ui/separator"
 import { formatCurrency } from "../../lib/utils"
 import { Wallet, DollarSign, ArrowRight, Check, Loader2 } from "lucide-react"
-import type { MockAccount } from "../../types/account"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import type { AppAccount } from "../../contexts/AppDataContext"
+import { useAppData } from "../../contexts/AppDataContext"
 import { toast } from "sonner"
 
 interface TopUpDialogProps {
-  account: MockAccount | null
+  account: AppAccount | null
   open: boolean
   onOpenChange: (open: boolean) => void
   mainBalance?: number
 }
 
 export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
-  const { state, topUpAccount } = useDemoState()
+  const { state, addTransaction, updateAccount, updateWalletBalance } = useAppData()
   const [amount, setAmount] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
 
   if (!account) return null
 
   // Use real-time wallet balance from demo state
-  const mainBalance = state.financialData.walletBalance
+  const mainBalance = state.financialData.totalBalance
   const isLoading = state.loading.accounts
   const topUpAmount = Number.parseFloat(amount) || 0
   const newBalance = account.balance + topUpAmount
@@ -45,8 +45,23 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
     }
 
     try {
-      // Use the actual topUpAccount function from demo state management
-      await topUpAccount(account.id, topUpAmount)
+      // 1. Subtract from wallet balance
+      await updateWalletBalance(topUpAmount, 'subtract')
+
+      // 2. Add a transaction for the top up
+      await addTransaction({
+        type: 'topup',
+        amount: topUpAmount,
+        date: new Date().toISOString(),
+        description: `Top up for ${account.name}`,
+        status: 'completed'
+      })
+
+      // 3. Update account balance
+      await updateAccount({
+        ...account,
+        balance: account.balance + topUpAmount
+      })
 
       setShowSuccess(true)
       
@@ -94,7 +109,7 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
             <label className="text-xs text-muted-foreground uppercase tracking-wide">Account</label>
             <div className="p-3 bg-muted rounded-lg border border-border">
               <div className="font-medium text-foreground">{account.name}</div>
-              <div className="text-xs text-muted-foreground font-mono">{account.adAccount}</div>
+              <div className="text-xs text-muted-foreground font-mono">ID: {account.id}</div>
             </div>
           </div>
 

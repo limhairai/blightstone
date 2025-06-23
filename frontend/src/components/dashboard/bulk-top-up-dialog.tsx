@@ -11,10 +11,10 @@ import { ScrollArea } from "../ui/scroll-area"
 import { useToast } from "../../hooks/use-toast"
 import { formatCurrency } from "../../utils/format"
 import { Wallet, DollarSign, Check, Loader2 } from "lucide-react"
-import type { MockAccount } from "../../types/account"
+import type { AppAccount } from "../../contexts/AppDataContext"
 
 interface BulkTopUpDialogProps {
-  selectedAccounts: MockAccount[]
+  selectedAccounts: AppAccount[]
   open: boolean
   onOpenChange: (open: boolean) => void
   onTopUpComplete: () => void
@@ -268,7 +268,7 @@ export function BulkTopUpDialog({
                     <div key={dist.accountId} className="grid grid-cols-[2fr,1fr,1fr] gap-3 items-center">
                       <div className="space-y-1">
                         <div className="font-medium text-foreground text-sm">{account.name}</div>
-                        <div className="text-xs text-muted-foreground">{account.business}</div>
+                        <div className="text-xs text-muted-foreground">{account.businessId || 'Unknown'}</div>
                         <div className="text-xs text-muted-foreground">Current: ${formatCurrency(account.balance)}</div>
                       </div>
 

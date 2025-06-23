@@ -3,24 +3,24 @@
 import { useState, useMemo } from "react"
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
-import { formatCurrency, MOCK_BALANCE_DATA } from "../../lib/mock-data"
+import { formatCurrency, APP_BALANCE_DATA } from "../../lib/mock-data"
 import { TrendingDown, TrendingUp } from "lucide-react"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
 
 export function WalletPortfolioCard() {
-  const { state } = useDemoState()
+  const { state } = useAppData()
   const [timeFilter, setTimeFilter] = useState("1D")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  const totalBalance = state.financialData.walletBalance
-  const change24h = state.financialData.monthlyGrowth || 0
+  const totalBalance = state.financialData.totalBalance
+  const change24h = state.financialData.growthRate || 0
   const changeAmount = (totalBalance * change24h) / 100
 
   // Generate chart data based on time filter and real balance data
   const chartData = useMemo(() => {
     if (timeFilter === "1M") {
       // Use actual balance data for 1M view
-      return MOCK_BALANCE_DATA.map((item, i) => ({
+      return APP_BALANCE_DATA.map((item, i) => ({
         index: i,
         value: item.value,
         time: item.date,

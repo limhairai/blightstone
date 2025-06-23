@@ -4,321 +4,218 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "../../lib/utils"
+import { Button } from "../ui/button"
 import {
-  LayoutDashboard,
+  Home,
   Users,
-  Settings,
   FileText,
-  DollarSign,
-  BarChart3,
-  ShieldCheck,
-  Menu,
-  ChevronRight,
   CreditCard,
+  ChevronDown,
+  Menu,
+  Shield,
+  Settings,
+  TrendingUp,
+  DollarSign,
   Building2,
+  Package,
   type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 
-// Define an interface for navigation items
-interface NavItem {
-  name: string;
-  path: string;
-  icon: LucideIcon;
-  children?: NavItem[];
-  badge?: string | number;
+interface SidebarItem {
+  name: string
+  href?: string
+  icon: LucideIcon
+  subItems?: { name: string; href: string; icon?: LucideIcon }[]
 }
 
-// Moved navItems and bottomNavItems outside the component for stable references
-const navItems: NavItem[] = [
-  {
-    name: "Dashboard",
-    path: "/admin",
-    icon: LayoutDashboard,
-  },
-  {
-    name: "Applications",
-    path: "/admin/applications",
-    icon: FileText,
-    badge: "New",
-    children: [
-      {
-        name: "All Applications",
-        path: "/admin/applications",
-        icon: FileText,
-      },
-      {
-        name: "Workflow",
-        path: "/admin/workflow",
-        icon: Settings,
-      },
-    ],
-  },
-  {
-    name: "Organizations",
-    path: "/admin/organizations",
-    icon: Users,
-    children: [
-      {
-        name: "All Organizations",
-        path: "/admin/organizations",
-        icon: Users,
-      },
-      {
-        name: "Businesses",
-        path: "/admin/businesses",
-        icon: Building2,
-      },
-    ],
-  },
-  {
-    name: "Infrastructure",
-    path: "/admin/infrastructure",
-    icon: ShieldCheck,
-    children: [
-      {
-        name: "Monitoring",
-        path: "/admin/infrastructure",
-        icon: ShieldCheck,
-      },
-      {
-        name: "Assets",
-        path: "/admin/assets",
-        icon: Building2,
-      },
-    ],
-  },
-  {
-    name: "Finances",
-    path: "/admin/finances",
-    icon: DollarSign,
-  },
-  {
-    name: "Analytics",
-    path: "/admin/analytics",
-    icon: BarChart3,
-  },
-  {
-    name: "Access Codes",
-    path: "/admin/access-codes",
-    icon: ShieldCheck,
-  },
-]
-
-const bottomNavItems: NavItem[] = [
-  {
-    name: "Workflow Guide",
-    path: "/admin/workflow-guide",
-    icon: Settings,
-  },
-  {
-    name: "Exit Admin",
-    path: "/dashboard",
-    icon: ShieldCheck,
-  },
-]
-
-interface AdminSidebarProps {
-  className?: string
-}
-
-export function AdminSidebar({ className }: AdminSidebarProps) {
+export function AdminSidebar({ className }: { className?: string }) {
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedItem, setExpandedItem] = useState<string | null>(null)
+  const [expandedItems, setExpandedItems] = useState<string[]>([
+    "Teams",
+    "Applications", 
+    "Transactions",
+    "System Management",
+  ])
   const pathname = usePathname()
 
-  // Admin navigation items
-  // const navItems = [...] // Moved outside
+  const sidebarItems: SidebarItem[] = [
+    { name: "Dashboard", href: "/admin", icon: Home },
+    { name: "Assets", href: "/admin/assets", icon: Package },
+    {
+      name: "Teams",
+      href: "/admin/teams",
+      icon: Users,
+      subItems: [
+        { name: "All Teams", href: "/admin/teams", icon: Users },
+        { name: "All Organizations", href: "/admin/organizations", icon: Building2 },
+      ],
+    },
+    {
+      name: "Applications",
+      href: "/admin/applications",
+      icon: FileText,
+      subItems: [
+        { name: "Active Applications", href: "/admin/applications", icon: FileText },
+        { name: "Application History", href: "/admin/applications/history", icon: FileText },
+      ],
+    },
+    {
+      name: "Transactions",
+      href: "/admin/transactions",
+      icon: CreditCard,
+      subItems: [
+        { name: "Top-up Requests", href: "/admin/transactions/topups", icon: TrendingUp },
+        { name: "Transaction History", href: "/admin/transactions/history", icon: DollarSign },
+      ],
+    },
+    {
+      name: "System Management",
+      href: "/admin/system",
+      icon: Settings,
+      subItems: [{ name: "Access Codes", href: "/admin/access-codes", icon: Shield }],
+    },
+  ]
 
-  // Bottom navigation items
-  // const bottomNavItems = [...] // Moved outside
+  const toggleExpanded = (itemName: string) =>
+    setExpandedItems((prev) => (prev.includes(itemName) ? prev.filter((n) => n !== itemName) : [...prev, itemName]))
 
-  // Auto-expand the section that contains the current path
-  useEffect(() => {
-    const currentSection = navItems.find(
-      (item) => item.children && item.children.some((child) => pathname === child.path),
-    )
+  const isExpanded = (itemName: string) => expandedItems.includes(itemName)
 
-    if (currentSection) {
-      setExpandedItem(currentSection.name)
-    }
-  }, [pathname])
-
-  // Toggle expanded state for items with children
-  const toggleExpand = (item: string) => {
-    if (expandedItem === item) {
-      setExpandedItem(null)
-    } else {
-      setExpandedItem(item)
-    }
+  const isItemActive = (href?: string) => {
+    if (!href || !pathname) return false
+    if (href === "/admin") return pathname === "/admin"
+    return pathname === href || pathname.startsWith(href)
   }
 
-  // Check if the current path matches the nav item
-  const isActive = (path: string) => {
-    if (path === "/admin" && pathname === "/admin") {
-      return true
-    }
-    if (path !== "/admin" && pathname && pathname.startsWith(path)) {
-      return true
-    }
-    return false
-  }
+  const toggleSidebar = () => setCollapsed((c) => !c)
 
   return (
-    <div
+    <aside
       className={cn(
-        "flex flex-col h-screen bg-[#0A0A0A] border-r border-[#1A1A1A] transition-all duration-300 sticky top-0 left-0",
+        "flex h-screen flex-col border-r border-border bg-card transition-all duration-300",
         collapsed ? "w-16" : "w-64",
         className,
       )}
     >
       {/* Header */}
-      <div className="flex items-center h-16 px-4 border-b border-[#1A1A1A]">
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-white hover:bg-[#1A1A1A] h-9 w-9 flex items-center justify-center rounded-md"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
-        {!collapsed && (
-          <div className="ml-3 font-bold text-xl">
-            <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Ad</span>
-            <span>Hub</span>
-            <span className="ml-2 text-xs bg-[#b4a0ff] text-black px-2.5 py-1 rounded-full">ADMIN</span>
+      <div className="flex h-16 items-center border-b border-border px-4">
+        {collapsed ? (
+          <Button variant="ghost" size="icon" className="mx-auto rounded-full hover:bg-accent">
+            <span className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-sm font-semibold text-transparent">
+              AP
+            </span>
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5]">
+              <span className="text-sm font-semibold text-black">AP</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Admin Panel</p>
+              <p className="text-xs text-muted-foreground">Team Management</p>
+            </div>
           </div>
         )}
       </div>
 
-      {/* Admin Section */}
-      {!collapsed && (
-        <div className="px-4 py-3">
-          <p className="text-xs font-medium text-muted-foreground tracking-wider">ADMIN PANEL</p>
-        </div>
-      )}
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 p-3">
+        {sidebarItems.map((item) => {
+          const Icon = item.icon
+          const hasSub = !!item.subItems?.length
+          const active = isItemActive(item.href)
+          const subActive = hasSub && item.subItems!.some((s) => isItemActive(s.href))
 
-      {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto py-2">
-        <nav className="space-y-1 px-2">
-          {navItems.map((item) => (
-            <div key={item.path}>
-              {item.children ? (
-                // For items with children, make the main item a button
-                <button
-                  onClick={() => toggleExpand(item.name)}
+          const MainButton = (
+            <Button
+              variant="ghost"
                   className={cn(
-                    "flex items-center justify-between w-full px-2 py-2.5 rounded-md transition-colors text-left",
-                    isActive(item.path)
-                      ? "bg-[#1A1A1A] text-white"
-                      : "text-muted-foreground hover:text-white hover:bg-[#1A1A1A]",
-                    collapsed && "justify-center",
+                "w-full justify-start rounded-md text-sm",
+                active || subActive
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                collapsed ? "h-10 px-0 justify-center" : "h-10 px-3",
                   )}
                 >
-                  <div className="flex items-center">
-                    <item.icon
-                      className={cn("h-5 w-5", isActive(item.path) ? "text-[#b4a0ff]" : "text-muted-foreground")}
+              <Icon
+                className={cn(collapsed ? "h-5 w-5" : "mr-3 h-4 w-4", active || subActive ? "text-[#c4b5fd]" : "")}
                     />
-                    {!collapsed && <span className="ml-3 flex items-center">{item.name}</span>}
-                  </div>
-                  {!collapsed && (
-                    <ChevronRight
-                      className={cn(
-                        "h-4 w-4 transition-transform text-muted-foreground",
-                        expandedItem === item.name && "transform rotate-90",
-                      )}
+              {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
+              {!collapsed && hasSub && (
+                <ChevronDown
+                  className={cn("h-4 w-4 transition-transform", isExpanded(item.name) ? "rotate-180" : "")}
                     />
                   )}
-                </button>
-              ) : (
-                // For items without children, use a Link
-                <Link
-                  href={item.path}
-                  className={cn(
-                    "flex items-center justify-between px-2 py-2.5 rounded-md transition-colors",
-                    isActive(item.path)
-                      ? "bg-[#1A1A1A] text-white"
-                      : "text-muted-foreground hover:text-white hover:bg-[#1A1A1A]",
-                    collapsed && "justify-center",
-                  )}
-                >
-                  <div className="flex items-center">
-                    <item.icon
-                      className={cn(
-                        "h-5 w-5",
-                        isActive(item.path)
-                          ? "text-[#b4a0ff]" // Use the accent color from design tokens
-                          : "text-muted-foreground",
-                      )}
-                    />
-                    {!collapsed && <span className="ml-3 flex items-center">{item.name}</span>}
+            </Button>
+          )
+
+          return (
+            <div key={item.name}>
+              <div className="flex items-center">
+                {hasSub ? (
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (!collapsed) toggleExpanded(item.name)
+                    }}
+                  >
+                    {MainButton}
                   </div>
+                ) : (
+                  <Link href={item.href!} className="flex-1">
+                    {MainButton}
                 </Link>
               )}
+              </div>
 
-              {/* Dropdown items */}
-              {!collapsed && expandedItem === item.name && item.children && (
-                <div className="mt-1 ml-8 space-y-1">
-                  {item.children.map((child) => (
-                    <Link
-                      key={child.path}
-                      href={child.path}
+              {/* Sub-items */}
+              {hasSub && !collapsed && isExpanded(item.name) && (
+                <div className="ml-6 mt-1 space-y-1">
+                  {item.subItems!.map((sub) => {
+                    const SubIcon = sub.icon
+                    return (
+                      <Link href={sub.href} key={sub.name}>
+                        <Button
+                          variant="ghost"
                       className={cn(
-                        "flex items-center px-2 py-2 rounded-md transition-colors",
-                        isActive(child.path)
-                          ? "bg-[#1A1A1A] text-white"
-                          : "text-muted-foreground hover:text-white hover:bg-[#1A1A1A]",
+                            "h-8 w-full justify-start rounded-md px-3 text-sm",
+                            isItemActive(sub.href)
+                              ? "bg-accent/50 text-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
                       )}
                     >
-                      <span>{child.name}</span>
+                          {SubIcon && <SubIcon className="mr-2 h-3.5 w-3.5" />}
+                          <span className="text-xs">{sub.name}</span>
+                        </Button>
                     </Link>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
-          ))}
+          )
+        })}
         </nav>
-      </div>
 
-      {/* User Profile & Bottom Navigation */}
-      <div className="border-t border-[#1A1A1A] pt-2 pb-4">
-        <div className={cn("flex items-center px-4 py-3", collapsed ? "justify-center" : "justify-start")}>
-          <Avatar className="h-10 w-10 border border-[#1A1A1A]">
-            <AvatarImage src="/vibrant-street-market.png" alt="Admin" />
-            <AvatarFallback className="bg-[#1A1A1A] text-xs">AD</AvatarFallback>
-          </Avatar>
+      {/* Footer */}
+      <div className="border-t border-border p-4">
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
+          <button
+            onClick={toggleSidebar}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="rounded-md p-1 hover:bg-accent"
+          >
+            <Menu className="h-4 w-4 text-muted-foreground" />
+          </button>
           {!collapsed && (
-            <div className="ml-3">
-              <p className="text-sm font-medium">Admin User</p>
-              <p className="text-xs text-muted-foreground">Super Admin</p>
-            </div>
+            <span className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-sm font-semibold text-transparent">
+              AdHub Admin
+            </span>
           )}
         </div>
-
-        <nav className="mt-2 px-2 space-y-1">
-          {bottomNavItems.map((item) => (
-            <Link
-              key={item.path}
-              href={item.path}
-              className={cn(
-                "flex items-center px-2 py-2.5 rounded-md transition-colors",
-                isActive(item.path)
-                  ? "bg-[#1A1A1A] text-white"
-                  : "text-muted-foreground hover:text-white hover:bg-[#1A1A1A]",
-                collapsed && "justify-center",
-              )}
-            >
-              <item.icon className={cn("h-5 w-5", isActive(item.path) ? "text-[#b4a0ff]" : "text-muted-foreground")} />
-              {!collapsed && (
-                <div className="ml-3 flex items-center justify-between w-full">
-                  <span>{item.name}</span>
-                  {item.badge && (
-                    <span className="bg-[#b4a0ff] text-black text-xs px-2.5 py-1 rounded-full">{item.badge}</span>
-                  )}
-                </div>
-              )}
-            </Link>
-          ))}
-        </nav>
       </div>
-    </div>
+    </aside>
   )
 }

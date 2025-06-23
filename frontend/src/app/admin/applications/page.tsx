@@ -1,483 +1,324 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Button } from "../../../components/ui/button";
-import { Badge } from "../../../components/ui/badge";
-import { Input } from "../../../components/ui/input";
-import { 
-  ArrowLeft,
-  FileText,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  ChevronDown,
-  Eye,
-  MoreHorizontal,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertTriangle
-} from "lucide-react";
-import Link from "next/link";
-import { useState, useMemo } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../../components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../../../components/ui/dropdown-menu";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../../../components/ui/table";
-import { VirtualizedTable } from "../../../components/admin/VirtualizedTable";
-import { useDebouncedSearch } from "../../../hooks/useDebouncedSearch";
-import { adminMockData } from "../../../lib/mock-data/admin-mock-data";
-import { MOCK_PROFILE_TEAMS } from "../../../lib/mock-data";
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
+import { useState, useMemo, useEffect } from "react"
+import { Button } from "../../../components/ui/button"
+import { Input } from "../../../components/ui/input"
+import { Badge } from "../../../components/ui/badge"
+import { Avatar, AvatarFallback } from "../../../components/ui/avatar"
+import { CheckCircle, Clock, LinkIcon, Search, Loader2 } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs"
+import { DataTable } from "../../../components/ui/data-table"
+import type { ColumnDef } from "@tanstack/react-table"
+import { useAppData } from "../../../contexts/AppDataContext"
+import { ApplicationApprovalDialog } from "../../../components/admin/application-approval-dialog"
+import { ApplicationReadyDialog } from "../../../components/admin/application-ready-dialog"
+import { ApplicationBindingDialog } from "../../../components/admin/application-binding-dialog"
+import { toast } from "sonner"
+
+interface Application {
+  id: string
+  business_id: string
+  account_name: string
+  spend_limit: number
+  status: 'pending' | 'under_review' | 'approved' | 'rejected'
+  submitted_at: string
+  user_email?: string
+  user_name?: string
+  business_name?: string
+  organization_name?: string
+  admin_notes?: string
+  rejection_reason?: string
+}
 
 export default function ApplicationsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [stageFilter, setStageFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("createdAt");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const { state, adminApproveBusiness } = useAppData()
+  
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [bindingDialogOpen, setBindingDialogOpen] = useState(false)
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
+  const [readyDialogOpen, setReadyDialogOpen] = useState(false)
 
-  const { debouncedTerm } = useDebouncedSearch(searchTerm, 300);
+  // Fetch applications from backend
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const response = await fetch('/api/admin/applications')
+        if (!response.ok) {
+          throw new Error('Failed to fetch applications')
+        }
+        const data = await response.json()
+        setApplications(data)
+      } catch (error) {
+        console.error('Error fetching applications:', error)
+        toast.error('Failed to load applications')
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // Get all applications
-  const allApplications = adminMockData.getApplications();
-
-  // Filter and sort applications
+    fetchApplications()
+  }, [])
+  
   const filteredApplications = useMemo(() => {
-    return allApplications
-      .filter(application => {
-        const matchesSearch = !debouncedTerm || 
-          application.id.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
-          application.clientName.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
-          application.businessName.toLowerCase().includes(debouncedTerm.toLowerCase());
-        
-        const matchesStage = stageFilter === "all" || application.stage === stageFilter;
-        const matchesType = typeFilter === "all" || application.type === typeFilter;
-        const matchesPriority = priorityFilter === "all" || application.priority === priorityFilter;
-        
-        return matchesSearch && matchesStage && matchesType && matchesPriority;
-      })
-      .sort((a, b) => {
-        let aVal: any, bVal: any;
-        
-        switch (sortBy) {
-          case "createdAt":
-            aVal = new Date(a.createdAt).getTime();
-            bVal = new Date(b.createdAt).getTime();
-            break;
-          case "client":
-            aVal = a.clientName;
-            bVal = b.clientName;
-            break;
-          case "stage":
-            aVal = a.stage;
-            bVal = b.stage;
-            break;
-          case "priority":
-            aVal = a.priority;
-            bVal = b.priority;
-            break;
-          default:
-            return 0;
-        }
-        
-        if (typeof aVal === "string") {
-          return sortOrder === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-        }
-        
-        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
-      });
-  }, [allApplications, debouncedTerm, stageFilter, typeFilter, priorityFilter, sortBy, sortOrder]);
+    return applications.filter((app) => {
+      const matchesStatus = statusFilter === "all" || app.status === statusFilter
+      const matchesSearch = searchTerm === "" || 
+        app.organization_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.business_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesStatus && matchesSearch
+    })
+  }, [applications, statusFilter, searchTerm])
 
-  // Statistics
-  const stats = useMemo(() => {
-    const total = allApplications.length;
-    const approved = allApplications.filter(a => a.stage === 'approved').length;
-    const rejected = allApplications.filter(a => a.stage === 'rejected').length;
-    const pending = allApplications.filter(a => 
-      a.stage === 'received' || a.stage === 'document_prep' || a.stage === 'submitted' || a.stage === 'under_review'
-    ).length;
-    const highPriority = allApplications.filter(a => a.priority === 'high' || a.priority === 'urgent').length;
-    
-    return { total, approved, rejected, pending, highPriority };
-  }, [allApplications]);
-
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      case "under_review":
-        return "bg-blue-100 text-blue-800";
-      case "submitted":
-        return "bg-purple-100 text-purple-800";
-      case "document_prep":
-        return "bg-yellow-100 text-yellow-800";
-      case "received":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const getStatusInfo = (status: string) => {
+    const statusMap = {
+      pending: {
+        label: "Pending",
+        color: "bg-red-100 text-red-800 border-red-200",
+        icon: CheckCircle,
+      },
+      under_review: {
+        label: "Under Review",
+        color: "bg-blue-100 text-blue-800 border-blue-200",
+        icon: Clock,
+      },
+      approved: {
+        label: "Approved",
+        color: "bg-green-100 text-green-800 border-green-200",
+        icon: CheckCircle,
+      },
+      rejected: {
+        label: "Rejected",
+        color: "bg-gray-100 text-gray-800 border-gray-200",
+        icon: LinkIcon,
+      },
     }
-  };
+    return statusMap[status as keyof typeof statusMap] || statusMap.pending
+  }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "urgent":
-        return "bg-red-100 text-red-800";
-      case "high":
-        return "bg-orange-100 text-orange-800";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800";
-      case "low":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  const stats = useMemo(
+    () => ({
+      total: applications.length,
+      pending: applications.filter((a) => a.status === "pending").length,
+      under_review: applications.filter((a) => a.status === "under_review").length,
+      approved: applications.filter((a) => a.status === "approved").length,
+      rejected: applications.filter((a) => a.status === "rejected").length,
+    }),
+    [applications],
+  )
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Helper function to get available teams for assignment
-  const getAvailableTeams = () => {
-    return MOCK_PROFILE_TEAMS.filter(team => team.status === 'active' && team.currentBusinessManagers < team.maxBusinessManagers);
-  };
-
-  // Helper function to get team with most capacity
-  const getRecommendedTeam = () => {
-    const availableTeams = getAvailableTeams();
-    if (availableTeams.length === 0) return null;
-    
-    return availableTeams.reduce((best, current) => {
-      const bestCapacity = best.maxBusinessManagers - best.currentBusinessManagers;
-      const currentCapacity = current.maxBusinessManagers - current.currentBusinessManagers;
-      return currentCapacity > bestCapacity ? current : best;
-    });
-  };
-
-  // Virtualized table columns
-  const columns = [
+  const columns: ColumnDef<Application>[] = [
     {
-      key: "id",
-      header: "Application ID",
-      width: 120,
-      render: (application: any) => (
-        <div className="font-mono text-sm">{application.id}</div>
-      )
-    },
-    {
-      key: "client",
-      header: "Client",
-      width: 180,
-      render: (application: any) => (
-        <div>
-          <div className="font-medium">{application.clientName}</div>
-          <div className="text-sm text-muted-foreground">{application.businessName}</div>
-        </div>
-      )
-    },
-    {
-      key: "type",
-      header: "Type",
-      width: 140,
-      render: (application: any) => (
-        <Badge variant="outline" className="text-xs">
-          {application.type.replace('_', ' ').toUpperCase()}
-        </Badge>
-      )
-    },
-    {
-      key: "stage",
-      header: "Stage",
-      width: 120,
-      render: (application: any) => (
-        <Badge className={getStageColor(application.stage)}>
-          {application.stage.replace('_', ' ')}
-        </Badge>
-      )
-    },
-    {
-      key: "priority",
-      header: "Priority",
-      width: 100,
-      render: (application: any) => (
-        <Badge className={getPriorityColor(application.priority)}>
-          {application.priority}
-        </Badge>
-      )
-    },
-    {
-      key: "created",
-      header: "Created",
-      width: 120,
-      render: (application: any) => (
-        <div className="text-sm">{formatDate(application.createdAt)}</div>
-      )
-    },
-    {
-      key: "updated",
-      header: "Last Updated",
-      width: 120,
-      render: (application: any) => (
-        <div className="text-sm">{formatDate(application.lastUpdated)}</div>
-      )
-    },
-    {
-      key: "team",
-      header: "Assigned Team",
-      width: 140,
-      render: (application: any) => {
-        // Only show team assignment for business applications
-        if (application.type !== 'new_business') {
-          return <span className="text-muted-foreground text-xs">N/A</span>;
-        }
-        
-        const recommendedTeam = getRecommendedTeam();
-        const availableTeams = getAvailableTeams();
-        
+      accessorKey: "organization_name",
+      header: "Organization",
+      size: 300,
+      cell: ({ row }) => {
+        const app = row.original
         return (
-          <div className="text-sm">
-            {recommendedTeam ? (
-              <div>
-                <div className="font-medium text-blue-600">{recommendedTeam.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {recommendedTeam.currentBusinessManagers}/{recommendedTeam.maxBusinessManagers} BMs
-                </div>
-              </div>
-            ) : (
-              <div>
-                <div className="text-red-600 font-medium">No capacity</div>
-                <div className="text-xs text-muted-foreground">All teams full</div>
-              </div>
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar className="w-8 h-8 flex-shrink-0">
+              <AvatarFallback className="text-xs">{app.organization_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sm truncate">{app.organization_name}</div>
+              <div className="text-xs text-muted-foreground truncate">{app.business_name}</div>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      size: 160,
+      cell: ({ row }) => {
+        const statusInfo = getStatusInfo(row.original.status)
+        const StatusIcon = statusInfo.icon
+        return (
+          <Badge className={`text-xs ${statusInfo.color}`}>
+            <StatusIcon className="h-3 w-3 mr-1" />
+            {statusInfo.label}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "submitted_at",
+      header: "Submitted",
+      size: 120,
+      cell: ({ row }) => (
+        <div className="text-xs text-muted-foreground">
+          {formatDistanceToNow(new Date(row.original.submitted_at), { addSuffix: true })}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      size: 140,
+      cell: ({ row }) => {
+        const app = row.original
+        return (
+          <div className="flex items-center gap-1">
+            {app.status === "pending" && (
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 h-7 text-xs text-white"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedApplication(app)
+                  setApprovalDialogOpen(true)
+                }}
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Approve
+              </Button>
+            )}
+            {app.status === "under_review" && (
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 h-7 text-xs text-white"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedApplication(app)
+                  setReadyDialogOpen(true)
+                }}
+              >
+                <Clock className="h-3 w-3 mr-1" />
+                Ready
+              </Button>
+            )}
+            {app.status === "rejected" && (
+              <Button
+                size="sm"
+                className="bg-gray-600 hover:bg-gray-700 h-7 text-xs text-white"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedApplication(app)
+                  setBindingDialogOpen(true)
+                }}
+              >
+                <LinkIcon className="h-3 w-3 mr-1" />
+                Reject
+              </Button>
             )}
           </div>
-        );
-      }
+        )
+      },
     },
-    {
-      key: "actions",
-      header: "Actions",
-      width: 80,
-      render: (application: any) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileText className="h-4 w-4 mr-2" />
-              View Documents
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
+  ]
+
+  // Handler functions for dialog actions
+  const handleApprove = async (applicationId: string) => {
+    try {
+      // Refresh the applications list after approval
+      const response = await fetch('/api/admin/applications')
+      if (response.ok) {
+        const data = await response.json()
+        setApplications(data)
+      }
+    } catch (error) {
+      console.error('Error refreshing applications:', error)
     }
-  ];
+  };
+
+  const handleMarkReady = async (applicationId: string) => {
+    try {
+      // Refresh the applications list after marking ready
+      const response = await fetch('/api/admin/applications')
+      if (response.ok) {
+        const data = await response.json()
+        setApplications(data)
+      }
+    } catch (error) {
+      console.error('Error refreshing applications:', error)
+    }
+  };
+
+  const handleBind = async (data: { teamId: string; businessManagerId: string }) => {
+    try {
+      // In a real app, this would bind the application to assets
+      // For now, we'll just refresh the list
+      const response = await fetch('/api/admin/applications')
+      if (response.ok) {
+        const responseData = await response.json()
+        setApplications(responseData)
+      }
+    } catch (error) {
+      console.error('Error refreshing applications:', error)
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading applications...</span>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Apps</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <FileText className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
+              <TabsTrigger value="pending">Pending ({stats.pending})</TabsTrigger>
+              <TabsTrigger value="under_review">Under Review ({stats.under_review})</TabsTrigger>
+              <TabsTrigger value="approved">Approved ({stats.approved})</TabsTrigger>
+              <TabsTrigger value="rejected">Rejected ({stats.rejected})</TabsTrigger>
+            </TabsList>
+          </Tabs>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Approved</p>
-                <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Rejected</p>
-                <p className="text-2xl font-bold text-red-600">{stats.rejected}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">High Priority</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.highPriority}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Search applications, clients..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <Select value={stageFilter} onValueChange={setStageFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Stages" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="received">Received</SelectItem>
-                <SelectItem value="document_prep">Document Prep</SelectItem>
-                <SelectItem value="submitted">Submitted</SelectItem>
-                <SelectItem value="under_review">Under Review</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="new_business">New Business</SelectItem>
-                <SelectItem value="ad_account">Ad Account</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All Priorities" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">Created Date</SelectItem>
-                <SelectItem value="client">Client Name</SelectItem>
-                <SelectItem value="stage">Stage</SelectItem>
-                <SelectItem value="priority">Priority</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search applications..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 w-[250px]"
+            />
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Results Summary */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredApplications.length} of {stats.total} applications
-        </p>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span>Sort: {sortBy}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
-          >
-            {sortOrder === "asc" ? "↑" : "↓"}
-          </Button>
         </div>
+        
+        <div className="text-sm text-muted-foreground">{filteredApplications.length} applications shown</div>
       </div>
 
-      {/* Applications Table */}
-      <Card className="border-border">
-        <CardContent className="p-0">
-          <VirtualizedTable
-            data={filteredApplications}
-            columns={columns}
-            height={600}
-            itemHeight={60}
-          />
-        </CardContent>
-      </Card>
+      <DataTable 
+        columns={columns} 
+        data={filteredApplications} 
+      />
+
+      {/* Dialog Components */}
+      <ApplicationApprovalDialog
+        open={approvalDialogOpen}
+        onOpenChange={setApprovalDialogOpen}
+        application={selectedApplication || { id: "", business_name: "", organization_name: "", spend_limit: 0 }}
+        onApprove={handleApprove}
+      />
+
+      <ApplicationReadyDialog
+        open={readyDialogOpen}
+        onOpenChange={setReadyDialogOpen}
+        application={selectedApplication || { id: "", business_name: "", organization_name: "", spend_limit: 0 }}
+        onMarkReady={handleMarkReady}
+      />
+
+      <ApplicationBindingDialog
+        open={bindingDialogOpen}
+        onOpenChange={setBindingDialogOpen}
+        applicationId={selectedApplication?.id || ""}
+        onBind={handleBind}
+      />
     </div>
-  );
+  )
 } 

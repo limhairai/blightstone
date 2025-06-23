@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
-import { MOCK_ORGANIZATION } from "../../lib/mock-data"
+import { APP_ORGANIZATION } from "../../lib/mock-data"
 import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 export function SettingsView() {
@@ -106,7 +106,7 @@ export function SettingsView() {
     }
 
     try {
-      console.log(`Inviting ${inviteEmail} as ${inviteRole}`);
+      // 🚨 SECURITY: Removed dangerous console log - console.log(`Inviting ${inviteEmail} as ${inviteRo...;
       showSuccessToast("Invitation Sent!", `An invitation has been sent to ${inviteEmail}.`)
       setInviteDialogOpen(false)
       setInviteEmail("")
@@ -477,7 +477,7 @@ export function SettingsView() {
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
                     <div>
                       <p className="font-medium text-xs">Current Plan</p>
-                      <p className="text-xs text-muted-foreground">{MOCK_ORGANIZATION.plan} Plan</p>
+                      <p className="text-xs text-muted-foreground">{APP_ORGANIZATION.plan} Plan</p>
                     </div>
                     <Badge className="bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe] text-xs">Active</Badge>
                   </div>
@@ -508,7 +508,7 @@ export function SettingsView() {
                       </div>
                       <div className="grid grid-cols-4 gap-3 p-3 text-xs">
                         <div>May 1, 2025</div>
-                        <div>{MOCK_ORGANIZATION.plan} Plan</div>
+                        <div>{APP_ORGANIZATION.plan} Plan</div>
                         <div>$299.00</div>
                         <div className="text-right">
                           <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">Download</Button>
@@ -516,7 +516,7 @@ export function SettingsView() {
                       </div>
                       <div className="grid grid-cols-4 gap-3 p-3 text-xs border-t">
                         <div>Apr 1, 2025</div>
-                        <div>{MOCK_ORGANIZATION.plan} Plan</div>
+                        <div>{APP_ORGANIZATION.plan} Plan</div>
                         <div>$299.00</div>
                         <div className="text-right">
                           <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">Download</Button>
@@ -530,7 +530,7 @@ export function SettingsView() {
             <div>
               <Card>
                 <CardHeader className="bg-muted/50 pb-2">
-                  <CardTitle className="text-base">{MOCK_ORGANIZATION.plan} Plan</CardTitle>
+                  <CardTitle className="text-base">{APP_ORGANIZATION.plan} Plan</CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 p-3">
                   <div className="text-center mb-3">

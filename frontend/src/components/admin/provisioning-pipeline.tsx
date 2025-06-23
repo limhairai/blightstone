@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useDemoState } from "../../contexts/DemoStateContext";
+import { useAppData } from "../../contexts/AppDataContext"
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
@@ -28,14 +28,14 @@ import {
 import { formatDistanceToNow } from "date-fns";
 
 export function ProvisioningPipeline() {
-  const { state, updateBusiness } = useDemoState();
+  const { state, updateBusiness } = useAppData();
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<string>("");
 
-  // Filter businesses in provisioning states
+  // Filter businesses in provisioning states using proper admin statuses
   const provisioningBusinesses = state.businesses.filter(
-    (business) => business.status === "provisioning" || business.status === "ready"
+    (business) => business.status === "provisioning" || business.status === "ready" || business.status === "under_review"
   );
 
   const getProvisioningStatusBadge = (status: string) => {
@@ -166,7 +166,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {provisioningBusinesses.filter(b => b.provisioningStatus === "hk_provider_submitted").length}
+              {provisioningBusinesses.filter(b => b.status === "under_review").length}
             </div>
           </CardContent>
         </Card>
@@ -177,7 +177,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {provisioningBusinesses.filter(b => b.provisioningStatus === "account_created").length}
+              {provisioningBusinesses.filter(b => b.status === "ready").length}
             </div>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {provisioningBusinesses.filter(b => b.status === "ready").length}
+              {state.businesses.filter(b => b.status === "approved").length}
             </div>
           </CardContent>
         </Card>
@@ -232,47 +232,25 @@ export function ProvisioningPipeline() {
                         <div>
                           <p className="font-medium text-foreground">{business.name}</p>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {business.industry} • Started {formatDistanceToNow(new Date(business.provisioningStartedAt || business.dateCreated), { addSuffix: true })}
+                            {business.type || "Business"} • Created {formatDistanceToNow(new Date(business.dateCreated), { addSuffix: true })}
                           </p>
                         </div>
                       </div>
                     </TableCell>
 
                     <TableCell>
-                      {getProvisioningStatusBadge(business.provisioningStatus || "not_started")}
+                      {getProvisioningStatusBadge("not_started")}
                     </TableCell>
 
                     <TableCell>
                       <div className="space-y-1">
-                        {business.hkProviderApplicationId ? (
-                          <div className="text-sm">
-                            <p className="font-mono text-xs text-muted-foreground">
-                              {business.hkProviderApplicationId}
-                            </p>
-                            <Badge variant={business.hkProviderStatus === "approved" ? "default" : "secondary"} className="text-xs">
-                              {business.hkProviderStatus || "pending"}
-                            </Badge>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Not submitted</span>
-                        )}
+                        <span className="text-sm text-muted-foreground">Not submitted</span>
                       </div>
                     </TableCell>
 
                     <TableCell>
                       <div className="space-y-1">
-                        {business.assignedBmId ? (
-                          <div className="text-sm">
-                            <p className="font-mono text-xs text-muted-foreground">
-                              {business.assignedBmId}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Profile Set: {business.assignedProfileSetId}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Not assigned</span>
-                        )}
+                        <span className="text-sm text-muted-foreground">Not assigned</span>
                       </div>
                     </TableCell>
 
@@ -281,30 +259,10 @@ export function ProvisioningPipeline() {
                         <div className="w-24 bg-gray-200 rounded-full h-2">
                           <div 
                             className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] h-2 rounded-full transition-all duration-300"
-                            style={{ 
-                              width: `${
-                                business.provisioningStatus === "completed" ? 100 :
-                                business.provisioningStatus === "client_invited" ? 85 :
-                                business.provisioningStatus === "account_created" ? 70 :
-                                business.provisioningStatus === "bm_assigned" ? 55 :
-                                business.provisioningStatus === "hk_provider_approved" ? 40 :
-                                business.provisioningStatus === "hk_provider_submitted" ? 25 :
-                                10
-                              }%` 
-                            }}
+                            style={{ width: "10%" }}
                           />
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {
-                            business.provisioningStatus === "completed" ? "100%" :
-                            business.provisioningStatus === "client_invited" ? "85%" :
-                            business.provisioningStatus === "account_created" ? "70%" :
-                            business.provisioningStatus === "bm_assigned" ? "55%" :
-                            business.provisioningStatus === "hk_provider_approved" ? "40%" :
-                            business.provisioningStatus === "hk_provider_submitted" ? "25%" :
-                            "10%"
-                          }
-                        </span>
+                        <span className="text-xs text-muted-foreground">10%</span>
                       </div>
                     </TableCell>
 
@@ -312,26 +270,11 @@ export function ProvisioningPipeline() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          const status = business.provisioningStatus || "not_started";
-                          const actionMap = {
-                            not_started: "submit_hk_provider",
-                            hk_provider_submitted: "approve_hk_provider",
-                            hk_provider_approved: "assign_bm",
-                            bm_assigned: "create_account",
-                            account_created: "invite_client",
-                            client_invited: "complete_setup",
-                          };
-                          const action = actionMap[status as keyof typeof actionMap];
-                          if (action) {
-                            openActionDialog(business, action);
-                          }
-                        }}
-                        disabled={business.provisioningStatus === "completed"}
+                        onClick={() => openActionDialog(business, "submit_hk_provider")}
                         className="h-8"
                       >
                         <PlayCircle className="h-4 w-4 mr-1" />
-                        {getNextAction(business.provisioningStatus || "not_started")}
+                        {getNextAction("not_started")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -357,10 +300,10 @@ export function ProvisioningPipeline() {
               <div className="p-4 bg-muted/50 rounded-lg">
                 <h4 className="font-medium mb-2">Current Status</h4>
                 <div className="flex items-center gap-2">
-                  {getProvisioningStatusBadge(selectedBusiness.provisioningStatus || "not_started")}
+                  {getProvisioningStatusBadge("not_started")}
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">
-                    {getNextAction(selectedBusiness.provisioningStatus || "not_started")}
+                    {getNextAction("not_started")}
                   </span>
                 </div>
               </div>

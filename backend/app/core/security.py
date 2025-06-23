@@ -4,9 +4,9 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from core.config import settings
-from core.supabase_client import get_supabase_client, get_current_user_data_from_token
-from schemas.user import UserRead
+from backend.app.core.config import settings
+from backend.app.core.supabase_client import get_supabase_client, get_current_user_data_from_token
+from backend.app.schemas.user import UserRead
 import logging
 
 logger = logging.getLogger(__name__)

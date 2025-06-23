@@ -12,8 +12,11 @@ import { contentTokens } from "../../lib/content-tokens"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
 import { TopUpWallet } from "./top-up-wallet"
 import { WithdrawFunds } from "./withdraw-funds"
+import { useAppData } from "../../contexts/AppDataContext"
+import { toast } from "sonner"
 
 export function WalletDashboard() {
+  const { updateWalletBalance, addTransaction } = useAppData()
   const [showTopUp, setShowTopUp] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
 
@@ -21,10 +24,25 @@ export function WalletDashboard() {
   const currentOrg = { id: "org-1", name: "Sample Organization" }
 
   // Handler functions
-  const handleTopUp = async (amount: number) => {
-    console.log("Top up wallet with:", amount)
-    // TODO: Implement actual top-up logic
-    setShowTopUp(false)
+  const handleTopUp = async (amount: number, paymentMethod = "card") => {
+    try {
+      // 1. Add funds to wallet balance
+      await updateWalletBalance(amount, 'add')
+      
+      // 2. Add transaction record
+      await addTransaction({
+        type: 'topup',
+        amount: amount,
+        date: new Date().toISOString(),
+        description: `Wallet funding via ${paymentMethod === 'card' ? 'Credit Card' : 'Bank Transfer'}`,
+        status: 'completed'
+      })
+      
+      toast.success(`Successfully added $${amount} to wallet`)
+      setShowTopUp(false)
+    } catch (error) {
+      toast.error("Failed to add funds to wallet")
+    }
   }
 
   return (

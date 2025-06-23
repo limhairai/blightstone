@@ -1,5 +1,8 @@
 "use client"
 
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
+
 import { BusinessDetailView } from "../../../../components/businesses/business-detail-view"
 
 interface BusinessDetailPageProps {

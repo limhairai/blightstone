@@ -17,8 +17,11 @@ import { Label } from "../ui/label"
 import { Textarea } from "../ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Check, Loader2, Building2, CheckCircle } from "lucide-react"
-import { useDemoState } from "../../contexts/DemoStateContext"
+import { useAppData } from "../../contexts/AppDataContext"
+import { useAuth } from "../../contexts/AuthContext"
 import { cn } from "../../lib/utils"
+import { FormFieldState, LoadingState } from "../ui/comprehensive-states"
+import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 interface CreateBusinessDialogProps {
   trigger: React.ReactNode
@@ -26,30 +29,16 @@ interface CreateBusinessDialogProps {
 }
 
 export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusinessDialogProps) {
-  const { createBusiness, state } = useDemoState()
+  const { createBusiness, state } = useAppData()
+  const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [urlError, setUrlError] = useState("")
   const [formData, setFormData] = useState({
     name: "",
-    industry: "",
     website: "",
-    description: "",
   })
-  const [urlError, setUrlError] = useState("")
-
-  const industries = [
-    "Technology",
-    "Marketing",
-    "E-commerce",
-    "Healthcare",
-    "Finance",
-    "Education",
-    "Real Estate",
-    "Food & Beverage",
-    "Fashion",
-    "Travel",
-    "Other",
-  ]
 
   const validateUrl = (url: string): boolean => {
     if (!url) return true // Optional field
@@ -100,32 +89,50 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validate URL before submission
-    if (formData.website && !validateUrl(formData.website)) {
-      setUrlError("Please enter a valid website URL")
+    // Comprehensive form validation
+    const validation = validateForm([
+      () => validators.required(formData.name, 'Business name'),
+      () => validators.minLength(formData.name, 2, 'Business name'),
+      () => validators.maxLength(formData.name, 100, 'Business name'),
+      () => formData.website ? validators.url(formData.website, 'Website') : null,
+    ])
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
       return
     }
 
+    setLoading(true)
     try {
-      // Use demo state management to create business
-      await createBusiness({
-        name: formData.name,
-        businessType: formData.industry, // Use industry as businessType
-        industry: formData.industry,
-        website: formData.website ? normalizeUrl(formData.website) : undefined,
-        description: formData.description || undefined,
-        status: 'pending', // New businesses start as pending
+      // Call the real business creation API
+      const organizationId = state.currentOrganization?.id || 'default-org-id';
+      const response = await fetch(`/api/businesses?organization_id=${organizationId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          website: formData.website ? normalizeUrl(formData.website) : undefined,
+        }),
       })
 
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.detail || 'Failed to submit business application')
+      }
+
+      const result = await response.json()
+      console.log('Business application submitted:', result)
+
+      showSuccessToast("Business application submitted successfully!")
       setShowSuccess(true)
 
       // Reset form and close dialog after success
       setTimeout(() => {
         setFormData({
           name: "",
-          industry: "",
           website: "",
-          description: "",
         })
         setUrlError("")
         setShowSuccess(false)
@@ -137,6 +144,10 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
       }, 2000)
     } catch (error) {
       console.error('Failed to create business:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit application'
+      showValidationErrors([{ field: 'general', message: errorMessage }])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -188,28 +199,6 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="industry" className="text-foreground">
-              Industry *
-            </Label>
-            <Select
-              value={formData.industry}
-              onValueChange={(value) => setFormData({ ...formData, industry: value })}
-              required
-            >
-              <SelectTrigger className="bg-background border-border text-foreground">
-                <SelectValue placeholder="Select your industry" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                {industries.map((industry) => (
-                  <SelectItem key={industry} value={industry} className="text-popover-foreground hover:bg-accent">
-                    {industry}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="website" className="text-foreground">
               Website
             </Label>
@@ -231,20 +220,6 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-foreground">
-              Business Description
-            </Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Brief description of your business..."
-              rows={3}
-              className="bg-background border-border text-foreground"
-            />
-          </div>
-
           <div className="bg-muted/50 p-3 rounded-lg border border-border">
             <p className="text-xs text-muted-foreground">
               <strong>Note:</strong> All business applications are reviewed manually. You&apos;ll receive an email
@@ -257,17 +232,17 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={state.loading.businesses}
+              disabled={loading}
               className="border-border text-foreground hover:bg-accent"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={state.loading.businesses}
+              disabled={loading}
               className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
             >
-              {state.loading.businesses ? (
+              {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting...

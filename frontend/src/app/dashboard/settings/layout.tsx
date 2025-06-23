@@ -13,7 +13,7 @@ import { useEffect } from "react"
 import { getInitials } from "../../../lib/mock-data"
 import { getAvatarClasses, gradientTokens } from "../../../lib/design-tokens"
 import { useTheme } from "next-themes"
-import { useDemoState } from "../../../contexts/DemoStateContext"
+import { useAppData } from "../../../contexts/AppDataContext"
 
 interface SettingsLayoutProps {
   children: React.ReactNode
@@ -22,7 +22,7 @@ interface SettingsLayoutProps {
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
-  const { state } = useDemoState()
+  const { state } = useAppData()
   
   // Use current organization from demo state
   const currentOrganization = state.currentOrganization
@@ -43,22 +43,22 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-border">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16 rounded-lg border border-border">
-            <AvatarImage src={currentOrganization.avatar || "/placeholder.svg?height=64&width=64"} alt={currentOrganization.name} />
+            <AvatarImage src={currentOrganization?.avatar || "getPlaceholderUrl()?height=64&width=64"} alt={currentOrganization?.name || "Organization"} />
             <AvatarFallback className={getAvatarClasses('lg')}>
-              {getInitials(currentOrganization.name)}
+              {getInitials(currentOrganization?.name || "Demo Org")}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{currentOrganization.name}</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{currentOrganization?.name || "Demo Organization"}</h1>
             <div className="flex items-center gap-2 mt-1">
               <code className="text-xs bg-muted px-2 py-1 rounded border border-border font-mono text-muted-foreground">
-                {currentOrganization.id}
+                {currentOrganization?.id || "demo-org-1"}
               </code>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  if (navigator.clipboard) {
+                  if (navigator.clipboard && currentOrganization?.id) {
                     navigator.clipboard
                       .writeText(currentOrganization.id)
                       .then(() => {
@@ -76,7 +76,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
         </div>
         <div className="flex items-center gap-3">
           <Badge className={gradientTokens.primary}>
-            {currentOrganization.plan} Plan
+            {currentOrganization?.plan || "Free"} Plan
           </Badge>
           <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent">
             <Edit className="h-4 w-4 mr-2" />
