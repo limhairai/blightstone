@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation"
 import { AccountsTable } from "../../../components/dashboard/accounts-table"
-import { CreateAdAccountDialog } from "../../../components/dashboard/create-ad-account-dialog"
+import { CreateAdAccountDialog } from "../../../components/accounts/create-ad-account-dialog"
 import { Button } from "../../../components/ui/button"
 import { Plus, LayoutGrid, ArrowLeft } from "lucide-react"
 import Link from "next/link"

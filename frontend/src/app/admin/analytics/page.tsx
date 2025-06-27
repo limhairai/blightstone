@@ -39,7 +39,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../../components/ui/dropdown-menu";
-import { adminAppData } from "../../../lib/mock-data/admin-mock-data";
+// TODO: Replace with real admin data service
+// import { adminAppData } from "../../../lib/mock-data/admin-mock-data";
 import {
   Select,
   SelectContent,
@@ -55,11 +56,11 @@ export default function AnalyticsPage() {
   const [clientFilter, setClientFilter] = useState("all");
   const [metricType, setMetricType] = useState("revenue");
 
-  // Get real data we can actually track
-  const allClients = adminAppData.getClients();
-  const allTransactions = adminAppData.getTransactions();
-  const allApplications = adminAppData.getApplications();
-  const allBusinesses = adminAppData.getBusinesses();
+  // TODO: Replace with real data from Supabase admin service
+  const allClients: any[] = [];
+  const allTransactions: any[] = [];
+  const allApplications: any[] = [];
+  const allBusinesses: any[] = [];
 
   // Calculate realistic metrics from actual data
   const analytics = useMemo(() => {

@@ -3,7 +3,9 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useAuth } from "../../../../contexts/AuthContext"
+import { toast } from "sonner"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
@@ -25,31 +27,50 @@ interface ApplicationHistory {
 }
 
 export default function ApplicationHistoryPage() {
-  const [applications] = useState<ApplicationHistory[]>([
-    {
-      id: "app-h-001",
-      organizationName: "TechCorp Solutions",
-      businessName: "TechCorp Marketing",
-      applicationType: "new_business",
-      accountsRequested: 3,
-      status: "completed",
-      teamName: "Team Alpha",
-      processedAt: "2024-01-10T10:30:00Z",
-      completedAt: "2024-01-12T15:45:00Z"
-    },
-    {
-      id: "app-h-002",
-      organizationName: "Digital Pro Agency",
-      businessName: "DPA Campaigns",
-      applicationType: "additional_business",
-      accountsRequested: 2,
-      status: "approved",
-      teamName: "Team Beta",
-      processedAt: "2024-01-08T14:20:00Z"
-    }
-  ])
-
+  const { session } = useAuth()
+  const [applications, setApplications] = useState<ApplicationHistory[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  
+  // Fetch applications history
+  useEffect(() => {
+    const fetchApplicationsHistory = async () => {
+      if (!session?.access_token) return
+
+      try {
+        const response = await fetch('/api/admin/applications?status=approved,rejected,completed', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch applications history')
+        }
+        
+        const data = await response.json()
+        // Transform the data to match the history format
+        const historyData = data.map((app: any) => ({
+          id: app.id,
+          organizationName: app.organization_name,
+          businessName: app.business_name,
+          applicationType: "new_business", // Default for now
+          accountsRequested: 1, // Default for now
+          status: app.status,
+          teamName: "Team Alpha", // Default for now
+          processedAt: app.submitted_at,
+          completedAt: app.approved_at || app.rejected_at
+        }))
+        setApplications(historyData)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load applications history')
+        toast.error('Failed to load applications history')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchApplicationsHistory()
+  }, [session])
 
   const filteredApplications = useMemo(() => {
     return applications.filter((app) => {
@@ -60,6 +81,14 @@ export default function ApplicationHistoryPage() {
       return matchesSearch
     })
   }, [applications, searchTerm])
+  
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading applications history...</div>
+  }
+  
+  if (error) {
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+  }
 
   const columns: ColumnDef<ApplicationHistory>[] = [
     {

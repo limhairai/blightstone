@@ -14,7 +14,8 @@ import { Badge } from "../../../components/ui/badge"
 import { StatusBadge } from "../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { useAppData } from "../../../contexts/AppDataContext"
+import { useAuth } from "../../../contexts/AuthContext"
+import { useEffect } from "react"
 
 interface Organization {
   id: string
@@ -27,50 +28,40 @@ interface Organization {
 }
 
 export default function OrganizationsPage() {
-  const { state } = useAppData()
-  
-  // Mock organizations data
-  const [organizations] = useState<Organization[]>([
-    {
-      id: "org-1",
-      name: "TechCorp Solutions",
-      industry: "Technology",
-      teamId: "team-1",
-      status: "active",
-      plan: "professional",
-      adAccountsCount: 12
-    },
-    {
-      id: "org-2",
-      name: "Digital Marketing Pro",
-      industry: "Marketing",
-      teamId: "team-2", 
-      status: "active",
-      plan: "enterprise",
-      adAccountsCount: 25
-    },
-    {
-      id: "org-3",
-      name: "E-commerce Plus",
-      industry: "E-commerce",
-      teamId: "team-1",
-      status: "pending",
-      plan: "starter",
-      adAccountsCount: 5
-    }
-  ])
-  
-  // Mock teams data
-  const teams = [
-    { id: "team-1", name: "Team Alpha" },
-    { id: "team-2", name: "Team Beta" },
-    { id: "team-3", name: "Team Gamma" }
-  ]
-  
+  const { session } = useAuth()
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedTeam, setSelectedTeam] = useState("all")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedPlan, setSelectedPlan] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  
+  // Fetch real organizations data
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      if (!session?.access_token) return
+
+      try {
+        const response = await fetch('/api/organizations', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch organizations')
+        }
+        
+        const data = await response.json()
+        setOrganizations(data.organizations || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load organizations')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrganizations()
+  }, [session])
 
   const filteredOrganizations = useMemo(() => {
     return organizations.filter((org) => {
@@ -84,6 +75,21 @@ export default function OrganizationsPage() {
       return teamFilter && statusFilter && planFilter && searchFilter
     })
   }, [organizations, selectedTeam, selectedStatus, selectedPlan, searchTerm])
+  
+  // For now, use mock teams data - in production this would also come from API
+  const teams = [
+    { id: "team-1", name: "Team Alpha" },
+    { id: "team-2", name: "Team Beta" },
+    { id: "team-3", name: "Team Gamma" }
+  ]
+  
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading organizations...</div>
+  }
+  
+  if (error) {
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+  }
 
   const columns: ColumnDef<Organization>[] = [
     {

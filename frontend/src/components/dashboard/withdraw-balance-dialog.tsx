@@ -1,34 +1,48 @@
 "use client"
 
 import { useState } from "react"
+import useSWR, { useSWRConfig } from 'swr'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Separator } from "../ui/separator"
-import { useToast } from "../../hooks/use-toast"
-import { formatCurrency } from "../../lib/utils"
-import { APP_FINANCIAL_DATA } from "../../lib/mock-data"
-import { type AppAccount } from "../../contexts/AppDataContext"
+import { useToast } from "../ui/use-toast"
+import { formatCurrency } from "../../utils/format"
 import { ArrowUpRight, DollarSign, Check, Loader2, AlertTriangle } from "lucide-react"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+
+interface AppAccount {
+  id: string
+  name: string
+  balance: number
+}
 
 interface WithdrawBalanceDialogProps {
   account: AppAccount | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  mainBalance?: number
 }
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function WithdrawBalanceDialog({
   account,
   open,
   onOpenChange,
-  mainBalance = APP_FINANCIAL_DATA.walletBalance,
 }: WithdrawBalanceDialogProps) {
+  const { currentOrganizationId } = useOrganizationStore();
+  const { mutate } = useSWRConfig();
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { toast } = useToast()
+
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const mainBalance = orgData?.organizations?.[0]?.balance ?? 0;
 
   if (!account) return null
 
@@ -36,8 +50,8 @@ export function WithdrawBalanceDialog({
   const newAccountBalance = account.balance - withdrawAmount
   const newMainBalance = mainBalance + withdrawAmount
 
-  const handleWithdraw = async () => {
-    if (withdrawAmount <= 0) {
+  const handleWithdraw = async (valueToWithdraw: number) => {
+    if (valueToWithdraw <= 0) {
       toast({
         title: "Invalid Amount",
         description: "Please enter a valid amount greater than $0",
@@ -46,7 +60,7 @@ export function WithdrawBalanceDialog({
       return
     }
 
-    if (withdrawAmount > account.balance) {
+    if (valueToWithdraw > account.balance) {
       toast({
         title: "Insufficient Funds",
         description: "Amount exceeds the account balance",
@@ -58,13 +72,28 @@ export function WithdrawBalanceDialog({
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const response = await fetch('/api/wallet/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_source: `ad_account:${account.id}`,
+          to_destination: `organization:${currentOrganizationId}`,
+          amount_cents: Math.round(valueToWithdraw * 100)
+        })
+      });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Transfer failed');
+      }
+
+      mutate(`/api/organizations?id=${currentOrganizationId}`);
+      mutate(`/api/ad-accounts?organization_id=${currentOrganizationId}`);
+      
       setShowSuccess(true)
       toast({
         title: "Withdrawal Successful!",
-        description: `$${formatCurrency(withdrawAmount)} has been withdrawn from ${account.name}`,
+        description: `$${formatCurrency(valueToWithdraw)} has been withdrawn from ${account.name}`,
       })
 
       setTimeout(() => {
@@ -73,47 +102,10 @@ export function WithdrawBalanceDialog({
         onOpenChange(false)
       }, 2000)
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
       toast({
         title: "Withdrawal Failed",
-        description: "Failed to process withdrawal. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleClearBalance = async () => {
-    if (account.balance <= 0) {
-      toast({
-        title: "No Balance",
-        description: "Account balance is already empty",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      setShowSuccess(true)
-      toast({
-        title: "Balance Cleared!",
-        description: `$${formatCurrency(account.balance)} has been withdrawn from ${account.name}`,
-      })
-
-      setTimeout(() => {
-        setAmount("")
-        setShowSuccess(false)
-        onOpenChange(false)
-      }, 2000)
-    } catch (error) {
-      toast({
-        title: "Clear Balance Failed",
-        description: "Failed to clear balance. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {
@@ -170,7 +162,8 @@ export function WithdrawBalanceDialog({
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground uppercase tracking-wide">Main Balance</label>
               <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />${formatCurrency(mainBalance)}
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                {isOrgLoading ? "..." : formatCurrency(mainBalance)}
               </div>
             </div>
           </div>
@@ -192,6 +185,7 @@ export function WithdrawBalanceDialog({
                 max={account.balance}
                 step="0.01"
                 className="pl-10 bg-background border-border text-foreground"
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -205,6 +199,7 @@ export function WithdrawBalanceDialog({
                 size="sm"
                 onClick={() => setAmount((account.balance * 0.25).toFixed(2))}
                 className="border-border text-foreground hover:bg-accent"
+                disabled={isLoading}
               >
                 25%
               </Button>
@@ -213,6 +208,7 @@ export function WithdrawBalanceDialog({
                 size="sm"
                 onClick={() => setAmount((account.balance * 0.5).toFixed(2))}
                 className="border-border text-foreground hover:bg-accent"
+                disabled={isLoading}
               >
                 50%
               </Button>
@@ -221,6 +217,7 @@ export function WithdrawBalanceDialog({
                 size="sm"
                 onClick={() => setAmount((account.balance * 0.75).toFixed(2))}
                 className="border-border text-foreground hover:bg-accent"
+                disabled={isLoading}
               >
                 75%
               </Button>
@@ -229,6 +226,7 @@ export function WithdrawBalanceDialog({
                 size="sm"
                 onClick={() => setAmount(account.balance.toFixed(2))}
                 className="border-border text-foreground hover:bg-accent"
+                disabled={isLoading}
               >
                 All
               </Button>
@@ -255,48 +253,29 @@ export function WithdrawBalanceDialog({
               </div>
             </div>
           )}
-
-          {/* Warning */}
-          {withdrawAmount > account.balance * 0.8 && (
-            <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <div className="font-medium text-yellow-800 dark:text-yellow-200">Large Withdrawal</div>
-                <div className="text-yellow-700 dark:text-yellow-300">
-                  You&apos;re withdrawing a large portion of this account&apos;s balance. Make sure you have enough funds for ongoing campaigns.
-                </div>
-              </div>
-            </div>
-          )}
-
-          <Separator className="bg-border" />
+          
+          <Separator />
 
           {/* Actions */}
-          <div className="flex gap-3">
-            <Button
-              onClick={handleWithdraw}
-              disabled={withdrawAmount <= 0 || withdrawAmount > account.balance || isLoading}
-              className="flex-1 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <ArrowUpRight className="w-4 h-4 mr-2" />
-                  Withdraw ${formatCurrency(withdrawAmount)}
-                </>
-              )}
-            </Button>
+          <div className="flex justify-end space-x-2 pt-2">
             <Button
               variant="outline"
-              onClick={handleClearBalance}
-              disabled={account.balance <= 0 || isLoading}
-              className="border-border text-foreground hover:bg-accent"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
             >
-              Clear All
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleWithdraw(withdrawAmount)}
+              disabled={isLoading || withdrawAmount <= 0 || withdrawAmount > account.balance}
+              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:opacity-90 text-white"
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ArrowUpRight className="mr-2 h-4 w-4" />
+              )}
+              Withdraw {formatCurrency(withdrawAmount)}
             </Button>
           </div>
         </div>

@@ -1,22 +1,36 @@
 "use client"
 
-import { ArrowUpRight, Wallet, FolderKanban, CreditCard } from "lucide-react"
+import useSWR from 'swr'
+import { ArrowUpRight, Wallet, FolderKanban, CreditCard, Loader2 } from "lucide-react"
 import { useEffect, useRef } from "react"
-import { 
-  APP_ACCOUNTS, 
-  APP_FINANCIAL_DATA,
-  formatCurrency,
-  getTotalAccountsBalance,
-  getActiveAccountsCount
-} from "../../lib/mock-data"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { formatCurrency } from "@/lib/utils"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export default function AccountMetrics() {
-  // Use centralized mock data
-  const totalAccounts = APP_ACCOUNTS.length
-  const totalBalance = getTotalAccountsBalance()
-  const businesses = 3 // Mock business count - could be centralized too
-  const accountLimit = 50 // Mock limit
+  const { currentOrganizationId } = useOrganizationStore();
   
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const { data: bizData, isLoading: isBizLoading } = useSWR(
+    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const { data: accData, isLoading: isAccLoading } = useSWR(
+    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null,
+    fetcher
+  );
+
+  const totalAccounts = accData?.accounts?.length ?? 0;
+  const totalBalance = orgData?.organizations?.[0]?.balance_cents / 100 ?? 0;
+  const businesses = bizData?.businesses?.length ?? 0;
+  const accountLimit = 50; // TODO: This could be fetched from user plan/settings
+  
+  const isLoading = isOrgLoading || isBizLoading || isAccLoading;
+
   const metrics = [
     {
       title: "Total accounts",
@@ -131,6 +145,18 @@ export default function AccountMetrics() {
       window.removeEventListener("resize", drawChart)
     }
   }, [])
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-4">
+        {[...Array(3)].map((_, index) => (
+          <div key={index} className="bg-white dark:bg-[#111111] border border-gray-100 dark:border-[#222] rounded-lg p-3 shadow-sm h-[88px] flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-3 mb-4">

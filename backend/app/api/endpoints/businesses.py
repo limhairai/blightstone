@@ -116,8 +116,7 @@ async def create_business(
         business_data.update({
             "user_id": str(current_user.uid),
             "organization_id": organization_id,
-            "status": "pending",
-            "verification": "pending"
+            "status": "In Review"
         })
         
         # Insert business

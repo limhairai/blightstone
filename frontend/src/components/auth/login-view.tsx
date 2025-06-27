@@ -14,7 +14,6 @@ import { validateLoginForm, showValidationErrors } from "../../lib/form-validati
 export function LoginView() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { signIn, signInWithGoogle, user, session, loading: authIsLoading } = useAuth();
   const router = useRouter();
@@ -28,13 +27,6 @@ export function LoginView() {
     }
   }, [searchParams]);
 
-  // Redirect to dashboard when user becomes authenticated
-  useEffect(() => {
-    if (user && session && !authIsLoading) {
-      router.push("/dashboard");
-    }
-  }, [user, session, authIsLoading, router]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -47,90 +39,60 @@ export function LoginView() {
       return
     }
     
-    setLoading(true);
-    
-    try {
-      const result = await signIn(email, password);
-      if (result.error) {
-        let errorMessage = "Failed to sign in. Please try again.";
-        
-        // Handle specific Supabase error messages
-        if (result.error.message === 'Invalid login credentials') {
-          errorMessage = "Incorrect email or password. Please check your credentials and try again.";
-        } else if (result.error.message === 'Email not confirmed') {
-          errorMessage = "Please check your email and click the confirmation link before signing in.";
-        } else if (result.error.message.includes('Too many requests')) {
-          errorMessage = "Too many login attempts. Please wait a moment and try again.";
-        } else if (result.error.message.includes('User not found')) {
-          errorMessage = "No account found with this email address.";
-        } else {
-          errorMessage = result.error.message;
-        }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
-        return;
+    const result = await signIn(email, password);
+
+    if (result.error) {
+      let errorMessage = "Failed to sign in. Please try again.";
+      
+      // Handle specific Supabase error messages
+      if (result.error.message === 'Invalid login credentials') {
+        errorMessage = "Incorrect email or password. Please check your credentials and try again.";
+      } else if (result.error.message === 'Email not confirmed') {
+        errorMessage = "Please check your email and click the confirmation link before signing in.";
+      } else if (result.error.message.includes('Too many requests')) {
+        errorMessage = "Too many login attempts. Please wait a moment and try again.";
+      } else if (result.error.message.includes('User not found')) {
+        errorMessage = "No account found with this email address.";
+      } else {
+        errorMessage = result.error.message;
       }
       
-      // Success - let the useEffect handle the redirect
-      toast.success("Signed in!", {
-        description: "Welcome back."
-      });
-      
-    } catch (err: unknown) {
-      let message = "An unexpected error occurred. Please try again.";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return;
     }
+    
+    // On success, the useEffect will handle the redirect. 
+    toast.success("Signed in!", {
+      description: "Welcome back. Redirecting..."
+    });
+    window.location.assign('/dashboard');
   };
 
   const handleGoogleSignIn = async () => {
     setError("");
-    setLoading(true);
-    
-    try {
-      const result = await signInWithGoogle();
-      if (result.error) {
-        let errorMessage = "Failed to sign in with Google. Please try again.";
-        
-        if (result.error.message.includes('popup_closed_by_user')) {
-          errorMessage = "Google sign-in was cancelled.";
-        } else if (result.error.message.includes('access_denied')) {
-          errorMessage = "Google sign-in access was denied.";
-        } else {
-          errorMessage = result.error.message;
-        }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
-        return;
+    const result = await signInWithGoogle();
+    if (result.error) {
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+      
+      if (result.error.message.includes('popup_closed_by_user')) {
+        errorMessage = "Google sign-in was cancelled.";
+      } else if (result.error.message.includes('access_denied')) {
+        errorMessage = "Google sign-in access was denied.";
+      } else {
+        errorMessage = result.error.message;
       }
       
-      // Success - Google will redirect, so we might not reach this point
-      toast.success("Signed in!", {
-        description: "Welcome back."
-      });
-      
-    } catch (err: unknown) {
-      let message = "An unexpected error occurred with Google sign-in.";
-      if (err instanceof Error) {
-        message = err.message;
-      }
-      setError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return;
     }
+    
+    // Success - Google will redirect, so we might not reach this point
+    toast.success("Signed in!", {
+      description: "Welcome back."
+    });
   };
-
-  if (authIsLoading) {
-    return <Loader fullScreen />;
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -164,7 +126,7 @@ export function LoginView() {
                   onChange={e => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  disabled={loading || authIsLoading}
+                  disabled={authIsLoading}
                 />
               </div>
             </div>
@@ -180,14 +142,14 @@ export function LoginView() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  disabled={loading || authIsLoading}
+                  disabled={authIsLoading}
                 />
               </div>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input id="remember-me" name="remember-me" type="checkbox" className="checkbox" disabled={loading || authIsLoading} />
+                <input id="remember-me" name="remember-me" type="checkbox" className="checkbox" disabled={authIsLoading} />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
                   Remember me
                 </label>
@@ -208,9 +170,9 @@ export function LoginView() {
               <Button
                 className="w-full h-12 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
                 type="submit"
-                disabled={loading || authIsLoading}
+                disabled={authIsLoading}
               >
-                {(loading || authIsLoading) ? "Signing in..." : "Sign in"}
+                {authIsLoading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
           </form>
@@ -229,7 +191,7 @@ export function LoginView() {
               className="w-full h-12 rounded-md border border-border bg-background hover:bg-muted text-foreground"
               type="button"
               onClick={handleGoogleSignIn}
-              disabled={loading || authIsLoading}
+              disabled={authIsLoading}
             >
               <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                 <path
@@ -249,7 +211,7 @@ export function LoginView() {
                   fill="#EA4335"
                 />
               </svg>
-              {(loading || authIsLoading) ? "Signing in..." : "Continue with Google"}
+              {authIsLoading ? "Signing in..." : "Continue with Google"}
             </Button>
           </div>
 

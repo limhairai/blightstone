@@ -13,7 +13,7 @@ import { layout } from "../../lib/layout-utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Separator } from "../ui/separator"
 import { Badge } from "../ui/badge"
-import { formatCurrency, APP_CONSTANTS } from "../../lib/mock-data"
+import { formatCurrency } from "../../utils/format"
 
 interface TopUpDialogPropsInternal {
   isOpen: boolean

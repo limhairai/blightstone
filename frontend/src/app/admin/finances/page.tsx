@@ -64,9 +64,30 @@ import {
 } from "../../../components/ui/select";
 import { VirtualizedTable } from "../../../components/admin/VirtualizedTable";
 import { useDebouncedSearch } from "../../../hooks/useDebouncedSearch";
-import { adminAppData, AppTransaction, AppClient } from "../../../lib/mock-data/admin-mock-data";
 
-export default function BillingPage() {
+// Temporary types until real admin service is implemented
+interface AppTransaction {
+  id: string;
+  amount: number;
+  type: string;
+  status: string;
+  date: string;
+  clientId?: string;
+  clientName?: string;
+  description?: string;
+  reference?: string;
+  [key: string]: any;
+}
+
+interface AppClient {
+  id: string;
+  name: string;
+  balance: number;
+  creditLimit: number;
+  [key: string]: any;
+}
+
+export default function FinancesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -77,9 +98,9 @@ export default function BillingPage() {
 
   const { debouncedTerm } = useDebouncedSearch(searchTerm, 300);
 
-  // Get all financial data
-  const allTransactions = adminAppData.getTransactions();
-  const allClients = adminAppData.getClients();
+  // TODO: Replace with real admin data service
+  const allTransactions: AppTransaction[] = [];
+  const allClients: AppClient[] = [];
 
   // Enhanced transaction data with risk scoring
   const enhancedTransactions = useMemo(() => {
@@ -112,7 +133,7 @@ export default function BillingPage() {
         customerId: `cus_${Math.random().toString(36).substr(2, 14)}`,
         paymentMethods: Math.floor(Math.random() * 3) + 1,
         autoTopupEnabled: Math.random() > 0.3,
-        creditUtilization: client.balance < 0 ? Math.abs(client.balance) / client.creditLimit * 100 : 0
+        creditUtilization: client.balance < 0 ? Math.abs(client.balance) / (client.creditLimit || 1000) * 100 : 0
       };
     });
   }, [allClients, allTransactions]);
@@ -123,9 +144,9 @@ export default function BillingPage() {
       .filter(transaction => {
         const matchesSearch = !debouncedTerm || 
           transaction.id.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
-          transaction.clientName.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
-          transaction.description.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
-          transaction.reference?.toLowerCase().includes(debouncedTerm.toLowerCase());
+          (transaction.clientName || '').toLowerCase().includes(debouncedTerm.toLowerCase()) ||
+          (transaction.description || '').toLowerCase().includes(debouncedTerm.toLowerCase()) ||
+          (transaction.reference || '').toLowerCase().includes(debouncedTerm.toLowerCase());
         
         const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
         const matchesType = typeFilter === "all" || transaction.type === typeFilter;
@@ -146,8 +167,8 @@ export default function BillingPage() {
             bVal = Math.abs(b.amount);
             break;
           case "client":
-            aVal = a.clientName;
-            bVal = b.clientName;
+            aVal = a.clientName || '';
+            bVal = b.clientName || '';
             break;
           case "status":
             aVal = a.status;
@@ -183,9 +204,6 @@ export default function BillingPage() {
     const highRiskClients = clientFinancials.filter(c => c.riskLevel === 'high').length;
     const overdueClients = clientFinancials.filter(c => c.balance < 0).length;
     
-    const reconciliationRate = enhancedTransactions.filter(t => t.reconciled).length / total * 100;
-    const avgProcessingTime = enhancedTransactions.reduce((sum, t) => sum + t.processingTime, 0) / total;
-    
     return {
       total,
       completed,
@@ -196,34 +214,9 @@ export default function BillingPage() {
       avgTransactionSize,
       successRate,
       highRiskClients,
-      overdueClients,
-      reconciliationRate,
-      avgProcessingTime
+      overdueClients
     };
-  }, [allTransactions, clientFinancials, enhancedTransactions]);
-
-  // Critical alerts
-  const criticalAlerts = useMemo(() => {
-    const alerts = [];
-    
-    // Failed payment alerts
-    const recentFailures = enhancedTransactions.filter(t => 
-      t.status === 'failed' && 
-      new Date(t.date) > new Date(Date.now() - 24 * 60 * 60 * 1000)
-    );
-    
-    if (recentFailures.length > 10) {
-      alerts.push({
-        id: 'high_failure_rate',
-        type: 'critical',
-        title: 'High Failure Rate Detected',
-        message: `${recentFailures.length} failed transactions in last 24h`,
-        action: 'Review payment processing'
-      });
-    }
-    
-    return alerts;
-  }, [enhancedTransactions]);
+  }, [allTransactions, clientFinancials]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -233,31 +226,31 @@ export default function BillingPage() {
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       case "failed":
         return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
-      case "cancelled":
-        return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>;
+      case "processing":
+        return <Badge className="bg-blue-100 text-blue-800">Processing</Badge>;
       default:
         return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
   const getTypeBadge = (type: string) => {
-    const colors = {
-      deposit: "bg-green-100 text-green-800",
-      withdrawal: "bg-blue-100 text-blue-800",
-      spend: "bg-purple-100 text-purple-800",
-      refund: "bg-orange-100 text-orange-800",
-      fee: "bg-indigo-100 text-indigo-800",
-      commission: "bg-pink-100 text-pink-800"
-    };
-    
-    return <Badge className={colors[type as keyof typeof colors] || "bg-gray-100 text-gray-800"}>
-      {type.toUpperCase()}
-    </Badge>;
+    switch (type) {
+      case "topup":
+        return <Badge className="bg-green-100 text-green-800">Top Up</Badge>;
+      case "commission":
+        return <Badge className="bg-blue-100 text-blue-800">Commission</Badge>;
+      case "fee":
+        return <Badge className="bg-purple-100 text-purple-800">Fee</Badge>;
+      case "refund":
+        return <Badge className="bg-orange-100 text-orange-800">Refund</Badge>;
+      default:
+        return <Badge variant="outline">{type}</Badge>;
+    }
   };
 
   const getRiskBadge = (score: number) => {
-    if (score >= 80) return <Badge className="bg-red-100 text-red-800">High Risk</Badge>;
-    if (score >= 50) return <Badge className="bg-yellow-100 text-yellow-800">Medium Risk</Badge>;
+    if (score >= 70) return <Badge className="bg-red-100 text-red-800">High Risk</Badge>;
+    if (score >= 40) return <Badge className="bg-yellow-100 text-yellow-800">Medium Risk</Badge>;
     return <Badge className="bg-green-100 text-green-800">Low Risk</Badge>;
   };
 
@@ -265,8 +258,8 @@ export default function BillingPage() {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -279,314 +272,158 @@ export default function BillingPage() {
     });
   };
 
-  // Virtualized table columns
-  const columns = [
-    {
-      key: "id",
-      header: "Transaction ID",
-      width: 140,
-      render: (transaction: any) => (
-        <div>
-          <div className="font-mono text-sm">{transaction.id}</div>
-          <div className="text-xs text-gray-500">
-            {transaction.paymentId.slice(0, 12)}...
-          </div>
-        </div>
-      )
-    },
-    {
-      key: "client",
-      header: "Client",
-      width: 180,
-      render: (transaction: any) => (
-        <div>
-          <div className="font-medium">{transaction.clientName}</div>
-          <div className="text-sm text-gray-500">{transaction.businessName}</div>
-        </div>
-      )
-    },
-    {
-      key: "type",
-      header: "Type",
-      width: 100,
-      render: (transaction: any) => getTypeBadge(transaction.type)
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      width: 120,
-      render: (transaction: any) => (
-        <div className="text-right">
-          <div className={`font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-            {formatCurrency(transaction.amount)}
-          </div>
-          <div className="text-xs text-gray-500">
-            Fee: {formatCurrency(transaction.processingFee)}
-          </div>
-        </div>
-      )
-    },
-    {
-      key: "status",
-      header: "Status",
-      width: 120,
-      render: (transaction: any) => (
-        <div className="space-y-1">
-          {getStatusBadge(transaction.status)}
-          {!transaction.reconciled && (
-            <div className="text-xs text-orange-600">Unreconciled</div>
-          )}
-        </div>
-      )
-    },
-    {
-      key: "date",
-      header: "Date",
-      width: 120,
-      render: (transaction: any) => (
-        <div>
-          <div className="text-sm">{formatDate(transaction.date)}</div>
-          <div className="text-xs text-gray-500">
-            {transaction.processingTime}ms
-          </div>
-        </div>
-      )
-    },
-    {
-      key: "reference",
-      header: "Reference",
-      width: 140,
-      render: (transaction: any) => (
-        <div>
-          <div className="font-mono text-xs">{transaction.reference}</div>
-          {transaction.retryCount > 0 && (
-            <div className="text-xs text-orange-600">
-              {transaction.retryCount} retries
-            </div>
-          )}
-        </div>
-      )
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      width: 80,
-      render: (transaction: any) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>
-              <Eye className="h-4 w-4 mr-2" />
-              View Details
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View Payment Details
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Retry Payment
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Receipt className="h-4 w-4 mr-2" />
-              Generate Receipt
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    }
-  ];
-
   return (
-    <div className="space-y-6 p-6 pt-6">
-      {/* Header */}
-      <div className="flex items-center justify-end">
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Critical Alerts */}
-      {criticalAlerts.length > 0 && (
-        <div className="space-y-2">
-          {criticalAlerts.map(alert => (
-            <Alert key={alert.id} className={alert.type === 'critical' ? 'border-red-500 bg-red-50' : 'border-yellow-500 bg-yellow-50'}>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <strong>{alert.title}</strong>: {alert.message}
-                  </div>
-                  <Button variant="outline" size="sm">
-                    {alert.action}
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-          ))}
-        </div>
-      )}
-
-      {/* Financial KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+    <div className="space-y-6 p-6">
+      {/* Financial Overview Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Volume</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Volume</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalVolume)}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Revenue</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</p>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-green-600" />
               </div>
-              <TrendingUp className="h-8 w-8 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Success Rate</p>
+                <p className="text-sm font-medium text-muted-foreground">Revenue</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
                 <p className="text-2xl font-bold">{stats.successRate.toFixed(1)}%</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Failed</p>
-                <p className="text-2xl font-bold text-red-600">{stats.failed.toLocaleString()}</p>
+                <p className="text-sm font-medium text-muted-foreground">Transactions</p>
+                <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
               </div>
-              <XCircle className="h-8 w-8 text-red-500" />
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <Receipt className="h-6 w-6 text-purple-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Reconciled</p>
-                <p className="text-2xl font-bold">{stats.reconciliationRate.toFixed(1)}%</p>
+                <p className="text-sm font-medium text-muted-foreground">High Risk</p>
+                <p className="text-2xl font-bold text-red-600">{stats.highRiskClients}</p>
               </div>
-              <Shield className="h-8 w-8 text-blue-500" />
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Avg Speed</p>
-                <p className="text-2xl font-bold">{Math.round(stats.avgProcessingTime)}ms</p>
+                <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+                <p className="text-2xl font-bold text-orange-600">{stats.overdueClients}</p>
               </div>
-              <Zap className="h-8 w-8 text-yellow-500" />
+              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search transactions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-64"
-            />
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search transactions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="topup">Top Up</SelectItem>
+                <SelectItem value="commission">Commission</SelectItem>
+                <SelectItem value="fee">Fee</SelectItem>
+                <SelectItem value="refund">Refund</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Date</SelectItem>
+                <SelectItem value="amount">Amount</SelectItem>
+                <SelectItem value="client">Client</SelectItem>
+                <SelectItem value="status">Status</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="All types" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value="deposit">Deposit</SelectItem>
-              <SelectItem value="withdrawal">Withdrawal</SelectItem>
-              <SelectItem value="spend">Spend</SelectItem>
-              <SelectItem value="refund">Refund</SelectItem>
-              <SelectItem value="fee">Fee</SelectItem>
-              <SelectItem value="commission">Commission</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={clientFilter} onValueChange={setClientFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="All clients" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All clients</SelectItem>
-              {allClients.slice(0, 10).map(client => (
-                <SelectItem key={client.id} value={client.id}>
-                  {client.company}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline" size="sm">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Results Summary */}
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Showing {filteredTransactions.length.toLocaleString()} of {stats.total.toLocaleString()} transactions
         </p>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>Sort: {sortBy}</span>
           <Button
             variant="ghost"
@@ -598,15 +435,14 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Virtualized Transaction Table */}
+      {/* Transactions Table */}
       <Card>
         <CardContent className="p-0">
-          <VirtualizedTable
-            data={filteredTransactions}
-            columns={columns}
-            height={600}
-            itemHeight={70}
-          />
+          <div className="text-center py-8 text-muted-foreground">
+            <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No transactions available</p>
+            <p className="text-sm">Connect your admin data service to view financial data</p>
+          </div>
         </CardContent>
       </Card>
     </div>

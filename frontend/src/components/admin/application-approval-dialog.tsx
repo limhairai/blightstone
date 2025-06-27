@@ -11,21 +11,21 @@ interface Application {
   id: string;
   organization_name?: string;
   business_name?: string;
-  spend_limit: number;
+  account_name?: string;
 }
 
 interface ApplicationApprovalDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   application: Application;
-  onApprove: (applicationId: string) => Promise<void>;
+  onSuccess: (applicationId: string) => Promise<void>;
 }
 
 export function ApplicationApprovalDialog({
   open,
   onOpenChange,
   application,
-  onApprove,
+  onSuccess,
 }: ApplicationApprovalDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,11 +39,10 @@ export function ApplicationApprovalDialog({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          application_id: application.id,
-          action: 'approved',
-          admin_notes: 'Application approved through admin panel'
-        }),
+                  body: JSON.stringify({
+            application_id: application.id,
+            action: 'approved'
+          }),
       });
 
       if (!response.ok) {
@@ -51,7 +50,7 @@ export function ApplicationApprovalDialog({
         throw new Error(error.detail || 'Failed to approve application');
       }
 
-      await onApprove(application.id);
+      await onSuccess(application.id);
       toast.success("Application approved successfully!");
       onOpenChange(false);
     } catch (error) {
@@ -87,10 +86,10 @@ export function ApplicationApprovalDialog({
                 <span className="text-muted-foreground">Business:</span>
                 <span className="font-medium">{application.business_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Spend Limit:</span>
-                <Badge variant="secondary">${application.spend_limit.toLocaleString()}</Badge>
-              </div>
+                             <div className="flex justify-between">
+                 <span className="text-muted-foreground">Ad Account Name:</span>
+                 <span className="font-medium">{application.account_name}</span>
+               </div>
             </div>
           </div>
 

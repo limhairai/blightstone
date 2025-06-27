@@ -17,14 +17,13 @@ export type Permission =
 
 export interface UserProfile {
   id: string;
-  email: string;
-  displayName: string;
-  photoURL?: string;
-  role: UserRole;
-  permissions: Permission[];
-  teamId?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  name?: string;
+  email?: string;
+  role: string;
+  is_superuser: boolean;
+  avatar_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Team {

@@ -1,4 +1,4 @@
-import { initializeProductionGuard } from '../lib/production-guard'
+// Production guard removed - using production data only
 // frontend/src/app/layout.tsx
 import type React from "react";
 import type { Metadata } from "next";
@@ -24,8 +24,7 @@ export function generateMetadata(): Metadata {
   };
 }
 
-// ✅ PRODUCTION GUARD: Initialize security checks
-initializeProductionGuard()
+// Production guard removed - using production data only
 
 export default function RootLayout({
   children,

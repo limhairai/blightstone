@@ -7,9 +7,6 @@ class BusinessBase(BaseModel):
     business_id: Optional[str] = Field(None, description="Facebook Business Manager ID")
     landing_page: Optional[str] = Field(None, description="Business landing page URL")
     website: Optional[str] = Field(None, description="Business website URL")
-    business_type: Optional[str] = Field(None, description="Type of business")
-    description: Optional[str] = Field(None, max_length=1000)
-    country: str = Field(default="US", description="Business country code")
     timezone: str = Field(default="America/New_York", description="Business timezone")
 
 class BusinessCreate(BusinessBase):
@@ -22,12 +19,8 @@ class BusinessUpdate(BaseModel):
     business_id: Optional[str] = Field(None, description="Facebook Business Manager ID")
     landing_page: Optional[str] = Field(None, description="Business landing page URL")
     website: Optional[str] = Field(None, description="Business website URL")
-    business_type: Optional[str] = Field(None, description="Type of business")
-    description: Optional[str] = Field(None, max_length=1000)
-    country: Optional[str] = Field(None, description="Business country code")
     timezone: Optional[str] = Field(None, description="Business timezone")
     status: Optional[str] = Field(None, description="Business status")
-    verification: Optional[str] = Field(None, description="Business verification status")
 
 class BusinessRead(BaseModel):
     """Schema for reading business data"""
@@ -37,12 +30,8 @@ class BusinessRead(BaseModel):
     name: str
     business_id: Optional[str] = None
     status: str
-    verification: str
     landing_page: Optional[str] = None
     website: Optional[str] = None
-    business_type: Optional[str] = None
-    description: Optional[str] = None
-    country: str
     timezone: str
     # Business Manager mapping fields
     facebook_business_manager_id: Optional[str] = None
@@ -57,8 +46,7 @@ class BusinessRead(BaseModel):
 
 class BusinessStatusUpdate(BaseModel):
     """Schema for admin status updates"""
-    status: Optional[str] = Field(None, description="Business status: active, pending, suspended, inactive")
-    verification: Optional[str] = Field(None, description="Verification status: verified, not_verified, pending")
+    status: Optional[str] = Field(None, description="Business status: In Review, Processing, Ready, Active, Rejected")
 
 class BusinessWithAdAccounts(BusinessRead):
     """Business with associated ad accounts"""

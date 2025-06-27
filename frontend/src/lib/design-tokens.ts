@@ -156,9 +156,9 @@ export const gradientTokens = {
 // Transaction color tokens for consistent styling
 export const transactionColorTokens = {
   deposit: {
-    bg: "bg-emerald-100 dark:bg-emerald-500/20",
-    text: "text-emerald-600 dark:text-emerald-400",
-    icon: "text-emerald-600 dark:text-emerald-400"
+    bg: "bg-green-100 dark:bg-green-500/20",
+    text: "text-[#34D197]",
+    icon: "text-[#34D197]"
   },
   withdrawal: {
     bg: "bg-red-100 dark:bg-red-500/20", 

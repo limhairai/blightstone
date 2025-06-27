@@ -1,113 +1,107 @@
-import { NextResponse, NextRequest } from 'next/server'
-import { jwtVerify } from 'jose'
-import { getCSPHeaderWithReporting } from './lib/security/csp'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 /**
  * 🔒 SECURE Middleware with JWT Authentication
  * Production-ready authentication verification
  */
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production'
-)
-
-// Define public routes that don't require authentication
-const publicRoutes = ["/", "/login", "/register", "/forgot-password", "/reset-password"]
-
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  
-  // Skip middleware for static assets and Next.js internals
-  if (
-    pathname.startsWith('/_next/') ||
-    pathname.startsWith('/api/_next/') ||
-    pathname.includes('.') // Static files (images, fonts, etc.)
-  ) {
-    return NextResponse.next()
-  }
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
 
-  console.log(`🔒 Security middleware: ${request.method} ${pathname}`)
-
-  // ✅ DEMO MODE: Skip JWT authentication in development with demo data
-  const isDemoMode = process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true'
-  const isDevelopment = process.env.NODE_ENV === 'development'
-  
-  if (isDemoMode || isDevelopment) {
-    console.log('🔧 Development: Skipping JWT authentication (demo mode)')
-    // Still apply security headers but skip authentication
-    const response = NextResponse.next()
-    
-    // Apply security headers
-    response.headers.set('Content-Security-Policy', getCSPHeaderWithReporting())
-    response.headers.set('X-Frame-Options', 'DENY')
-    response.headers.set('X-Content-Type-Options', 'nosniff')
-    response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
-    response.headers.set('X-XSS-Protection', '1; mode=block')
-    
+  // Check if environment variables are available
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    console.warn('Supabase environment variables not available in middleware, skipping auth check')
     return response
   }
 
-  // PRODUCTION ONLY: JWT Authentication
-  const protectedPaths = ['/dashboard', '/admin', '/api/admin', '/api/businesses', '/api/accounts']
-  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path))
-  
-  if (isProtectedPath) {
-    const token = request.cookies.get('auth-token')?.value
-    
-    if (!token) {
-      if (pathname.startsWith('/api/')) {
-        return NextResponse.json(
-          { error: 'Unauthorized', message: 'Authentication required' },
-          { status: 401 }
-        )
-      } else {
-        const loginUrl = new URL('/login', request.url)
-        loginUrl.searchParams.set('redirect', pathname)
-        return NextResponse.redirect(loginUrl)
-      }
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: CookieOptions) {
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
     }
-    
-    try {
-      const { payload } = await jwtVerify(token, JWT_SECRET)
-      const response = NextResponse.next()
-      response.headers.set('x-user-id', payload.userId as string)
-      response.headers.set('x-user-role', payload.role as string)
-      response.headers.set('x-user-email', payload.email as string)
-      
-      // Additional admin route protection
-      const adminPaths = ['/admin', '/api/admin']
-      const isAdminPath = adminPaths.some(path => pathname.startsWith(path))
-      
-      if (isAdminPath) {
-        const userRole = payload.role as string
-        if (userRole !== 'admin' && userRole !== 'superuser') {
-          return pathname.startsWith('/api/')
-            ? NextResponse.json({ error: 'Admin privileges required' }, { status: 403 })
-            : NextResponse.redirect(new URL('/dashboard', request.url))
-        }
-      }
-      
-      return response
-    } catch (error) {
-      console.error('JWT verification failed:', error)
-      const response = pathname.startsWith('/api/') 
-        ? NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-        : NextResponse.redirect(new URL('/login', request.url))
-      response.cookies.delete('auth-token')
-      return response
-    }
+  )
+
+  let session = null
+  try {
+    const {
+      data: { session: userSession },
+    } = await supabase.auth.getSession()
+    session = userSession
+  } catch (error) {
+    console.warn('Error getting session in middleware:', error)
+    // Continue without session - will be treated as unauthenticated
   }
 
-  // Apply security headers for all other requests
-  const response = NextResponse.next()
-  response.headers.set('Content-Security-Policy', getCSPHeaderWithReporting())
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
+  const { pathname } = request.nextUrl
+
+  // Define public routes
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email']
+
+  // If it's a public route, do nothing.
+  if (publicRoutes.includes(pathname) || pathname.startsWith('/api/')) {
+    return response
+  }
+
+  // If there is no session and the user is trying to access a protected route
+  if (!session) {
+    // For API routes, return a 401 Unauthorized response
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    
+    // For page routes, redirect to the login page
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
   
-  if (process.env.NODE_ENV === 'production') {
-    response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+  // If there is a session and the user is on a public-only page (like login), redirect to dashboard
+  if (session && (pathname === '/login' || pathname === '/register')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
@@ -115,6 +109,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

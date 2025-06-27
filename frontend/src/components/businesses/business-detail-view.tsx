@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import useSWR from 'swr'
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Card, CardContent, CardHeader } from "../ui/card"
@@ -34,34 +35,28 @@ import {
 import { useRouter } from "next/navigation"
 import { gradients } from "../../lib/design-system"
 import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
-import { useAppData, type AppBusiness, type AppAccount } from "../../contexts/AppDataContext"
 import { useToast } from "../../hooks/use-toast"
 
 interface BusinessDetailViewProps {
   businessId: string
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const { state } = useAppData()
   const [searchQuery, setSearchQuery] = useState("")
-  const [loading, setLoading] = useState(true)
-  const [notFound, setNotFound] = useState(false)
 
-  // Find business from state
-  const business = state.businesses.find(b => b.id.toString() === businessId)
-  const businessAccounts = state.accounts.filter(acc => acc.businessId?.toString() === businessId)
+  const { data: businessData, isLoading: isBusinessLoading, error: businessError } = useSWR(`/api/businesses?id=${businessId}`, fetcher);
+  const { data: accountsData, isLoading: areAccountsLoading, error: accountsError } = useSWR(`/api/ad-accounts?business_id=${businessId}`, fetcher);
 
-  // Load business data
-  useEffect(() => {
-    setLoading(false)
-    if (!business) {
-      setNotFound(true)
-    }
-  }, [business])
+  const business = businessData?.businesses?.[0];
+  const businessAccounts = accountsData?.accounts || [];
 
-  if (loading) {
+  const isLoading = isBusinessLoading || areAccountsLoading;
+
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -82,7 +77,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
     )
   }
 
-  if (notFound || !business) {
+  if (businessError || accountsError || !business) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
@@ -117,7 +112,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
   )
 
   // Calculate metrics
-  const totalBalance = businessAccounts.reduce((sum, acc) => sum + acc.balance, 0)
+  const totalBalance = businessAccounts.reduce((sum, acc) => sum + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0)
   const totalSpent = businessAccounts.reduce((sum, acc) => sum + (acc.spent || 0), 0)
   const activeAccounts = businessAccounts.filter(acc => acc.status === 'active').length
   const pendingAccounts = businessAccounts.filter(acc => acc.status === 'pending').length
@@ -137,7 +132,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
     }
   }
 
-  const canCreateAdAccounts = business.status === "active" && business.verification === "verified"
+  const canCreateAdAccounts = business.status === "active"
 
   return (
     <div className="space-y-6">
@@ -166,18 +161,18 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
                 <h1 className="text-2xl font-medium">{business.name}</h1>
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-sm text-muted-foreground font-mono">
-                    Business ID: {business.id}
+                    Business ID: {business.bm_id || business.id}
                   </span>
                   <div className="flex items-center gap-2">
                     {getStatusIcon(business.status)}
                     <StatusBadge status={business.status} size="sm" />
                   </div>
                   <Badge 
-                    variant={business.verification === "verified" ? "default" : "secondary"}
+                    variant={business.verification_status === "verified" ? "default" : "secondary"}
                     className="text-xs"
                   >
-                    {business.verification === "verified" ? "✓ Verified" : 
-                     business.verification === "pending" ? "⏳ Verifying" : "Unverified"}
+                    {business.verification_status === "verified" ? "✓ Verified" : 
+                     business.verification_status === "pending" ? "⏳ Verifying" : "Unverified"}
                   </Badge>
                 </div>
               </div>
@@ -242,7 +237,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
                 <Calendar className="h-4 w-4" />
                 Created
               </div>
-              <span className="text-sm">{business.dateCreated}</span>
+              <span className="text-sm">{new Date(business.created_at).toLocaleDateString()}</span>
             </div>
             
             <div className="space-y-1">

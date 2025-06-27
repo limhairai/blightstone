@@ -15,8 +15,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { StatusBadge } from "../ui/status-badge"
 import { StatusDot } from "../ui/status-dot"
-import { APP_ACCOUNTS } from "../../lib/mock-data"
-import { formatCurrency } from "../../lib/mock-data"
+import { formatCurrency } from "../../utils/format"
 import { Search, MoreHorizontal, Eye, Edit, Trash2, Pause, Play, CreditCard, Plus } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
@@ -36,23 +35,22 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
 
   // Filter accounts by business name first
   const businessAccounts = useMemo(() => {
-    return APP_ACCOUNTS.filter((account) => account.business === businessName)
+    return [] // APP_ACCOUNTS.filter((account) => account.business === businessName)
   }, [businessName])
 
   // Transform filtered accounts
   const transformedAccounts = useMemo(() => {
-    return businessAccounts.map((account) => ({
+    return businessAccounts.map((account: any) => ({
       id: account.id.toString(),
       name: account.name,
       accountId: account.adAccount,
       business: account.business,
-      status: account.status === "pending" ? "inactive" : account.status,
+      status: account.status,
       balance: account.balance,
       spendLimit: account.spendLimit,
       dateAdded: account.dateAdded,
       quota: account.quota,
       spent: account.spent,
-      platform: account.platform,
     }))
   }, [businessAccounts])
 
@@ -148,8 +146,8 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
             <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
               {contentTokens.status.pending}
             </SelectItem>
-            <SelectItem value="inactive" className="text-popover-foreground hover:bg-accent">
-              {contentTokens.status.inactive}
+            <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
+              {contentTokens.status.suspended}
             </SelectItem>
             <SelectItem value="error" className="text-popover-foreground hover:bg-accent">
               {contentTokens.status.failed}
@@ -217,7 +215,6 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
               <TableHead className="text-muted-foreground">Status</TableHead>
               <TableHead className="text-muted-foreground">Balance</TableHead>
               <TableHead className="text-muted-foreground">Spend Limit</TableHead>
-              <TableHead className="text-muted-foreground">Platform</TableHead>
               <TableHead className="text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -242,7 +239,6 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
                 </TableCell>
                 <TableCell className="font-medium text-foreground">${formatCurrency(account.balance)}</TableCell>
                 <TableCell className="text-muted-foreground">${formatCurrency(account.spendLimit || 0)}</TableCell>
-                <TableCell className="text-muted-foreground">{account.platform}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Button

@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import useSWR from 'swr'
 import { useAdminRoute } from "../../hooks/useAdminRoute"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Input } from "../ui/input"
-import { useAppData, useSuperuser } from "../../contexts/AppDataContext"
 import { Shield, Users, Building2, Settings } from "lucide-react"
 import { Loader2 } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
@@ -15,26 +15,32 @@ import { Database, Download, Plus, Search, ChevronRight } from "lucide-react"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import { StatusBadge } from "../ui/status-badge"
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function AdminView() {
-  const { canViewAdmin, loading } = useAdminRoute()
-  const { state } = useAppData()
-  const { isSuperuser } = useSuperuser()
+  const { canViewAdmin, loading: adminRouteLoading } = useAdminRoute()
+  
+  const { data: orgsData, isLoading: orgsLoading } = useSWR('/api/organizations', fetcher);
+  const { data: usersData, isLoading: usersLoading } = useSWR('/api/users', fetcher); // Assuming a /api/users endpoint
+  const { data: revenueData, isLoading: revenueLoading } = useSWR('/api/admin/revenue', fetcher); // Mock endpoint
+  const { data: ticketsData, isLoading: ticketsLoading } = useSWR('/api/admin/tickets', fetcher); // Mock endpoint
+
+  const organizations = orgsData?.organizations || [];
+  const totalUsers = usersData?.users?.length || 0;
+  const totalRevenue = revenueData?.total_revenue || 0;
+  const supportTickets = ticketsData?.count || 0;
+  
   const [showDemoPanel, setShowDemoPanel] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedOrg, setSelectedOrg] = useState<any>(null)
 
-  // Mock data for demonstration
-  const mockOrganizations = [
-    { id: "1", name: "TechCorp Inc", users: 25, accounts: 12, status: "active" },
-    { id: "2", name: "StartupHub", users: 8, accounts: 5, status: "active" },
-    { id: "3", name: "Enterprise Solutions", users: 45, accounts: 23, status: "pending" },
-  ]
-
-  const filteredOrganizations = mockOrganizations.filter(org =>
+  const filteredOrganizations = organizations.filter(org =>
     org.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (loading) {
+  const isLoading = adminRouteLoading || orgsLoading || usersLoading || revenueLoading || ticketsLoading;
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -97,7 +103,7 @@ export function AdminView() {
             <CardTitle className="text-sm">Total Organizations</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{mockOrganizations.length}</div>
+            <div className="text-2xl font-bold">{organizations.length}</div>
             <p className="text-xs text-muted-foreground">+12% from last month</p>
           </CardContent>
         </Card>
@@ -106,7 +112,7 @@ export function AdminView() {
             <CardTitle className="text-sm">Active Users</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">1,234</div>
+            <div className="text-2xl font-bold">{totalUsers}</div>
             <p className="text-xs text-muted-foreground">+8% from last month</p>
           </CardContent>
         </Card>
@@ -115,7 +121,7 @@ export function AdminView() {
             <CardTitle className="text-sm">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">$45,678</div>
+            <div className="text-2xl font-bold">${(totalRevenue / 100).toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">+15% from last month</p>
           </CardContent>
         </Card>
@@ -124,7 +130,7 @@ export function AdminView() {
             <CardTitle className="text-sm">Support Tickets</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">23</div>
+            <div className="text-2xl font-bold">{supportTickets}</div>
             <p className="text-xs text-muted-foreground">-5% from last month</p>
           </CardContent>
         </Card>
@@ -205,7 +211,7 @@ export function AdminView() {
               <Building2 className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0">
-              <div className="text-xl font-bold">{state.organizations.length}</div>
+              <div className="text-xl font-bold">{organizations.length}</div>
               <p className="text-xs text-muted-foreground">
                 Active organizations
               </p>
@@ -218,7 +224,7 @@ export function AdminView() {
               <Users className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0">
-              <div className="text-xl font-bold">{state.teamMembers?.length || 0}</div>
+              <div className="text-xl font-bold">{totalUsers}</div>
               <p className="text-xs text-muted-foreground">
                 Across all organizations
               </p>
@@ -232,7 +238,7 @@ export function AdminView() {
             </CardHeader>
             <CardContent className="p-3 pt-0">
               <div className="text-xl font-bold">
-                {isSuperuser ? 'Super' : 'Admin'}
+                Admin
               </div>
               <p className="text-xs text-muted-foreground">
                 Current access level
@@ -266,13 +272,13 @@ export function AdminView() {
             <CardContent className="p-3 pt-0">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  Total registered users: {state.teamMembers?.length || 0}
+                  Total registered users: {totalUsers}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Admin users: {state.teamMembers?.filter(m => m.role === 'admin').length || 0}
+                  Admin users: {organizations.filter(m => m.role === 'admin').length}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Organization owners: {state.teamMembers?.filter(m => m.role === 'owner').length || 0}
+                  Organization owners: {organizations.filter(m => m.role === 'owner').length}
                 </p>
               </div>
             </CardContent>
@@ -288,13 +294,13 @@ export function AdminView() {
             <CardContent className="p-3 pt-0">
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  Total organizations: {state.organizations.length}
+                  Total organizations: {organizations.length}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Active organizations: {state.organizations.length}
+                  Active organizations: {organizations.length}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Monthly revenue: $45,678
+                  Monthly revenue: ${(totalRevenue / 100).toLocaleString()}
                 </p>
               </div>
             </CardContent>
@@ -311,7 +317,7 @@ export function AdminView() {
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div className="space-y-2">
-              {state.organizations.slice(0, 5).map((org) => (
+              {organizations.slice(0, 5).map((org) => (
                 <div key={org.id} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-xs">{org.name}</p>
@@ -324,7 +330,7 @@ export function AdminView() {
                   </Badge>
                 </div>
               ))}
-              {state.organizations.length === 0 && (
+              {organizations.length === 0 && (
                 <p className="text-xs text-muted-foreground">No organizations found</p>
               )}
             </div>

@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useSWRConfig } from 'swr'
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -18,33 +19,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Label } from "../ui/label"
 import { useToast } from "../../hooks/use-toast"
 import { Check, Loader2, Building2, Upload, X, Plus } from "lucide-react"
-import type { Business } from "../../types/business"
+import { Business } from "@/types/business"
 import { Badge } from "../ui/badge"
 import { toast } from "sonner"
-import { getInitials } from "../../lib/mock-data"
+import { getInitials } from "../../lib/utils"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
-import { useAppData, type AppBusiness } from "../../contexts/AppDataContext"
 import { useTheme } from "next-themes"
 import { getPlaceholderUrl } from '@/lib/config/assets'
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 
 interface EditBusinessDialogProps {
-  business: AppBusiness
+  business: Business
   trigger: React.ReactNode
-  onBusinessUpdated?: (updatedBusiness: AppBusiness) => void
+  onBusinessUpdated?: (updatedBusiness: Business) => void
 }
 
 export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: EditBusinessDialogProps) {
-  const { state, updateBusiness } = useAppData()
   const { theme } = useTheme()
+  const { mutate } = useSWRConfig()
+  const { currentOrganizationId } = useOrganizationStore();
   const [open, setOpen] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: business.name,
-    industry: business.type || "",
-    website: business.website || "",
-    description: business.description || "",
+    industry: "", // business_type was removed from database
+    website: business.website_url || "",
+    description: business.landing_page || "", 
     logo: null as File | null,
     logoPreview: "",
   })
@@ -57,9 +59,9 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
     if (business) {
       setFormData({
         name: business.name,
-        industry: business.type || "",
-        website: business.website || "",
-        description: business.description || "",
+        industry: "", // business_type field was removed
+        website: business.website_url || "",
+        description: business.landing_page || "",
         logo: null,
         logoPreview: "",
       })
@@ -101,26 +103,33 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsProcessing(true);
 
     try {
-      // Create updated business object
-      const updatedBusiness: AppBusiness = {
-        ...business,
+      const updatedBusinessData = {
         name: formData.name,
-        type: formData.industry,
-        website: formData.website || undefined,
+        website_url: formData.website || undefined,
         description: formData.description || undefined,
+      };
+
+      const response = await fetch(`/api/businesses?id=${business.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedBusinessData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update business");
       }
 
-      // Use demo state management to update business
-      await updateBusiness(updatedBusiness)
+      const updatedBusiness = await response.json();
 
+      mutate(`/api/businesses?organization_id=${currentOrganizationId}`);
+      
       setShowSuccess(true)
 
-      // Call the callback with updated business
-      if (onBusinessUpdated) {
-        onBusinessUpdated(updatedBusiness)
-      }
+      onBusinessUpdated?.(updatedBusiness);
 
       // Close dialog after success
       setTimeout(() => {
@@ -128,13 +137,14 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
         setOpen(false)
       }, 2000)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update business information. Please try again.",
-        variant: "destructive",
-      })
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast.error("Failed to update business", { description: errorMessage });
+    } finally {
+      setIsProcessing(false);
     }
   }
+
+  const isLoading = isProcessing;
 
   if (showSuccess) {
     return (
@@ -142,7 +152,7 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
         <DialogTrigger asChild>{trigger}</DialogTrigger>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
               <Check className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">Business Updated!</h3>
@@ -384,25 +394,25 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
             </div>
           )}
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end space-x-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={state.loading.businesses}
+              disabled={isLoading}
               className="border-border text-foreground hover:bg-accent"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={state.loading.businesses}
+              disabled={isLoading}
               className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
             >
-              {state.loading.businesses ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  Updating...
                 </>
               ) : (
                 "Save Changes"

@@ -1,17 +1,21 @@
 "use client";
 
-import { useAppData } from "../../contexts/AppDataContext"
+import useSWR from 'swr'
 import { Clock, CheckCircle, XCircle, AlertTriangle, FileText } from "lucide-react";
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function ApplicationsStats() {
-  const { state } = useAppData();
+  const { data: bizData, isLoading } = useSWR('/api/businesses', fetcher);
+
+  const businesses = bizData?.businesses || [];
   
   // Calculate application statistics using proper admin statuses
-  const totalApplications = state.businesses.length;
-  const pendingApplications = state.businesses.filter(b => b.status === "pending").length;
-  const approvedApplications = state.businesses.filter(b => b.status === "approved" || b.status === "active").length;
-  const rejectedApplications = state.businesses.filter(b => b.status === "rejected").length;
-  const underReviewApplications = state.businesses.filter(b => b.status === "under_review").length;
+  const totalApplications = businesses.length;
+  const pendingApplications = businesses.filter(b => b.status === "pending").length;
+  const approvedApplications = businesses.filter(b => b.status === "approved" || b.status === "active").length;
+  const rejectedApplications = businesses.filter(b => b.status === "rejected").length;
+  const underReviewApplications = businesses.filter(b => b.status === "under_review").length;
 
   const stats = [
     {
@@ -50,6 +54,19 @@ export function ApplicationsStats() {
       bgColor: "bg-red-50",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse">
+            <div className="h-6 w-3/4 rounded-md bg-muted mb-2"></div>
+            <div className="h-8 w-1/2 rounded-md bg-muted"></div>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

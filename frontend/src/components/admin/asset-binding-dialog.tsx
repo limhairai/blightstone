@@ -232,7 +232,7 @@ export function AssetBindingDialog({
                       <SelectValue placeholder="Choose a business (optional)..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No specific business</SelectItem>
+                      <SelectItem value="none">No specific business</SelectItem>
                       {businesses.map((business) => (
                         <SelectItem key={business.id} value={business.id}>
                           <div className="flex items-center justify-between w-full">

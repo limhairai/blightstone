@@ -1,14 +1,40 @@
-import { formatCurrency } from "../../lib/utils"
-import { TrendingUp, Wallet, CreditCard } from "lucide-react"
-import { useAppData } from "../../contexts/AppDataContext"
+"use client"
+
+import useSWR from 'swr'
+import { formatCurrency } from "@/lib/utils"
+import { TrendingUp, Wallet, CreditCard, Loader2 } from "lucide-react"
+import { useOrganizationStore } from '@/lib/stores/organization-store'
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function CompactHeaderMetrics() {
-  const { state } = useAppData()
-  
-  const totalAccounts = state.accounts.length
-  const activeAccounts = state.accounts.filter((account) => account.status === "active").length
-  const totalBalance = state.accounts.reduce((total, account) => total + account.balance, 0)
+  const { currentOrganizationId } = useOrganizationStore();
+  const { data: accData, isLoading } = useSWR(
+    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null,
+    fetcher
+  );
 
+  const accounts = accData?.accounts || [];
+  const totalAccounts = accounts.length
+  const activeAccounts = accounts.filter((account) => account.status === "active").length
+  const totalBalance = accounts.reduce((total, account) => total + (account.balance_cents ? account.balance_cents / 100 : 0), 0)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-6">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="flex items-center gap-2 animate-pulse">
+            <div className="h-8 w-8 rounded-md bg-muted"></div>
+            <div>
+              <div className="h-4 w-10 rounded-md bg-muted mb-1"></div>
+              <div className="h-3 w-12 rounded-md bg-muted"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  
   return (
     <div className="flex items-center gap-6">
       {/* Total Accounts */}
@@ -39,7 +65,7 @@ export function CompactHeaderMetrics() {
           <Wallet className="h-4 w-4 text-purple-500" />
         </div>
         <div>
-          <div className="text-sm font-medium text-foreground">${formatCurrency(totalBalance)}</div>
+          <div className="text-sm font-medium text-foreground">{formatCurrency(totalBalance)}</div>
           <div className="text-xs text-muted-foreground">Balance</div>
         </div>
       </div>

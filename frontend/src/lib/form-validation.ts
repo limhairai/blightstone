@@ -1,5 +1,5 @@
 // Form validation utilities and error handling
-import { toast } from "../components/ui/use-toast"
+import { toast } from "../hooks/use-toast"
 
 // Validation error type
 export interface ValidationError {
@@ -244,17 +244,18 @@ export function validateRegistrationForm(formData: {
 
 // Ad account creation form validation
 export function validateAdAccountForm(formData: {
-  name: string
-  business: string
-  landingPageUrl?: string
-  facebookPageUrl?: string
+  business: string,
+  timezone: string,
 }): ValidationResult {
   return validateForm([
-    () => validators.required(formData.name, 'Account name'),
-    () => validators.minLength(formData.name, 2, 'Account name'),
-    () => validators.maxLength(formData.name, 100, 'Account name'),
     () => validators.select(formData.business, 'Business'),
-    () => formData.landingPageUrl ? validators.url(formData.landingPageUrl, 'Landing page URL') : null,
-    () => formData.facebookPageUrl ? validators.url(formData.facebookPageUrl, 'Facebook page URL') : null,
+    () => validators.select(formData.timezone, 'Timezone'),
   ])
+}
+
+// Transaction form validation
+export function validateTransactionForm(formData: {
+  // ... existing code ...
+}) {
+  // ... existing code ...
 } 

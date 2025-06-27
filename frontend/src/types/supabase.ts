@@ -36,8 +36,6 @@ export type Database = {
     Tables: {
       ad_account_applications: {
         Row: {
-          account_name: string
-          admin_notes: string | null
           approved_at: string | null
           approved_by: string | null
           assigned_account_id: string | null
@@ -48,19 +46,13 @@ export type Database = {
           id: string
           landing_page_url: string | null
           notes: string | null
-          organization_id: string
-          rejected_at: string | null
-          rejected_by: string | null
           rejection_reason: string | null
-          spend_limit: number | null
           status: string
           submitted_at: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          account_name: string
-          admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_account_id?: string | null
@@ -71,19 +63,13 @@ export type Database = {
           id?: string
           landing_page_url?: string | null
           notes?: string | null
-          organization_id: string
-          rejected_at?: string | null
-          rejected_by?: string | null
           rejection_reason?: string | null
-          spend_limit?: number | null
           status?: string
           submitted_at?: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          account_name?: string
-          admin_notes?: string | null
           approved_at?: string | null
           approved_by?: string | null
           assigned_account_id?: string | null
@@ -94,11 +80,7 @@ export type Database = {
           id?: string
           landing_page_url?: string | null
           notes?: string | null
-          organization_id?: string
-          rejected_at?: string | null
-          rejected_by?: string | null
           rejection_reason?: string | null
-          spend_limit?: number | null
           status?: string
           submitted_at?: string
           updated_at?: string

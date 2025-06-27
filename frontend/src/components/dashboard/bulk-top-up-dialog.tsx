@@ -11,7 +11,7 @@ import { ScrollArea } from "../ui/scroll-area"
 import { useToast } from "../../hooks/use-toast"
 import { formatCurrency } from "../../utils/format"
 import { Wallet, DollarSign, Check, Loader2 } from "lucide-react"
-import type { AppAccount } from "../../contexts/AppDataContext"
+import { AppAccount } from "../../types/account"
 
 interface BulkTopUpDialogProps {
   selectedAccounts: AppAccount[]

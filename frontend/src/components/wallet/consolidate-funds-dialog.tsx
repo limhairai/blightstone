@@ -1,200 +1,176 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import useSWR, { useSWRConfig } from 'swr'
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Checkbox } from "../ui/checkbox"
 import { ScrollArea } from "../ui/scroll-area"
-import { formatCurrency } from "../../lib/mock-data"
-import { ArrowUpDown, Info } from 'lucide-react'
-import { useAppData } from "../../contexts/AppDataContext"
-import React from "react"
+import { formatCurrency } from "../../utils/format"
+import { ArrowUpDown, Info, Loader2 } from 'lucide-react'
+import { toast } from "sonner"
 
 interface ConsolidateFundsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-interface AdAccountSelection {
-  id: string
-  name: string
-  business: string
-  balance: number
-  selected: boolean
-}
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function ConsolidateFundsDialog({ open, onOpenChange }: ConsolidateFundsDialogProps) {
-  const { state, consolidateFunds } = useAppData()
-  
-  // Convert ad accounts to selection format, only include accounts with balance > 0
-  const [adAccounts, setAdAccounts] = useState<AdAccountSelection[]>(() => 
-    state.accounts
-      .filter(account => account.balance > 0) // Only show accounts with funds to consolidate
-      .map(account => ({
-        id: account.id.toString(),
-        name: account.name,
-        business: account.businessId?.toString() || 'Unknown',
-        balance: account.balance,
-        selected: true // Default to selected
-      }))
-  )
+    const [selectedAccounts, setSelectedAccounts] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const { currentOrganizationId } = useOrganizationStore();
+    const { mutate } = useSWRConfig();
 
-  const [isLoading, setIsLoading] = useState(false)
+    const accountsSWRKey = currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null;
+    const { data: accountsData, isLoading: areAccountsLoading } = useSWR(accountsSWRKey, fetcher);
 
-  // Update ad accounts when state changes
-  React.useEffect(() => {
-    setAdAccounts(
-      state.accounts
-        .filter(account => account.balance > 0)
-        .map(account => ({
-          id: account.id.toString(),
-          name: account.name,
-          business: account.businessId?.toString() || 'Unknown',
-          balance: account.balance,
-          selected: adAccounts.find(acc => acc.id === account.id.toString())?.selected ?? true
-        }))
-    )
-  }, [state.accounts])
+    const accountsWithBalance = accountsData?.accounts?.filter((acc: any) => acc.balance_cents > 0) || [];
 
-  // Toggle selection of an ad account
-  const toggleAccountSelection = (id: string) => {
-    setAdAccounts(
-      adAccounts.map((account) =>
-        account.id === id ? { ...account, selected: !account.selected } : account
-      )
-    )
-  }
+    // Effect to auto-select all accounts when the dialog is opened
+    useEffect(() => {
+        if (open && accountsWithBalance.length > 0) {
+            setSelectedAccounts(accountsWithBalance.map((acc: any) => acc.id));
+        }
+    }, [open, accountsData]);
 
-  // Toggle all ad accounts
-  const toggleAllAccounts = (selected: boolean) => {
-    setAdAccounts(
-      adAccounts.map((account) => ({ ...account, selected }))
-    )
-  }
+    const totalToConsolidate = accountsWithBalance
+        .filter((acc: any) => selectedAccounts.includes(acc.id))
+        .reduce((sum: number, acc: any) => sum + acc.balance_cents, 0);
 
-  // Calculate total amount to consolidate
-  const totalToConsolidate = adAccounts
-    .filter((account) => account.selected)
-    .reduce((sum, account) => sum + account.balance, 0)
-
-  // Handle consolidation
-  const handleConsolidate = async () => {
-    if (totalToConsolidate <= 0) return
-
-    const selectedAccountIds = adAccounts
-      .filter((account) => account.selected)
-      .map((account) => parseInt(account.id)) // Convert string IDs to numbers
-
-    if (selectedAccountIds.length === 0) return
-
-    try {
-      setIsLoading(true)
-      
-      // Use the context method to consolidate funds
-      await consolidateFunds(selectedAccountIds)
-      
-      // Success - close dialog
-      onOpenChange(false)
-    } catch (error) {
-      console.error('Consolidation failed:', error)
-    } finally {
-      setIsLoading(false)
+    const handleToggleAccount = (accountId: string) => {
+        setSelectedAccounts(prev => 
+            prev.includes(accountId)
+                ? prev.filter(id => id !== accountId)
+                : [...prev, accountId]
+        );
     }
-  }
+
+    const handleToggleAll = () => {
+        if (selectedAccounts.length === accountsWithBalance.length) {
+            setSelectedAccounts([]);
+        } else {
+            setSelectedAccounts(accountsWithBalance.map((acc: any) => acc.id));
+        }
+    }
+
+    const handleSubmit = async () => {
+        if (selectedAccounts.length === 0) {
+            toast.error("Please select at least one account to consolidate.");
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/wallet/consolidate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    organization_id: currentOrganizationId,
+                    ad_account_ids: selectedAccounts
+                }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to consolidate funds.');
+            }
+
+            toast.success("Funds consolidated successfully!");
+            // Revalidate all related data
+            mutate(accountsSWRKey);
+            mutate(`/api/organizations?id=${currentOrganizationId}`);
+            mutate(`/api/transactions?organization_id=${currentOrganizationId}`);
+            onOpenChange(false);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast.error("Consolidation Failed", { description: errorMessage });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    const renderContent = () => {
+        if (areAccountsLoading) {
+            return (
+                <div className="p-6 text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">Loading accounts...</p>
+                </div>
+            )
+        }
+
+        if (accountsWithBalance.length === 0) {
+            return (
+                <div className="py-8 text-center">
+                    <p className="text-muted-foreground">No ad accounts with funds available to consolidate.</p>
+                </div>
+            )
+        }
+
+        return (
+            <div className="space-y-4">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                        <Checkbox
+                            id="select-all"
+                            checked={selectedAccounts.length === accountsWithBalance.length}
+                            onCheckedChange={handleToggleAll}
+                        />
+                        <label htmlFor="select-all" className="text-sm font-medium">
+                            {selectedAccounts.length === accountsWithBalance.length ? "Deselect All" : "Select All"}
+                        </label>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                        {selectedAccounts.length} / {accountsWithBalance.length} selected
+                    </span>
+                </div>
+
+                <ScrollArea className="h-[250px] -mx-6 px-6">
+                    <div className="space-y-2">
+                    {accountsWithBalance.map((account: any) => (
+                        <div
+                            key={account.id}
+                            className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                            onClick={() => handleToggleAccount(account.id)}
+                        >
+                            <div className="flex items-center space-x-3">
+                                <Checkbox
+                                    checked={selectedAccounts.includes(account.id)}
+                                    onCheckedChange={() => handleToggleAccount(account.id)}
+                                />
+                                <div>
+                                    <p className="font-medium">{account.name}</p>
+                                    <p className="text-sm text-muted-foreground">{account.businesses.name}</p>
+                                </div>
+                            </div>
+                            <span className="font-mono">{formatCurrency(account.balance_cents / 100)}</span>
+                        </div>
+                    ))}
+                    </div>
+                </ScrollArea>
+                
+                <div className="p-4 bg-muted/50 rounded-lg flex justify-between items-center">
+                    <span className="font-medium">Total to Consolidate</span>
+                    <span className="text-lg font-semibold">{formatCurrency(totalToConsolidate / 100)}</span>
+                </div>
+            </div>
+        )
+    }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto bg-card dark:bg-gradient-to-br dark:from-[#111111] dark:to-[#0a0a0a] border-border dark:border-[#222222]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-transparent bg-clip-text">
-            Consolidate Funds
-          </DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Consolidate Funds</DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4" />
-            <p>Consolidate funds from ad accounts to your main wallet</p>
-          </div>
-
-          {adAccounts.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No ad accounts with funds available to consolidate.</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="select-all"
-                    checked={adAccounts.every((account) => account.selected)}
-                    onCheckedChange={(checked) => toggleAllAccounts(!!checked)}
-                  />
-                  <label htmlFor="select-all" className="text-sm font-medium">
-                    Select all accounts
-                  </label>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {adAccounts.filter((account) => account.selected).length} of {adAccounts.length} selected
-                </span>
-              </div>
-
-              <ScrollArea className="h-[240px] rounded-md border border-border p-2">
-                <div className="space-y-2">
-                  {adAccounts.map((account) => (
-                    <div
-                      key={account.id}
-                      className="flex items-center justify-between p-2 rounded-md hover:bg-muted/50"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`account-${account.id}`}
-                          checked={account.selected}
-                          onCheckedChange={() => toggleAccountSelection(account.id)}
-                        />
-                        <div>
-                          <label htmlFor={`account-${account.id}`} className="text-sm font-medium block">
-                            {account.name}
-                          </label>
-                          <span className="text-xs text-muted-foreground">{account.business}</span>
-                        </div>
-                      </div>
-                      <span className="text-sm font-medium">${formatCurrency(account.balance)}</span>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-
-              <div className="bg-muted/30 p-3 rounded-md">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Total to consolidate</span>
-                  <span className="text-lg font-semibold">${formatCurrency(totalToConsolidate)}</span>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
+        {renderContent()}
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black font-medium"
-            disabled={totalToConsolidate <= 0 || isLoading || adAccounts.length === 0}
-            onClick={handleConsolidate}
-          >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span>Processing...</span>
-              </div>
-            ) : (
-              <>
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                Consolidate ${formatCurrency(totalToConsolidate)}
-              </>
-            )}
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={isLoading || selectedAccounts.length === 0}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Consolidate {formatCurrency(totalToConsolidate / 100)}
           </Button>
         </DialogFooter>
       </DialogContent>

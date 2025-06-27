@@ -13,15 +13,10 @@ import {
   DialogTrigger,
 } from "../ui/dialog"
 import { Input } from "../ui/input"
-import { Textarea } from "../ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Label } from "../ui/label"
-import { Check, Loader2, Building2 } from "lucide-react"
-import { layout } from "../../lib/layout-utils"
-import { contentTokens } from "../../lib/content-tokens"
-import { useAppData } from "../../contexts/AppDataContext"
-import { cn } from "../../lib/utils"
-import { validateBusinessForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
+import { Loader2, Building2 } from "lucide-react"
+import { useAuth } from "../../contexts/AuthContext"
+import { toast } from "sonner"
 
 interface CreateBusinessDialogProps {
   trigger: React.ReactNode
@@ -29,258 +24,120 @@ interface CreateBusinessDialogProps {
 }
 
 export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusinessDialogProps) {
-  const { createBusiness, state } = useAppData()
+  const { session } = useAuth()
   const [open, setOpen] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    industry: "",
-    website: "",
-    description: "",
-  })
-  const [urlError, setUrlError] = useState("")
-
-  const industries = [
-    "Technology",
-    "Marketing",
-    "E-commerce",
-    "Healthcare",
-    "Finance",
-    "Education",
-    "Real Estate",
-    "Food & Beverage",
-    "Fashion",
-    "Travel",
-    "Other",
-  ]
-
-  const validateUrl = (url: string): boolean => {
-    if (!url) return true // Optional field
-    
-    // Allow various URL formats
-    const urlPatterns = [
-      /^https?:\/\/.+\..+/, // Full URL with protocol
-      /^www\..+\..+/, // www.domain.com
-      /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}$/, // domain.com
-    ]
-    
-    return urlPatterns.some(pattern => pattern.test(url))
-  }
-
-  const normalizeUrl = (url: string): string => {
-    if (!url) return ""
-    
-    // If it's just a domain, add https://
-    if (/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}$/.test(url)) {
-      return `https://${url}`
-    }
-    
-    // If it starts with www, add https://
-    if (url.startsWith('www.')) {
-      return `https://${url}`
-    }
-    
-    // If it already has protocol, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url
-    }
-    
-    // Default case
-    return url
-  }
-
-  const handleWebsiteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setFormData({ ...formData, website: value })
-    
-    if (value && !validateUrl(value)) {
-      setUrlError("Please enter a valid website URL (e.g., example.com, www.example.com, or https://example.com)")
-    } else {
-      setUrlError("")
-    }
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [name, setName] = useState("")
+  const [website, setWebsite] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
+    setIsSubmitting(true)
 
-    // Comprehensive form validation
-    const validation = validateBusinessForm(formData)
-    
-    if (!validation.isValid) {
-      showValidationErrors(validation.errors)
-      return
+    if (!name) {
+      toast.error("Business name is required.");
+      setIsSubmitting(false);
+      return;
     }
 
     try {
-      // Use demo state management to create business
-            await createBusiness({
-        name: formData.name,
-        type: formData.industry, // Map industry to type
-        website: formData.website ? normalizeUrl(formData.website) : undefined,
-        description: formData.description || undefined,
-        status: 'pending', // New businesses start as pending
-        balance: 0, // New businesses start with 0 balance
+      const orgsResponse = await fetch('/api/organizations', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!orgsResponse.ok) throw new Error('Failed to fetch user organizations');
+      
+      const orgsData = await orgsResponse.json();
+      const organizationId = orgsData.organizations?.[0]?.id;
+      
+      if (!organizationId) throw new Error('No organization found for user.');
+
+      const response = await fetch('/api/businesses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+        },
+        body: JSON.stringify({
+          name: name,
+          website: website,
+          organization_id: organizationId,
+        }),
       })
 
-      showSuccessToast("Application Submitted!", "Your business application has been submitted for review.")
-      
-      setShowSuccess(true)
-      setTimeout(() => {
-        setFormData({
-          name: "",
-          industry: "",
-          website: "",
-          description: "",
-        })
-        setUrlError("")
-        setShowSuccess(false)
-        setOpen(false)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to submit business application')
+      }
 
-        if (onBusinessCreated) {
-          onBusinessCreated()
-        }
-      }, 2000)
+      toast.success("Application Submitted!", "Your business application has been submitted for review.")
+      
+      setOpen(false)
+      onBusinessCreated?.()
+
     } catch (error) {
       console.error('Failed to create business:', error)
-      showValidationErrors([{ field: 'general', message: 'Failed to create business. Please try again.' }])
+      toast.error(error instanceof Error ? error.message : 'Failed to create business application.')
+    } finally {
+      setIsSubmitting(false)
     }
-  }
-
-  if (showSuccess) {
-    return (
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-4">
-              <Check className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Application Submitted!</h3>
-            <p className="text-muted-foreground">
-              Your business application has been submitted and is under review. You&apos;ll be notified once approved.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-foreground flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-[#c4b5fd]" />
+          <DialogTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
             Apply for Business
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
+          <DialogDescription>
             Submit an application to create a new business profile for advertising.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className={layout.formGroups}>
-          <div className={layout.stackSmall}>
-            <Label htmlFor="name" className="text-foreground">
-              Business Name *
-            </Label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Business Name *</Label>
             <Input
               id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder={contentTokens.placeholders.name}
-              className="bg-background border-border text-foreground"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Acme Inc."
               required
             />
           </div>
 
-          <div className={layout.stackSmall}>
-            <Label htmlFor="industry" className="text-foreground">
-              Industry *
-            </Label>
-            <Select
-              value={formData.industry}
-              onValueChange={(value) => setFormData({ ...formData, industry: value })}
-              required
-            >
-              <SelectTrigger className="bg-background border-border text-foreground">
-                <SelectValue placeholder="Select your industry" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border">
-                {industries.map((industry) => (
-                  <SelectItem key={industry} value={industry} className="text-popover-foreground hover:bg-accent">
-                    {industry}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className={layout.stackSmall}>
-            <Label htmlFor="website" className="text-foreground">
-              Website
-            </Label>
+          <div className="space-y-2">
+            <Label htmlFor="website">Website</Label>
             <Input
               id="website"
-              value={formData.website}
-              onChange={handleWebsiteChange}
-              placeholder="example.com, www.example.com, or https://example.com"
-              className={cn(
-                "bg-background border-border text-foreground",
-                urlError && "border-destructive"
-              )}
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              placeholder="e.g., acme.com"
             />
-            {urlError && (
-              <p className="text-xs text-destructive">{urlError}</p>
-            )}
-            <p className="text-xs text-muted-foreground">
+             <p className="text-xs text-muted-foreground">
               Enter your website URL in any format: domain.com, www.domain.com, or https://domain.com
             </p>
           </div>
-
-          <div className={layout.stackSmall}>
-            <Label htmlFor="description" className="text-foreground">
-              {contentTokens.labels.description} *
-            </Label>
-            <textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder={contentTokens.placeholders.description}
-              className="min-h-[80px] w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-              required
-            />
-          </div>
-
-          <div className="bg-muted/50 p-3 rounded-lg border border-border">
-            <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> All business applications are reviewed manually. You&apos;ll receive an email
-              notification once your application is approved or if additional information is needed.
+          
+          <div className="space-y-2">
+             <p className="text-xs text-muted-foreground">
+              Note: All business applications are reviewed manually. You'll receive an email notification once your application is approved or if additional information is needed.
             </p>
           </div>
 
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={state.loading.businesses}
-              className="border-border text-foreground hover:bg-accent"
-            >
-              {contentTokens.actions.cancel}
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={state.loading.businesses}
-              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-            >
-              {state.loading.businesses ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {contentTokens.loading.processing}
-                </>
-              ) : (
-                contentTokens.actions.create
-              )}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Submitting...' : 'Submit Application'}
             </Button>
           </div>
         </form>

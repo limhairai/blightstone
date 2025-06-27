@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import useSWR, { useSWRConfig } from 'swr'
 import { Check, ChevronsUpDown, Plus } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
@@ -18,16 +19,40 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "../ui/popover"
-import { useAppData } from "../../contexts/AppDataContext"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { contentTokens } from "../../lib/content-tokens"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface OrganizationSwitcherProps {
   className?: string
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
-  const { state, switchOrganization, createOrganization } = useAppData();
+  const { user } = useAuth();
+  
+  // Optimize SWR with better caching and reduce unnecessary calls
+  const { data: orgData, isLoading: isOrgLoading, mutate } = useSWR(
+    user ? '/api/organizations' : null, 
+    fetcher,
+    {
+      // Cache for 5 minutes to avoid constant refetching
+      dedupingInterval: 5 * 60 * 1000,
+      // Revalidate on focus but not too frequently
+      revalidateOnFocus: false,
+      // Keep data fresh but don't spam the API
+      refreshInterval: 0,
+      // Use cache-first strategy
+      revalidateIfStale: false,
+    }
+  );
+  
+  const organizations = orgData?.organizations || [];
+
+  const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
+  
   const [open, setOpen] = useState(false)
   const [showNewOrgDialog, setShowNewOrgDialog] = useState(false)
   const [newOrgName, setNewOrgName] = useState("")
@@ -38,17 +63,29 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     
     setIsCreating(true)
     try {
-      // Use the real createOrganization method from context
-      await createOrganization({
-        name: newOrgName.trim(),
-        plan: 'Bronze',
-        balance: 0,
-        verification_status: 'verified'
-      })
+      const response = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newOrgName.trim() })
+      });
+      const newOrg = await response.json();
+
+      if (!response.ok) {
+        throw new Error(newOrg.error || 'Failed to create organization');
+      }
+      
+      // Update cache with new organization
+      mutate((current) => ({
+        ...current,
+        organizations: [...(current?.organizations || []), newOrg]
+      }), false);
+      
+      setCurrentOrganizationId(newOrg.id);
       
       setNewOrgName("")
       setShowNewOrgDialog(false)
       setOpen(false)
+      toast.success('Organization created successfully!')
     } catch (error) {
       console.error('Failed to create organization:', error)
       toast.error('Failed to create organization. Please try again.')
@@ -57,7 +94,9 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
     }
   }
 
-  if (state.loading.organizations) {
+  const selectedOrganization = organizations.find(org => org.id === currentOrganizationId);
+
+  if (isOrgLoading) {
     return (
       <div className={cn("flex items-center space-x-2", className)}>
         <div className="h-8 w-8 animate-pulse rounded bg-muted" />
@@ -76,7 +115,7 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
           aria-label="Select organization"
           className={cn("w-[200px] justify-between", className)}
         >
-                      {state.currentOrganization?.name || "Select organization..."}
+          {selectedOrganization?.name || "Select organization..."}
           <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -86,20 +125,20 @@ export function OrganizationSwitcher({ className }: OrganizationSwitcherProps) {
             <CommandInput placeholder="Search organizations..." />
             <CommandEmpty>No organizations found.</CommandEmpty>
             <CommandGroup>
-              {state.organizations.map((org) => (
+              {organizations.map((org) => (
                 <CommandItem
                   key={org.id}
-                                      onSelect={() => {
-                      switchOrganization(org.id)
-                      setOpen(false)
-                    }}
+                  onSelect={() => {
+                    setCurrentOrganizationId(org.id)
+                    setOpen(false)
+                  }}
                   className="text-sm"
                 >
                   {org.name}
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      state.currentOrganization?.id === org.id ? "opacity-100" : "opacity-0"
+                      currentOrganizationId === org.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

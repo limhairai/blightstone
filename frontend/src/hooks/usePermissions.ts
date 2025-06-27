@@ -1,25 +1,42 @@
-import { useAppData } from "../contexts/AppDataContext"
 import { useAuth } from "../contexts/AuthContext"
+import useSWR from 'swr';
+import { useOrganizationStore } from "../lib/stores/organization-store";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function usePermissions() {
-  const { state } = useAppData();
-  const { user } = useAuth();
+  const { user, isLoading: isUserLoading } = useAuth();
+  const { currentOrganizationId } = useOrganizationStore();
 
-  // Simple permission logic for demo mode
-  const isAppAdmin = state.dataSource === 'demo' || user?.email === 'admin@adhub.tech';
-  const isOrgOwner = true; // In demo mode, user is always owner
-  const isOrgAdmin = true; // In demo mode, user is always admin
-  const canManageTeam = true; // In demo mode, user can manage team
-  const canViewAdmin = isAppAdmin;
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  
+  const { data: teamData, isLoading: areMembersLoading } = useSWR(
+    currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null,
+    fetcher
+  );
 
-  // Get current user's role in the organization
-  const currentUserMember = state.teamMembers.find(m => m.email === user?.email);
-  const orgRole = currentUserMember?.role || 'owner';
+  const isLoading = isUserLoading || isOrgLoading || areMembersLoading;
+  
+  const currentOrganization = orgData?.organizations?.[0];
+  const teamMembers = teamData?.members || [];
 
-  return {
+  const isAppAdmin = user?.app_metadata?.claims_admin === true;
+  
+  const currentUserMember = teamMembers.find(m => m.user_id === user?.id);
+  const orgRole = currentUserMember?.role || null;
+
+  const isOrgOwner = orgRole === 'owner';
+  const isOrgAdmin = orgRole === 'admin';
+  const canManageTeam = isOrgOwner || isOrgAdmin;
+
+  const permissions = {
+    isLoading,
     // App-level permissions
     isAppAdmin,
-    canViewAdmin,
+    canViewAdmin: isAppAdmin,
     
     // Organization-level permissions
     isOrgOwner,
@@ -30,24 +47,20 @@ export function usePermissions() {
     // User info
     userId: user?.id,
     userEmail: user?.email,
-    userName: user?.user_metadata?.name || state.userProfile?.name,
+    userName: user?.user_metadata?.full_name,
     
     // Organization info
-    orgId: state.currentOrganization?.id,
-    orgName: state.currentOrganization?.name,
+    orgId: currentOrganization?.id,
+    orgName: currentOrganization?.name,
     
     // Team info
-    teamMembers: state.teamMembers,
+    teamMembers,
     
     // Permission helpers
     canInviteMembers: canManageTeam,
     canRemoveMembers: canManageTeam,
     canEditOrg: isOrgOwner || isOrgAdmin,
     canViewBilling: isOrgOwner || isOrgAdmin,
-    canManageUsers: canManageTeam,
-    canManageBilling: canManageTeam,
-    canManageBusinesses: canManageTeam,
-    canManageAdAccounts: canManageTeam,
     
     // Check if user has specific role
     hasRole: (role: 'owner' | 'admin' | 'member') => orgRole === role,
@@ -60,4 +73,6 @@ export function usePermissions() {
       return userLevel >= minLevel;
     }
   };
+
+  return permissions;
 } 

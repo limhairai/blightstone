@@ -2,7 +2,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog"
 import { TopUpWallet } from "./top-up-wallet"
-import { useAppData } from "../../contexts/AppDataContext"
 import { toast } from "sonner"
 
 interface AddFundsDialogProps {
@@ -11,27 +10,14 @@ interface AddFundsDialogProps {
 }
 
 export function AddFundsDialog({ open, onOpenChange }: AddFundsDialogProps) {
-  const { updateWalletBalance, addTransaction } = useAppData()
-
   const handleTopUp = async (amount: number, paymentMethod = "card") => {
-    try {
-      // 1. Add funds to wallet balance
-      await updateWalletBalance(amount, 'add')
-      
-      // 2. Add transaction record
-      await addTransaction({
-        type: 'topup',
-        amount: amount,
-        date: new Date().toISOString(),
-        description: `Wallet funding via ${paymentMethod === 'card' ? 'Credit Card' : 'Bank Transfer'}`,
-        status: 'completed'
-      })
-      
-      toast.success(`Successfully added $${amount} to wallet`)
-      onOpenChange(false)
-    } catch (error) {
-      toast.error("Failed to add funds to wallet")
+    if (paymentMethod !== 'card') {
+      toast.info("Crypto payments are not yet supported.", {
+        description: "Please use a credit card for now.",
+      });
+      return;
     }
+    // Card payments are handled by the Stripe dialog inside TopUpWallet
   }
 
   return (

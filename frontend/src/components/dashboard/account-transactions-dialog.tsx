@@ -3,10 +3,14 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Badge } from "../ui/badge"
 import { Separator } from "../ui/separator"
-import { formatCurrency } from "../../lib/utils"
+import { formatCurrency, formatRelativeTime } from "../../utils/format"
 import { ArrowUpRight, ArrowDownLeft, Calendar, DollarSign } from "lucide-react"
 import { APP_ACCOUNTS } from "../../lib/mock-data"
-import { type AppAccount } from "../../contexts/AppDataContext"
+import { AppAccount } from "../../types/account"
+import { Button } from "../ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
+import { ArrowUpDown, TrendingUp, TrendingDown, Wallet } from "lucide-react"
+import { ScrollArea } from "../ui/scroll-area"
 
 interface Transaction {
   id: string

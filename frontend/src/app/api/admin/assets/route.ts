@@ -1,78 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { config, shouldUseAppData, isDemoMode } from '../../../../lib/data/config';
-import { buildApiUrl } from '@/lib/config/api';
 
-async function getAuthToken(request: NextRequest) {
-  // In demo mode, return a mock token
-  if (isDemoMode() || shouldUseAppData()) {
-    return 'demo-access-token-123';
-  }
+// Use your existing backend API endpoints
+const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
-  // Get the authorization header
+async function getAuthToken(request: NextRequest): Promise<string | null> {
+  // Get token from Authorization header
   const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return null;
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+
+async function makeBackendRequest(endpoint: string, token: string | null, options: RequestInit = {}) {
+  const url = `${BACKEND_API_URL}${endpoint}`;
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...options.headers as Record<string, string>,
+  };
+
+  // Add authorization header if we have a token
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
   }
 
-  return authHeader.substring(7); // Remove 'Bearer ' prefix
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Backend API error (${response.status}): ${errorText}`);
+  }
+
+  return response.json();
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const token = await getAuthToken(request);
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const { searchParams } = new URL(request.url);
     const assetType = searchParams.get('asset_type');
-    const assigned = searchParams.get('assigned');
-
-    let url = buildApiUrl('/api/dolphin-assets');
     
-    // Handle different assignment filters
-    if (assigned === 'false') {
-      url += '/unassigned';
-    } else if (assigned === 'true') {
-      url += '/assigned';
-    } else if (assigned === 'all') {
-      // Fetch all assets - use the base endpoint
-      url += '/all';
-    } else {
-      // Default to unassigned for backward compatibility
-      url += '/unassigned';
+    // Extract auth token from request headers
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
     }
-    
-    const params = new URLSearchParams();
+
+    // Forward request to backend with auth
+    const backendUrl = `${BACKEND_API_URL}/api/dolphin-assets/all-assets`;
+    const url = new URL(backendUrl);
     if (assetType) {
-      params.append('asset_type', assetType);
-    }
-    
-    if (params.toString()) {
-      url += `?${params.toString()}`;
+      url.searchParams.set('asset_type', assetType);
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
+      const error = await response.text();
+      return NextResponse.json(
+        { error: `Backend error: ${error}` },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Return the organized data structure
+    return NextResponse.json({
+      status: 'success',
+      business_managers: data.business_managers || [],
+      facebook_profiles: data.facebook_profiles || [],
+      ad_accounts: data.ad_accounts || [],
+      summary: data.summary || {
+        total_business_managers: 0,
+        total_facebook_profiles: 0,
+        total_ad_accounts: 0,
+      }
+    });
 
   } catch (error) {
-    console.error('Error fetching admin assets:', error);
+    console.error('Assets API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -82,52 +98,42 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = await getAuthToken(request);
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
     const body = await request.json();
     const { action } = body;
 
-    let url = buildApiUrl('/api/dolphin-assets');
-    
+    // Extract auth token
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
+    }
+
     if (action === 'discover') {
-      url += '/sync/discover';
-    } else if (action === 'bind') {
-      url += '/bind';
-    } else if (action === 'unbind') {
-      url += `/unbind/${body.binding_id}`;
-    } else {
-      return NextResponse.json(
-        { error: 'Invalid action' },
-        { status: 400 }
-      );
+      // Sync/discover assets from Dolphin Cloud
+      const response = await fetch(`${BACKEND_API_URL}/api/dolphin-assets/sync/discover`, {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ force_refresh: true }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return NextResponse.json(
+          { error: `Sync failed: ${error}` },
+          { status: response.status }
+        );
+      }
+
+      const result = await response.json();
+      return NextResponse.json(result);
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
 
   } catch (error) {
-    console.error('Error in admin assets action:', error);
+    console.error('Assets POST API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,19 +1,28 @@
 "use client"
 
 import { Wallet } from 'lucide-react'
-import { formatCurrency } from '../../lib/mock-data'
-import { typographyTokens } from '../../lib/design-tokens'
-import { useAppData } from "../../contexts/AppDataContext"
+import { formatCurrency } from "../../utils/format"
+import { typographyTokens } from "../../lib/design-tokens"
+import useSWR from 'swr'
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 
 interface BalanceCardProps {
   balance?: number
   growth?: number
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function BalanceCard({ balance, growth }: BalanceCardProps) {
-  const { state } = useAppData()
+  const { currentOrganizationId } = useOrganizationStore();
+  const { data: orgData } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+
+  const walletBalance = orgData?.organizations?.[0]?.balance ?? 0;
   
-  const actualBalance = balance ?? state.financialData.totalBalance
+  const actualBalance = balance ?? walletBalance
   const actualGrowth = growth ?? 0 // TODO: Calculate from transaction history
   
   return (

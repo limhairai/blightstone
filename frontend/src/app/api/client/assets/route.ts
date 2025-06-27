@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { config, shouldUseAppData, isDemoMode } from '../../../../lib/data/config';
 import { buildApiUrl } from '@/lib/config/api';
 
-// Using centralized API config
-
 async function getAuthToken(request: NextRequest) {
-  // In demo mode, return a mock token
-  if (isDemoMode() || shouldUseAppData()) {
-    return 'demo-access-token-123';
-  }
-
   // Get the authorization header
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -44,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build URL with query parameters
-    let url = buildApiUrl('/api/dolphin-assets/client/${organizationId}');
+    let url = buildApiUrl(`/api/dolphin-assets/client/${organizationId}`);
     const params = new URLSearchParams();
     
     if (businessId) {
@@ -83,4 +75,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

@@ -17,97 +17,19 @@ export function PromoteUser() {
   const [email, setEmail] = useState(user?.email || "");
 
   const checkUserExists = async () => {
-    if (!email) {
-      toast({
-        title: "Error",
-        description: "Please enter an email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setChecking(true);
-    try {
-      const response = await fetch(`/api/proxy/auth/check-user-profile?email=${encodeURIComponent(email)}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: "User Found!",
-          description: `User ${email} exists in profiles table. Role: ${data.role}, Admin: ${data.is_superuser}`,
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "User Not Found",
-          description: `User ${email} not found in profiles table. Status: ${response.status}`,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("💥 Error checking user:", error);
-      toast({
-        title: "Error",
-        description: `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    } finally {
-      setChecking(false);
-    }
+    toast({
+      title: "Info",
+      description: "User checking temporarily disabled. Just enter the email and click promote.",
+      variant: "default",
+    });
   };
 
   const createProfile = async () => {
-    if (!session?.access_token) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to create a profile",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setCreating(true);
-    try {
-      const response = await fetch("/api/proxy/auth/create-profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`,
-        },
-      });
-
-      const data = await response.json();
-      console.log("👤 Create profile response:", { status: response.status, data });
-
-      if (response.ok) {
-        toast({
-          title: "Success!",
-          description: data.message || "Profile created successfully",
-          variant: "default",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: data.detail || `Failed to create profile (Status: ${response.status})`,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("💥 Error creating profile:", error);
-      toast({
-        title: "Error",
-        description: `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    } finally {
-      setCreating(false);
-    }
+    toast({
+      title: "Info",
+      description: "Profile creation is handled automatically during promotion.",
+      variant: "default",
+    });
   };
 
   const promoteToAdmin = async () => {
@@ -134,38 +56,21 @@ export function PromoteUser() {
     try {
       // 🚨 SECURITY: Removed dangerous console log - console.log("🚀 Starting promotion process for:", ...;
       
-      // First try the bootstrap endpoint (for first admin)
-      console.log("📡 Trying bootstrap endpoint...");
-      let response = await fetch("/api/proxy/auth/bootstrap-first-admin", {
+      // Use the unified promotion endpoint
+      console.log("📡 Promoting user...");
+      const response = await fetch("/api/auth/promote", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(session.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({
           email: email,
         }),
       });
 
-      let data = await response.json();
-      console.log("📡 Bootstrap response:", { status: response.status, data });
-
-      // If bootstrap fails because admins already exist, try regular promotion
-      if (!response.ok && data.detail?.includes("superusers already exist")) {
-        console.log("📡 Bootstrap failed (admins exist), trying regular promotion...");
-        response = await fetch("/api/proxy/auth/promote-superuser", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            email: email,
-          }),
-        });
-
-        data = await response.json();
-        console.log("📡 Promotion response:", { status: response.status, data });
-      }
+      const data = await response.json();
+      console.log("📡 Promotion response:", { status: response.status, data });
 
       if (response.ok) {
         console.log("✅ Promotion successful!");
@@ -183,7 +88,7 @@ export function PromoteUser() {
         console.error("❌ Promotion failed:", data);
         toast({
           title: "Error",
-          description: data.detail || `Failed to promote user (Status: ${response.status})`,
+          description: data.error || `Failed to promote user (Status: ${response.status})`,
           variant: "destructive",
         });
       }

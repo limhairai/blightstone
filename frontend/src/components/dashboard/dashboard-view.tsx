@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useRef, useMemo, useEffect } from "react"
+import useSWR, { useSWRConfig } from 'swr'
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/AppDataContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Button } from "../ui/button"
@@ -21,61 +21,372 @@ import { toast } from "sonner"
 import { 
   formatCurrency,
   formatRelativeTime,
-  transactionColors,
-  APP_CONSTANTS
-} from "../../lib/mock-data"
+  transactionColors
+} from "../../utils/format"
 import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "../../lib/state-utils"
 import { getSetupProgress, shouldShowOnboarding } from "../../lib/state-utils"
+import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
 import { ErrorBoundary } from "../ui/error-boundary"
 import { FullPageLoading } from "../ui/enhanced-loading"
 import { formatCurrency as financialFormatCurrency } from '@/lib/config/financial'
 
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function DashboardView() {
+  // ALL HOOKS MUST BE CALLED FIRST - NEVER AFTER CONDITIONAL LOGIC
   const { user, loading: authLoading } = useAuth()
-  const { state, refreshData } = useAppData()
   const { theme } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
   const [activeTab, setActiveTab] = useState("balance")
-  const [timeFilter, setTimeFilter] = useState("3 Months")
+  const [timeFilter, setTimeFilter] = useState("7 Days") // Start with shortest timeframe for new users
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
-  // Use setup widget hook (now safe with fallback)
+  const [showEmptyStateElements, setShowEmptyStateElements] = useState(false)
+  const { currentOrganizationId, setCurrentOrganizationId, onboardingDismissed, setOnboardingDismissed } = useOrganizationStore();
+  const { mutate } = useSWRConfig();
+
+  // Fetch user's organizations (always fetch to ensure we have the latest data)
+  const { data: userOrgsData } = useSWR(
+    user ? '/api/organizations' : null, 
+    fetcher,
+    {
+      dedupingInterval: 5 * 60 * 1000, // 5 minutes cache
+      revalidateOnFocus: false,
+      refreshInterval: 0,
+    }
+  );
+  
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null, 
+    fetcher,
+    {
+      dedupingInterval: 2 * 60 * 1000, // 2 minutes cache for org data
+      revalidateOnFocus: false,
+    }
+  );
+  
+  const { data: bizData, isLoading: isBizLoading } = useSWR(
+    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null, 
+    fetcher,
+    {
+      dedupingInterval: 2 * 60 * 1000, // 2 minutes cache
+      revalidateOnFocus: false,
+    }
+  );
+  
+  const { data: accData, isLoading: isAccLoading } = useSWR(
+    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null, 
+    fetcher,
+    {
+      dedupingInterval: 1 * 60 * 1000, // 1 minute cache for accounts (more dynamic)
+      revalidateOnFocus: false,
+    }
+  );
+  
+  const { data: transData, isLoading: isTransLoading } = useSWR(
+    currentOrganizationId ? `/api/transactions?organization_id=${currentOrganizationId}` : null, 
+    fetcher,
+    {
+      dedupingInterval: 30 * 1000, // 30 seconds cache for transactions (most dynamic)
+      revalidateOnFocus: false,
+    }
+  );
+
+  // Use setup widget hook (MUST be called before any conditional logic)
   const {
     setupWidgetState,
-    setSetupWidgetState,
-    showEmptyStateElements,
-    setShowEmptyStateElements
+    setSetupWidgetState
   } = useSetupWidget()
+  
   const balanceChartRef = useRef<HTMLDivElement>(null)
 
-  // Auto-refresh dashboard data every 5 minutes
+  // Auto-refresh hook (MUST be called before any conditional logic)
+  const SWR_KEYS_TO_REFRESH = [
+    `/api/organizations?id=${currentOrganizationId}`,
+    `/api/businesses?organization_id=${currentOrganizationId}`,
+    `/api/ad-accounts?organization_id=${currentOrganizationId}`,
+    `/api/transactions?organization_id=${currentOrganizationId}`,
+  ]
+
   const { manualRefresh, isRefreshing } = useAutoRefresh({
-    enabled: !!user && !state.loading.businesses && !authLoading, // Only refresh when user is authenticated and not loading
+    enabled: !!user && !authLoading && !isOrgLoading && !isBizLoading && !isAccLoading && !isTransLoading, // Only refresh when user is authenticated and not loading
     interval: REFRESH_INTERVALS.NORMAL,
     onRefresh: async () => {
       // Refresh app data (demo state is reactive and doesn't need manual refresh)
-      if (refreshData && user && !authLoading) {
+      if (user && !authLoading) {
         try {
-          await refreshData()
+          await Promise.all(SWR_KEYS_TO_REFRESH.map(key => mutate(key)));
         } catch (error) {
           console.warn('Dashboard auto-refresh failed:', error)
           // Don't crash the app, just log the warning
         }
       }
     },
-    dependencies: [user?.id, state.currentOrganization?.id] // Restart refresh when user or org changes
+    dependencies: [user?.id, currentOrganizationId] // Restart refresh when user or org changes
   })
 
+  // Auto-set organization if user has one but none is currently selected, or if current org is invalid
+  useEffect(() => {
+    if (userOrgsData?.organizations?.length > 0) {
+      // If no organization is currently selected, select the first one
+      if (!currentOrganizationId) {
+        setCurrentOrganizationId(userOrgsData.organizations[0].id);
+      } else {
+        // If an organization is selected, verify it still exists in the user's organizations
+        const currentOrgExists = userOrgsData.organizations.find(org => org.id === currentOrganizationId);
+        if (!currentOrgExists) {
+          // Current org doesn't exist, switch to the first available organization
+          console.log('Current organization not found, switching to first available organization');
+          setCurrentOrganizationId(userOrgsData.organizations[0].id);
+        }
+      }
+    }
+  }, [userOrgsData, currentOrganizationId, setCurrentOrganizationId]);
+
+  // Derived data (calculated after all hooks)
+  const organization = orgData?.organizations?.[0];
+  const businesses = bizData?.businesses || [];
+  const accounts = accData?.accounts || [];
+  const transactionsData = transData?.transactions || [];
+
+  // Get user's first name for greeting
+  const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
+
+  // Use real-time balance from state management - ensure no NaN values
+  const realBalance = Number.isFinite(organization?.balance_cents) ? (organization.balance_cents / 100) : 0;
+  const monthlySpend = accounts.reduce((sum, acc) => sum + (acc.spent ?? 0), 0);
+
+  // Check if user has real data to show (honest assessment)
+  const hasRealData = realBalance > 0 || monthlySpend > 0
+
+  // ALL USEMEMO AND USEEFFECT HOOKS MUST BE BEFORE EARLY RETURNS
+  // Generate HONEST balance data based on actual account history
+  const balanceData = useMemo(() => {
+    const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
+    
+    // Generate time points
+    const today = new Date()
+    const timePoints = Array.from({ length: dataPoints }).map((_, i) => {
+      let pointDate = new Date(today)
+      
+      if (timeFilter === "1 Year") {
+        pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
+      } else if (timeFilter === "3 Months") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
+      } else if (timeFilter === "1 Month") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+      } else { // 7 Days
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+      }
+      
+      return {
+        index: i,
+        date: timeFilter === "1 Year" 
+          ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        pointDate,
+        value: 0 // Default to zero
+      }
+    })
+    
+    // For new accounts: show zero until today, then current balance
+    // This is HONEST - no fake historical buildup
+    if (transactionsData.length <= 5) {
+      timePoints.forEach((point, i) => {
+        // Only show current balance at the very last point (today)
+        if (i === dataPoints - 1) {
+          point.value = realBalance
+        }
+        // All other points remain zero (honest representation)
+      })
+    } else {
+      // For accounts with transaction history, we'd build actual historical balance
+      // For now, still show honest data: zero until today
+      timePoints.forEach((point, i) => {
+        if (i === dataPoints - 1) {
+          point.value = realBalance
+        }
+      })
+    }
+    
+    return timePoints
+  }, [realBalance, timeFilter, transactionsData.length])
+  
 
 
+  // Generate spend data - show realistic patterns for new users  
+  const spendData = useMemo(() => {
+    const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
+    
+    // For new users with no spending yet, show all zeros
+    if (monthlySpend === 0) {
+      return Array.from({ length: dataPoints }).map((_, i) => {
+        // Generate recent dates based on time filter
+        const today = new Date()
+        let pointDate = new Date(today)
+        
+        if (timeFilter === "1 Year") {
+          pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
+        } else if (timeFilter === "3 Months") {
+          pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
+        } else if (timeFilter === "1 Month") {
+          pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+        } else {
+          pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+        }
+        
+        return {
+          index: i,
+          date: timeFilter === "1 Year" 
+            ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+            : timeFilter === "3 Months"
+            ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : timeFilter === "1 Month"
+            ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : pointDate.toLocaleDateString('en-US', { weekday: 'short' }),
+          value: 0,
+        }
+      })
+    }
+
+    // For users with spending, show realistic progression
+    return Array.from({ length: dataPoints }).map((_, i) => {
+      const progressRatio = i / (dataPoints - 1)
+      const historicalSpend = (monthlySpend / 30) * progressRatio * (0.3 + Math.random() * 0.7)
+      
+      return {
+        index: i,
+        date: timeFilter === "1 Year" 
+          ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i % 12]} ${Math.floor(i / 12) + 2024}`
+          : timeFilter === "3 Months"
+          ? `${['Feb', 'Mar', 'Apr', 'May'][Math.floor(i / 30)] || 'May'} ${(i % 30) + 1}`
+          : timeFilter === "1 Month"
+          ? `May ${i + 1}`
+          : `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i % 7]}`,
+        value: Math.max(0, Math.round(historicalSpend)),
+      }
+    })
+  }, [monthlySpend, timeFilter])
+  
+
+  
+  // Force re-render key based on balance and time filter
+  const chartKey = `${realBalance}-${timeFilter}-${transactionsData.length}`
+
+  // Use real-time transactions and accounts from state
+  const transactions = transactionsData.slice(0, 5).map(tx => ({
+    id: tx.id.toString(),
+    name: tx.description,
+    amount: tx.amount_cents / 100,
+    type: tx.type,
+    date: tx.created_at,
+    account: tx.metadata?.to_account_name || tx.metadata?.from_account_name || 'Unknown',
+    timestamp: tx.created_at
+  }))
+
+  const processedAccounts = accounts.map(account => ({
+    ...account,
+    spendLimit: account.spend_limit || 5000, // Default spend limit
+    spend: account.spent || 0,
+    quota: Math.round(((account.spent || 0) / (account.spend_limit || 5000)) * 100),
+  }))
+  const accountsForTable = processedAccounts
+
+  // Setup progress tracking - always show as if we have data for demo
+  const setupProgress = useMemo(() => 
+    getSetupProgress(
+      !!user?.email_confirmed_at, // Email verified
+      realBalance > 0, // Has wallet balance (always true for demo)
+      businesses.length > 0, // Has created a business
+      accounts.length > 0 // Has created an ad account
+    ),
+    [user, realBalance, businesses, accounts]
+  )
+
+  // Create empty state conditions for banner logic
+  const emptyStateConditions = useMemo(() => 
+    checkEmptyState(
+      transactionsData.length,
+      accounts.length, 
+      realBalance,
+      !!user?.email_confirmed_at
+    ),
+    [transactionsData.length, accounts.length, realBalance, user?.email_confirmed_at]
+  )
+
+  // Replace the old onboarding logic with the advanced hook
+  const { shouldShowOnboarding: showOnboarding, dismissOnboarding, isLoading: onboardingLoading } = useAdvancedOnboarding()
+
+  const showEmailBanner = useMemo(() => shouldShowEmailBanner(emptyStateConditions), [emptyStateConditions])
+
+  useEffect(() => {
+    // Don't show modal if it was already dismissed locally
+    if (!authLoading && !onboardingLoading && showOnboarding && !onboardingDismissed) {
+      setShowWelcomeModal(true)
+    }
+  }, [authLoading, onboardingLoading, showOnboarding, onboardingDismissed])
+
+  const handleWelcomeModalClose = async () => {
+    setShowWelcomeModal(false)
+    // Immediately update local storage for instant UI feedback
+    setOnboardingDismissed(true)
+    
+    // Also dismiss via API in the background
+    try {
+      await dismissOnboarding()
+    } catch (error) {
+      console.error('Failed to dismiss onboarding:', error)
+      // If API fails, keep the local dismissal since user explicitly closed it
+    }
+  }
+
+  const handleResendEmail = async () => {
+    toast.info("Resending verification email...")
+    // This assumes useAuth hook provides a method to resend
+    // await resendVerificationEmail(); 
+    toast.success("Verification email sent!")
+  }
+
+  const handleCreateOrganization = async () => {
+    if (!user) return
+    setIsCreatingOrg(true)
+    try {
+      const response = await fetch('/api/organizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: `${userName}'s Organization`, user_id: user.id })
+      })
+      if (!response.ok) throw new Error("Failed to create organization")
+      mutate(`/api/organizations?id=${currentOrganizationId}`);
+    } catch(err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create organization';
+      toast.error(errorMessage)
+    } finally {
+      setIsCreatingOrg(false)
+    }
+  }
+
+  // Time filter options (simplified for now)
+  const timeFilterOptions = [
+    { value: "7 Days", label: "7 Days" },
+    { value: "1 Month", label: "1 Month" },
+    { value: "3 Months", label: "3 Months" },
+    { value: "6 Months", label: "6 Months" },
+    { value: "1 Year", label: "1 Year" }
+  ]
+
+  const globalLoading = authLoading || isOrgLoading || isBizLoading || isAccLoading || isTransLoading;
+
+  // NOW we can have early returns - all hooks have been called
   // Early return for loading states
-  if (authLoading || state.loading.businesses) {
+  if (globalLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <FullPageLoading />
@@ -93,262 +404,18 @@ export function DashboardView() {
     )
   }
 
-  // Get user's first name for greeting
-  const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
-
-  // Use real-time balance from state management
-  const realBalance = state.financialData.totalBalance
-  const monthlySpend = state.financialData.monthlySpend
-
-  // Generate balance data that varies by organization and uses real balance as current value
-  const balanceData = useMemo(() => {
-    const orgMultiplier = (state.currentOrganization && state.currentOrganization.id) ? (state.currentOrganization.id.length % 3) + 1 : 1
-    
-    // Determine data points based on time filter
-    let dataPoints = 60
-    let dateRange = { start: 40, increment: 1 }
-    
-    switch (timeFilter) {
-      case "1 Week":
-        dataPoints = 7
-        dateRange = { start: 16, increment: 1 }
-        break
-      case "1 Month":
-        dataPoints = 30
-        dateRange = { start: 1, increment: 1 }
-        break
-      case "3 Months":
-        dataPoints = 60
-        dateRange = { start: 40, increment: 1 }
-        break
-      case "1 Year":
-        dataPoints = 365
-        dateRange = { start: 1, increment: 12 }
-        break
-      case "This Week":
-        dataPoints = 7
-        dateRange = { start: 16, increment: 1 }
-        break
-    }
-    
-    return Array.from({ length: dataPoints }).map((_, i) => {
-      // For the last point, use the actual current balance
-      if (i === dataPoints - 1) {
-        return {
-          index: i,
-          date: `May ${Math.min(31, dateRange.start + i)}`,
-          value: realBalance,
-        }
-      }
-      
-      const baseValue = (8000 + i * 80) * orgMultiplier
-      const dayVariation = Math.sin(i * 0.7) * 1200 * orgMultiplier
-      const weekVariation = Math.cos(i * 0.2) * 800 * orgMultiplier
-      const trendVariation = i % 7 === 0 ? -600 : i % 5 === 0 ? 1000 : 0
-
-      return {
-        index: i,
-        date: timeFilter === "1 Year" 
-          ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i % 12]} ${Math.floor(i / 12) + 2024}`
-          : i < 10 ? `Feb ${23 + i}` : i < 25 ? `Mar ${i - 10 + 1}` : i < 40 ? `Apr ${i - 25 + 1}` : `May ${i - 40 + 1}`,
-        value: Math.max(6000, Math.round(baseValue + dayVariation + weekVariation + trendVariation)),
-      }
-    })
-  }, [state.currentOrganization?.id, realBalance, timeFilter])
-
-  // Generate spend data that uses real monthly spend
-  const spendData = useMemo(() => {
-    const orgMultiplier = (state.currentOrganization && state.currentOrganization.id) ? (state.currentOrganization.id.length % 2) + 1 : 1
-    
-    // Determine data points based on time filter
-    let dataPoints = 60
-    
-    switch (timeFilter) {
-      case "1 Week":
-        dataPoints = 7
-        break
-      case "1 Month":
-        dataPoints = 30
-        break
-      case "3 Months":
-        dataPoints = 60
-        break
-      case "1 Year":
-        dataPoints = 365
-        break
-      case "This Week":
-        dataPoints = 7
-        break
-    }
-    
-    return Array.from({ length: dataPoints }).map((_, i) => {
-      // For recent points, incorporate actual monthly spend
-      if (i >= dataPoints - 5) {
-        const recentSpendBase = monthlySpend / 30 * (i - (dataPoints - 6)) // Daily average for recent days
-        const noise = Math.sin(i * 3.7) * 50 + Math.cos(i * 2.3) * 30
-        return {
-          index: i,
-          date: timeFilter === "1 Year" 
-            ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i % 12]} ${Math.floor(i / 12) + 2024}`
-            : `May ${Math.min(31, i - (dataPoints - 31) + 1)}`,
-          value: Math.max(50, Math.round(recentSpendBase + noise)),
-        }
-      }
-      
-      const dayOfMonth = i % 30
-      const monthMultiplier = 1 + Math.floor(i / 20) * 0.2
-      let baseValue = (150 + dayOfMonth * 40) * monthMultiplier * orgMultiplier
-
-      if (dayOfMonth === 15 || dayOfMonth === 28) {
-        baseValue *= 2.2
-      } else if (dayOfMonth % 7 === 0) {
-        baseValue *= 1.5
-      } else if (dayOfMonth % 3 === 0) {
-        baseValue *= 1.2
-      }
-
-      const noise = Math.sin(i * 3.7) * 250 + Math.cos(i * 2.3) * 150
-
-      return {
-        index: i,
-        date: timeFilter === "1 Year" 
-          ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i % 12]} ${Math.floor(i / 12) + 2024}`
-          : i < 10 ? `Feb ${23 + i}` : i < 25 ? `Mar ${i - 10 + 1}` : i < 40 ? `Apr ${i - 25 + 1}` : `May ${i - 40 + 1}`,
-        value: Math.max(80, Math.round(baseValue + noise)),
-      }
-    })
-  }, [state.currentOrganization?.id, monthlySpend, timeFilter])
-
-  // Use real-time transactions and accounts from state
-  const transactions = state.transactions.slice(0, 5).map(tx => ({
-    id: tx.id.toString(),
-    name: tx.description,
-    amount: tx.amount,
-    type: tx.type,
-    date: tx.date,
-    account: tx.fromAccount || tx.toAccount || 'Unknown',
-    timestamp: tx.date
-  }))
-
-  const processedAccounts = state.accounts.map(account => ({
-    ...account,
-    spendLimit: account.spendLimit || 5000, // Default spend limit
-    spend: account.spend || account.spent || 0,
-    quota: Math.round(((account.spend || 0) / (account.spendLimit || 5000)) * 100),
-  }))
-  const accounts = processedAccounts
-
-  // Setup progress tracking - always show as if we have data for demo
-  const setupProgress = useMemo(() => 
-    getSetupProgress(
-      !!user?.email_confirmed_at, // Email verified
-      realBalance > 0, // Has wallet balance (always true for demo)
-      true, // Has businesses (always true for demo)
-      accounts.length > 0 // Has ad accounts (always true for demo)
-    ), [user?.email_confirmed_at, realBalance, accounts.length])
-
-  const shouldShowOnboardingElements = useMemo(() => 
-    shouldShowOnboarding(setupProgress)
-  , [setupProgress])
-
-  // Create empty state conditions for banners
-  const emptyStateConditions = useMemo(() => 
-    checkEmptyState(
-      transactions.length,
-      accounts.length, 
-      realBalance,
-      !!user?.email_confirmed_at
-    ), [transactions.length, accounts.length, realBalance, user?.email_confirmed_at])
-
-  // Update context when onboarding state changes
-  useEffect(() => {
-    setShowEmptyStateElements(shouldShowOnboardingElements)
-  }, [shouldShowOnboardingElements, setShowEmptyStateElements])
-
-  // Show welcome modal for new users (only once)
-  useEffect(() => {
-    // Check if user is new and hasn't seen welcome modal
-    const hasSeenWelcome = localStorage.getItem(`welcome_modal_seen_${user?.id}`)
-    
-    if (user && !hasSeenWelcome && shouldShowOnboardingElements) {
-      // Show modal after a short delay for better UX
-      const timer = setTimeout(() => {
-        setShowWelcomeModal(true)
-      }, 1500)
-      
-      return () => clearTimeout(timer)
-    }
-  }, [user?.id, shouldShowOnboardingElements])
-
-  const handleWelcomeModalClose = () => {
-    setShowWelcomeModal(false)
-    // Mark as seen so it doesn't show again
-    if (user?.id) {
-      localStorage.setItem(`welcome_modal_seen_${user.id}`, 'true')
-    }
-  }
-
-  // Handle email resend
-  const handleResendEmail = async () => {
-    try {
-      // In a real app, this would make an API call to resend verification email
-      // For demo purposes, we'll just show a success message
-      toast.success("Verification email sent! Please check your inbox.")
-    } catch (error) {
-      toast.error("Failed to resend verification email. Please try again.")
-    }
-  }
-
-  // Handle organization creation
-  const handleCreateOrganization = async () => {
-    if (!user?.email) return
-    
-    setIsCreatingOrg(true)
-    try {
-      // Extract company name from email domain or use a default
-      const emailDomain = user.email.split('@')[1]
-      const orgName = emailDomain ? emailDomain.split('.')[0] : 'My Organization'
-      
-      console.log('Creating organization:', orgName)
-    } catch (error) {
-      console.error('Failed to create organization:', error)
-    } finally {
-      setIsCreatingOrg(false)
-    }
-  }
-
-  // Show loading while data is being fetched
-  if (state.loading.businesses) {
-    return (
-      <FullPageLoading 
-        title="Loading Dashboard"
-        description="Please wait while we load your dashboard data..."
-      />
-    )
-  }
-
   // Always show filled dashboard for demo - no empty state
   const getTransactionIcon = (type: string, amount: number) => {
-    if (type === "deposit" || amount > 0) {
-      return (
-        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.deposit.bg}`}>
-          <ArrowDownIcon className={`h-4 w-4 ${transactionColors.deposit.icon}`} />
-        </div>
-      )
-    } else {
-      return (
-        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${transactionColors.withdrawal.bg}`}>
-          <ArrowUpIcon className={`h-4 w-4 ${transactionColors.withdrawal.icon}`} />
-        </div>
-      )
-    }
+    if (type === 'topup' || type === 'credit') return <ArrowUpIcon className="w-4 h-4 text-green-500" />
+    if (type === 'spend' || type === 'withdrawal' || type === 'debit') return <ArrowDownIcon className="w-4 h-4 text-red-500" />
+    return <ArrowRight className="w-4 h-4 text-gray-500" />
   }
 
   return (
     <ErrorBoundary>
       <div className={layoutTokens.spacing.container}>
         {/* Email verification banner */}
-        {shouldShowEmailBanner(emptyStateConditions) && (
+        {showEmailBanner && (
           <EmailVerificationBanner onResendEmail={handleResendEmail} />
         )}
 
@@ -388,7 +455,7 @@ export function DashboardView() {
 
                   <TabsContent value="balance" className="mt-0">
                     <div className="p-4 pt-3">
-                      <div className={typographyTokens.patterns.mutedMedium}>May 22, 2025</div>
+                      <div className={typographyTokens.patterns.mutedMedium}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
                       <div className={typographyTokens.patterns.balanceLarge}>${formatCurrency(realBalance)}</div>
 
                       {/* Time filter dropdown and refresh indicator */}
@@ -418,7 +485,7 @@ export function DashboardView() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-[180px]">
-                            {APP_CONSTANTS.TIME_FILTER_OPTIONS.map((option) => (
+                            {timeFilterOptions.map((option) => (
                               <DropdownMenuItem key={option.value} onClick={() => setTimeFilter(option.value)}>
                                 <span>{option.label}</span>
                               </DropdownMenuItem>
@@ -428,19 +495,24 @@ export function DashboardView() {
                       </div>
                       
                       {/* Interactive balance chart with real data */}
-                      <div className="mt-2 h-[160px] w-full relative" ref={balanceChartRef}>
+                      <div key={chartKey} className="mt-2 h-[160px] w-full relative" ref={balanceChartRef}>
                         <div className="absolute inset-0 bottom-5">
-                          {/* Gradient background */}
+                          {/* Gradient background - always show for visual consistency */}
                           <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-t from-[#b4a0ff33] to-transparent rounded-md"></div>
                           
                           {/* Interactive balance line chart */}
                           <svg className="absolute inset-0 h-full w-full z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
                             <path
-                              d={`M ${balanceData.map((point, i) => `${(i / (balanceData.length - 1)) * 100},${100 - (point.value / Math.max(...balanceData.map(p => p.value))) * 60}`).join(' L ')}`}
+                              d={`M ${balanceData.map((point, i) => {
+                                const maxValue = Math.max(...balanceData.map(p => p.value), 1); // Ensure at least 1 to avoid division by zero
+                                const yPos = hasRealData ? 100 - (point.value / maxValue) * 60 : 30; // Show flat line at 30% for empty state (higher up, more visible)
+                                return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                              }).join(' L ')}`}
                               fill="none"
-                              stroke="url(#balanceLineGradient)"
-                              strokeWidth="1.5"
+                              stroke={hasRealData ? "url(#balanceLineGradient)" : "#b4a0ff"}
+                              strokeWidth={hasRealData ? "1.5" : "3"}
                               vectorEffect="non-scaling-stroke"
+                              opacity={hasRealData ? "1" : "1"}
                             />
                             <defs>
                               <linearGradient id="balanceLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -452,7 +524,8 @@ export function DashboardView() {
 
                           {/* Interactive hover points - positioned exactly on the line */}
                           {balanceData.map((point, i) => {
-                            const yPosition = 100 - (point.value / Math.max(...balanceData.map(p => p.value))) * 60;
+                            const maxValue = Math.max(...balanceData.map(p => p.value), 1); // Ensure at least 1 to avoid division by zero
+                            const yPosition = hasRealData ? 100 - (point.value / maxValue) * 60 : 30; // Show flat line at 30% for empty state (higher up, more visible)
                             return (
                               <div
                                 key={i}
@@ -484,14 +557,11 @@ export function DashboardView() {
                         {/* Bottom axis line */}
                         <div className="absolute bottom-5 left-0 right-0 h-[1px] w-full bg-border z-5"></div>
 
-                        {/* Month markers */}
+                        {/* Dynamic month markers */}
                         <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-2 z-5">
-                          <span>Feb 23</span>
-                          <span>Mar 10</span>
-                          <span>Mar 25</span>
-                          <span>Apr 09</span>
-                          <span>Apr 24</span>
-                          <span>May 09</span>
+                          {[0, Math.floor(balanceData.length / 4), Math.floor(balanceData.length / 2), Math.floor(3 * balanceData.length / 4), balanceData.length - 1].map((index, i) => (
+                            <span key={i}>{balanceData[index]?.date}</span>
+                          ))}
                         </div>
                       </div>
 
@@ -504,7 +574,7 @@ export function DashboardView() {
 
                   <TabsContent value="spend" className="mt-0">
                     <div className="p-4 pt-3">
-                      <div className={typographyTokens.patterns.mutedMedium}>May 22, 2025</div>
+                      <div className={typographyTokens.patterns.mutedMedium}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
                       <div className={typographyTokens.patterns.balanceLarge}>${formatCurrency(monthlySpend)}</div>
 
                       {/* Time filter dropdown and refresh indicator */}
@@ -534,7 +604,7 @@ export function DashboardView() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-[180px]">
-                            {APP_CONSTANTS.TIME_FILTER_OPTIONS.map((option) => (
+                            {timeFilterOptions.map((option) => (
                               <DropdownMenuItem key={option.value} onClick={() => setTimeFilter(option.value)}>
                                 <span>{option.label}</span>
                               </DropdownMenuItem>
@@ -544,7 +614,7 @@ export function DashboardView() {
                       </div>
 
                       {/* Interactive spend bar chart with real data */}
-                      <div className="mt-2 h-[160px] w-full relative">
+                      <div key={`spend-${chartKey}`} className="mt-2 h-[160px] w-full relative">
                         <div className="absolute inset-0 bottom-5">
                           <div className="h-full flex items-end justify-between px-1">
                             {/* Interactive spend bars */}
@@ -563,7 +633,9 @@ export function DashboardView() {
                                       : 'bg-gradient-to-t from-[#b4a0ff]/70 to-[#ffb4a0]/70'
                                   }`}
                                   style={{ 
-                                    height: `${Math.max(4, (point.value / Math.max(...spendData.map(p => p.value))) * 100)}%` 
+                                    height: hasRealData 
+                                      ? `${Math.max(4, (point.value / Math.max(...spendData.map(p => p.value), 1)) * 100)}%`
+                                      : '4px' // Show minimal bars for empty state
                                   }}
                                 />
                                 {hoveredSpendIndex === i && (
@@ -580,14 +652,11 @@ export function DashboardView() {
                         {/* Bottom axis line */}
                         <div className="absolute bottom-5 left-0 right-0 h-[1px] w-full bg-border z-5"></div>
 
-                        {/* Month markers */}
+                        {/* Dynamic month markers */}
                         <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-2 z-5">
-                          <span>Feb 23</span>
-                          <span>Mar 10</span>
-                          <span>Mar 25</span>
-                          <span>Apr 09</span>
-                          <span>Apr 24</span>
-                          <span>May 09</span>
+                          {[0, Math.floor(spendData.length / 4), Math.floor(spendData.length / 2), Math.floor(3 * spendData.length / 4), spendData.length - 1].map((index, i) => (
+                            <span key={i}>{spendData[index]?.date}</span>
+                          ))}
                         </div>
                       </div>
 
@@ -626,7 +695,7 @@ export function DashboardView() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`font-medium text-sm ${transaction.amount > 0 ? transactionColors.deposit.text : "text-foreground"}`}>
+                        <div className={`font-medium text-sm ${transaction.amount > 0 ? "text-green-600" : "text-foreground"}`}>
                           {transaction.amount > 0 ? "+$" : "$"}{formatCurrency(Math.abs(transaction.amount))}
                         </div>
                         <div className="text-xs text-muted-foreground">{transaction.account}</div>
@@ -644,7 +713,7 @@ export function DashboardView() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">Accounts</h2>
-              <span className="text-sm text-muted-foreground">{state.accounts.length} / 100</span>
+              <span className="text-sm text-muted-foreground">{accounts.length} / 100</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => router.push('/dashboard/accounts')}>

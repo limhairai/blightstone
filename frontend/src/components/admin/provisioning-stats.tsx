@@ -1,17 +1,25 @@
 "use client";
 
-import { useAppData } from "../../contexts/AppDataContext"
+import useSWR from 'swr'
 import { CreditCard, CheckCircle, Clock, AlertTriangle, Users } from "lucide-react";
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function ProvisioningStats() {
-  const { state } = useAppData();
+  const { data: bizData, isLoading: isBizLoading } = useSWR('/api/businesses', fetcher);
+  const { data: accData, isLoading: isAccLoading } = useSWR('/api/ad-accounts', fetcher);
+
+  const businesses = bizData?.businesses || [];
+  const accounts = accData?.accounts || [];
+
+  const isLoading = isBizLoading || isAccLoading;
   
   // Calculate provisioning statistics using proper admin statuses
-  const approvedBusinesses = state.businesses.filter(b => b.status === "approved").length;
-  const totalAccounts = state.accounts.length;
-  const activeAccounts = state.accounts.filter(acc => acc.status === "active").length;
-  const pendingAccounts = state.accounts.filter(acc => acc.status === "pending").length;
-  const totalSpend = state.accounts.reduce((total, account) => total + (account.spend || 0), 0);
+  const approvedBusinesses = businesses.filter(b => b.status === "approved" || b.status === "active").length;
+  const totalAccounts = accounts.length;
+  const activeAccounts = accounts.filter(acc => acc.status === "active").length;
+  const pendingAccounts = accounts.filter(acc => acc.status === "pending").length;
+  const totalSpend = accounts.reduce((total, account) => total + (account.spent || 0), 0);
 
   const stats = [
     {
@@ -50,6 +58,19 @@ export function ProvisioningStats() {
       bgColor: "bg-orange-50",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse">
+            <div className="h-6 w-3/4 rounded-md bg-muted mb-2"></div>
+            <div className="h-8 w-1/2 rounded-md bg-muted"></div>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

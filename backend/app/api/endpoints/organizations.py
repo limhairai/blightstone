@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from fastapi.concurrency import run_in_threadpool
-# from backend.app.core.firebase import get_firestore  # TODO: Migrate to Supabase
+# from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
 from backend.app.core.security import get_current_user, require_superuser
 from backend.app.core.supabase_client import get_supabase_client
 from backend.app.schemas.user import UserRead as User
@@ -50,7 +50,8 @@ async def create_organization_endpoint(
     if "creator_user_id" in org_data_to_create:
         del org_data_to_create["creator_user_id"]
 
-    org_data_to_create["verification_status"] = "pending_review" # Default status
+    # Note: verification_status column has been removed from organizations table
+    # org_data_to_create["verification_status"] = "pending_review"
 
     # Fields from OrganizationBase (now in OrganizationCreate) that map directly to DB columns:
     # name is already included by model_dump if set
@@ -189,29 +190,16 @@ async def get_organization_details_endpoint(
 # --- Admin Endpoints for Organization Management ---
 
 class AdminOrganizationFilterParams(BaseModel):
-    verification_status: Optional[str] = Query(None, description="Filter by verification status (e.g., 'pending_review', 'approved', 'rejected')")
+    # verification_status filter removed since column no longer exists
     limit: int = Query(50, ge=1, le=100)
     offset: int = Query(0, ge=0)
 
 @router.get("/admin/all", response_model=List[OrganizationRead], dependencies=[Depends(require_superuser)])
-async def admin_list_all_organizations_endpoint(
-    filters: AdminOrganizationFilterParams = Depends() # Use Pydantic model for query params
-):
-    logger.info(f"Admin request to list organizations with filters: {filters}")
+async def admin_list_all_organizations_endpoint():
+    logger.info(f"Admin request to list all organizations")
     supabase = get_supabase_client()
     try:
-        query = supabase.table("organizations").select("*") # Adjust columns as needed for OrganizationRead
-        
-        if filters.verification_status:
-            query = query.eq("verification_status", filters.verification_status)
-        
-        query = query.limit(filters.limit).offset(filters.offset).order("created_at", desc=True)
-        
-        response = query.execute()
-
-        if response.error:
-            logger.error(f"Admin: Error fetching organizations: {response.error.message}")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to fetch organizations.")
+        response = supabase.table("organizations").select("*").order("created_at", desc=True).execute()
         
         orgs = [OrganizationRead(**org_data) for org_data in response.data]
         logger.info(f"Admin: Successfully fetched {len(orgs)} organizations.")
@@ -221,70 +209,9 @@ async def admin_list_all_organizations_endpoint(
         logger.error(f"Admin: Unexpected error fetching organizations: {e}", exc_info=True)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred.")
 
-class OrganizationStatusUpdatePayload(BaseModel):
-    verification_status: str # e.g., "approved", "rejected"
-    # admin_notes: Optional[str] = None # Example: if you want to store reason for status change
-
-@router.put("/admin/{org_id}/status", response_model=OrganizationRead, dependencies=[Depends(require_superuser)])
-async def admin_update_organization_status_endpoint(
-    org_id: uuid.UUID,
-    payload: OrganizationStatusUpdatePayload,
-):
-    logger.info(f"Admin request to update status of organization {org_id} to '{payload.verification_status}'")
-    supabase = get_supabase_client()
-
-    # Validate verification_status value if needed
-    allowed_statuses = ["pending_review", "approved", "rejected", "needs_more_info"]
-    if payload.verification_status not in allowed_statuses:
-        logger.warning(f"Admin: Invalid verification status provided: {payload.verification_status}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid status. Must be one of {allowed_statuses}")
-
-    try:
-        update_data = {"verification_status": payload.verification_status, "updated_at": datetime.now(timezone.utc).isoformat()}
-        # if payload.admin_notes: update_data["admin_notes"] = payload.admin_notes
-
-        response = (
-            supabase.table("organizations")
-            .update(update_data)
-            .eq("id", str(org_id))
-            .execute()
-        )
-
-        if not response.data: # Update returns data on success
-            logger.error(f"Admin: Failed to update status for organization {org_id}. Error: {getattr(response.error, 'message', 'Unknown error')}")
-            # Check if org exists before claiming update failed
-            check_org = supabase.table("organizations").select("id").eq("id", str(org_id)).maybe_single().execute()
-            if not check_org.data:
-                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Organization with ID {org_id} not found.")
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update organization status.")
-
-        updated_org_data = response.data[0]
-        logger.info(f"Admin: Successfully updated status for organization {org_id} to {payload.verification_status}")
-        return OrganizationRead(**updated_org_data)
-
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.error(f"Admin: Unexpected error updating status for org {org_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred.")
+# Note: Admin status update endpoint removed since verification_status column no longer exists
 
 # Placeholder for Member Management - these would need similar refactoring
-# For example:
-# @router.post("/{org_id}/members", response_model=OrganizationMemberRead, status_code=status.HTTP_201_CREATED)
-# async def add_member_to_organization(org_id: uuid.UUID, member_payload: OrganizationMemberCreate, current_user: UserRead = Depends(get_current_user)):
-#     # Check if current_user is admin/owner of org_id
-#     # Add member to organization_members table
-#     pass
-
-# @router.delete("/{org_id}/members/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-# async def remove_member_from_organization(org_id: uuid.UUID, user_id: uuid.UUID, current_user: UserRead = Depends(get_current_user)):
-#     # Check if current_user is admin/owner of org_id
-#     # Check constraints (not last owner, not self if not allowed)
-#     # Remove member from organization_members table
-#     pass
-
-# Note: The old catch-all OrganizationOnboarding model is replaced by OrganizationCreate.
-# Other specific request models like RemoveMemberRequest can be defined here or in schemas/organization.py 
 
 # --- Financial Management Endpoints ---
 

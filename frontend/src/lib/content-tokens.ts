@@ -166,7 +166,6 @@ export const contentTokens = {
   // Status labels
   status: {
     active: "Active",
-    inactive: "Inactive",
     pending: "Pending",
     completed: "Completed",
     failed: "Failed",
@@ -178,8 +177,6 @@ export const contentTokens = {
     disabled: "Disabled",
     connected: "Connected",
     disconnected: "Disconnected",
-    verified: "Verified",
-    unverified: "Unverified",
     paused: "Paused",
     rejected: "Rejected",
     approved: "Approved",
@@ -241,7 +238,6 @@ export const contentTokens = {
     spendLimit: "Spend Limit",
     businessName: "Business Name",
     website: "Website",
-    industry: "Industry",
     accountId: "Account ID",
     bmId: "BM ID",
     spendToday: "Today's Spend",

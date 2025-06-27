@@ -1,23 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { config, shouldUseAppData, isDemoMode } from '../../../lib/data/config';
-import { headers } from 'next/headers';
 import { buildApiUrl } from '@/lib/config/api';
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { v4 as uuidv4 } from 'uuid'
 
-// Using centralized API config
-
-// Create Supabase client for server-side auth (only in production)
-const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY ? createClient(
+// Create Supabase client for server-side auth
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
-) : null;
+);
 
 async function getAuthToken(request: NextRequest) {
-  // In demo mode, return a mock token
-  if (isDemoMode() || shouldUseAppData()) {
-    return 'demo-access-token-123';
-  }
-
   // Get the authorization header
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -28,89 +22,119 @@ async function getAuthToken(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: () => cookies() }
+  )
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const organizationId = searchParams.get('organization_id')
+
+  if (!organizationId) {
+    return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 })
+  }
+
   try {
-    const token = await getAuthToken(request);
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Fetch businesses which represent applications in this context
+    const { data, error } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
     }
 
-    const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organization_id');
-    const status = searchParams.get('status');
-
-    let url = buildApiUrl('/api/applications');
-    const params = new URLSearchParams();
-    
-    if (organizationId) params.append('organization_id', organizationId);
-    if (status) params.append('status_filter', status);
-    
-    if (params.toString()) {
-      url += `?${params.toString()}`;
-    }
-
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
-
+    return NextResponse.json({ businesses: data })
   } catch (error) {
-    console.error('Error fetching applications:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+    console.error('Error fetching applications:', errorMessage)
+    return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const token = await getAuthToken(request);
-    
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-
-    const response = await fetch(buildApiUrl('/api/applications'), {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+  const cookieStore = cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options })
+        },
       },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      return NextResponse.json(errorData, { status: response.status });
     }
+  )
 
-    const data = await response.json();
-    return NextResponse.json(data);
+  const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { organization_id, business_name, website_url } = await request.json()
+
+  if (!organization_id || !business_name) {
+    return NextResponse.json({ error: 'Organization ID and business name are required' }, { status: 400 })
+  }
+
+  try {
+    // 1. Create the business record
+    const businessId = uuidv4()
+    const { data: businessData, error: businessError } = await supabase
+      .from('businesses')
+      .insert({
+        id: businessId,
+        user_id: user.id,
+        organization_id: organization_id,
+        name: business_name,
+        website: website_url,
+        status: 'pending', // Applications start as pending
+      })
+      .select()
+      .single()
+
+    if (businessError) throw new Error(`Failed to create business: ${businessError.message}`)
+
+    // 2. Create the application record
+    const { data: appData, error: appError } = await supabase
+      .from('applications')
+      .insert({
+        id: uuidv4(),
+        user_id: user.id,
+        organization_id: organization_id,
+        business_id: businessId,
+        status: 'submitted',
+        application_data: {
+          business_name,
+          website_url,
+        },
+      })
+      .select()
+      .single()
+
+    if (appError) throw new Error(`Failed to create application record: ${appError.message}`)
+
+    return NextResponse.json({ business: businessData, application: appData })
   } catch (error) {
-    console.error('Error submitting application:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+    console.error('Application creation error:', errorMessage)
+    return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 })
   }
 } 

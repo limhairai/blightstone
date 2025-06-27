@@ -1,36 +1,50 @@
 "use client"
 
 import { useState } from "react"
+import useSWR, { useSWRConfig } from 'swr'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Separator } from "../ui/separator"
-import { formatCurrency } from "../../lib/utils"
+import { formatCurrency } from "@/lib/utils"
 import { Wallet, DollarSign, ArrowRight, Check, Loader2 } from "lucide-react"
-import type { AppAccount } from "../../contexts/AppDataContext"
-import { useAppData } from "../../contexts/AppDataContext"
 import { toast } from "sonner"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+
+type AppAccount = {
+  id: string;
+  name: string;
+  balance_cents: number;
+}
 
 interface TopUpDialogProps {
   account: AppAccount | null
   open: boolean
   onOpenChange: (open: boolean) => void
-  mainBalance?: number
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
-  const { state, addTransaction, updateAccount, updateWalletBalance } = useAppData()
+  const { currentOrganizationId } = useOrganizationStore();
+  const { mutate } = useSWRConfig();
   const [amount, setAmount] = useState("")
+  const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const mainBalance = orgData?.organizations?.[0]?.balance_cents / 100 ?? 0;
 
   if (!account) return null
 
-  // Use real-time wallet balance from demo state
-  const mainBalance = state.financialData.totalBalance
-  const isLoading = state.loading.accounts
+  const isLoading = isProcessing || isOrgLoading;
   const topUpAmount = Number.parseFloat(amount) || 0
-  const newBalance = account.balance + topUpAmount
+  const currentAccountBalance = account.balance_cents / 100;
+  const newBalance = currentAccountBalance + topUpAmount
   const remainingMainBalance = mainBalance - topUpAmount
 
   const handleTopUp = async () => {
@@ -40,29 +54,33 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
     }
 
     if (topUpAmount > mainBalance) {
-      toast.error("Amount exceeds your main account balance")
+      toast.error("Amount exceeds your main wallet balance")
       return
     }
 
+    setIsProcessing(true);
     try {
-      // 1. Subtract from wallet balance
-      await updateWalletBalance(topUpAmount, 'subtract')
+      const response = await fetch('/api/wallet/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from_source: `organization:${currentOrganizationId}`,
+          to_destination: `ad_account:${account.id}`,
+          amount_cents: Math.round(topUpAmount * 100)
+        })
+      });
 
-      // 2. Add a transaction for the top up
-      await addTransaction({
-        type: 'topup',
-        amount: topUpAmount,
-        date: new Date().toISOString(),
-        description: `Top up for ${account.name}`,
-        status: 'completed'
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Transfer failed');
+      }
+
+      mutate(`/api/organizations?id=${currentOrganizationId}`);
+      mutate(`/api/ad-accounts?organization_id=${currentOrganizationId}`);
+
+      toast.success("Top up successful!", {
+        description: `${formatCurrency(topUpAmount)} has been added to ${account.name}`
       })
-
-      // 3. Update account balance
-      await updateAccount({
-        ...account,
-        balance: account.balance + topUpAmount
-      })
-
       setShowSuccess(true)
       
       setTimeout(() => {
@@ -71,7 +89,10 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
         onOpenChange(false)
       }, 2000)
     } catch (error) {
-      toast.error("Failed to process top up. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast.error("Failed to process top up", { description: errorMessage });
+    } finally {
+      setIsProcessing(false);
     }
   }
 
@@ -80,12 +101,12 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
               <Check className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">Top Up Successful!</h3>
             <p className="text-muted-foreground">
-              ${formatCurrency(topUpAmount)} has been added to {account.name}
+              {formatCurrency(topUpAmount)} has been added to {account.name}
             </p>
           </div>
         </DialogContent>
@@ -118,13 +139,14 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground uppercase tracking-wide">Main Balance</label>
               <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />${formatCurrency(mainBalance)}
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                {isOrgLoading ? '...' : formatCurrency(mainBalance)}
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground uppercase tracking-wide">Account Balance</label>
               <div className="flex items-center gap-2 text-lg font-semibold text-foreground">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />${formatCurrency(account.balance)}
+                <DollarSign className="h-4 w-4 text-muted-foreground" />{formatCurrency(currentAccountBalance)}
               </div>
             </div>
           </div>
@@ -178,15 +200,15 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Amount to transfer:</span>
-                    <span className="font-medium text-foreground">${formatCurrency(topUpAmount)}</span>
+                    <span className="font-medium text-foreground">{formatCurrency(topUpAmount)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">New account balance:</span>
-                    <span className="font-medium text-foreground">${formatCurrency(newBalance)}</span>
+                    <span className="font-medium text-foreground">{formatCurrency(newBalance)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Remaining main balance:</span>
-                    <span className="font-medium text-foreground">${formatCurrency(remainingMainBalance)}</span>
+                    <span className="font-medium text-foreground">{formatCurrency(remainingMainBalance)}</span>
                   </div>
                 </div>
               </div>
@@ -216,7 +238,7 @@ export function TopUpDialog({ account, open, onOpenChange }: TopUpDialogProps) {
               ) : (
                 <>
                   <ArrowRight className="mr-2 h-4 w-4" />
-                  Top Up ${formatCurrency(topUpAmount)}
+                  Top Up {formatCurrency(topUpAmount)}
                 </>
               )}
             </Button>

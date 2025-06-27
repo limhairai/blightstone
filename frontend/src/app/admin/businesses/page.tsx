@@ -1,32 +1,52 @@
-"use client";
-
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+"use client"
 
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
 import { Input } from "../../../components/ui/input";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { 
+  ArrowLeft,
   Building2,
-  Search,
-  Download,
-  Eye,
-  MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
-  DollarSign,
-  CreditCard,
-  TrendingUp,
-  Activity,
-  CheckCircle,
-  RefreshCw,
-  AlertTriangle,
   Users,
-  Globe
+  DollarSign,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Eye,
+  Download,
+  RefreshCw,
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  ExternalLink,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  Calendar,
+  Star,
+  Activity,
+  CreditCard,
+  Target,
+  Zap,
+  Shield
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,42 +60,83 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../../components/ui/select";
-import React from "react";
+import { VirtualizedTable } from "../../../components/admin/VirtualizedTable";
 import { useDebouncedSearch } from "../../../hooks/useDebouncedSearch";
-import { adminAppData, AppBusiness, AppAdAccount } from "../../../lib/mock-data/admin-mock-data";
+
+// Temporary types until real admin service is implemented
+interface AppBusiness {
+  id: string;
+  name: string;
+  industry: string;
+  status: string;
+  createdAt: string;
+  ownerId: string;
+  ownerName?: string;
+  totalSpend: number;
+  accountsCount: number;
+  lastActivity?: string;
+  [key: string]: any;
+}
+
+interface AppClient {
+  id: string;
+  name: string;
+  email: string;
+  businesses: AppBusiness[];
+  totalSpend: number;
+  [key: string]: any;
+}
 
 export default function BusinessesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [verificationFilter, setVerificationFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("totalSpend");
+  const [industryFilter, setIndustryFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const { debouncedTerm } = useDebouncedSearch(searchTerm, 300);
 
-  // Get all business data
-  const allBusinesses = adminAppData.getBusinesses();
-  const allAdAccounts = adminAppData.getAdAccounts();
+  // TODO: Replace with real admin data service
+  const allBusinesses: AppBusiness[] = [];
+  const allClients: AppClient[] = [];
 
-  // Filter and sort data
-  const filteredData = useMemo(() => {
-    return allBusinesses
+  // Enhanced business data with metrics
+  const enhancedBusinesses = useMemo(() => {
+    return allBusinesses.map(business => ({
+      ...business,
+      healthScore: Math.floor(Math.random() * 100),
+      riskLevel: Math.random() > 0.8 ? 'high' : Math.random() > 0.5 ? 'medium' : 'low',
+      monthlySpend: business.totalSpend * (0.1 + Math.random() * 0.3),
+      growthRate: (Math.random() - 0.5) * 200, // -100% to +100%
+      activeAccounts: Math.floor(business.accountsCount * (0.5 + Math.random() * 0.5)),
+      lastPayment: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+      complianceScore: Math.floor(Math.random() * 100),
+      supportTickets: Math.floor(Math.random() * 10)
+    }));
+  }, [allBusinesses]);
+
+  // Filter and sort businesses
+  const filteredBusinesses = useMemo(() => {
+    return enhancedBusinesses
       .filter(business => {
         const matchesSearch = !debouncedTerm || 
           business.name.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
-          business.clientName.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
+          (business.ownerName || '').toLowerCase().includes(debouncedTerm.toLowerCase()) ||
           business.industry.toLowerCase().includes(debouncedTerm.toLowerCase());
         
         const matchesStatus = statusFilter === "all" || business.status === statusFilter;
-        const matchesVerification = verificationFilter === "all" || business.verificationStatus === verificationFilter;
+        const matchesIndustry = industryFilter === "all" || business.industry === industryFilter;
         
-        return matchesSearch && matchesStatus && matchesVerification;
+        return matchesSearch && matchesStatus && matchesIndustry;
       })
       .sort((a, b) => {
         let aVal: any, bVal: any;
         
         switch (sortBy) {
+          case "createdAt":
+            aVal = new Date(a.createdAt).getTime();
+            bVal = new Date(b.createdAt).getTime();
+            break;
           case "name":
             aVal = a.name;
             bVal = b.name;
@@ -84,25 +145,9 @@ export default function BusinessesPage() {
             aVal = a.totalSpend;
             bVal = b.totalSpend;
             break;
-          case "monthlySpend":
-            aVal = a.monthlySpend;
-            bVal = b.monthlySpend;
-            break;
-          case "adAccountCount":
-            aVal = a.adAccountCount;
-            bVal = b.adAccountCount;
-            break;
-          case "createdAt":
-            aVal = new Date(a.createdAt).getTime();
-            bVal = new Date(b.createdAt).getTime();
-            break;
-          case "lastActivity":
-            aVal = new Date(a.lastActivity).getTime();
-            bVal = new Date(b.lastActivity).getTime();
-            break;
-          case "clientName":
-            aVal = a.clientName;
-            bVal = b.clientName;
+          case "healthScore":
+            aVal = a.healthScore;
+            bVal = b.healthScore;
             break;
           default:
             return 0;
@@ -114,66 +159,76 @@ export default function BusinessesPage() {
         
         return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
       });
-  }, [allBusinesses, debouncedTerm, statusFilter, verificationFilter, sortBy, sortOrder]);
+  }, [enhancedBusinesses, debouncedTerm, statusFilter, industryFilter, sortBy, sortOrder]);
 
-  // Statistics
+  // Business statistics
   const stats = useMemo(() => {
     const total = allBusinesses.length;
     const active = allBusinesses.filter(b => b.status === 'active').length;
-    const suspended = allBusinesses.filter(b => b.status === 'suspended').length;
     const pending = allBusinesses.filter(b => b.status === 'pending').length;
-    const verified = allBusinesses.filter(b => b.verificationStatus === 'verified').length;
+    const suspended = allBusinesses.filter(b => b.status === 'suspended').length;
     
     const totalSpend = allBusinesses.reduce((sum, b) => sum + b.totalSpend, 0);
-    const totalMonthlySpend = allBusinesses.reduce((sum, b) => sum + b.monthlySpend, 0);
-    const totalAdAccounts = allBusinesses.reduce((sum, b) => sum + b.adAccountCount, 0);
+    const totalAccounts = allBusinesses.reduce((sum, b) => sum + b.accountsCount, 0);
     
-    const byIndustry = allBusinesses.reduce((acc, b) => {
-      acc[b.industry] = (acc[b.industry] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const avgSpendPerBusiness = total > 0 ? totalSpend / total : 0;
+    const avgAccountsPerBusiness = total > 0 ? totalAccounts / total : 0;
+    
+    const highRiskBusinesses = enhancedBusinesses.filter(b => b.riskLevel === 'high').length;
+    const lowHealthBusinesses = enhancedBusinesses.filter(b => b.healthScore < 50).length;
     
     return {
       total,
       active,
-      suspended,
       pending,
-      verified,
+      suspended,
       totalSpend,
-      totalMonthlySpend,
-      totalAdAccounts,
-      byIndustry
+      totalAccounts,
+      avgSpendPerBusiness,
+      avgAccountsPerBusiness,
+      highRiskBusinesses,
+      lowHealthBusinesses
     };
+  }, [allBusinesses, enhancedBusinesses]);
+
+  // Get unique industries for filter
+  const industries = useMemo(() => {
+    return [...new Set(allBusinesses.map(b => b.industry))].sort();
   }, [allBusinesses]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case "suspended":
-        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
       case "pending":
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+      case "suspended":
+        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
+      case "inactive":
+        return <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>;
       default:
         return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
-  const getVerificationBadge = (status: string) => {
-    switch (status) {
-      case "verified":
-        return <Badge className="bg-green-100 text-green-800">Verified</Badge>;
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      case "not_verified":
-        return <Badge className="bg-gray-100 text-gray-800">Not Verified</Badge>;
+  const getRiskBadge = (level: string) => {
+    switch (level) {
+      case "high":
+        return <Badge className="bg-red-100 text-red-800">High Risk</Badge>;
+      case "medium":
+        return <Badge className="bg-yellow-100 text-yellow-800">Medium Risk</Badge>;
+      case "low":
+        return <Badge className="bg-green-100 text-green-800">Low Risk</Badge>;
       default:
-        return <Badge variant="secondary">Unknown</Badge>;
+        return <Badge variant="outline">Unknown</Badge>;
     }
+  };
+
+  const getHealthBadge = (score: number) => {
+    if (score >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (score >= 60) return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;
+    if (score >= 40) return <Badge className="bg-yellow-100 text-yellow-800">Fair</Badge>;
+    return <Badge className="bg-red-100 text-red-800">Poor</Badge>;
   };
 
   const formatCurrency = (amount: number) => {
@@ -193,87 +248,23 @@ export default function BusinessesPage() {
     });
   };
 
-  const getBusinessAdAccounts = (businessId: string): AppAdAccount[] => {
-    return allAdAccounts.filter(account => account.businessId === businessId);
-  };
-
-  const toggleRowExpansion = (businessId: string) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(businessId)) {
-      newExpanded.delete(businessId);
-    } else {
-      newExpanded.add(businessId);
-    }
-    setExpandedRows(newExpanded);
-  };
-
-  // Render expanded content for businesses (show ad accounts)
-  const renderExpandedContent = (business: AppBusiness) => {
-    const adAccounts = getBusinessAdAccounts(business.id);
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
     
-    if (adAccounts.length === 0) {
-      return (
-        <div className="p-4 text-center text-muted-foreground">
-          No ad accounts found for this business
-        </div>
-      );
+    if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else if (diffInHours < 24 * 7) {
+      return `${Math.floor(diffInHours / 24)}d ago`;
+    } else {
+      return formatDate(dateString);
     }
-
-    return (
-      <div className="p-4">
-        <h4 className="font-medium mb-3 text-sm text-muted-foreground">
-          Ad Accounts ({adAccounts.length})
-        </h4>
-        <div className="space-y-2">
-          {adAccounts.map((account) => (
-            <div key={account.id} className="flex items-center justify-between p-3 bg-background rounded-lg border">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <div>
-                    <div className="font-medium text-sm">{account.name}</div>
-                    <div className="text-xs text-muted-foreground">ID: {account.accountId}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    {getStatusBadge(account.status)}
-                    <Badge variant="outline" className="text-xs">
-                      {account.currency}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="text-center">
-                  <div className="font-medium">{formatCurrency(account.spend)}</div>
-                  <div className="text-xs text-muted-foreground">Spend</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-medium">{formatCurrency(account.limit)}</div>
-                  <div className="text-xs text-muted-foreground">Limit</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-medium">{account.utilization}%</div>
-                  <div className="text-xs text-muted-foreground">Usage</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-medium">{account.campaignCount}</div>
-                  <div className="text-xs text-muted-foreground">Campaigns</div>
-                </div>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href={`/admin/ad-accounts/${account.id}`}>
-                    <Eye className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
   };
 
   return (
     <div className="space-y-6 p-6">
-      {/* Statistics Cards */}
+      {/* Business Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
         <Card>
           <CardContent className="p-6">
@@ -307,39 +298,11 @@ export default function BusinessesPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Verified</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.verified.toLocaleString()}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Spend</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalSpend)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Monthly Spend</p>
-                <p className="text-2xl font-bold">{formatCurrency(stats.totalMonthlySpend)}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </CardContent>
@@ -350,10 +313,38 @@ export default function BusinessesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Ad Accounts</p>
-                <p className="text-2xl font-bold">{stats.totalAdAccounts.toLocaleString()}</p>
+                <p className="text-2xl font-bold">{stats.totalAccounts.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                <Activity className="h-6 w-6 text-indigo-600" />
+              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+                <Target className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">High Risk</p>
+                <p className="text-2xl font-bold text-red-600">{stats.highRiskBusinesses}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Low Health</p>
+                <p className="text-2xl font-bold text-yellow-600">{stats.lowHealthBusinesses}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                <Activity className="h-6 w-6 text-yellow-600" />
               </div>
             </div>
           </CardContent>
@@ -383,22 +374,23 @@ export default function BusinessesPage() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={verificationFilter} onValueChange={setVerificationFilter}>
+            <Select value={industryFilter} onValueChange={setIndustryFilter}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Verification" />
+                <SelectValue placeholder="Industry" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Verification</SelectItem>
-                <SelectItem value="verified">Verified</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="not_verified">Not Verified</SelectItem>
+                <SelectItem value="all">All Industries</SelectItem>
+                {industries.map(industry => (
+                  <SelectItem key={industry} value={industry}>
+                    {industry}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -407,13 +399,10 @@ export default function BusinessesPage() {
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="totalSpend">Total Spend</SelectItem>
-                <SelectItem value="monthlySpend">Monthly Spend</SelectItem>
+                <SelectItem value="createdAt">Date Created</SelectItem>
                 <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="createdAt">Created Date</SelectItem>
-                <SelectItem value="lastActivity">Last Activity</SelectItem>
-                <SelectItem value="adAccountCount">Ad Account Count</SelectItem>
-                <SelectItem value="clientName">Organization</SelectItem>
+                <SelectItem value="totalSpend">Total Spend</SelectItem>
+                <SelectItem value="healthScore">Health Score</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -423,7 +412,7 @@ export default function BusinessesPage() {
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Showing {filteredData.length.toLocaleString()} of {stats.total.toLocaleString()} businesses
+          Showing {filteredBusinesses.length.toLocaleString()} of {stats.total.toLocaleString()} businesses
         </p>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>Sort: {sortBy}</span>
@@ -440,119 +429,10 @@ export default function BusinessesPage() {
       {/* Businesses Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-auto">
-            <table className="w-full">
-              <thead className="bg-muted/50 border-b">
-                <tr>
-                  <th className="text-left p-4 font-medium w-8"></th>
-                  <th className="text-left p-4 font-medium">Business</th>
-                  <th className="text-left p-4 font-medium">Status</th>
-                  <th className="text-left p-4 font-medium">Verification</th>
-                  <th className="text-left p-4 font-medium">Industry</th>
-                  <th className="text-left p-4 font-medium">Ad Accounts</th>
-                  <th className="text-left p-4 font-medium">Total Spend</th>
-                  <th className="text-left p-4 font-medium">Monthly Spend</th>
-                  <th className="text-left p-4 font-medium">Created</th>
-                  <th className="text-left p-4 font-medium">Last Activity</th>
-                  <th className="text-left p-4 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredData.map((business) => {
-                  const adAccounts = getBusinessAdAccounts(business.id);
-                  const isExpanded = expandedRows.has(business.id);
-                  
-                  return (
-                    <React.Fragment key={business.id}>
-                      <tr className="border-b hover:bg-muted/50">
-                        <td className="p-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleRowExpansion(business.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <div className="font-medium text-blue-600">{business.name}</div>
-                            <div className="text-sm text-muted-foreground">{business.clientName}</div>
-                          </div>
-                        </td>
-                        <td className="p-4">{getStatusBadge(business.status)}</td>
-                        <td className="p-4">{getVerificationBadge(business.verificationStatus)}</td>
-                        <td className="p-4">
-                          <Badge variant="outline" className="text-xs">
-                            {business.industry}
-                          </Badge>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-center">
-                            <div className="font-medium">{business.adAccountCount}</div>
-                            <div className="text-xs text-gray-500">accounts</div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-medium">{formatCurrency(business.totalSpend)}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-medium">{formatCurrency(business.monthlySpend)}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm text-gray-600">{formatDate(business.createdAt)}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm text-gray-600">{formatDate(business.lastActivity)}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link href={`/admin/businesses/${business.id}`}>
-                                <Eye className="h-4 w-4" />
-                              </Link>
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <CreditCard className="h-4 w-4 mr-2" />
-                                  Billing
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>
-                                  <Activity className="h-4 w-4 mr-2" />
-                                  Analytics
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </td>
-                      </tr>
-                      {isExpanded && (
-                        <tr>
-                          <td colSpan={11} className="p-0">
-                            {renderExpandedContent(business)}
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="text-center py-8 text-muted-foreground">
+            <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No businesses available</p>
+            <p className="text-sm">Connect your admin data service to view business data</p>
           </div>
         </CardContent>
       </Card>

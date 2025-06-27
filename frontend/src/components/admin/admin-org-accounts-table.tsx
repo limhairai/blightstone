@@ -1,10 +1,37 @@
-import { useAdAccounts } from "../../contexts/AppDataContext"
+import { useState, useEffect } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 
 export function AdminOrgAccountsTable({ _orgId, isSuperuser }: { _orgId: string, isSuperuser: boolean }) {
-  const { adAccounts, loading, error } = useAdAccounts();
+  const [adAccounts, setAdAccounts] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    // In real app, this would fetch from API
+    const fetchAccounts = async () => {
+      try {
+        setLoading(true)
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Mock data for now
+        setAdAccounts([
+          { id: '1', name: 'Demo Account 1', status: 'active' },
+          { id: '2', name: 'Demo Account 2', status: 'pending' },
+        ])
+      } catch (err) {
+        setError('Failed to load ad accounts')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (isSuperuser) {
+      fetchAccounts()
+    }
+  }, [isSuperuser])
 
   if (!isSuperuser) return <div className="p-4 text-center text-red-500">Not authorized</div>
   if (loading) return <div className="p-4 text-center">Loading ad accounts...</div>

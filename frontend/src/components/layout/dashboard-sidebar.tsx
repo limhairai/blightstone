@@ -184,25 +184,24 @@ export function DashboardSidebar() {
                       </Button>
                     </div>
                   ) : (
-                    <Link href={item.href!} className="flex-1">
-                      <Button
-                        variant="ghost"
+                    <Link 
+                      href={item.href!} 
+                      className={cn(
+                        "flex-1 rounded-md text-sm transition-colors flex items-center",
+                        (item.href && isActive(item.href)) || hasActiveSubItem
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                        collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
+                      )}
+                      prefetch={false}
+                    >
+                      <Icon
                         className={cn(
-                          "w-full justify-start rounded-md text-sm",
-                          (item.href && isActive(item.href)) || hasActiveSubItem
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                          collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
+                          (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                          collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
                         )}
-                      >
-                        <Icon
-                          className={cn(
-                            (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
-                            collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
-                          )}
-                        />
-                        {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
-                      </Button>
+                      />
+                      {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
                     </Link>
                   )}
                 </div>

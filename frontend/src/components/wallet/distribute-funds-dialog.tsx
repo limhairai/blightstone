@@ -1,320 +1,164 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import useSWR, { useSWRConfig } from 'swr'
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { ScrollArea } from "../ui/scroll-area"
-import { Slider } from "../ui/slider"
-import { formatCurrency } from "../../lib/mock-data"
-import { Shuffle, Info, Percent, DollarSign, Trash2 } from 'lucide-react'
-import { useAppData } from "../../contexts/AppDataContext"
-import React from "react"
+import { formatCurrency } from "../../utils/format"
+import { Info, DollarSign, Loader2 } from 'lucide-react'
+import { toast } from "sonner"
 
 interface DistributeFundsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  walletBalance: number
 }
 
 interface AdAccountDistribution {
   id: string
   name: string
-  business: string
+  businessName: string
   currentBalance: number
   amount: number
-  percentage: number
 }
 
-export function DistributeFundsDialog({ open, onOpenChange, walletBalance }: DistributeFundsDialogProps) {
-  const { state, distributeFunds } = useAppData()
-  const [isLoading, setIsLoading] = useState(false)
-  const [distributionMode, setDistributionMode] = useState<"percentage" | "fixed">("percentage")
-  const [totalAmount, setTotalAmount] = useState(walletBalance)
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-  // Convert ad accounts to distribution format
-  const [adAccounts, setAdAccounts] = useState<AdAccountDistribution[]>(() => 
-    state.accounts.map((account, index) => ({
-      id: account.id.toString(),
-      name: account.name,
-      business: account.businessId?.toString() || 'Unknown',
-      currentBalance: account.balance,
-      amount: 0,
-      percentage: index < 4 ? [40, 30, 20, 10][index] : 0 // Default percentages for first 4 accounts
-    }))
-  )
+export function DistributeFundsDialog({ open, onOpenChange }: DistributeFundsDialogProps) {
+  const [distributions, setDistributions] = useState<{[key: string]: number}>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const { currentOrganizationId } = useOrganizationStore();
+  const { mutate } = useSWRConfig();
 
-  // Update ad accounts when state changes
-  React.useEffect(() => {
-    setAdAccounts(
-      state.accounts.map((account, index) => ({
-        id: account.id.toString(),
-        name: account.name,
-        business: account.businessId?.toString() || 'Unknown',
-        currentBalance: account.balance,
-        amount: adAccounts.find(acc => acc.id === account.id.toString())?.amount ?? 0,
-        percentage: adAccounts.find(acc => acc.id === account.id.toString())?.percentage ?? (index < 4 ? [40, 30, 20, 10][index] : 0)
-      }))
-    )
-  }, [state.accounts])
+  const orgSWRKey = currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null;
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(orgSWRKey, fetcher);
+  
+  const accountsSWRKey = currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null;
+  const { data: accountsData, isLoading: areAccountsLoading } = useSWR(accountsSWRKey, fetcher);
 
-  // Update ad account percentage
-  const updateAccountPercentage = (id: string, percentage: number) => {
-    // Calculate remaining percentage (excluding the current account)
-    const currentAccount = adAccounts.find((a) => a.id === id)
-    const currentPercentage = currentAccount?.percentage || 0
-    const otherAccountsTotal = adAccounts.reduce(
-      (sum, a) => (a.id !== id ? sum + a.percentage : sum),
-      0
-    )
+  const walletBalance = orgData?.organizations?.[0]?.balance_cents / 100 || 0;
+  const adAccounts = accountsData?.accounts || [];
 
-    // Calculate new total
-    const newTotal = otherAccountsTotal + percentage
+  const totalToDistribute = Object.values(distributions).reduce((sum, amount) => sum + amount, 0);
+  const remainingAmount = walletBalance - totalToDistribute;
 
-    // If new total exceeds 100%, adjust other accounts proportionally
-    if (newTotal > 100) {
-      const excess = newTotal - 100
-      const adjustmentFactor = excess / otherAccountsTotal
+  const handleAmountChange = (accountId: string, amount: string) => {
+    const numberAmount = Number(amount);
+    if (isNaN(numberAmount) || numberAmount < 0) return;
+    setDistributions(prev => ({ ...prev, [accountId]: numberAmount }));
+  }
 
-      setAdAccounts(
-        adAccounts.map((a) => {
-          if (a.id === id) {
-            return { ...a, percentage }
-          } else {
-            return { ...a, percentage: a.percentage * (1 - adjustmentFactor) }
-          }
-        })
-      )
-    } else {
-      // Otherwise, just update the current account
-      setAdAccounts(
-        adAccounts.map((a) => (a.id === id ? { ...a, percentage } : a))
-      )
+  const handleSubmit = async () => {
+    if (totalToDistribute <= 0) {
+      toast.error("Distribution amount must be greater than zero.");
+      return;
     }
-  }
+    if (totalToDistribute > walletBalance) {
+      toast.error("Distribution amount cannot exceed wallet balance.");
+      return;
+    }
 
-  // Update ad account amount
-  const updateAccountAmount = (id: string, amount: number) => {
-    // Ensure amount doesn't exceed total
-    const safeAmount = Math.min(amount, totalAmount)
-    
-    // Update the account amount and recalculate percentages
-    const updatedAccounts = adAccounts.map((a) => 
-      a.id === id ? { ...a, amount: safeAmount } : a
-    )
-    
-    // Calculate total allocated
-    const totalAllocated = updatedAccounts.reduce((sum, a) => sum + a.amount, 0)
-    
-    // Update percentages based on amounts
-    const finalAccounts = updatedAccounts.map((a) => ({
-      ...a,
-      percentage: totalAllocated > 0 ? (a.amount / totalAllocated) * 100 : 0
-    }))
-    
-    setAdAccounts(finalAccounts)
-  }
-
-  // Calculate total percentage
-  const totalPercentage = adAccounts.reduce((sum, a) => sum + a.percentage, 0)
-  
-  // Calculate total amount
-  const totalDistributed = adAccounts.reduce((sum, a) => sum + (distributionMode === "percentage" ? (a.percentage / 100) * totalAmount : a.amount), 0)
-  
-  // Calculate remaining amount
-  const remainingAmount = walletBalance - totalDistributed
-
-  // Handle distribution
-  const handleDistribute = async () => {
-    if (totalDistributed <= 0) return
-
+    setIsLoading(true);
     try {
-      setIsLoading(true)
-      
-      // Calculate final distribution amounts
-      const distributionData = adAccounts.map((a) => ({
-        accountId: parseInt(a.id),
-        amount: distributionMode === "percentage" ? (a.percentage / 100) * totalAmount : a.amount
-      })).filter(item => item.amount > 0)
+        const distributionPayload = Object.entries(distributions)
+            .filter(([, amount]) => amount > 0)
+            .map(([accountId, amount]) => ({
+                ad_account_id: accountId,
+                amount_cents: Math.round(amount * 100)
+            }));
+        
+      const res = await fetch('/api/wallet/distribute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            organization_id: currentOrganizationId,
+            distributions: distributionPayload
+        }),
+      });
 
-      // Use the context method to distribute funds
-      await distributeFunds(distributionData)
-      
-      // Success - close dialog
-      onOpenChange(false)
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to distribute funds.');
+      }
+
+      toast.success("Funds distributed successfully!");
+      // Revalidate all related data
+      mutate(orgSWRKey);
+      mutate(accountsSWRKey);
+      mutate(`/api/transactions?organization_id=${currentOrganizationId}`); // Assuming a transactions endpoint exists
+      onOpenChange(false);
+
     } catch (error) {
-      console.error('Distribution failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast.error("Distribution Failed", { description: errorMessage });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
+  
+  const renderLoading = () => (
+    <div className="p-6 text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+        <p className="mt-2 text-sm text-muted-foreground">Loading accounts...</p>
+    </div>
+  )
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] bg-card dark:bg-[#0a0a0a] border-border dark:border-[#333333] shadow-xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-transparent bg-clip-text">
-            Distribute Funds
-          </DialogTitle>
+          <DialogTitle className="text-xl font-semibold">Distribute Funds</DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-6">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Info className="h-4 w-4" />
-            <p>Distribute funds from your main wallet to ad accounts</p>
-          </div>
-
-          {/* Amount to distribute */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Amount to distribute</label>
-            <div className="relative">
-              <Input
-                type="number"
-                value={totalAmount}
-                onChange={(e) => setTotalAmount(Number(e.target.value))}
-                max={walletBalance}
-                className="pl-8 dark:bg-[#111111] border-[#333333]"
-              />
-              <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
-                onClick={() => setTotalAmount(walletBalance)}
-              >
-                Max
-              </Button>
-            </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Available: ${formatCurrency(walletBalance)}</span>
-              <span>Remaining: ${formatCurrency(remainingAmount)}</span>
-            </div>
-          </div>
-
-          {/* Distribution mode toggle */}
-          <div className="flex gap-2">
-            <Button
-              variant={distributionMode === "percentage" ? "default" : "outline"}
-              size="sm"
-              className={distributionMode === "percentage" ? "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black font-medium" : ""}
-              onClick={() => setDistributionMode("percentage")}
-            >
-              <Percent className="h-4 w-4 mr-2" />
-              Percentage
-            </Button>
-            <Button
-              variant={distributionMode === "fixed" ? "default" : "outline"}
-              size="sm"
-              className={distributionMode === "fixed" ? "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black font-medium" : ""}
-              onClick={() => setDistributionMode("fixed")}
-            >
-              <DollarSign className="h-4 w-4 mr-2" />
-              Fixed Amount
-            </Button>
-          </div>
-
-          {/* Ad account distribution list */}
-          <ScrollArea className="h-[280px] rounded-md border border-border p-2">
-            <div className="space-y-4">
-              {adAccounts.map((account) => {
-                const calculatedAmount = distributionMode === "percentage" 
-                  ? (account.percentage / 100) * totalAmount 
-                  : account.amount
-                
-                return (
-                  <div key={account.id} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-sm font-medium block">{account.name}</span>
-                        <span className="text-xs text-muted-foreground">{account.business}</span>
-                        <span className="text-xs text-muted-foreground ml-2">• Current: ${formatCurrency(account.currentBalance)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {distributionMode === "percentage" ? (
-                          <span className="text-sm font-medium w-16 text-right">
-                            {account.percentage.toFixed(1)}%
-                          </span>
-                        ) : (
-                          <div className="relative">
-                            <Input
-                              type="number"
-                              value={account.amount}
-                              onChange={(e) => updateAccountAmount(account.id, Number(e.target.value))}
-                              className="w-24 h-8 text-sm pl-6 dark:bg-[#111111] border-[#333333]"
-                            />
-                            <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                          </div>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => updateAccountPercentage(account.id, 0)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+        
+        {isOrgLoading || areAccountsLoading ? renderLoading() : (
+            <div className="space-y-6">
+                <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-muted-foreground">Available to Distribute</span>
+                        <span className="text-lg font-semibold">{formatCurrency(walletBalance)}</span>
                     </div>
-                    
-                    {distributionMode === "percentage" && (
-                      <Slider
-                        value={[account.percentage]}
-                        min={0}
-                        max={100}
-                        step={1}
-                        onValueChange={(value) => updateAccountPercentage(account.id, value[0])}
-                      />
-                    )}
-                    
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Amount: ${formatCurrency(calculatedAmount)}</span>
-                      {distributionMode === "percentage" && (
-                        <span>{account.percentage.toFixed(1)}% of total</span>
-                      )}
+                    <div className="flex justify-between items-center mt-1">
+                        <span className="text-sm font-medium text-muted-foreground">Remaining</span>
+                        <span className="text-lg font-semibold">{formatCurrency(remainingAmount)}</span>
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          </ScrollArea>
+                </div>
 
-          {/* Summary */}
-          <div className="bg-muted/30 p-3 rounded-md">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Total to distribute</span>
-              <span className="text-lg font-semibold">${formatCurrency(totalDistributed)}</span>
+                <ScrollArea className="h-[300px] -mx-6 px-6">
+                    <div className="space-y-4">
+                    {adAccounts.map((account: any) => (
+                        <div key={account.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-muted/50">
+                            <div className="flex-1">
+                                <p className="font-medium">{account.name}</p>
+                                <p className="text-sm text-muted-foreground">{account.businesses.name}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">Current: {formatCurrency(account.balance_cents / 100)}</span>
+                                <div className="relative">
+                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        type="number"
+                                        placeholder="0.00"
+                                        className="w-32 pl-8"
+                                        value={distributions[account.id] || ''}
+                                        onChange={(e) => handleAmountChange(account.id, e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    </div>
+                </ScrollArea>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={isLoading || totalToDistribute <= 0}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Distribute {formatCurrency(totalToDistribute)}
+                    </Button>
+                </DialogFooter>
             </div>
-            {distributionMode === "percentage" && (
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-xs text-muted-foreground">Total percentage</span>
-                <span className="text-sm font-medium">{totalPercentage.toFixed(1)}%</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black font-medium"
-            disabled={totalDistributed <= 0 || isLoading || totalDistributed > walletBalance}
-            onClick={handleDistribute}
-          >
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span>Processing...</span>
-              </div>
-            ) : (
-              <>
-                <Shuffle className="h-4 w-4 mr-2" />
-                Distribute ${formatCurrency(totalDistributed)}
-              </>
-            )}
-          </Button>
-        </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -28,7 +28,7 @@ export function TransactionTable({ transactions, showFilters = true }: Transacti
   }
 
   const typeColors = {
-    deposit: "text-emerald-600 dark:text-emerald-400",
+    deposit: "text-[#34D197]",
     withdrawal: "text-red-600 dark:text-red-400",
     transfer: "text-blue-600 dark:text-blue-400",
   }

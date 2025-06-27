@@ -18,7 +18,7 @@ import { CreateAdAccountDialog } from "./create-ad-account-dialog"
 import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
 import { AccountsTable } from "./accounts-table"
 import { AccountsCardGrid } from "./accounts-card-grid"
-import { APP_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
+import { formatCurrency } from "../../utils/format"
 
 export function AccountsManagement() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -28,28 +28,8 @@ export function AccountsManagement() {
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false)
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null)
 
-  // Convert centralized mock data to the format expected by this component
-  const mockAccounts = APP_ACCOUNTS.map((account) => ({
-    id: account.id.toString(),
-    name: account.name,
-    accountId: account.adAccount,
-    status: account.status,
-    users: Math.floor(Math.random() * 5) + 1,
-    billings: Math.floor(Math.random() * 3) + 1,
-    type: "Business",
-    partner: account.platform,
-    currency: "USD",
-    ads: Math.floor(Math.random() * 30) + 1,
-    estimated: `$${formatCurrency(account.balance * 1.2)}`,
-    holds: "$0.00",
-    balance: `$${formatCurrency(account.balance)}`,
-    totalSpend: `$${formatCurrency(account.spent || 0)}`,
-    spendToday: `$${formatCurrency(Math.random() * 500)}`,
-    spendLimit: `$${formatCurrency(account.spendLimit || 0)}`,
-    usagePercent: Math.floor(((account.spent || 0) / (account.spendLimit || 1)) * 100),
-    expiresIn: `${Math.floor(Math.random() * 36) + 12} months`,
-    hasIssues: account.status === "suspended" || account.status === "disabled",
-  }))
+  // Use empty array for production mode - will be replaced with real data from API
+  const mockAccounts: any[] = []
 
   // Filter accounts based on search query and current tab
   const filteredAccounts = mockAccounts.filter((account) => {

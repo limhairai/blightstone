@@ -37,8 +37,9 @@ class Settings(BaseSettings):
     
     # ✅ SECURE: Supabase configuration
     SUPABASE_URL: str = ""
-    SUPABASE_KEY: str = ""
+    SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
     
     # ✅ SECURE: Dolphin API configuration
     DOLPHIN_API_URL: str = ""
@@ -58,8 +59,9 @@ class Settings(BaseSettings):
         return v
     
     class Config:
-        env_file = ".env"
+        env_file = "backend/.env"  # Path from project root
         case_sensitive = True
+        extra = "ignore"  # Allow extra environment variables
 
 
 # ✅ SECURE: Create settings instance

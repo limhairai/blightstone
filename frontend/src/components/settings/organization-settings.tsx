@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import useSWR, { useSWRConfig } from 'swr'
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Input } from "../ui/input"
@@ -17,17 +18,52 @@ import {
 import { toast } from "sonner"
 import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings } from 'lucide-react'
 import { Progress } from "../ui/progress"
-import { pricingPlans } from "../../lib/mock-data"
-import { useAppData } from "../../contexts/AppDataContext"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 
-export function OrganizationSettings() {
-  const { state, dispatch } = useAppData()
-  
-  // Safety check - render nothing if no current organization
-  if (!state.currentOrganization) {
-    return <div>No organization selected</div>
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
+const pricingPlans = [
+  {
+    id: "bronze",
+    title: "Bronze",
+    price: 29,
+    features: ["Up to 2 businesses", "20 ad accounts", "3 team members", "Basic support"]
+  },
+  {
+    id: "silver", 
+    title: "Silver",
+    price: 99,
+    features: ["Up to 5 businesses", "50 ad accounts", "10 team members", "Priority support"]
+  },
+  {
+    id: "gold",
+    title: "Gold", 
+    price: 199,
+    features: ["Up to 10 businesses", "100 ad accounts", "25 team members", "Premium support"]
+  },
+  {
+    id: "platinum",
+    title: "Platinum",
+    price: 399,
+    features: ["Up to 20 businesses", "200 ad accounts", "50 team members", "24/7 support"]
   }
+]
+
+export function OrganizationSettings() {
+  const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
+  const { mutate } = useSWRConfig();
+
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null, fetcher);
+  const { data: bizData, isLoading: isBizLoading } = useSWR(currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null, fetcher);
+  const { data: accData, isLoading: isAccLoading } = useSWR(currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null, fetcher);
+  const { data: teamData, isLoading: isTeamLoading } = useSWR(currentOrganizationId ? `/api/team?organization_id=${currentOrganizationId}` : null, fetcher);
+  
+  const organization = orgData?.organizations?.[0];
+  const businesses = bizData?.businesses || [];
+  const accounts = accData?.accounts || [];
+  const teamMembers = teamData?.team_members || [];
+  
   const [editOrgOpen, setEditOrgOpen] = useState(false)
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false)
   const [billingHistoryOpen, setBillingHistoryOpen] = useState(false)
@@ -37,21 +73,27 @@ export function OrganizationSettings() {
   const [loading, setLoading] = useState(false)
 
   // Get actual counts from demo state
-  const totalBusinesses = state.businesses.length
-  const totalAccounts = state.accounts.length
-  const totalTeamMembers = state.teamMembers.length
-  const currentPlan = pricingPlans.find(plan => plan.id.toLowerCase() === state.currentOrganization!.plan.toLowerCase()) || pricingPlans[1] // Use current org's plan
+  const totalBusinesses = businesses.length
+  const totalAccounts = accounts.length
+  const totalTeamMembers = teamMembers.length
+  
+  // Get current plan with fallback to Silver if plan not found
+  const currentPlan = pricingPlans.find(plan => 
+    plan.id.toLowerCase() === (organization?.plan || 'silver').toLowerCase()
+  ) || pricingPlans[1] // Default to Silver plan
 
   const [formData, setFormData] = useState({
-    name: state.currentOrganization!.name,
+    name: organization?.name || "",
   })
 
   // Update formData when organization changes
   useEffect(() => {
-          setFormData({
-        name: state.currentOrganization!.name,
+    if (organization) {
+      setFormData({
+        name: organization.name,
       })
-    }, [state.currentOrganization!.name])
+    }
+  }, [organization])
 
   const handleSaveOrgDetails = async () => {
     if (!formData.name.trim()) {
@@ -61,20 +103,17 @@ export function OrganizationSettings() {
 
     setLoading(true)
     try {
-      // Update organization in context
-      const updatedOrganization = {
-        ...state.currentOrganization!,
-        name: formData.name.trim()
+      const response = await fetch(`/api/organizations?id=${currentOrganizationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: formData.name.trim() })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update organization");
       }
       
-      dispatch({ type: 'SET_CURRENT_ORGANIZATION', payload: updatedOrganization })
-      
-      // Also update in organizations list
-      const updatedOrganizations = state.organizations.map(org => 
-        org.id === state.currentOrganization!.id ? updatedOrganization : org
-      )
-      dispatch({ type: 'SET_ORGANIZATIONS', payload: updatedOrganizations })
-      
+      mutate(`/api/organizations?id=${currentOrganizationId}`);
       toast.success("Organization details updated successfully.")
       setEditOrgOpen(false)
     } catch (error) {
@@ -84,19 +123,36 @@ export function OrganizationSettings() {
     }
   }
 
-  const handleDeleteOrg = () => {
-    if (confirmDeleteText !== state.currentOrganization!.name) {
+  const handleDeleteOrg = async () => {
+    if (confirmDeleteText !== organization?.name) {
       toast.error("Please type the organization name correctly to confirm deletion.")
       return
     }
 
-    toast.error("Organization deletion is not available in demo mode.")
-    setDeleteOrgOpen(false)
-    setConfirmDeleteText("")
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/organizations?id=${currentOrganizationId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete organization");
+      }
+
+      toast.success("Organization deleted successfully.");
+      // You might want to switch to another organization or a default state
+      setCurrentOrganizationId(null);
+      setDeleteOrgOpen(false);
+      setConfirmDeleteText("");
+    } catch (error) {
+      toast.error("Failed to delete organization. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // Use organization-specific billing history
-  const billingHistory = (state.currentOrganization as any).billing?.billingHistory || []
+  const billingHistory = organization?.billing?.billingHistory || []
 
   // Use centralized pricing plans
   const availablePlans = pricingPlans.map(plan => ({
@@ -107,14 +163,25 @@ export function OrganizationSettings() {
     adAccountsLimit: plan.id === "bronze" ? 20 : plan.id === "silver" ? 50 : plan.id === "gold" ? 100 : 200,
     teamMembersLimit: plan.id === "bronze" ? 3 : plan.id === "silver" ? 10 : plan.id === "gold" ? 25 : 50,
     features: plan.features,
-          current: plan.id.toLowerCase() === state.currentOrganization!.plan.toLowerCase(), // Use current org's plan
+    current: plan.id.toLowerCase() === (organization?.plan || 'silver').toLowerCase(),
   }))
 
   // Calculate plan limits based on current organization's plan
   const planLimits = {
-    businessesLimit: (state.currentOrganization as any).limits?.businesses || 5,
-    adAccountsLimit: (state.currentOrganization as any).limits?.adAccounts || 100,
-    teamMembersLimit: (state.currentOrganization as any).limits?.teamMembers || 10,
+    businessesLimit: organization?.limits?.businesses || 5,
+    adAccountsLimit: organization?.limits?.adAccounts || 100,
+    teamMembersLimit: organization?.limits?.teamMembers || 10,
+  }
+
+  const globalLoading = isOrgLoading || isBizLoading || isAccLoading || isTeamLoading;
+
+  if (globalLoading) {
+    return <div>Loading organization settings...</div>;
+  }
+  
+  // Safety check - render nothing if no current organization
+  if (!organization) {
+    return <div>No organization selected or found.</div>
   }
 
   return (
@@ -217,11 +284,11 @@ export function OrganizationSettings() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Next payment</span>
-                    <span className="text-foreground font-medium">{(state.currentOrganization as any).billing?.nextPayment || "N/A"}</span>
+                    <span className="text-foreground font-medium">{organization?.billing?.nextPayment || "N/A"}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Billing cycle</span>
-                    <span className="text-foreground font-medium">{(state.currentOrganization as any).billing?.billingCycle || "monthly"}</span>
+                    <span className="text-foreground font-medium">{organization?.billing?.billingCycle || "monthly"}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Businesses limit</span>
@@ -230,6 +297,13 @@ export function OrganizationSettings() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Ad accounts limit</span>
                     <span className="text-foreground font-medium">{planLimits.adAccountsLimit} accounts</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Payment method</span>
+                    <span className="text-foreground font-medium">
+                      {organization?.billing?.paymentMethod?.type ? 
+                        `**** ${organization.billing.paymentMethod.last4}` : 'Not set'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -309,46 +383,38 @@ export function OrganizationSettings() {
 
       {/* Delete Organization Dialog */}
       <Dialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
-        <DialogContent className="bg-card border-border">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold text-red-400 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
+            <DialogTitle className="text-red-400 flex items-center gap-2">
+              <AlertTriangle />
               Delete Organization
             </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              This action is permanent and cannot be undone. All data associated with this organization will be
-              permanently deleted.
+            <DialogDescription>
+              Are you sure you want to delete <strong>{organization.name}</strong>? 
+              This will permanently erase all associated businesses, ad accounts, and team members. 
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <div className="p-3 bg-red-950/20 border border-red-800/30 rounded-md">
-              <p className="text-sm text-red-400">
-                Please type <strong>{state.currentOrganization!.name}</strong> to confirm deletion.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-delete" className="text-sm font-medium text-foreground">
-                Confirmation
-              </Label>
-              <Input
-                id="confirm-delete"
-                value={confirmDeleteText}
-                onChange={(e) => setConfirmDeleteText(e.target.value)}
-                className="bg-background border-border text-foreground"
-              />
-            </div>
+          <div className="space-y-4 py-4">
+            <Label htmlFor="confirmDelete" className="text-sm text-muted-foreground">
+              To confirm, please type <strong className="text-foreground">{organization.name}</strong> below:
+            </Label>
+            <Input
+              id="confirmDelete"
+              value={confirmDeleteText}
+              onChange={(e) => setConfirmDeleteText(e.target.value)}
+              className="border-border focus:border-red-500"
+              autoFocus
+            />
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteOrgOpen(false)}
-              className="border-border text-foreground hover:bg-accent"
+            <Button variant="outline" onClick={() => setDeleteOrgOpen(false)} disabled={loading}>Cancel</Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteOrg} 
+              disabled={loading || confirmDeleteText !== organization.name}
             >
-              Cancel
-            </Button>
-                          <Button variant="destructive" onClick={handleDeleteOrg} disabled={confirmDeleteText !== state.currentOrganization!.name}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Organization
+              {loading ? "Deleting..." : "Delete Organization"}
             </Button>
           </DialogFooter>
         </DialogContent>

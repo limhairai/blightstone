@@ -11,7 +11,6 @@ interface Application {
   id: string;
   organization_name?: string;
   business_name?: string;
-  spend_limit: number;
 }
 
 interface ApplicationReadyDialogProps {
@@ -41,8 +40,7 @@ export function ApplicationReadyDialog({
         },
         body: JSON.stringify({
           application_id: application.id,
-          action: 'under_review',
-          admin_notes: 'Application marked as ready for processing'
+          action: 'under_review'
         }),
       });
 
@@ -87,10 +85,7 @@ export function ApplicationReadyDialog({
                 <span className="text-muted-foreground">Business:</span>
                 <span className="font-medium">{application.business_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Spend Limit:</span>
-                <Badge variant="secondary">{application.spend_limit}</Badge>
-              </div>
+
             </div>
           </div>
 

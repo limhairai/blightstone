@@ -148,7 +148,7 @@ describe('Complete Business Workflow', () => {
       const approvalData = {
         application_id: 'app-001',
         action: 'approved',
-        admin_notes: 'Application approved through admin panel'
+
       }
 
       const response = await fetch('/api/admin/applications', {

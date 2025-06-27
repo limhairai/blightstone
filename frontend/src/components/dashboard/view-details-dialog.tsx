@@ -6,7 +6,7 @@ import { Separator } from "../ui/separator"
 import { StatusBadge } from "./status-badge"
 import { formatCurrency } from "../../utils/format"
 import { ExternalLink, Copy, Calendar, DollarSign, TrendingUp } from "lucide-react"
-import type { AppAccount } from "../../contexts/AppDataContext"
+import { AppAccount } from "../../types/account"
 
 interface ViewDetailsDialogProps {
   account: AppAccount | null

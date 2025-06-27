@@ -4,18 +4,56 @@ Handles discovery, binding, and assignment of Dolphin Cloud assets to clients
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 import logging
+import uuid
+import requests
+from pydantic import BaseModel
 
-from ...db.session import get_db
 from ...core.security import get_current_user, require_superuser
-from ...models.models import User, DolphinAsset, ClientAssetBinding, DolphinSyncLog, ClientSpendTracking
+from ...core.supabase_client import get_supabase_client
+from ...schemas.user import UserRead as User
 from ...services.dolphin_service import DolphinCloudAPI
+from ...core.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ============================================================================
+# Debug endpoint to examine Dolphin API structure
+# ============================================================================
+
+@router.get("/debug/dolphin-structure")
+async def debug_dolphin_structure(
+    current_user: User = Depends(require_superuser)
+):
+    """Debug endpoint to examine the raw structure of Dolphin API response"""
+    try:
+        dolphin_api = DolphinCloudAPI()
+        
+        # Get both profiles and CABs (ad accounts)
+        profiles_data = await dolphin_api.get_fb_accounts()
+        cabs_data = await dolphin_api.get_fb_cabs()
+        
+        result = {
+            "profiles": {
+                "total_items": len(profiles_data),
+                "sample_keys": list(profiles_data[0].keys()) if profiles_data else [],
+                "sample_item": profiles_data[0] if profiles_data else None
+            },
+            "cabs_ad_accounts": {
+                "total_items": len(cabs_data),
+                "sample_keys": list(cabs_data[0].keys()) if cabs_data else [],
+                "sample_item": cabs_data[0] if cabs_data else None
+            }
+        }
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in debug endpoint: {e}")
+        return {"error": str(e)}
 
 # ============================================================================
 # Asset Discovery & Sync
@@ -24,302 +62,535 @@ router = APIRouter()
 @router.post("/sync/discover")
 async def discover_dolphin_assets(
     force_refresh: bool = False,
-    db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser)
 ):
     """
-    Discover all assets from Dolphin Cloud and register them in our system
-    This is the first step - building your master asset registry
+    Discover all assets from Dolphin Cloud and register them in our Supabase database
+    This uses the correct API endpoints:
+    - /api/v1/fb-accounts for Facebook Profiles
+    - /api/v1/fb-cabs for Facebook Ad Accounts (CABs = Cabinets)
     """
     try:
+        supabase = get_supabase_client()
         dolphin_api = DolphinCloudAPI()
-        sync_log = DolphinSyncLog(
-            sync_type="full_discovery",
-            triggered_by="admin",
-            triggered_by_user_id=str(current_user.uid),
-            status="running"
-        )
-        db.add(sync_log)
-        db.commit()
+        
+        # Create sync log
+        sync_log_data = {
+            "id": str(uuid.uuid4()),
+            "sync_type": "discover",
+            "status": "started",
+            "assets_discovered": 0,
+            "assets_updated": 0,
+            "errors_count": 0,
+            "started_at": datetime.now(timezone.utc).isoformat()
+        }
+        
+        sync_response = supabase.table("dolphin_sync_logs").insert(sync_log_data).execute()
+        sync_log_id = sync_response.data[0]["id"]
         
         discovered_count = 0
         updated_count = 0
         errors = []
         
-        # 1. Discover Business Managers
-        try:
-            business_managers = await dolphin_api.get_business_managers()
-            for bm in business_managers:
-                existing = db.query(DolphinAsset).filter(
-                    DolphinAsset.facebook_id == bm["business_id"],
-                    DolphinAsset.asset_type == "business_manager"
-                ).first()
-                
-                if existing and not force_refresh:
-                    continue
-                
-                if existing:
-                    # Update existing
-                    existing.name = bm["name"]
-                    existing.last_sync_at = datetime.utcnow()
-                    existing.asset_metadata = bm
-                    updated_count += 1
-                else:
-                    # Create new
-                    asset = DolphinAsset(
-                        asset_type="business_manager",
-                        facebook_id=bm["business_id"],
-                        dolphin_profile_id="default",  # You'll need to map this properly
-                        name=bm["name"],
-                        asset_metadata=bm,
-                        discovered_at=datetime.utcnow(),
-                        last_sync_at=datetime.utcnow()
-                    )
-                    db.add(asset)
-                    discovered_count += 1
-        except Exception as e:
-            errors.append(f"BM Discovery Error: {str(e)}")
-            logger.error(f"Error discovering business managers: {e}")
+        # ========================================================================
+        # 1. Get Facebook Profiles (these manage the ad accounts)
+        # ========================================================================
+        profiles_data = await dolphin_api.get_fb_accounts()
         
-        # 2. Discover Ad Accounts
-        try:
-            ad_accounts = await dolphin_api.get_fb_accounts()
-            for account in ad_accounts:
-                existing = db.query(DolphinAsset).filter(
-                    DolphinAsset.facebook_id == account["id"],
-                    DolphinAsset.asset_type == "ad_account"
-                ).first()
+        for profile in profiles_data:
+            try:
+                # Process Profile
+                profile_asset_data = {
+                    "asset_type": "profile",
+                    "asset_id": profile["id"],
+                    "name": profile["name"],
+                    "status": "active" if profile["status"] == "ACTIVE" else "restricted",
+                    "health_status": "healthy" if profile["status"] == "ACTIVE" else "warning",
+                    "asset_metadata": profile,
+                    "discovered_at": datetime.now(timezone.utc).isoformat(),
+                    "last_sync_at": datetime.now(timezone.utc).isoformat()
+                }
                 
-                if existing and not force_refresh:
-                    continue
-                
-                # Find parent BM
-                parent_bm_id = None
-                for bm in account.get("bms", []):
-                    parent_bm_id = bm.get("business_id")
-                    break
-                
-                if existing:
-                    # Update existing
-                    existing.name = account["name"]
-                    existing.parent_business_manager_id = parent_bm_id
-                    existing.last_sync_at = datetime.utcnow()
-                    existing.asset_metadata = account
-                    updated_count += 1
-                else:
-                    # Create new
-                    asset = DolphinAsset(
-                        asset_type="ad_account",
-                        facebook_id=account["id"],
-                        dolphin_profile_id="default",  # Map properly
-                        name=account["name"],
-                        parent_business_manager_id=parent_bm_id,
-                        asset_metadata=account,
-                        discovered_at=datetime.utcnow(),
-                        last_sync_at=datetime.utcnow()
-                    )
-                    db.add(asset)
+                # Upsert profile
+                supabase.table("dolphin_assets").upsert(profile_asset_data, on_conflict="asset_type,asset_id").execute()
+                discovered_count += 1
+
+                # Process Business Managers for this profile
+                for bm in profile.get("bms", []):
+                    bm_asset_data = {
+                        "asset_type": "business_manager",
+                        "asset_id": bm["business_id"],
+                        "name": bm["name"],
+                        "status": "active",
+                        "health_status": "healthy",
+                        "asset_metadata": bm,
+                        "discovered_at": datetime.now(timezone.utc).isoformat(),
+                        "last_sync_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    # Upsert business manager
+                    supabase.table("dolphin_assets").upsert(bm_asset_data, on_conflict="asset_type,asset_id").execute()
                     discovered_count += 1
-        except Exception as e:
-            errors.append(f"Ad Account Discovery Error: {str(e)}")
-            logger.error(f"Error discovering ad accounts: {e}")
+                    
+            except Exception as e:
+                error_msg = f"Error processing profile {profile.get('id', 'unknown')}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(error_msg)
         
-        db.commit()
+        # ========================================================================
+        # 2. Get Facebook Ad Accounts (CABs = Cabinets) - THE REAL AD ACCOUNTS
+        # ========================================================================
+        cabs_data = await dolphin_api.get_fb_cabs()
+        
+        for cab in cabs_data:
+            try:
+                # Extract key information
+                cab_id = cab["id"]
+                cab_name = cab["name"]
+                cab_status = cab["status"]
+                balance = cab.get("balance", 0)
+                currency = cab.get("currency", "USD")
+                
+                # Map Dolphin status to our database status - BE ACCURATE!
+                # Dolphin statuses: ACTIVE, TOKEN_ERROR, SUSPENDED, RESTRICTED
+                if cab_status == "ACTIVE":
+                    status = "active"
+                    health_status = "healthy"
+                elif cab_status == "SUSPENDED":
+                    status = "suspended"  # Facebook suspended the account
+                    health_status = "warning"
+                elif cab_status == "RESTRICTED":
+                    status = "restricted"  # Facebook restricted the account
+                    health_status = "warning"
+                elif cab_status == "TOKEN_ERROR":
+                    status = "connection_error"  # Dolphin can't connect (auth issue)
+                    health_status = "disconnected"
+                else:
+                    # Unknown status - default to connection error to be safe
+                    status = "connection_error"
+                    health_status = "critical"
+                
+                # Get managing profile info
+                managing_profiles = cab.get("accounts", [])
+                managing_profile_name = managing_profiles[0]["name"] if managing_profiles else "Unknown"
+                
+                # Get business manager info
+                business_managers = cab.get("bm", [])
+                parent_bm_id = business_managers[0]["business_id"] if business_managers else None
+                parent_bm_name = business_managers[0]["name"] if business_managers else "No BM"
+                
+                # Create ad account asset
+                ad_account_data = {
+                    "asset_type": "ad_account",
+                    "asset_id": cab_id,
+                    "name": cab_name,
+                    "status": status,
+                    "health_status": health_status,
+                    "parent_business_manager_id": parent_bm_id,
+                    "asset_metadata": {
+                        "ad_account_id": cab["ad_account_id"],
+                        "balance": balance,
+                        "currency": currency,
+                        "status": cab_status,
+                        "managing_profile": managing_profile_name,
+                        "business_manager": parent_bm_name,
+                        "business_manager_id": parent_bm_id,
+                        "managing_profiles": managing_profiles,
+                        "business_managers": business_managers,
+                        "pixel_id": cab.get("pixel_id"),
+                        "spend_cap": cab.get("spend_cap"),
+                        "amount_spent": cab.get("amount_spent", 0),
+                        "ads_count": cab.get("ads_count", 0),
+                        "last_sync_date": cab.get("last_sync_date"),
+                        "full_cab_data": cab
+                    },
+                    "discovered_at": datetime.now(timezone.utc).isoformat(),
+                    "last_sync_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Upsert ad account
+                supabase.table("dolphin_assets").upsert(ad_account_data, on_conflict="asset_type,asset_id").execute()
+                discovered_count += 1
+                
+            except Exception as e:
+                error_msg = f"Error processing CAB {cab.get('id', 'unknown')}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(error_msg)
         
         # Update sync log
-        sync_log.status = "success" if not errors else "partial"
-        sync_log.completed_at = datetime.utcnow()
-        sync_log.assets_discovered = discovered_count
-        sync_log.assets_updated = updated_count
-        sync_log.errors_count = len(errors)
-        sync_log.error_details = {"errors": errors} if errors else None
-        sync_log.duration_seconds = (sync_log.completed_at - sync_log.started_at).total_seconds()
-        db.commit()
+        supabase.table("dolphin_sync_logs").update({
+            "status": "completed" if not errors else "failed",
+            "assets_discovered": discovered_count,
+            "assets_updated": updated_count,
+            "errors_count": len(errors),
+            "error_details": errors if errors else None,
+            "completed_at": datetime.now(timezone.utc).isoformat()
+        }).eq("id", sync_log_id).execute()
         
         return {
-            "status": "success",
-            "discovered": discovered_count,
-            "updated": updated_count,
-            "errors": len(errors),
-            "error_details": errors
+            "success": True,
+            "profiles_found": len(profiles_data),
+            "business_managers_found": sum(len(p.get("bms", [])) for p in profiles_data),
+            "ad_accounts_found": len(cabs_data),
+            "sync_log_id": sync_log_id,
+            "assets_discovered": discovered_count,
+            "assets_updated": updated_count,
+            "errors": errors
         }
         
     except Exception as e:
         logger.error(f"Error in asset discovery: {e}")
-        if 'sync_log' in locals():
-            sync_log.status = "failed"
-            sync_log.completed_at = datetime.utcnow()
-            sync_log.error_details = {"error": str(e)}
-            db.commit()
+        
+        # Update sync log with error
+        try:
+            supabase.table("dolphin_sync_logs").update({
+                "status": "failed",
+                "error_details": [str(e)],
+                "completed_at": datetime.now(timezone.utc).isoformat()
+            }).eq("id", sync_log_id).execute()
+        except:
+            pass
+        
         raise HTTPException(status_code=500, detail=f"Asset discovery failed: {str(e)}")
 
-
-@router.get("/unassigned")
-async def get_unassigned_assets(
-    asset_type: Optional[str] = Query(None, description="Filter by asset type"),
-    db: Session = Depends(get_db),
+@router.post("/sync/discover-debug")
+async def discover_dolphin_assets_debug(
     current_user: User = Depends(require_superuser)
 ):
-    """Get all unassigned Dolphin assets available for client binding"""
+    """Debug version of asset discovery to isolate the 'assets' undefined error"""
     try:
-        query = db.query(DolphinAsset).filter(DolphinAsset.is_assigned == False)
+        logger.info("🔍 Starting debug sync...")
+        supabase = get_supabase_client()
+        dolphin_api = DolphinCloudAPI()
         
-        if asset_type:
-            query = query.filter(DolphinAsset.asset_type == asset_type)
+        # Test basic connectivity
+        logger.info("🔍 Testing Supabase connectivity...")
+        test_response = supabase.table("dolphin_assets").select("count", count="exact").execute()
+        logger.info(f"🔍 Supabase test response: {test_response}")
         
-        assets = query.all()
+        # Test Dolphin API
+        logger.info("🔍 Testing Dolphin API...")
+        profiles_data = await dolphin_api.get_fb_accounts()
+        cabs_data = await dolphin_api.get_fb_cabs()
         
+        logger.info(f"🔍 Retrieved {len(profiles_data)} profiles and {len(cabs_data)} CABs")
+        
+        # Simple return without complex processing
         return {
-            "assets": [
-                {
-                    "id": asset.id,
-                    "asset_type": asset.asset_type,
-                    "facebook_id": asset.facebook_id,
-                    "name": asset.name,
-                    "status": asset.status,
-                    "health_status": asset.health_status,
-                    "parent_business_manager_id": asset.parent_business_manager_id,
-                    "discovered_at": asset.discovered_at.isoformat(),
-                    "last_sync_at": asset.last_sync_at.isoformat() if asset.last_sync_at else None,
-                    "asset_metadata": asset.asset_metadata
-                }
-                for asset in assets
-            ]
+            "success": True,
+            "debug": True,
+            "profiles_count": len(profiles_data),
+            "cabs_count": len(cabs_data),
+            "message": "Debug sync completed successfully"
         }
         
     except Exception as e:
-        logger.error(f"Error fetching unassigned assets: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"🔍 Debug sync error: {e}")
+        raise HTTPException(status_code=500, detail=f"Debug sync failed: {str(e)}")
 
-
-# ============================================================================
-# Client Asset Binding
-# ============================================================================
-
-@router.post("/bind")
-async def bind_asset_to_client(
-    dolphin_asset_id: str,
-    organization_id: str,
-    business_id: Optional[str] = None,
-    permissions: Optional[Dict[str, bool]] = None,
-    spend_limits: Optional[Dict[str, float]] = None,
-    client_topped_up_total: float = 0.0,
-    fee_percentage: float = 0.05,
-    notes: Optional[str] = None,
-    db: Session = Depends(get_db),
+@router.get("/all-assets")
+async def get_all_assets(
+    asset_type: Optional[str] = Query(None, description="Filter by asset type"),
     current_user: User = Depends(require_superuser)
 ):
     """
-    Bind a Dolphin asset to a specific client
-    This is how you assign your FB assets to individual clients
+    Get all discovered Dolphin assets from our database, with binding information.
+    This is the primary endpoint for the admin assets page.
     """
+    supabase = get_supabase_client()
+    
     try:
-        # Check if asset exists and is unassigned
-        asset = db.query(DolphinAsset).filter(DolphinAsset.id == dolphin_asset_id).first()
-        if not asset:
-            raise HTTPException(status_code=404, detail="Dolphin asset not found")
+        # 1. Fetch all ad accounts first to perform in-memory joining/counting.
+        # This is more efficient than N+1 queries.
+        ad_accounts_response = supabase.table("dolphin_assets").select("*").eq("asset_type", "ad_account").execute()
+        all_ad_accounts = ad_accounts_response.data
         
-        if asset.is_assigned:
-            raise HTTPException(status_code=400, detail="Asset is already assigned to another client")
+        # 2. Fetch all asset bindings with related org and business names
+        bindings_response = supabase.table("client_asset_bindings").select("*, organizations(name), businesses(name)").execute()
+        all_bindings = bindings_response.data
+
+        # Create a lookup map for bindings for quick access
+        bindings_map = {binding["asset_id"]: binding for binding in all_bindings}
+
+        # 3. Fetch all assets (or filter by type)
+        query = supabase.table("dolphin_assets").select("*").order("name", desc=False)
         
-        # Check if client organization exists
-        # You'll need to add organization validation here
+        if asset_type:
+            query = query.eq("asset_type", asset_type)
+
+        response = query.execute()
+        assets = response.data
         
-        # Create binding
-        binding = ClientAssetBinding(
-            organization_id=organization_id,
-            business_id=business_id,
-            dolphin_asset_id=dolphin_asset_id,
-            permissions=permissions or {
-                "can_view_insights": True,
-                "can_create_campaigns": False,
-                "can_edit_budgets": False,
-                "can_manage_pages": False,
-                "can_access_audiences": False
-            },
-            spend_limits=spend_limits or {
-                "daily": 0,
-                "monthly": 0,
-                "total": 0
-            },
-            client_topped_up_total=client_topped_up_total,
-            your_fee_percentage=fee_percentage,
-            assigned_by=str(current_user.uid),
-            notes=notes
+        # 4. Process assets to enrich them with binding and ad account info
+        enriched_assets = []
+        for asset in assets:
+            asset_id = asset["id"]
+            
+            # Check for binding info
+            binding_info = bindings_map.get(asset_id)
+            if binding_info:
+                asset["is_bound"] = True
+                # The organization name is nested, extract it
+                asset["binding_info"] = {
+                    "organization_name": binding_info.get("organizations", {}).get("name", "Unknown Org"),
+                    "business_name": (binding_info.get("businesses") or {}).get("name"),
+                    **binding_info  # Include all other binding fields
+                }
+            else:
+                asset["is_bound"] = False
+                asset["binding_info"] = None
+                
+            # If it's a business manager, count its ad accounts
+            if asset["asset_type"] == "business_manager":
+                bm_asset_id = asset["asset_id"] # This is the Facebook BM ID
+                
+                # Filter ad accounts that belong to this BM
+                linked_ad_accounts = [
+                    acc for acc in all_ad_accounts 
+                    if acc.get("parent_business_manager_id") == bm_asset_id
+                ]
+                
+                # Add the count and the accounts to the metadata
+                if "asset_metadata" not in asset or asset["asset_metadata"] is None:
+                    asset["asset_metadata"] = {}
+                
+                asset["asset_metadata"]["ad_accounts_count"] = len(linked_ad_accounts)
+                asset["asset_metadata"]["ad_accounts"] = linked_ad_accounts
+
+            enriched_assets.append(asset)
+
+        return {"assets": enriched_assets}
+
+    except Exception as e:
+        logger.error(f"Error fetching all assets: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while fetching assets: {str(e)}"
         )
-        db.add(binding)
+
+# ============================================================================
+# Asset Binding Operations
+# ============================================================================
+
+class BindAssetRequest(BaseModel):
+    asset_id: str
+    organization_id: str
+    business_id: Optional[str] = None
+    notes: Optional[str] = None
+
+@router.post("/bind")
+async def bind_asset_to_client(
+    request: BindAssetRequest,
+    auto_bind_related: bool = Query(False, description="Auto-bind related ad accounts when binding a Business Manager"),
+    current_user: User = Depends(require_superuser)
+):
+    """Bind a Dolphin asset to a client organization"""
+    logger.info(f"🔗 Bind Request: asset_id={request.asset_id}, org_id={request.organization_id}, business_id={request.business_id}, auto_bind_related={auto_bind_related}")
+    try:
+        supabase = get_supabase_client()
+        logger.info(f"🔗 Supabase client initialized: {type(supabase)}")
         
-        # Update asset status
-        asset.is_assigned = True
-        asset.assigned_to_organization_id = organization_id
-        asset.assigned_to_business_id = business_id
-        asset.assigned_at = datetime.utcnow()
-        asset.assigned_by = str(current_user.uid)
+        # Check if asset exists
+        logger.info(f"🔗 Checking if asset exists: {request.asset_id}")
+        try:
+            asset_response = supabase.table("dolphin_assets").select("*").eq("id", request.asset_id).execute()
+            logger.info(f"🔗 Asset response type: {type(asset_response)}")
+            logger.info(f"🔗 Asset response data count: {len(asset_response.data) if hasattr(asset_response, 'data') and asset_response.data else 0}")
+        except Exception as e:
+            logger.error(f"🔗 Error querying asset: {e}")
+            raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
         
-        # Create spend tracking record for ad accounts
-        if asset.asset_type == "ad_account":
-            spend_tracking = ClientSpendTracking(
-                organization_id=organization_id,
-                business_id=business_id,
-                dolphin_asset_id=dolphin_asset_id,
-                facebook_account_id=asset.facebook_id,
-                spend_limit=spend_limits.get("monthly", 0) if spend_limits else 0,
-                total_topped_up=client_topped_up_total,
-                fee_collected=client_topped_up_total * fee_percentage
-            )
-            db.add(spend_tracking)
+        if not hasattr(asset_response, 'data') or not asset_response.data:
+            logger.error(f"🔗 Asset not found: {request.asset_id}")
+            raise HTTPException(status_code=404, detail="Asset not found")
         
-        db.commit()
+        asset = asset_response.data[0]
+        logger.info(f"🔗 Found asset: {asset['name']} ({asset['asset_type']})")
+        
+        # Check if asset is already bound - use a simpler query
+        logger.info(f"🔗 Checking existing bindings for asset: {request.asset_id}")
+        try:
+            # Use a simpler query without maybe_single() to avoid potential issues
+            existing_bindings = supabase.table("client_asset_bindings").select("id").eq("asset_id", request.asset_id).eq("status", "active").execute()
+            logger.info(f"🔗 Existing bindings response type: {type(existing_bindings)}")
+            logger.info(f"🔗 Existing bindings count: {len(existing_bindings.data) if hasattr(existing_bindings, 'data') and existing_bindings.data else 0}")
+            
+            if hasattr(existing_bindings, 'data') and existing_bindings.data:
+                logger.error(f"🔗 Asset already bound: {request.asset_id}")
+                raise HTTPException(status_code=400, detail="Asset is already bound to another client")
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"🔗 Error querying existing bindings: {e}")
+            raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
+        
+        # Create main binding
+        binding_data = {
+            "asset_id": request.asset_id,
+            "organization_id": request.organization_id,
+            "business_id": request.business_id,
+            "status": "active",
+            "bound_at": datetime.now(timezone.utc).isoformat(),
+            "bound_by": current_user.uid,
+            "notes": request.notes
+        }
+        
+        logger.info(f"🔗 Creating binding: {binding_data}")
+        try:
+            binding_response = supabase.table("client_asset_bindings").insert(binding_data).execute()
+            logger.info(f"🔗 Insert response type: {type(binding_response)}")
+            logger.info(f"🔗 Insert response data: {binding_response.data if hasattr(binding_response, 'data') else 'No data'}")
+        except Exception as e:
+            logger.error(f"🔗 Error inserting binding: {e}")
+            raise HTTPException(status_code=500, detail=f"Database insert error: {str(e)}")
+        
+        if not hasattr(binding_response, 'data') or not binding_response.data:
+            logger.error(f"🔗 Insert failed - no data returned")
+            raise HTTPException(status_code=500, detail="Failed to create binding")
+        
+        main_binding_id = binding_response.data[0]["id"]
+        logger.info(f"🔗 Main binding created successfully: {main_binding_id}")
+        
+        # Auto-bind related ad accounts if requested and this is a Business Manager
+        related_bindings = []
+        if auto_bind_related and asset["asset_type"] == "business_manager":
+            logger.info(f"🔗 Auto-binding related ad accounts for BM: {asset['asset_id']}")
+            
+            try:
+                # Find all ad accounts that belong to this Business Manager
+                related_ads_response = supabase.table("dolphin_assets").select("*").eq("asset_type", "ad_account").eq("parent_business_manager_id", asset["asset_id"]).execute()
+                
+                related_ad_accounts = related_ads_response.data if hasattr(related_ads_response, 'data') else []
+                logger.info(f"🔗 Found {len(related_ad_accounts)} related ad accounts")
+                
+                for ad_account in related_ad_accounts:
+                    # Check if this ad account is already bound
+                    existing_ad_bindings = supabase.table("client_asset_bindings").select("id").eq("asset_id", ad_account["id"]).eq("status", "active").execute()
+                    
+                    if not (hasattr(existing_ad_bindings, 'data') and existing_ad_bindings.data):
+                        # Bind this ad account
+                        ad_binding_data = {
+                            "asset_id": ad_account["id"],
+                            "organization_id": request.organization_id,
+                            "business_id": request.business_id,
+                            "status": "active",
+                            "bound_at": datetime.now(timezone.utc).isoformat(),
+                            "bound_by": current_user.uid,
+                            "notes": f"Auto-bound with Business Manager: {asset['name']}"
+                        }
+                        
+                        ad_binding_response = supabase.table("client_asset_bindings").insert(ad_binding_data).execute()
+                        if hasattr(ad_binding_response, 'data') and ad_binding_response.data:
+                            related_bindings.append({
+                                "binding_id": ad_binding_response.data[0]["id"],
+                                "asset_name": ad_account["name"],
+                                "asset_type": "ad_account"
+                            })
+                            logger.info(f"🔗 Auto-bound ad account: {ad_account['name']}")
+                        else:
+                            logger.warning(f"🔗 Failed to auto-bind ad account: {ad_account['name']}")
+                    else:
+                        logger.info(f"🔗 Ad account already bound, skipping: {ad_account['name']}")
+                        
+            except Exception as e:
+                logger.error(f"🔗 Error auto-binding related assets: {e}")
+                # Don't fail the main binding if auto-binding fails
         
         return {
-            "status": "success",
-            "binding_id": binding.id,
-            "message": f"Asset {asset.name} successfully bound to client"
+            "success": True,
+            "binding_id": main_binding_id,
+            "message": "Asset bound successfully",
+            "related_bindings": related_bindings,
+            "auto_bound_count": len(related_bindings)
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error binding asset to client: {e}")
+        logger.error(f"🔗 Error binding asset: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/bind-business-manager-with-accounts")
+async def bind_business_manager_with_accounts(
+    request: BindAssetRequest,
+    current_user: User = Depends(require_superuser)
+):
+    """
+    Bind a Business Manager and automatically bind all its associated ad accounts.
+    This is a convenience endpoint that combines BM binding with auto-binding of related ad accounts.
+    """
+    logger.info(f"🏢 BM + Accounts Bind Request: asset_id={request.asset_id}, org_id={request.organization_id}")
+    
+    try:
+        supabase = get_supabase_client()
+        
+        # Verify this is a Business Manager
+        asset_response = supabase.table("dolphin_assets").select("*").eq("id", request.asset_id).execute()
+        if not (hasattr(asset_response, 'data') and asset_response.data):
+            raise HTTPException(status_code=404, detail="Asset not found")
+        
+        asset = asset_response.data[0]
+        if asset["asset_type"] != "business_manager":
+            raise HTTPException(status_code=400, detail="This endpoint is only for Business Managers")
+        
+        # Use the main bind endpoint with auto_bind_related=True
+        from fastapi import Request
+        from urllib.parse import urlencode
+        
+        # Create a mock request object to pass the auto_bind_related parameter
+        result = await bind_asset_to_client(request, auto_bind_related=True, current_user=current_user)
+        
+        # Get the BM metadata to show ad accounts count
+        bm_metadata = asset.get("asset_metadata", {})
+        expected_ad_accounts = bm_metadata.get("cabs_count", 0)
+        
+        return {
+            "success": True,
+            "business_manager": {
+                "id": asset["id"],
+                "name": asset["name"],
+                "facebook_id": asset["asset_id"]
+            },
+            "binding_id": result["binding_id"],
+            "expected_ad_accounts": expected_ad_accounts,
+            "auto_bound_ad_accounts": result["auto_bound_count"],
+            "related_bindings": result["related_bindings"],
+            "message": f"Business Manager '{asset['name']}' bound successfully with {result['auto_bound_count']} ad accounts"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"🏢 Error binding BM with accounts: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/unbind/{binding_id}")
 async def unbind_asset_from_client(
     binding_id: str,
     reason: Optional[str] = None,
-    db: Session = Depends(get_db),
     current_user: User = Depends(require_superuser)
 ):
     """Unbind an asset from a client"""
     try:
-        binding = db.query(ClientAssetBinding).filter(ClientAssetBinding.id == binding_id).first()
-        if not binding:
+        supabase = get_supabase_client()
+        
+        # Check if binding exists
+        binding_response = supabase.table("client_asset_bindings").select("*").eq("id", binding_id).maybe_single().execute()
+        if not binding_response.data:
             raise HTTPException(status_code=404, detail="Binding not found")
         
-        # Get the asset
-        asset = db.query(DolphinAsset).filter(DolphinAsset.id == binding.dolphin_asset_id).first()
-        if not asset:
-            raise HTTPException(status_code=404, detail="Associated asset not found")
+        # Update binding status to inactive
+        update_data = {
+            "status": "inactive",
+            "notes": f"Unbound by admin. Reason: {reason}" if reason else "Unbound by admin"
+        }
         
-        # Deactivate binding
-        binding.is_active = False
-        binding.deactivated_at = datetime.utcnow()
-        binding.deactivated_by = str(current_user.uid)
-        binding.deactivation_reason = reason
-        
-        # Update asset
-        asset.is_assigned = False
-        asset.assigned_to_organization_id = None
-        asset.assigned_to_business_id = None
-        asset.assigned_at = None
-        asset.assigned_by = None
-        
-        db.commit()
+        supabase.table("client_asset_bindings").update(update_data).eq("id", binding_id).execute()
         
         return {
-            "status": "success",
-            "message": f"Asset {asset.name} unbound from client"
+            "success": True,
+            "message": "Asset unbound successfully"
         }
         
     except HTTPException:
@@ -327,7 +598,6 @@ async def unbind_asset_from_client(
     except Exception as e:
         logger.error(f"Error unbinding asset: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 # ============================================================================
 # Client Asset Views
@@ -338,8 +608,6 @@ async def get_client_assets(
     organization_id: str,
     business_id: Optional[str] = None,
     asset_type: Optional[str] = None,
-    include_spend_data: bool = True,
-    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -347,320 +615,241 @@ async def get_client_assets(
     This is what clients see on their dashboard
     """
     try:
-        # Build query
-        query = db.query(ClientAssetBinding, DolphinAsset).join(
-            DolphinAsset, ClientAssetBinding.dolphin_asset_id == DolphinAsset.id
-        ).filter(
-            ClientAssetBinding.organization_id == organization_id,
-            ClientAssetBinding.is_active == True
-        )
+        supabase = get_supabase_client()
+        
+        # Build query for client assets
+        query = supabase.table("client_asset_bindings").select("""
+            *,
+            dolphin_assets!inner(*),
+            organizations!inner(name),
+            businesses(name)
+        """).eq("organization_id", organization_id).eq("status", "active")
         
         if business_id:
-            query = query.filter(ClientAssetBinding.business_id == business_id)
+            query = query.eq("business_id", business_id)
         
         if asset_type:
-            query = query.filter(DolphinAsset.asset_type == asset_type)
+            query = query.eq("dolphin_assets.asset_type", asset_type)
         
-        results = query.all()
+        response = query.execute()
         
         # Format response
         assets = []
-        dolphin_api = DolphinCloudAPI() if include_spend_data else None
-        
-        for binding, asset in results:
+        for binding in response.data:
+            asset = binding["dolphin_assets"]
             asset_data = {
-                "binding_id": binding.id,
-                "asset_id": asset.id,
-                "asset_type": asset.asset_type,
-                "facebook_id": asset.facebook_id,
-                "name": asset.name,
-                "status": asset.status,
-                "health_status": asset.health_status,
-                "parent_business_manager_id": asset.parent_business_manager_id,
-                "discovered_at": asset.discovered_at.isoformat(),
-                "last_sync_at": asset.last_sync_at.isoformat() if asset.last_sync_at else None,
-                "asset_metadata": asset.asset_metadata
+                "id": asset["id"],
+                "asset_type": asset["asset_type"],
+                "asset_id": asset["asset_id"],
+                "name": asset["name"],
+                "status": asset["status"],
+                "health_status": asset["health_status"],
+                "parent_business_manager_id": asset.get("parent_business_manager_id"),
+                "asset_metadata": asset.get("asset_metadata", {}),
+                "discovered_at": asset["discovered_at"],
+                "last_sync_at": asset.get("last_sync_at"),
+                "is_bound": True,
+                "binding_info": {
+                    "binding_id": binding["id"],
+                    "organization_name": binding["organizations"]["name"],
+                    "business_name": binding["businesses"]["name"] if binding.get("businesses") else None,
+                    "bound_at": binding["bound_at"]
+                }
             }
-            
-            # Add spend data for ad accounts
-            if include_spend_data and asset.asset_type == "ad_account" and dolphin_api:
-                try:
-                    spend_data = await dolphin_api.get_account_spend_data(asset.facebook_id)
-                    insights = await dolphin_api.get_account_insights(
-                        asset.facebook_id,
-                        binding.client_topped_up_total,
-                        binding.your_fee_percentage
-                    )
-                    
-                    asset_data.update({
-                        "spend_data": spend_data,
-                        "insights": insights,
-                        "remaining_budget": insights["remaining_budget"],
-                        "days_remaining": insights["days_remaining"]
-                    })
-                except Exception as e:
-                    logger.warning(f"Could not fetch spend data for {asset.facebook_id}: {e}")
-                    asset_data["spend_data_error"] = str(e)
-            
             assets.append(asset_data)
         
         return {
-            "organization_id": organization_id,
-            "business_id": business_id,
             "assets": assets,
-            "total_count": len(assets)
+            "total": len(assets),
+            "by_type": {
+                "profiles": len([a for a in assets if a["asset_type"] == "profile"]),
+                "business_managers": len([a for a in assets if a["asset_type"] == "business_manager"]),
+                "ad_accounts": len([a for a in assets if a["asset_type"] == "ad_account"])
+            }
         }
         
     except Exception as e:
         logger.error(f"Error fetching client assets: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # ============================================================================
-# Spend Limit Detection & Monitoring
+# Debug Operations
 # ============================================================================
 
-@router.post("/spend/detect-changes")
-async def detect_spend_limit_changes(
-    db: Session = Depends(get_db),
+@router.get("/debug/database-check")
+async def debug_database_check(
     current_user: User = Depends(require_superuser)
 ):
-    """
-    Detect spend limit changes from Dolphin Cloud
-    
-    Your workflow:
-    1. Your team tops up provider on their app
-    2. Provider automatically tops up Facebook
-    3. Dolphin Cloud detects the new spend limit
-    4. This endpoint detects the changes and updates client data
-    """
+    """Debug endpoint to check database connectivity and table existence"""
     try:
-        # Get last known limits from database
-        bindings = db.query(ClientAssetBinding, DolphinAsset).join(
-            DolphinAsset, ClientAssetBinding.dolphin_asset_id == DolphinAsset.id
-        ).filter(
-            DolphinAsset.asset_type == "ad_account",
-            ClientAssetBinding.is_active == True
-        ).all()
+        supabase = get_supabase_client()
+        logger.info(f"🔍 Debug: Supabase client type: {type(supabase)}")
         
-        last_known_limits = {}
-        for binding, asset in bindings:
-            last_known_limits[asset.facebook_id] = binding.spend_limits.get("detected", 0)
-        
-        # Detect changes via Dolphin Cloud
-        dolphin_api = DolphinCloudAPI()
-        changes = await dolphin_api.detect_spend_limit_changes(last_known_limits)
-        
-        # Update our database with detected changes
-        updated_bindings = []
-        for change in changes["changes_detected"]:
-            account_id = change["account_id"]
-            new_limit = change["new_limit"]
+        # Test basic connectivity
+        try:
+            test_response = supabase.table("dolphin_assets").select("count", count="exact").execute()
+            logger.info(f"🔍 Debug: Test response type: {type(test_response)}")
+            logger.info(f"🔍 Debug: Test response: {test_response}")
             
-            # Find the binding for this account
-            for binding, asset in bindings:
-                if asset.facebook_id == account_id:
-                    # Update detected limit
-                    binding.spend_limits["detected"] = new_limit
-                    binding.spend_limits["last_detection"] = change["detected_at"]
-                    binding.updated_at = datetime.utcnow()
-                    
-                    # Update spend tracking
-                    spend_tracking = db.query(ClientSpendTracking).filter(
-                        ClientSpendTracking.dolphin_asset_id == asset.id,
-                        ClientSpendTracking.organization_id == binding.organization_id
-                    ).first()
-                    
-                    if spend_tracking:
-                        spend_tracking.spend_limit = new_limit
-                        spend_tracking.last_dolphin_sync = datetime.utcnow()
-                    
-                    updated_bindings.append({
-                        "binding_id": binding.id,
-                        "asset_name": asset.name,
-                        "facebook_account_id": account_id,
-                        "previous_limit": change["previous_limit"],
-                        "new_limit": new_limit,
-                        "change_amount": change["change_amount"]
-                    })
-                    break
+            if test_response and hasattr(test_response, 'count'):
+                asset_count = test_response.count
+            else:
+                asset_count = "unknown"
+        except Exception as e:
+            logger.error(f"🔍 Debug: Error getting count: {e}")
+            asset_count = f"error: {str(e)}"
         
-        db.commit()
+        # Test getting actual assets
+        try:
+            assets_response = supabase.table("dolphin_assets").select("id, name, asset_type").limit(10).execute()
+            logger.info(f"🔍 Debug: Assets response type: {type(assets_response)}")
+            logger.info(f"🔍 Debug: Assets response: {assets_response}")
+            
+            if assets_response and hasattr(assets_response, 'data'):
+                assets_list = assets_response.data
+                logger.info(f"🔍 Debug: Found {len(assets_list)} assets")
+            else:
+                assets_list = []
+        except Exception as e:
+            logger.error(f"🔍 Debug: Error getting assets: {e}")
+            assets_list = f"error: {str(e)}"
+        
+        # Test bindings table
+        try:
+            bindings_response = supabase.table("client_asset_bindings").select("count", count="exact").execute()
+            if bindings_response and hasattr(bindings_response, 'count'):
+                bindings_count = bindings_response.count
+            else:
+                bindings_count = "unknown"
+        except Exception as e:
+            logger.error(f"🔍 Debug: Error getting bindings count: {e}")
+            bindings_count = f"error: {str(e)}"
         
         return {
-            "status": "detection_complete",
-            "total_changes_detected": len(changes["changes_detected"]),
-            "updated_bindings": updated_bindings,
-            "current_limits": changes["current_limits"],
-            "sync_timestamp": datetime.utcnow().isoformat()
+            "database_connected": True,
+            "supabase_client_type": str(type(supabase)),
+            "assets_count": asset_count,
+            "bindings_count": bindings_count,
+            "sample_assets": assets_list,
+            "environment_check": {
+                "supabase_url": settings.SUPABASE_URL[:50] + "..." if settings.SUPABASE_URL else "NOT SET",
+                "service_role_key": "SET" if settings.SUPABASE_SERVICE_ROLE_KEY else "NOT SET",
+                "anon_key": "SET" if settings.SUPABASE_ANON_KEY else "NOT SET"
+            }
         }
         
     except Exception as e:
-        logger.error(f"Error detecting spend limit changes: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"🔍 Debug: Database check failed: {e}")
+        return {
+            "database_connected": False,
+            "error": str(e),
+            "supabase_client_type": "failed to initialize"
+        }
 
+@router.get("/debug/test-bindings-table")
+async def test_bindings_table(current_user: User = Depends(require_superuser)):
+    """Test if the client_asset_bindings table exists and is accessible"""
+    try:
+        supabase = get_supabase_client()
+        
+        # Test 1: Try to query the table structure
+        logger.info("🔍 Testing client_asset_bindings table access...")
+        
+        # Test 2: Try a simple select
+        try:
+            response = supabase.table("client_asset_bindings").select("*").limit(1).execute()
+            logger.info(f"🔍 Bindings table query response: {response}")
+            logger.info(f"🔍 Response type: {type(response)}")
+            logger.info(f"🔍 Response data: {response.data if hasattr(response, 'data') else 'No data attr'}")
+            
+            table_accessible = True
+            row_count = len(response.data) if hasattr(response, 'data') and response.data else 0
+        except Exception as e:
+            logger.error(f"🔍 Error accessing bindings table: {e}")
+            table_accessible = False
+            row_count = "error"
+        
+        # Test 3: Try the exact query that's failing in bind
+        try:
+            test_asset_id = "test-id"
+            existing_binding = supabase.table("client_asset_bindings").select("id").eq("asset_id", test_asset_id).eq("status", "active").maybe_single().execute()
+            logger.info(f"🔍 Test binding query response: {existing_binding}")
+            logger.info(f"🔍 Test binding response type: {type(existing_binding)}")
+            
+            binding_query_works = existing_binding is not None
+        except Exception as e:
+            logger.error(f"🔍 Error with binding query: {e}")
+            binding_query_works = False
+        
+        return {
+            "table_accessible": table_accessible,
+            "row_count": row_count,
+            "binding_query_works": binding_query_works,
+            "supabase_client_type": str(type(supabase))
+        }
+        
+    except Exception as e:
+        logger.error(f"🔍 Debug test failed: {e}")
+        return {
+            "error": str(e),
+            "table_accessible": False
+        }
 
-@router.post("/spend/manual-limit-update")
-async def manual_limit_update(
-    binding_id: str,
-    detected_limit: float,
-    notes: Optional[str] = None,
-    db: Session = Depends(get_db),
+@router.post("/bind-test")
+async def bind_asset_test(
+    request: BindAssetRequest,
     current_user: User = Depends(require_superuser)
 ):
-    """
-    Manually update detected spend limit for a client asset
-    
-    Use this when you manually check Dolphin Cloud and see a limit change
-    that wasn't caught by automatic detection
-    """
+    """Test version of bind endpoint to isolate the issue"""
+    logger.info(f"🔗 TEST Bind Request: asset_id={request.asset_id}")
     try:
-        binding = db.query(ClientAssetBinding).filter(ClientAssetBinding.id == binding_id).first()
-        if not binding:
-            raise HTTPException(status_code=404, detail="Binding not found")
+        supabase = get_supabase_client()
         
-        # Update detected limit
-        previous_limit = binding.spend_limits.get("detected", 0)
-        binding.spend_limits["detected"] = detected_limit
-        binding.spend_limits["last_manual_update"] = datetime.utcnow().isoformat()
-        binding.spend_limits["manual_update_notes"] = notes
-        binding.updated_at = datetime.utcnow()
+        # Step 1: Test basic table access
+        logger.info("🔗 TEST: Testing basic table access...")
+        try:
+            test_assets = supabase.table("dolphin_assets").select("id").limit(1).execute()
+            logger.info(f"🔗 TEST: Assets table works: {len(test_assets.data) if test_assets.data else 0} rows")
+        except Exception as e:
+            logger.error(f"🔗 TEST: Assets table error: {e}")
+            return {"error": f"Assets table error: {e}"}
         
-        # Update spend tracking
-        asset = db.query(DolphinAsset).filter(DolphinAsset.id == binding.dolphin_asset_id).first()
-        if asset and asset.asset_type == "ad_account":
-            spend_tracking = db.query(ClientSpendTracking).filter(
-                ClientSpendTracking.dolphin_asset_id == binding.dolphin_asset_id,
-                ClientSpendTracking.organization_id == binding.organization_id
-            ).first()
-            
-            if spend_tracking:
-                spend_tracking.spend_limit = detected_limit
-                spend_tracking.last_dolphin_sync = datetime.utcnow()
+        # Step 2: Test bindings table access
+        logger.info("🔗 TEST: Testing bindings table access...")
+        try:
+            test_bindings = supabase.table("client_asset_bindings").select("id").limit(1).execute()
+            logger.info(f"🔗 TEST: Bindings table works: {len(test_bindings.data) if test_bindings.data else 0} rows")
+        except Exception as e:
+            logger.error(f"🔗 TEST: Bindings table error: {e}")
+            return {"error": f"Bindings table error: {e}"}
         
-        db.commit()
+        # Step 3: Test specific asset lookup
+        logger.info(f"🔗 TEST: Looking for asset {request.asset_id}...")
+        try:
+            asset_response = supabase.table("dolphin_assets").select("*").eq("id", request.asset_id).execute()
+            if not asset_response.data:
+                return {"error": f"Asset {request.asset_id} not found"}
+            logger.info(f"🔗 TEST: Found asset: {asset_response.data[0]['name']}")
+        except Exception as e:
+            logger.error(f"🔗 TEST: Asset lookup error: {e}")
+            return {"error": f"Asset lookup error: {e}"}
+        
+        # Step 4: Test binding check
+        logger.info("🔗 TEST: Checking for existing bindings...")
+        try:
+            existing_bindings = supabase.table("client_asset_bindings").select("id").eq("asset_id", request.asset_id).execute()
+            logger.info(f"🔗 TEST: Found {len(existing_bindings.data)} existing bindings")
+        except Exception as e:
+            logger.error(f"🔗 TEST: Binding check error: {e}")
+            return {"error": f"Binding check error: {e}"}
         
         return {
-            "status": "manual_update_complete",
-            "binding_id": binding_id,
-            "previous_limit": previous_limit,
-            "new_detected_limit": detected_limit,
-            "change_amount": detected_limit - previous_limit,
-            "updated_at": datetime.utcnow().isoformat()
+            "success": True,
+            "message": "All tests passed - ready for actual binding",
+            "asset_found": True,
+            "existing_bindings": len(existing_bindings.data)
         }
         
-    except HTTPException:
-        raise
     except Exception as e:
-        logger.error(f"Error manually updating limit: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.get("/spend/limit-history/{binding_id}")
-async def get_spend_limit_history(
-    binding_id: str,
-    days: int = 30,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get historical spend limit changes for a client asset"""
-    try:
-        binding = db.query(ClientAssetBinding).filter(ClientAssetBinding.id == binding_id).first()
-        if not binding:
-            raise HTTPException(status_code=404, detail="Binding not found")
-        
-        asset = db.query(DolphinAsset).filter(DolphinAsset.id == binding.dolphin_asset_id).first()
-        if not asset:
-            raise HTTPException(status_code=404, detail="Asset not found")
-        
-        # Get historical data from Dolphin Cloud
-        dolphin_api = DolphinCloudAPI()
-        history = await dolphin_api.get_spend_limit_history(asset.facebook_id, days)
-        
-        return {
-            "binding_id": binding_id,
-            "asset_name": asset.name,
-            "facebook_account_id": asset.facebook_id,
-            "current_detected_limit": binding.spend_limits.get("detected", 0),
-            "history": history,
-            "days_requested": days
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting spend limit history: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/spend/client-topup")
-async def record_client_topup(
-    binding_id: str,
-    amount: float,
-    payment_method: str,
-    notes: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_superuser)
-):
-    """
-    Record a client top-up
-    
-    Your workflow:
-    1. Client pays you
-    2. You record it here
-    3. Your team manually tops up provider on their app
-    4. Provider automatically tops up Facebook
-    5. Dolphin Cloud detects the new limit
-    6. Use /spend/detect-changes to sync the new limits
-    """
-    try:
-        binding = db.query(ClientAssetBinding).filter(ClientAssetBinding.id == binding_id).first()
-        if not binding:
-            raise HTTPException(status_code=404, detail="Binding not found")
-        
-        # Update client balance
-        binding.client_topped_up_total += amount
-        fee_amount = amount * binding.your_fee_percentage
-        available_for_spend = amount - fee_amount
-        
-        # Update our tracking (not the actual FB limit - that comes from detection)
-        binding.spend_limits["client_balance"] += available_for_spend
-        binding.spend_limits["total_topped_up"] = binding.client_topped_up_total
-        binding.updated_at = datetime.utcnow()
-        
-        # Update spend tracking
-        asset = db.query(DolphinAsset).filter(DolphinAsset.id == binding.dolphin_asset_id).first()
-        
-        if asset and asset.asset_type == "ad_account":
-            spend_tracking = db.query(ClientSpendTracking).filter(
-                ClientSpendTracking.dolphin_asset_id == binding.dolphin_asset_id,
-                ClientSpendTracking.organization_id == binding.organization_id
-            ).first()
-            
-            if spend_tracking:
-                spend_tracking.total_topped_up += amount
-                spend_tracking.fee_collected += fee_amount
-                spend_tracking.client_balance += available_for_spend
-        
-        db.commit()
-        
-        return {
-            "status": "topup_recorded",
-            "amount_topped_up": amount,
-            "fee_collected": fee_amount,
-            "available_for_spend": available_for_spend,
-            "new_total_balance": binding.client_topped_up_total,
-            "next_steps": [
-                "Client payment recorded successfully",
-                "Your team should now top up provider on their app",
-                "Provider will automatically top up Facebook",
-                "Use /spend/detect-changes to sync new limits from Dolphin Cloud",
-                "Client will see updated budget after detection"
-            ]
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error recording client top-up: {e}")
-        raise HTTPException(status_code=500, detail=str(e)) 
+        logger.error(f"🔗 TEST: Overall error: {e}")
+        return {"error": f"Overall error: {e}"} 

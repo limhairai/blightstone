@@ -1,71 +1,65 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import useSWR from 'swr'
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
-import { formatCurrency, APP_BALANCE_DATA } from "../../lib/mock-data"
-import { TrendingDown, TrendingUp } from "lucide-react"
-import { useAppData } from "../../contexts/AppDataContext"
+import { formatCurrency } from "../../utils/format"
+import { TrendingDown, TrendingUp, Wallet } from "lucide-react"
+import { Skeleton } from "../ui/skeleton"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function WalletPortfolioCard() {
-  const { state } = useAppData()
-  const [timeFilter, setTimeFilter] = useState("1D")
+  const { currentOrganizationId } = useOrganizationStore()
+  const [timeFilter, setTimeFilter] = useState("1M")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  const totalBalance = state.financialData.totalBalance
-  const change24h = state.financialData.growthRate || 0
-  const changeAmount = (totalBalance * change24h) / 100
+  const { data, error, isLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
 
-  // Generate chart data based on time filter and real balance data
+  const organization = data?.organizations?.[0];
+  const totalBalance = organization?.balance ?? 0;
+  
+  // For now, let's use a static change value until we have historical data
+  const change24h = 2.5; 
+  const changeAmount = (totalBalance * change24h) / 100;
+  
   const chartData = useMemo(() => {
-    if (timeFilter === "1M") {
-      // Use actual balance data for 1M view
-      return APP_BALANCE_DATA.map((item, i) => ({
-        index: i,
-        value: item.value,
-        time: item.date,
-      }))
-    }
-
-    // Generate synthetic data for other time periods
-    const points = timeFilter === "1D" ? 24 : timeFilter === "1W" ? 7 : timeFilter === "3M" ? 90 : 365
+    const points = 30; // Always generate 30 points for the chart
     const baseValue = totalBalance
     
-    return Array.from({ length: points }).map((_, i) => {
-      let trend = 0
-      let volatility = 0
-      
-      if (timeFilter === "1D") {
-        // Hourly data - small fluctuations
-        trend = (change24h / 100) * baseValue * (i / points)
-        volatility = Math.sin(i * 0.5) * (baseValue * 0.01) + Math.cos(i * 0.3) * (baseValue * 0.005)
-      } else if (timeFilter === "1W") {
-        // Daily data for a week
-        trend = (change24h / 100) * baseValue * (i / points) * 7
-        volatility = Math.sin(i * 0.8) * (baseValue * 0.02) + Math.cos(i * 0.4) * (baseValue * 0.01)
-      } else if (timeFilter === "3M") {
-        // 3 month trend
-        trend = (change24h / 100) * baseValue * (i / points) * 90
-        volatility = Math.sin(i * 0.2) * (baseValue * 0.05) + Math.cos(i * 0.1) * (baseValue * 0.03)
-      } else {
-        // 1 year trend
-        trend = (change24h / 100) * baseValue * (i / points) * 365
-        volatility = Math.sin(i * 0.1) * (baseValue * 0.08) + Math.cos(i * 0.05) * (baseValue * 0.05)
-      }
-      
-      const value = Math.max(baseValue * 0.5, baseValue - trend + volatility)
-      
-      return {
-        index: i,
-        value,
-        time: timeFilter === "1D" 
-          ? `${String(i).padStart(2, "0")}:00` 
-          : timeFilter === "1W" 
-            ? `Day ${i + 1}` 
-            : `${i + 1}`,
-      }
-    })
-  }, [timeFilter, totalBalance, change24h])
+    const dataPoints = Array.from({ length: points }).map((_, i) => {
+        const volatility = (Math.sin(i * 0.5) * 0.2 + Math.random() * 0.1 - 0.05);
+        const value = baseValue * (1 + volatility);
+        return {
+            index: i,
+            value: Math.max(0, value),
+            time: `Day ${i + 1}`
+        }
+    });
+    if(dataPoints.length > 0) {
+      dataPoints[dataPoints.length - 1].value = totalBalance;
+    }
+    return dataPoints;
+  }, [totalBalance]);
+  
+  if (isLoading) {
+    return (
+      <Card className="flex-1 flex flex-col">
+        <CardContent className="p-6">
+          <Skeleton className="h-8 w-3/4 mb-2" />
+          <Skeleton className="h-10 w-1/2 mb-4" />
+          <Skeleton className="h-48 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) return <div>Failed to load wallet data.</div>
 
   const timeFilters = ["1D", "1W", "1M", "3M", "1Y"]
   const isPositive = change24h >= 0
@@ -77,10 +71,9 @@ export function WalletPortfolioCard() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-lg font-semibold text-foreground">Primary Wallet</h2>
-              <span className="text-xs text-[#c4b5fd] bg-[#c4b5fd]/10 px-2 py-1 rounded">
-                Current account
-              </span>
+              <h2 className="text-lg font-semibold text-foreground">
+                {organization?.name || 'Primary Wallet'}
+              </h2>
             </div>
             <div className="text-3xl font-bold text-foreground">${formatCurrency(totalBalance)}</div>
             <div className="flex items-center gap-1 mt-1">
@@ -95,8 +88,7 @@ export function WalletPortfolioCard() {
             </div>
           </div>
           <div className="text-right text-sm text-muted-foreground">
-            <div>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-            <div>${formatCurrency(totalBalance)}</div>
+             <Wallet className="h-8 w-8 text-muted-foreground" />
           </div>
         </div>
 
@@ -119,10 +111,10 @@ export function WalletPortfolioCard() {
 
               {/* Area Fill */}
               <path
-                d={`M 0,${100 - (chartData[0].value / Math.max(...chartData.map((p) => p.value))) * 60} ${chartData
+                d={`M 0,${100 - (chartData[0].value / Math.max(...chartData.map((p) => p.value), 1)) * 60} ${chartData
                   .map(
                     (point, i) =>
-                      `L ${(i / (chartData.length - 1)) * 100},${100 - (point.value / Math.max(...chartData.map((p) => p.value))) * 60}`,
+                      `L ${(i / (chartData.length - 1)) * 100},${100 - (point.value / Math.max(...chartData.map((p) => p.value), 1)) * 60}`,
                   )
                   .join(" ")} L 100,100 L 0,100 Z`}
                 fill="url(#chartGradient)"
@@ -132,8 +124,11 @@ export function WalletPortfolioCard() {
               <path
                 d={`M ${chartData
                   .map(
-                    (point, i) =>
-                      `${(i / (chartData.length - 1)) * 100},${100 - (point.value / Math.max(...chartData.map((p) => p.value))) * 60}`,
+                    (point, i) => {
+                      const maxValue = Math.max(...chartData.map((p) => p.value), 1)
+                      const yPos = totalBalance === 0 ? 30 : 100 - (point.value / maxValue) * 60 // Show line at 30% for $0 balance (more visible)
+                      return `${(i / (chartData.length - 1)) * 100},${yPos}`
+                    }
                   )
                   .join(" L ")}`}
                 fill="none"
@@ -145,7 +140,8 @@ export function WalletPortfolioCard() {
 
             {/* Interactive Hover Points */}
             {chartData.map((point, i) => {
-              const yPosition = 100 - (point.value / Math.max(...chartData.map((p) => p.value))) * 60
+              const maxValue = Math.max(...chartData.map((p) => p.value), 1)
+              const yPosition = totalBalance === 0 ? 30 : 100 - (point.value / maxValue) * 60
               return (
                 <div
                   key={i}

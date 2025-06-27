@@ -1,5 +1,35 @@
-import { supabase } from '../lib/stores/supabase-client'
-import { AppBusiness, AppAccount, AppTransaction, AppOrganization, TeamMember, UserProfile } from '../contexts/AppDataContext'
+import { createClient } from '@supabase/supabase-js'
+import { Business } from '../types/business'
+import { AdAccount, AppAccount } from '../types/account'
+import { Transaction } from '../types/transaction'
+import { Organization, Wallet } from '../types/organization'
+import { UserProfile } from '../types/user'
+
+// Get API URL from environment
+const getApiUrl = () => {
+  // In production/staging, use the environment variable
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return process.env.NEXT_PUBLIC_API_URL || 'https://api.adhub.com'
+  }
+  // In development, use localhost
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+// For backward compatibility, alias the new types
+interface AppBusiness extends Business {}
+interface AppTransaction extends Transaction {}
+interface AppOrganization extends Organization {}
+interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: string
+}
 
 // ============================================================================
 // BUSINESS OPERATIONS
@@ -48,9 +78,8 @@ export const BusinessService = {
         organization_id: organizationId,
         name: businessData.name,
         website_url: businessData.website,
-        business_type: businessData.businessType,
         status: businessData.status || 'pending',
-        verification: businessData.verification || 'pending'
+        timezone: 'UTC'
       })
       .select()
       .single()
@@ -70,9 +99,7 @@ export const BusinessService = {
       .update({
         name: business.name,
         status: business.status,
-        verification: business.verification,
-        website_url: business.website,
-        business_type: business.businessType
+        website_url: business.website
       })
       .eq('id', business.id)
       .select()
@@ -172,8 +199,8 @@ export const AccountService = {
         account_id: accountData.accountId || `acc_${Date.now()}`,
         status: accountData.status || 'pending',
         balance: accountData.balance || 0,
-        spend_limit: accountData.spendLimit || 5000,
-        platform: accountData.platform || 'Meta'
+  
+  
       })
       .select()
       .single()
@@ -194,7 +221,7 @@ export const AccountService = {
         name: account.name,
         status: account.status,
         balance: account.balance,
-        spend_limit: account.spendLimit,
+  
         spent: account.spent || 0
       })
       .eq('id', account.id)
@@ -296,19 +323,21 @@ export const TransactionService = {
 export const OrganizationService = {
   // Get organizations for a user
   async getOrganizationsByUser(userId: string): Promise<AppOrganization[]> {
+
     const { data, error } = await supabase
       .from('organizations')
       .select(`
         *,
         wallets(balance_cents)
       `)
-      .or(`owner_id.eq.${userId},organization_members.user_id.eq.${userId}`)
+      .eq('owner_id', userId)
       .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching organizations:', error)
       throw new Error(`Failed to fetch organizations: ${error.message}`)
     }
+
 
     return data.map(convertSupabaseOrganizationToAppOrganization)
   },
@@ -368,21 +397,44 @@ export const OrganizationService = {
 export const TeamService = {
   // Get team members for an organization
   async getTeamMembersByOrganization(organizationId: string): Promise<TeamMember[]> {
-    const { data, error } = await supabase
+    // First get organization members
+    const { data: members, error: membersError } = await supabase
       .from('organization_members')
-      .select(`
-        *,
-        profiles!organization_members_user_id_fkey(id, name, email, avatar_url)
-      `)
+      .select('user_id, organization_id, role, joined_at')
       .eq('organization_id', organizationId)
       .order('joined_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching team members:', error)
-      throw new Error(`Failed to fetch team members: ${error.message}`)
+    if (membersError) {
+      console.error('Error fetching organization members:', membersError)
+      throw new Error(`Failed to fetch organization members: ${membersError.message}`)
     }
 
-    return data.map(convertSupabaseTeamMemberToTeamMember)
+    if (!members || members.length === 0) {
+      return []
+    }
+
+    // Then get profiles for those users
+    const userIds = members.map(m => m.user_id)
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name, email, avatar_url')
+      .in('id', userIds)
+
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError)
+      throw new Error(`Failed to fetch profiles: ${profilesError.message}`)
+    }
+
+    // Combine the data
+    const teamMembers = members.map(member => {
+      const profile = profiles?.find(p => p.id === member.user_id)
+      return {
+        ...member,
+        profiles: profile || { id: member.user_id, name: 'Unknown', email: '', avatar_url: null }
+      }
+    })
+
+    return teamMembers.map(convertSupabaseTeamMemberToTeamMember)
   }
 }
 
@@ -521,8 +573,133 @@ export const OnboardingService = {
 }
 
 // ============================================================================
-// CONVERSION FUNCTIONS
+// DOLPHIN ASSETS OPERATIONS
 // ============================================================================
+
+export interface DolphinAsset {
+  id: string
+  asset_type: 'profile' | 'business_manager' | 'ad_account'
+  asset_id: string
+  name: string
+  status: string
+  health_status: string
+  parent_business_manager_id?: string
+  asset_metadata: any
+  discovered_at: string
+  last_sync_at?: string
+  is_bound: boolean
+  binding_info?: {
+    organization_name: string
+    business_name?: string
+    spend_limit_cents: number
+    fee_percentage: number
+    bound_at: string
+  }
+}
+
+export const DolphinAssetsService = {
+  // Get all dolphin assets with binding status
+  async getAllAssets(assetType?: string): Promise<DolphinAsset[]> {
+    let query = supabase
+      .from('dolphin_assets')
+      .select(`
+        *,
+        client_asset_bindings!left(
+          id,
+          spend_limit_cents,
+          fee_percentage,
+          bound_at,
+          organizations!inner(name),
+          businesses(name)
+        )
+      `)
+      .order('discovered_at', { ascending: false })
+
+    if (assetType) {
+      query = query.eq('asset_type', assetType)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching dolphin assets:', error)
+      throw new Error(`Failed to fetch dolphin assets: ${error.message}`)
+    }
+
+    return data.map(convertSupabaseDolphinAsset)
+  },
+
+  // Sync assets from Dolphin API to our database
+  async syncFromDolphinAPI(accessToken: string): Promise<{
+    success: boolean
+    profiles_found: number
+    business_managers_found: number
+    ad_accounts_found: number
+    errors: string[]
+  }> {
+    try {
+      if (!accessToken) {
+        throw new Error('No authentication token provided')
+      }
+
+      const apiUrl = getApiUrl()
+      const response = await fetch(`${apiUrl}/api/dolphin-assets/sync/discover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Sync failed: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      return result
+    } catch (error) {
+      console.error('Error syncing dolphin assets:', error)
+      throw error
+    }
+  },
+
+  // Get assets for a specific organization (client view)
+  async getClientAssets(organizationId: string, assetType?: string): Promise<DolphinAsset[]> {
+    let query = supabase
+      .from('client_asset_bindings')
+      .select(`
+        *,
+        dolphin_assets!inner(*),
+        organizations!inner(name),
+        businesses(name)
+      `)
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+
+    if (assetType) {
+      query = query.eq('dolphin_assets.asset_type', assetType)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching client assets:', error)
+      throw new Error(`Failed to fetch client assets: ${error.message}`)
+    }
+
+    return data.map((binding: any) => ({
+      ...convertSupabaseDolphinAsset(binding.dolphin_assets),
+      is_bound: true,
+      binding_info: {
+        organization_name: binding.organizations.name,
+        business_name: binding.businesses?.name,
+        spend_limit_cents: binding.spend_limit_cents,
+        fee_percentage: binding.fee_percentage,
+        bound_at: binding.bound_at
+      }
+    }))
+  }
+}
 
 function convertSupabaseBusinessToAppBusiness(supabaseBusiness: any): AppBusiness {
   return {
@@ -531,10 +708,7 @@ function convertSupabaseBusinessToAppBusiness(supabaseBusiness: any): AppBusines
     status: supabaseBusiness.status,
     balance: 0, // Will be calculated from accounts
     dateCreated: supabaseBusiness.created_at,
-    website: supabaseBusiness.website_url,
-    businessType: supabaseBusiness.business_type,
-    verification: supabaseBusiness.verification,
-    type: supabaseBusiness.business_type
+    website: supabaseBusiness.website_url
   }
 }
 
@@ -547,9 +721,9 @@ function convertSupabaseAccountToAppAccount(supabaseAccount: any): AppAccount {
     dateAdded: supabaseAccount.created_at,
     businessId: supabaseAccount.business_id,
     accountId: supabaseAccount.account_id,
-    spendLimit: parseFloat(supabaseAccount.spend_limit) || 0,
+    
     spent: parseFloat(supabaseAccount.spent) || 0,
-    platform: supabaseAccount.platform
+    
   }
 }
 
@@ -566,13 +740,16 @@ function convertSupabaseTransactionToAppTransaction(supabaseTransaction: any): A
 }
 
 function convertSupabaseOrganizationToAppOrganization(supabaseOrg: any): AppOrganization {
+  // Fix: wallets is an object, not an array!
+  const balance = supabaseOrg.wallets?.balance_cents / 100 || 0
+
+  
   return {
     id: supabaseOrg.id,
     name: supabaseOrg.name,
     plan: supabaseOrg.plan_id || 'free',
-    balance: supabaseOrg.wallets?.[0]?.balance_cents / 100 || 0,
+    balance,
     created_at: supabaseOrg.created_at,
-    verification_status: supabaseOrg.verification_status,
     avatar: supabaseOrg.avatar_url
   }
 }
@@ -616,5 +793,31 @@ function convertSupabaseProfileToUserProfile(supabaseProfile: any): UserProfile 
       push: true,
       sms: false
     }
+  }
+}
+
+function convertSupabaseDolphinAsset(supabaseAsset: any): DolphinAsset {
+  const bindings = supabaseAsset.client_asset_bindings || []
+  const activeBinding = bindings.find((b: any) => b.status === 'active')
+
+  return {
+    id: supabaseAsset.id,
+    asset_type: supabaseAsset.asset_type,
+    asset_id: supabaseAsset.asset_id,
+    name: supabaseAsset.name,
+    status: supabaseAsset.status,
+    health_status: supabaseAsset.health_status,
+    parent_business_manager_id: supabaseAsset.parent_business_manager_id,
+    asset_metadata: supabaseAsset.asset_metadata,
+    discovered_at: supabaseAsset.discovered_at,
+    last_sync_at: supabaseAsset.last_sync_at,
+    is_bound: !!activeBinding,
+    binding_info: activeBinding ? {
+      organization_name: activeBinding.organizations?.name,
+      business_name: activeBinding.businesses?.name,
+      spend_limit_cents: activeBinding.spend_limit_cents,
+      fee_percentage: activeBinding.fee_percentage,
+      bound_at: activeBinding.bound_at
+    } : undefined
   }
 } 

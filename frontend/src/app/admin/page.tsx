@@ -23,19 +23,123 @@ import {
   Shield
 } from "lucide-react"
 import Link from "next/link"
-import { useAppData } from "../../contexts/AppDataContext"
-import { OnboardingAdminPanel } from "../../components/admin/onboarding-admin-panel"
+import { useState, useEffect } from "react"
+import { useAuth } from "../../contexts/AuthContext"
 
 export default function AdminDashboard() {
-  const { state } = useAppData()
+  const { session } = useAuth()
+  const [applications, setApplications] = useState<any[]>([])
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Fetch real data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const activities = []
+
+        // Fetch applications (this includes businesses that need review)
+        try {
+          const applicationsResponse = await fetch('/api/admin/applications')
+          if (applicationsResponse.ok) {
+            const applicationsData = await applicationsResponse.json()
+            const applicationsList = Array.isArray(applicationsData) ? applicationsData : []
+            setApplications(applicationsList)
+
+            // Add recent business applications
+            applicationsList
+              .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
+              .slice(0, 3)
+              .forEach(application => {
+                activities.push({
+                  type: "application",
+                  message: `New business application: ${application.business_name}`,
+                  time: formatTimeAgo(application.submitted_at),
+                  status: application.status || "pending"
+                })
+              })
+          }
+        } catch (err) {
+          console.error('Failed to fetch applications:', err)
+        }
+
+        // Fetch funding requests
+        try {
+          const fundingResponse = await fetch('/api/funding-requests')
+          if (fundingResponse.ok) {
+            const fundingData = await fundingResponse.json()
+            const fundingRequests = fundingData.requests || []
+
+            // Add recent funding requests
+            fundingRequests
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+              .slice(0, 2)
+              .forEach(request => {
+                activities.push({
+                  type: "topup",
+                  message: `Funding request: $${request.amount || request.requested_amount} for ${request.account_name}`,
+                  time: formatTimeAgo(request.created_at),
+                  status: request.status || "pending"
+                })
+              })
+          }
+        } catch (err) {
+          console.error('Failed to fetch funding requests:', err)
+        }
+
+        // Sort all activities by time and take the most recent
+        setRecentActivity(activities.slice(0, 4))
+
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [session])
+
+  // Helper function to format time ago
+  const formatTimeAgo = (dateString) => {
+    const now = new Date()
+    const date = new Date(dateString)
+    const diffInMinutes = Math.floor((now - date) / (1000 * 60))
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minutes ago`
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60)
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    } else {
+      const days = Math.floor(diffInMinutes / 1440)
+      return `${days} day${days > 1 ? 's' : ''} ago`
+    }
+  }
+
+  // Calculate stats from real data
+  const dashboardStats = {
+    totalOrganizations: 1, // For now
+    activeTeams: 1,
+    pendingApplications: applications.filter(a => 
+      ['In Review', 'Processing', 'Ready'].includes(a.status)
+    ).length,
+    monthlyRevenue: applications.reduce((sum, a) => sum + (a.revenue || 0), 0)
+  }
   
-  // Use real admin data from context
-  const dashboardStats = state.adminData.systemStats
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading admin data...</div>
+  }
+  
+  if (error) {
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+  }
 
   const quickActions = [
     {
       title: "Review Applications",
-      description: "8 applications pending review",
+      description: `${dashboardStats.pendingApplications} applications pending review`,
       icon: FileText,
       href: "/admin/applications"
     },
@@ -59,102 +163,10 @@ export default function AdminDashboard() {
     }
   ]
 
-  const recentActivity = [
-    {
-      type: "application",
-      message: "New application from TechCorp Solutions",
-      time: "2 hours ago",
-      status: "pending"
-    },
-    {
-      type: "topup",
-      message: "Wallet top-up completed for Digital Pro Agency",
-      time: "4 hours ago",
-      status: "completed"
-    },
-    {
-      type: "team",
-      message: "Team Alpha reached capacity",
-      time: "6 hours ago",
-      status: "active"
-    },
-    {
-      type: "asset",
-      message: "New Business Manager connected",
-      time: "1 day ago",
-      status: "completed"
-    }
-  ]
+
 
   return (
     <div className="space-y-6">
-      {/* System Status Bar */}
-      <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          <span className="text-sm font-medium text-green-800">System Status: Operational</span>
-        </div>
-        <Button variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Organizations
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{dashboardStats.totalOrganizations}</div>
-            <p className="text-xs text-muted-foreground">+3 this month</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Active Teams
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{dashboardStats.activeTeams}</div>
-            <p className="text-xs text-muted-foreground">+2 this week</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Pending Applications
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold text-orange-600">{dashboardStats.pendingApplications}</div>
-            <p className="text-xs text-muted-foreground">Requires attention</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Monthly Revenue
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">${dashboardStats.monthlyRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">+15% from last month</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Quick Actions */}
       <div>
         <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
@@ -189,51 +201,52 @@ export default function AdminDashboard() {
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0">
-                      {activity.type === "application" && <FileText className="h-4 w-4 text-blue-500" />}
-                      {activity.type === "topup" && <CreditCard className="h-4 w-4 text-green-500" />}
-                      {activity.type === "team" && <Users className="h-4 w-4 text-purple-500" />}
-                      {activity.type === "asset" && <Database className="h-4 w-4 text-orange-500" />}
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0">
+                        {activity.type === "application" && <FileText className="h-4 w-4 text-blue-500" />}
+                        {activity.type === "topup" && <CreditCard className="h-4 w-4 text-green-500" />}
+                        {activity.type === "team" && <Users className="h-4 w-4 text-purple-500" />}
+                        {activity.type === "asset" && <Database className="h-4 w-4 text-orange-500" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{activity.message}</p>
+                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      </div>
                     </div>
                     <div>
-                      <p className="text-sm font-medium">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground">{activity.time}</p>
+                      {activity.status === "pending" && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Pending
+                        </Badge>
+                      )}
+                      {activity.status === "completed" && (
+                        <Badge variant="default" className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Completed
+                        </Badge>
+                      )}
+                      {activity.status === "active" && (
+                        <Badge variant="default" className="flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          Active
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <div>
-                    {activity.status === "pending" && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Pending
-                      </Badge>
-                    )}
-                    {activity.status === "completed" && (
-                      <Badge variant="default" className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Completed
-                      </Badge>
-                    )}
-                    {activity.status === "active" && (
-                      <Badge variant="default" className="flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Active
-                      </Badge>
-                    )}
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No recent activity</p>
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
-      </div>
-      
-      {/* Onboarding Admin Panel for testing */}
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Onboarding Management</h3>
-        <OnboardingAdminPanel />
       </div>
     </div>
   )

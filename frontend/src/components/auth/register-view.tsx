@@ -10,8 +10,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from '../../contexts/AuthContext'
 import { Skeleton } from "../ui/skeleton"
-import { toast } from "../ui/use-toast"
-import { validateRegistrationForm, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
+import { toast } from "sonner"
+import { validateRegistrationForm, showValidationErrors } from "../../lib/form-validation"
 
 export function RegisterView() {
   const [name, setName] = useState("");
@@ -21,124 +21,50 @@ export function RegisterView() {
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [nameError, setNameError] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState("");
+  const [registrationComplete, setRegistrationComplete] = useState(false);
   const router = useRouter();
   const { signUp } = useAuth();
-
-  // Validation helpers
-  function validateEmail(email: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  }
-  function validatePassword(password: string) {
-    // At least 8 chars, 1 letter, 1 number
-    return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=]{8,}$/.test(password);
-  }
-  function validateName(name: string) {
-    return name.length >= 2 && name.length <= 50 && /^[A-Za-z0-9 _.'-]+$/.test(name);
-  }
-
-  // Validate on change
-  function validateAll() {
-    setNameError(!validateName(name) ? "Name must be 2-50 characters and only letters, numbers, spaces, and _.'-" : "");
-    setEmailError(!validateEmail(email) ? "Please enter a valid email address." : "");
-    setPasswordError(!validatePassword(password) ? "Password must be at least 8 characters and include a letter and a number." : "");
-    setConfirmPasswordError(password !== confirmPassword ? "Passwords do not match." : "");
-  }
-  // Validate on every change
-  useEffect(() => { 
-    validateAll(); 
-  }, [name, email, password, confirmPassword, terms]);
-
-  const isFormValid =
-    validateName(name) &&
-    validateEmail(email) &&
-    validatePassword(password) &&
-    password === confirmPassword &&
-    terms;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
-    // Comprehensive form validation
-    const validation = validateRegistrationForm({ name, email, password, confirmPassword, terms })
-    
+
+    const validation = validateRegistrationForm({ name, email, password, confirmPassword, terms });
+
     if (!validation.isValid) {
-      showValidationErrors(validation.errors)
-      return
+      showValidationErrors(validation.errors);
+      return;
     }
-    
+
     setLoading(true);
 
     try {
-      const signUpResponse = await signUp(email, password, { data: { fullName: name } });
+      const { data, error } = await signUp(email, password, {
+        data: { full_name: name },
+      });
 
-      if (signUpResponse.error) {
-        const errorMessage = signUpResponse.error.message.toLowerCase();
-        if (errorMessage.includes("user already registered") || 
-            errorMessage.includes("email address is already in use") ||
-            errorMessage.includes("email link is invalid or has expired")) { // Common variations
-          // User already exists - redirect to login instead of showing error
-          toast({ 
-            title: "Account Exists", 
-            description: "An account with this email already exists. Redirecting to login...", 
-            variant: "default",
-            duration: 3000
-          });
-          // Show immediate feedback
-          setError("Account already exists. Redirecting to login...");
-          setTimeout(() => {
-            router.push('/login?email=' + encodeURIComponent(email));
-          }, 2000);
-          return;
-        } else {
-          setError(signUpResponse.error.message); // Default Supabase error
-          toast({ title: "Registration Failed", description: signUpResponse.error.message, variant: "destructive" });
-        }
-        return; // Stop execution if there was a sign-up error
-      }
-
-      if (!signUpResponse.data?.user?.id) {
-        console.error("Register handleSubmit: Failed to get user ID after Supabase registration.", signUpResponse.data);
-        setError("Registration succeeded but failed to retrieve user details. Please try logging in.");
-        toast({ title: "Registration Incomplete", description: "Failed to retrieve user details. Please try logging in.", variant: "destructive" });
+      if (error) {
+        setError(error.message);
+        toast.error(error.message);
+        setLoading(false);
         return;
       }
 
-      // Check if email confirmation is required
-      if (signUpResponse.data.user && !signUpResponse.data.session) {
-        // Email confirmation required - redirect to confirmation page
-        toast({
-          title: "Registration successful!",
-          description: "Please check your email to verify your account.",
-        });
-        router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
-      } else if (signUpResponse.data.user && signUpResponse.data.session) {
-        // User is immediately signed in - redirect to dashboard
-        toast({
-          title: "Registration successful!",
-          description: "Welcome to AdHub!",
-        });
-        router.push('/dashboard');
+      if (data.user && !data.session) {
+        // This means email confirmation is required.
+        setRegistrationComplete(true);
+      } else if (data.user && data.session) {
+        // User is immediately logged in.
+        toast.success("Registration successful! Redirecting to dashboard...");
+        router.push("/dashboard");
       } else {
-        // Unexpected state
-        setError("Registration completed but something went wrong. Please try signing in.");
-        toast({ title: "Registration Issue", description: "Please try signing in with your credentials.", variant: "destructive" });
+        // Handle unexpected cases
+        setError("An unexpected error occurred. Please try again.");
+        toast.error("An unexpected error occurred. Please try again.");
       }
-
-    } catch (error: any) { // This catch block is now for truly unexpected errors not from supabase.auth.signUp directly
-      console.error("Register handleSubmit: Unexpected error caught:", error);
-      let errorMessage = "An unexpected error occurred during registration.";
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      setError(errorMessage);
-      toast({ title: "Registration Error", description: errorMessage, variant: "destructive" });
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+      toast.error(err.message || "An unexpected error occurred.");
     } finally {
       setLoading(false);
     }
@@ -152,134 +78,136 @@ export function RegisterView() {
     );
   }
 
+  if (registrationComplete) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-center px-4">
+        <AdHubLogo size="lg" />
+        <h1 className="text-4xl font-bold tracking-tight mt-8">
+          Registration Successful!
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Please check your email at <span className="font-semibold text-foreground">{email}</span> for a confirmation link to complete your sign up.
+        </p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          (You can close this tab)
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <div className="px-6 py-4 md:px-8">
-        <AdHubLogo size="lg" />
+        <Link href="/">
+          <AdHubLogo size="lg" />
+        </Link>
       </div>
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight">
-              Join{" "}
-              <span>
-                <span className="text-white">Ad</span>
-                <span className="fey-gradient">Hub</span>
-              </span>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">
+              Create your account
             </h1>
-            <p className="mt-3 text-sm text-muted-foreground">Create an account to access ad accounts on demand</p>
+            <p className="mt-3 text-sm text-muted-foreground">
+              And get access to ad accounts on demand.
+            </p>
           </div>
 
-          <div className="mt-10">
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Full name"
-                    className="h-12 bg-secondary/50 border-0 rounded-md px-5 text-sm"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                    required
-                  />
-                  {nameError && <div className="text-red-500 text-xs mt-1">{nameError}</div>}
-                </div>
-              </div>
+          <form className="mt-10 space-y-6" onSubmit={handleSubmit}>
+            <div className="space-y-4">
+              <Input
+                id="name"
+                type="text"
+                placeholder="Full name"
+                className="h-12 rounded-md px-5 text-sm"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <Input
+                id="email"
+                type="email"
+                placeholder="Email address"
+                className="h-12 rounded-md px-5 text-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+              <Input
+                id="password"
+                type="password"
+                placeholder="Password"
+                className="h-12 rounded-md px-5 text-sm"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm password"
+                className="h-12 rounded-md px-5 text-sm"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+            </div>
 
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Email address"
-                    className="h-12 bg-secondary/50 border-0 rounded-md px-5 text-sm"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                  />
-                  {emailError && <div className="text-red-500 text-xs mt-1">{emailError}</div>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Password"
-                    className="h-12 bg-secondary/50 border-0 rounded-md px-5 text-sm"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                  />
-                  {passwordError && <div className="text-red-500 text-xs mt-1">{passwordError}</div>}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Confirm password"
-                    className="h-12 bg-secondary/50 border-0 rounded-md px-5 text-sm"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                  {confirmPasswordError && <div className="text-red-500 text-xs mt-1">{confirmPasswordError}</div>}
-                </div>
-              </div>
-
-              <div className="flex items-center">
+            <div className="flex items-start pt-2">
+              <div className="flex items-center h-5">
                 <input
                   id="terms"
                   name="terms"
                   type="checkbox"
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  className="focus:ring-primary h-4 w-4 text-primary border-gray-300 rounded"
                   checked={terms}
-                  onChange={e => setTerms(e.target.checked)}
-                  required
+                  onChange={(e) => setTerms(e.target.checked)}
                 />
-                <label htmlFor="terms" className="ml-2 block text-sm text-muted-foreground">
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="terms" className="text-muted-foreground">
                   I agree to the{" "}
-                  <Link href="/terms" className="text-primary hover:underline">
+                  <Link
+                    href="/terms"
+                    className="font-medium text-primary hover:underline"
+                  >
                     Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
                   </Link>
                 </label>
               </div>
-
-              {error && (
-                <div className="text-red-500 text-sm text-center">{error}</div>
-              )}
-
-              <div>
-                <Button
-                  className="w-full h-12 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
-                  type="submit"
-                  disabled={!isFormValid || loading}
-                >
-                  {loading ? "Creating account..." : "Create account"}
-                </Button>
-              </div>
-            </form>
-
-            <div className="mt-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link href="/login" className="fey-gradient">
-                  Sign in
-                </Link>
-              </p>
             </div>
+
+            {error && (
+              <div className="text-red-500 text-sm text-center py-2">{error}</div>
+            )}
+
+            <div>
+              <Button
+                className="w-full h-12 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? "Creating account..." : "Create Account"}
+              </Button>
+            </div>
+          </form>
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-medium text-primary hover:underline"
+              >
+                Sign In
+              </Link>
+            </p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 } 

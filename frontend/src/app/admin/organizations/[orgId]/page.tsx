@@ -3,23 +3,18 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
 import { DataTable } from "../../../../components/ui/data-table"
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Building, ArrowLeft, Search, Users, DollarSign, BarChart3 } from "lucide-react"
+import { Building, ArrowLeft, Search } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
-import { QuickActions } from "../../../../components/admin/quick-actions"
-import { TagsCard } from "../../../../components/admin/tags-card"
-import { AdminOrgTasks } from "../../../../components/admin/admin-org-tasks"
-import { AdminOrgTeamTable } from "../../../../components/admin/admin-org-team-table"
 import Link from "next/link"
-import { useAppData } from "../../../../contexts/AppDataContext"
+import { useAuth } from "../../../../contexts/AuthContext"
 import { useParams } from "next/navigation"
 
 interface Business {
@@ -49,176 +44,57 @@ interface Organization {
 }
 
 export default function OrganizationDetailPage() {
-  const { state } = useAppData()
+  const { session } = useAuth()
   const params = useParams()
   const orgId = params?.orgId as string
   
-  // Mock organizations data with enhanced properties
-  const organizations: Organization[] = [
-    {
-      id: "org-1",
-      name: "TechCorp Solutions",
-      industry: "Technology",
-      teamId: "team-1",
-      status: "active",
-      plan: "professional",
-      adAccountsCount: 12,
-      description: "Leading technology solutions provider specializing in enterprise software and cloud services.",
-      tags: ["Enterprise", "B2B", "SaaS", "Cloud"],
-      totalSpend: 45000,
-      balance: 12500,
-      teamMembersCount: 8
-    },
-    {
-      id: "org-2",
-      name: "Digital Marketing Pro",
-      industry: "Marketing",
-      teamId: "team-2", 
-      status: "active",
-      plan: "enterprise",
-      adAccountsCount: 25,
-      description: "Full-service digital marketing agency helping brands grow their online presence.",
-      tags: ["Marketing", "Agency", "Growth", "Digital"],
-      totalSpend: 78000,
-      balance: 25000,
-      teamMembersCount: 15
-    },
-    {
-      id: "org-3",
-      name: "E-commerce Plus",
-      industry: "E-commerce",
-      teamId: "team-1",
-      status: "pending",
-      plan: "starter",
-      adAccountsCount: 5,
-      description: "E-commerce solutions for small to medium businesses.",
-      tags: ["E-commerce", "Retail", "SMB"],
-      totalSpend: 12000,
-      balance: 3500,
-      teamMembersCount: 3
-    },
-    {
-      id: "org-4",
-      name: "StartupCo",
-      industry: "Technology",
-      teamId: "team-1",
-      status: "active",
-      plan: "professional",
-      adAccountsCount: 8,
-      description: "Innovative startup focused on AI and machine learning solutions.",
-      tags: ["Startup", "AI", "ML", "Innovation"],
-      totalSpend: 28000,
-      balance: 8500,
-      teamMembersCount: 5
-    },
-    {
-      id: "org-5",
-      name: "Marketing Hub",
-      industry: "Marketing",
-      teamId: "team-3",
-      status: "active",
-      plan: "enterprise",
-      adAccountsCount: 18,
-      description: "Marketing automation and analytics platform.",
-      tags: ["MarTech", "Analytics", "Automation"],
-      totalSpend: 65000,
-      balance: 18000,
-      teamMembersCount: 12
-    },
-    {
-      id: "org-6",
-      name: "Creative Agency",
-      industry: "Design",
-      teamId: "team-2",
-      status: "suspended",
-      plan: "professional",
-      adAccountsCount: 7,
-      description: "Creative design agency specializing in brand identity and digital experiences.",
-      tags: ["Creative", "Design", "Branding"],
-      totalSpend: 22000,
-      balance: 5500,
-      teamMembersCount: 6
-    }
-  ]
-
-  // Mock businesses data
-  const [businesses] = useState<Business[]>([
-    {
-      id: "biz-1",
-      name: "TechCorp Main Campaign",
-      organizationId: "org-1",
-      status: "active",
-      adAccountsCount: 5,
-      totalSpend: 12500,
-      monthlyBudget: 15000,
-      createdAt: "2024-01-15T10:30:00Z"
-    },
-    {
-      id: "biz-2",
-      name: "TechCorp Product Launch",
-      organizationId: "org-1",
-      status: "active",
-      adAccountsCount: 4,
-      totalSpend: 8200,
-      monthlyBudget: 10000,
-      createdAt: "2024-01-10T14:20:00Z"
-    },
-    {
-      id: "biz-3",
-      name: "TechCorp Brand Awareness",
-      organizationId: "org-1",
-      status: "pending",
-      adAccountsCount: 3,
-      totalSpend: 3500,
-      monthlyBudget: 5000,
-      createdAt: "2024-01-12T09:15:00Z"
-    },
-    {
-      id: "biz-4",
-      name: "Digital Pro Lead Gen",
-      organizationId: "org-2",
-      status: "active",
-      adAccountsCount: 8,
-      totalSpend: 25000,
-      monthlyBudget: 30000,
-      createdAt: "2024-01-08T11:45:00Z"
-    },
-    {
-      id: "biz-5",
-      name: "Digital Pro Retargeting",
-      organizationId: "org-2",
-      status: "active",
-      adAccountsCount: 6,
-      totalSpend: 18500,
-      monthlyBudget: 20000,
-      createdAt: "2024-01-05T16:30:00Z"
-    },
-    {
-      id: "biz-6",
-      name: "E-commerce Holiday Campaign",
-      organizationId: "org-3",
-      status: "suspended",
-      adAccountsCount: 2,
-      totalSpend: 5500,
-      monthlyBudget: 8000,
-      createdAt: "2024-01-03T13:20:00Z"
-    }
-  ])
-
+  const [organization, setOrganization] = useState<Organization | null>(null)
+  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
-  const currentOrganization = organizations.find(o => o.id === orgId)
-  const organizationBusinesses = businesses.filter(biz => biz.organizationId === orgId)
+  // Fetch organization data
+  useEffect(() => {
+    async function fetchOrganization() {
+      if (!orgId) return
+      
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/admin/organizations/${orgId}`)
+        
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Organization not found')
+          } else {
+            setError('Failed to fetch organization')
+          }
+          return
+        }
+        
+        const data = await response.json()
+        setOrganization(data.organization)
+        setBusinesses(data.businesses || [])
+      } catch (err) {
+        console.error('Error fetching organization:', err)
+        setError('Failed to fetch organization')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrganization()
+  }, [orgId])
 
   const filteredBusinesses = useMemo(() => {
-    return organizationBusinesses.filter((business) => {
+    return businesses.filter((business) => {
       const statusFilter = selectedStatus === "all" || business.status === selectedStatus
       const searchFilter = searchTerm === "" || 
         business.name.toLowerCase().includes(searchTerm.toLowerCase())
       return statusFilter && searchFilter
     })
-  }, [organizationBusinesses, selectedStatus, searchTerm])
+  }, [businesses, selectedStatus, searchTerm])
 
   const columns: ColumnDef<Business>[] = [
     {
@@ -288,7 +164,18 @@ export default function OrganizationDetailPage() {
     },
   ]
 
-  if (!currentOrganization) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading organization...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !organization) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -316,103 +203,15 @@ export default function OrganizationDetailPage() {
           </Button>
         </Link>
         <div className="h-4 w-px bg-border" />
-        <h1 className="text-lg font-semibold">{currentOrganization.name}</h1>
-        <StatusBadge status={currentOrganization.status} />
+        <h1 className="text-lg font-semibold">{organization.name}</h1>
+        <StatusBadge status={organization.status} />
         <Badge variant="outline" className="text-xs">
-          {currentOrganization.industry}
+          {organization.industry}
         </Badge>
         <Badge variant="outline" className="text-xs">
-          {organizationBusinesses.length} businesses
+          {businesses.length} businesses
         </Badge>
       </div>
-
-      {/* Organization Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Organization Stats */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Total Spend
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold">${currentOrganization.totalSpend?.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Balance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold">${currentOrganization.balance?.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">Available funds</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Team Members
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="text-2xl font-bold">{currentOrganization.teamMembersCount}</div>
-                <p className="text-xs text-muted-foreground">Active members</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Organization Description */}
-          {currentOrganization.description && (
-            <Card>
-              <CardHeader>
-                <CardTitle>About</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{currentOrganization.description}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <QuickActions org={currentOrganization} />
-            </CardContent>
-          </Card>
-
-          {/* Tags */}
-          <TagsCard 
-            tags={currentOrganization.tags || []} 
-            orgId={currentOrganization.id}
-          />
-
-          {/* Tasks */}
-          <AdminOrgTasks 
-            orgId={currentOrganization.id} 
-            isSuperuser={state.userRole === 'superuser'}
-          />
-        </div>
-      </div>
-
-      {/* Team Members */}
-      <AdminOrgTeamTable orgId={currentOrganization.id} />
 
       {/* Businesses Section */}
       <div className="space-y-4">

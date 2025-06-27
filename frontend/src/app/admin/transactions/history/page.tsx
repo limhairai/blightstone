@@ -3,7 +3,9 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useAuth } from "../../../../contexts/AuthContext"
+import { toast } from "sonner"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
@@ -25,62 +27,40 @@ interface Transaction {
 }
 
 export default function TransactionHistoryPage() {
-  const [transactions] = useState<Transaction[]>([
-    {
-      id: "txn-001",
-      type: "topup",
-      amount: 5000,
-      currency: "USD",
-      status: "completed",
-      organizationName: "TechCorp Solutions",
-      description: "Wallet funding",
-      createdAt: "2024-01-15T10:30:00Z"
-    },
-    {
-      id: "txn-002",
-      type: "spend",
-      amount: 1250,
-      currency: "USD", 
-      status: "completed",
-      organizationName: "Digital Pro Agency",
-      description: "Ad account spend",
-      createdAt: "2024-01-14T14:20:00Z"
-    },
-    {
-      id: "txn-003",
-      type: "refund",
-      amount: 500,
-      currency: "USD",
-      status: "pending",
-      organizationName: "E-commerce Plus",
-      description: "Campaign refund",
-      createdAt: "2024-01-13T09:15:00Z"
-    },
-    {
-      id: "txn-004",
-      type: "fee",
-      amount: 25,
-      currency: "USD",
-      status: "completed",
-      organizationName: "StartupCo",
-      description: "Processing fee",
-      createdAt: "2024-01-12T16:45:00Z"
-    },
-    {
-      id: "txn-005",
-      type: "topup",
-      amount: 2000,
-      currency: "USD",
-      status: "failed",
-      organizationName: "Marketing Hub",
-      description: "Payment failed",
-      createdAt: "2024-01-11T11:20:00Z"
-    }
-  ])
-
+  const { session } = useAuth()
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [typeFilter, setTypeFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  
+  // Fetch transactions history
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!session?.access_token) return
+
+      try {
+        const response = await fetch('/api/admin/transactions', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch transactions')
+        }
+        
+        const data = await response.json()
+        setTransactions(data.transactions || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load transactions')
+        toast.error('Failed to load transactions')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTransactions()
+  }, [session])
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
@@ -104,6 +84,14 @@ export default function TransactionHistoryPage() {
     pending: transactions.filter(t => t.status === "pending").length,
     failed: transactions.filter(t => t.status === "failed").length,
   }), [transactions])
+  
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading transactions...</div>
+  }
+  
+  if (error) {
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+  }
 
   const getTypeColor = (type: string) => {
     const colors = {

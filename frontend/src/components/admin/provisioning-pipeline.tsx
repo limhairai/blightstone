@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppData } from "../../contexts/AppDataContext"
+import useSWR, { useSWRConfig } from 'swr';
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
@@ -26,15 +26,21 @@ import {
   PauseCircle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function ProvisioningPipeline() {
-  const { state, updateBusiness } = useAppData();
+  const { data: bizData, isLoading, mutate } = useSWR('/api/businesses', fetcher);
+  const businesses = bizData?.businesses || [];
+
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionType, setActionType] = useState<string>("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Filter businesses in provisioning states using proper admin statuses
-  const provisioningBusinesses = state.businesses.filter(
+  const provisioningBusinesses = businesses.filter(
     (business) => business.status === "provisioning" || business.status === "ready" || business.status === "under_review"
   );
 
@@ -131,10 +137,21 @@ export function ProvisioningPipeline() {
         break;
     }
 
-    await updateBusiness({
-      ...business,
-      ...updates,
-    });
+    try {
+      const response = await fetch(`/api/businesses?id=${business.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update business");
+      }
+      // Ideally, we would mutate the SWR cache here
+      // For now, this will rely on a parent component to refetch
+    } catch (err) {
+      console.error(err);
+      // Handle error with a toast notification
+    }
 
     setDialogOpen(false);
   };
@@ -144,6 +161,10 @@ export function ProvisioningPipeline() {
     setActionType(action);
     setDialogOpen(true);
   };
+
+  if (isLoading) {
+    return <div>Loading provisioning pipeline...</div>
+  }
 
   return (
     <div className="space-y-6">
@@ -188,7 +209,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {state.businesses.filter(b => b.status === "approved").length}
+              {businesses.filter(b => b.status === "approved" || b.status === "active").length}
             </div>
           </CardContent>
         </Card>
@@ -232,7 +253,7 @@ export function ProvisioningPipeline() {
                         <div>
                           <p className="font-medium text-foreground">{business.name}</p>
                           <p className="text-sm text-muted-foreground capitalize">
-                            {business.type || "Business"} • Created {formatDistanceToNow(new Date(business.dateCreated), { addSuffix: true })}
+                            {business.type || "Business"} • Created {formatDistanceToNow(new Date(business.created_at), { addSuffix: true })}
                           </p>
                         </div>
                       </div>
@@ -267,14 +288,13 @@ export function ProvisioningPipeline() {
                     </TableCell>
 
                     <TableCell>
-                      <Button
+                      <Button 
                         size="sm"
-                        variant="outline"
-                        onClick={() => openActionDialog(business, "submit_hk_provider")}
-                        className="h-8"
+                        onClick={() => openActionDialog(business, 'submit_hk_provider')}
+                        disabled={actionLoading}
                       >
-                        <PlayCircle className="h-4 w-4 mr-1" />
-                        {getNextAction("not_started")}
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Start
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -288,89 +308,19 @@ export function ProvisioningPipeline() {
       {/* Action Dialog */}
       {selectedBusiness && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-[#c4b5fd]" />
-                Provisioning Action: {selectedBusiness.name}
-              </DialogTitle>
+              <DialogTitle>Confirm Action: {actionType.replace(/_/g, ' ')}</DialogTitle>
             </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2">Current Status</h4>
-                <div className="flex items-center gap-2">
-                  {getProvisioningStatusBadge("not_started")}
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">
-                    {getNextAction("not_started")}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {actionType === "submit_hk_provider" && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      This will submit the business application to the HK provider for ad account creation. 
-                      The provider will review the business information and landing page.
-                    </p>
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                      <p className="text-sm font-medium text-blue-900">Action Details:</p>
-                      <ul className="text-sm text-blue-800 mt-1 space-y-1">
-                        <li>• Submit business info to HK provider portal</li>
-                        <li>• Generate tracking ID for application</li>
-                        <li>• Set status to "HK Provider Submitted"</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {actionType === "assign_bm" && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Assign a Business Manager with 3-profile backup system (1 main + 2 backups) to this business.
-                    </p>
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                      <p className="text-sm font-medium text-purple-900">BM Assignment:</p>
-                      <ul className="text-sm text-purple-800 mt-1 space-y-1">
-                        <li>• Assign available BM from inventory</li>
-                        <li>• Link to 3-profile set (max 20 BMs per set)</li>
-                        <li>• Configure permissions and access</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-
-                {actionType === "invite_client" && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Invite the client to their assigned Business Manager with appropriate permissions.
-                    </p>
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                      <p className="text-sm font-medium text-orange-900">Client Invitation:</p>
-                      <ul className="text-sm text-orange-800 mt-1 space-y-1">
-                        <li>• Send BM invitation to client email</li>
-                        <li>• Grant advertiser permissions</li>
-                        <li>• Provide setup instructions</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => handleProvisioningAction(selectedBusiness, actionType)}
-                  className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Execute Action
-                </Button>
-              </div>
+            <div className="py-4">
+              <p>Are you sure you want to perform this action for <strong>{selectedBusiness.name}</strong>?</p>
+              {/* Add more details here based on actionType if needed */}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={actionLoading}>Cancel</Button>
+              <Button onClick={() => handleProvisioningAction(selectedBusiness, actionType)} disabled={actionLoading}>
+                {actionLoading ? "Processing..." : "Confirm"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

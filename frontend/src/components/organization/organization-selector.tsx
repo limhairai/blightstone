@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
+import useSWR from 'swr'
 import { Check, ChevronDown, Plus, Search, Building2, Loader2 } from "lucide-react"
 import {
   DropdownMenu,
@@ -15,12 +16,10 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { cn } from "../../lib/utils"
-import { getInitials } from "../../lib/mock-data"
+import { getInitials } from "../../utils/format"
 import { getAvatarClasses } from "../../lib/design-tokens"
 import { useTheme } from "next-themes"
-import { useAppData } from "../../contexts/AppDataContext"
-import { APP_BUSINESSES_BY_ORG } from "../../lib/mock-data"
-import { APP_ACCOUNTS_BY_ORG } from "../../lib/mock-data"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 
 interface Organization {
   id: string
@@ -38,22 +37,34 @@ interface Business {
   accountCount: number
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function OrganizationSelector() {
   const { theme } = useTheme()
   const router = useRouter()
-  const { state, switchOrganization } = useAppData()
+  const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
-  const [isLoading, setIsLoading] = useState(false)
+  const [componentIsLoading, setComponentIsLoading] = useState(false)
+
+  const { data: orgData, isLoading: isOrgLoading } = useSWR('/api/organizations', fetcher);
+  const { data: bizData, isLoading: isBizLoading } = useSWR('/api/businesses', fetcher);
+  const { data: accData, isLoading: isAccLoading } = useSWR('/api/ad-accounts', fetcher);
   
-  // Use real organization data from demo state
+  const allOrganizations = orgData?.organizations || [];
+  const allBusinesses = bizData?.businesses || [];
+  const allAccounts = accData?.accounts || [];
+
+  const currentOrganization = useMemo(() => allOrganizations.find(o => o.id === currentOrganizationId), [allOrganizations, currentOrganizationId]);
+
+  // Use real organization data from context
   const selectedOrg = useMemo<Organization>(() => ({
-    id: state.currentOrganization?.id || "default",
-    name: state.currentOrganization?.name || "Default Organization",
-    avatar: state.currentOrganization?.avatar,
+    id: currentOrganization?.id || "default",
+    name: currentOrganization?.name || "Default Organization",
+    avatar: currentOrganization?.avatar,
     role: "Owner", // Could be derived from user's role in the organization
-    businessCount: state.businesses.length,
-  }), [state.currentOrganization, state.businesses.length])
+    businessCount: allBusinesses.filter(b => b.organization_id === currentOrganization?.id).length,
+  }), [currentOrganization, allBusinesses])
 
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
@@ -63,43 +74,28 @@ export function OrganizationSelector() {
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Convert all organizations from demo state
   const organizations: Organization[] = useMemo(() => {
-    return state.organizations.map(org => ({
+    return allOrganizations.map(org => ({
       id: org.id,
       name: org.name,
       avatar: org.avatar,
-      role: org.id === state.currentOrganization?.id ? "Owner" : "Member", // Current org is owner, others are member
-      businessCount: org.id === state.currentOrganization?.id ? state.businesses.length : (APP_BUSINESSES_BY_ORG[org.id]?.length || 0) // Real count for all orgs
+      role: org.id === currentOrganizationId ? "Owner" : "Member",
+      businessCount: allBusinesses.filter(b => b.organization_id === org.id).length
     }))
-  }, [state.organizations, state.currentOrganization?.id, state.businesses.length])
+  }, [allOrganizations, currentOrganizationId, allBusinesses])
 
-  // Convert demo state businesses to the format expected by the component
+  // Convert context state businesses to the format expected by the component
   const businesses: Business[] = useMemo(() => {
-    // Get businesses for all organizations, not just current one
-    const allBusinesses: Business[] = []
-    
-    // Add businesses from all organizations
-    Object.entries(APP_BUSINESSES_BY_ORG).forEach(([orgId, orgBusinesses]) => {
-      orgBusinesses.forEach(business => {
-        // Count accounts for this business from the appropriate organization
-        const orgAccounts = APP_ACCOUNTS_BY_ORG[orgId] || []
-        const accountCount = orgAccounts.filter(account => account.business === business.name).length
-        
-        allBusinesses.push({
-          id: business.id.toString(),
-          name: business.name,
-          organizationId: orgId,
-          status: business.status === 'under_review' || business.status === 'provisioning' || business.status === 'ready' 
-            ? 'pending' as const 
-            : business.status as "active" | "pending" | "suspended" | "rejected",
-          accountCount
-        })
-      })
-    })
-    
-    return allBusinesses
-  }, [])
+    return allBusinesses.map(business => ({
+      id: business.id,
+      name: business.name,
+      organizationId: business.organization_id,
+      status: business.status === 'under_review' || business.status === 'provisioning' || business.status === 'ready' 
+        ? 'pending' as const 
+        : business.status as "active" | "pending" | "suspended" | "rejected",
+      accountCount: allAccounts.filter(account => account.business_id === business.id).length
+    }))
+  }, [allBusinesses, allAccounts])
 
   // Improved hover handlers with delays
   const handleOrgMouseEnter = useCallback((orgId: string) => {
@@ -156,13 +152,13 @@ export function OrganizationSelector() {
     // Check if business belongs to a different organization
     if (business.organizationId !== selectedOrg.id) {
       // Switch to the business's organization first
-      setIsLoading(true)
+      setComponentIsLoading(true)
       
       // Add a delay to make the switching more noticeable
       await new Promise(resolve => setTimeout(resolve, 800))
       
-      switchOrganization(business.organizationId)
-      setIsLoading(false)
+      setCurrentOrganizationId(business.organizationId)
+      setComponentIsLoading(false)
       
       // Wait a bit more for the organization switch to complete
       await new Promise(resolve => setTimeout(resolve, 300))
@@ -171,7 +167,7 @@ export function OrganizationSelector() {
     // Navigate to accounts page with business filter
     const businessParam = encodeURIComponent(business.name)
     router.push(`/dashboard/accounts?business=${businessParam}`)
-  }, [router, selectedOrg.id, switchOrganization])
+  }, [router, selectedOrg.id, setCurrentOrganizationId])
 
   // Clean up timeouts on unmount
   const cleanupTimeouts = useCallback(() => {
@@ -199,19 +195,25 @@ export function OrganizationSelector() {
   // Handle organization click with switching functionality
   const handleOrganizationClick = useCallback(async (org: Organization) => {
     if (org.id !== selectedOrg.id) {
-      setIsLoading(true)
+      setComponentIsLoading(true)
       setIsDropdownOpen(false)
       
       // Add a delay to make the switching more noticeable
       await new Promise(resolve => setTimeout(resolve, 800))
       
-      switchOrganization(org.id)
-      setIsLoading(false)
+      setCurrentOrganizationId(org.id)
+      setComponentIsLoading(false)
     }
     setSearchQuery("")
     setHoveredOrgId(null)
     cleanupTimeouts()
-  }, [selectedOrg.id, switchOrganization])
+  }, [selectedOrg.id, setCurrentOrganizationId, cleanupTimeouts])
+
+  const globalLoading = isOrgLoading || isBizLoading || isAccLoading;
+
+  if (globalLoading) {
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="relative w-full">
@@ -220,12 +222,12 @@ export function OrganizationSelector() {
           <Button
             variant="outline"
             className="w-full justify-between bg-background border-border text-foreground hover:bg-accent"
-            disabled={isLoading}
+            disabled={componentIsLoading || globalLoading}
           >
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
                 {selectedOrg.avatar ? (
-                  <AvatarImage src={selectedOrg.avatar || "getPlaceholderUrl()"} alt={selectedOrg.name} />
+                  <AvatarImage src={selectedOrg.avatar} alt={selectedOrg.name} />
                 ) : (
                   <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
                     {getInitials(selectedOrg.name)}
@@ -239,7 +241,7 @@ export function OrganizationSelector() {
                 </span>
               </div>
             </div>
-            {isLoading ? (
+            {componentIsLoading || globalLoading ? (
               <Loader2 className="h-4 w-4 ml-2 text-muted-foreground animate-spin" />
             ) : (
               <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
@@ -268,98 +270,93 @@ export function OrganizationSelector() {
               <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
                 Organizations
               </DropdownMenuLabel>
+              
               {filteredOrganizations.map((org) => (
-                <DropdownMenuItem
-                  key={org.id}
-                  className={cn(
-                    "flex items-center py-2 px-2 cursor-pointer text-popover-foreground hover:bg-accent rounded-md",
-                    selectedOrg.id === org.id ? "bg-accent" : "",
-                  )}
-                  onMouseEnter={() => handleOrgMouseEnter(org.id)}
-                  onMouseLeave={handleOrgMouseLeave}
-                  onClick={() => handleOrganizationClick(org)}
-                >
-                  <div className="flex items-center flex-1 min-w-0">
+                <div key={org.id} className="relative">
+                  <DropdownMenuItem
+                    className={cn(
+                      "flex items-center p-2 cursor-pointer rounded-md hover:bg-accent",
+                      org.id === selectedOrg.id && "bg-accent"
+                    )}
+                    onMouseEnter={() => handleOrgMouseEnter(org.id)}
+                    onMouseLeave={handleOrgMouseLeave}
+                    onClick={() => handleOrganizationClick(org)}
+                  >
                     <Avatar className="h-8 w-8 mr-3">
                       {org.avatar ? (
-                        <AvatarImage src={org.avatar || "getPlaceholderUrl()"} alt={org.name} />
+                        <AvatarImage src={org.avatar} alt={org.name} />
                       ) : (
                         <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
                           {getInitials(org.name)}
                         </AvatarFallback>
                       )}
                     </Avatar>
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium truncate text-popover-foreground">{org.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-foreground truncate">{org.name}</p>
+                        {org.id === selectedOrg.id && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{org.role}</span>
-                        <span>•</span>
-                        <span>
-                          {org.businessCount} {org.businessCount === 1 ? "business" : "businesses"}
-                        </span>
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <span className="mr-2">{org.role}</span>
+                        <span>{org.businessCount} {org.businessCount === 1 ? "business" : "businesses"}</span>
                       </div>
                     </div>
-                  </div>
-                  {selectedOrg.id === org.id && <Check className="h-4 w-4 ml-2 text-[#c4b5fd]" />}
-                </DropdownMenuItem>
+                  </DropdownMenuItem>
+                </div>
               ))}
-            </div>
 
-            <DropdownMenuSeparator className="bg-border mx-2" />
-
-            <div 
-              className="p-2"
-              onMouseEnter={handleBusinessesMouseEnter}
-              onMouseLeave={handleBusinessesMouseLeave}
-            >
-              <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
-                {hoveredOrgId
-                  ? `${organizations.find((org) => org.id === hoveredOrgId)?.name} Businesses`
-                  : "Businesses"}
-              </DropdownMenuLabel>
-              {filteredBusinesses.map((business) => (
-                <DropdownMenuItem
-                  key={business.id}
-                  className="flex items-center py-2 px-2 cursor-pointer text-popover-foreground hover:bg-accent rounded-md"
-                  onClick={() => handleBusinessClick(business)}
+              {/* Show businesses for hovered or selected organization */}
+              {filteredBusinesses.length > 0 && (
+                <div
+                  className="mt-2"
+                  onMouseEnter={handleBusinessesMouseEnter}
+                  onMouseLeave={handleBusinessesMouseLeave}
                 >
-                  <div className="flex items-center flex-1 min-w-0">
-                    <Building2 className="h-4 w-4 mr-3 text-muted-foreground" />
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="font-medium truncate text-popover-foreground">{business.name}</span>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{business.accountCount} accounts</span>
-                        <div
-                          className={cn(
-                            "w-2 h-2 rounded-full",
-                            business.status === "active"
-                              ? "bg-emerald-500"
-                              : business.status === "pending"
-                                ? "bg-yellow-500"
-                                : "bg-red-500",
-                          )}
-                        />
+                  <DropdownMenuSeparator className="my-2" />
+                  <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
+                    Businesses
+                  </DropdownMenuLabel>
+                  
+                  {filteredBusinesses.map((business) => (
+                    <DropdownMenuItem
+                      key={business.id}
+                      className="flex items-center p-2 cursor-pointer rounded-md hover:bg-accent ml-4"
+                      onClick={() => handleBusinessClick(business)}
+                    >
+                      <Building2 className="h-4 w-4 mr-3 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{business.name}</p>
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <span className={cn(
+                            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2",
+                            business.status === "active" && "bg-green-100 text-green-800",
+                            business.status === "pending" && "bg-yellow-100 text-yellow-800",
+                            business.status === "suspended" && "bg-red-100 text-red-800",
+                            business.status === "rejected" && "bg-gray-100 text-gray-800"
+                          )}>
+                            {business.status}
+                          </span>
+                          <span>{business.accountCount} {business.accountCount === 1 ? "account" : "accounts"}</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                </DropdownMenuItem>
-              ))}
-            </div>
+                    </DropdownMenuItem>
+                  ))}
+                </div>
+              )}
 
-            <DropdownMenuSeparator className="bg-border mx-2" />
-
-            <div className="p-2">
-              <DropdownMenuItem 
-                className="flex items-center py-2 px-2 cursor-pointer text-popover-foreground hover:bg-accent rounded-md"
+              <DropdownMenuSeparator className="my-2" />
+              
+              <DropdownMenuItem
+                className="flex items-center p-2 cursor-pointer rounded-md hover:bg-accent text-primary"
                 onClick={() => {
                   setIsDropdownOpen(false)
-                  router.push('/dashboard/settings')
+                  router.push("/dashboard/settings/organizations")
                 }}
               >
                 <Plus className="h-4 w-4 mr-3" />
-                <span>Create Organization</span>
+                <span className="text-sm font-medium">Create Organization</span>
               </DropdownMenuItem>
             </div>
           </div>

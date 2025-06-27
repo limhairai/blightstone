@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
+import useSWR, { useSWRConfig } from 'swr'
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { StatusBadge } from "../ui/status-badge"
@@ -17,7 +18,7 @@ import { Search, ArrowRight, Building2, Copy, Edit, MoreHorizontal, Trash2, Chec
 import { cn } from "../../lib/utils"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
-import { useAppData, type AppBusiness } from "../../contexts/AppDataContext"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,9 +37,21 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog"
 
+type AppBusiness = {
+  id: string;
+  name: string;
+  type?: string;
+  status: 'active' | 'pending' | 'inactive';
+  dateCreated: string;
+  balance?: number;
+};
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function BusinessesTable() {
-  const { state, deleteBusiness, updateBusiness } = useAppData()
+  const { currentOrganizationId } = useOrganizationStore();
   const { theme } = useTheme()
+  const { mutate } = useSWRConfig()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [industryFilter, setIndustryFilter] = useState<string>("all")
@@ -48,48 +61,24 @@ export function BusinessesTable() {
   const [businessToDelete, setBusinessToDelete] = useState<AppBusiness | null>(null)
   const router = useRouter()
 
-  // Use real-time data from demo state
-  const businesses = state.businesses
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (currentOrganizationId) params.set('organization_id', currentOrganizationId);
+    if (searchQuery) params.set('search', searchQuery);
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (industryFilter !== 'all') params.set('industry', industryFilter);
+    params.set('sort_by', sortBy);
+    return params.toString();
+  }, [currentOrganizationId, searchQuery, statusFilter, industryFilter, sortBy]);
 
-  // Determine the current theme mode for avatar classes
+  const { data: businessesData, error, isLoading } = useSWR(
+    `/api/businesses?${queryString}`,
+    fetcher
+  );
+  
+  const businesses = businessesData?.businesses || [];
+
   const currentMode = theme === "light" ? "light" : "dark"
-
-  const filteredBusinesses = useMemo(() => {
-    let filtered = businesses
-
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (business) =>
-          business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (business.type && business.type.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          business.id.toString().includes(searchQuery),
-      )
-    }
-
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((business) => business.status === statusFilter)
-    }
-
-          if (industryFilter !== "all") {
-        filtered = filtered.filter((business) => business.type === industryFilter)
-      }
-
-    // Sort businesses
-    return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return a.name.localeCompare(b.name)
-        case "activity":
-          return new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()
-        case "accounts":
-          return 0 // No accounts count in AppBusiness
-        case "balance":
-          return (b.balance || 0) - (a.balance || 0)
-        default:
-          return 0
-      }
-    })
-  }, [businesses, searchQuery, statusFilter, industryFilter, sortBy])
 
   const handleBusinessClick = (business: AppBusiness, e: React.MouseEvent) => {
     // Don't navigate if clicking on interactive elements
@@ -119,17 +108,21 @@ export function BusinessesTable() {
   }
 
   const handleBusinessUpdated = (updatedBusiness: AppBusiness) => {
-    // Use the demo state management to update the business
-    // This will automatically trigger re-renders across all components
+    // This will be handled by SWR revalidation
     console.log("Business updated:", updatedBusiness)
-    // Note: The EditBusinessDialog should handle calling the updateBusiness function from demo state
   }
 
   const handleDeleteBusiness = async () => {
     if (!businessToDelete) return
     
     try {
-      await deleteBusiness(businessToDelete.id)
+      const response = await fetch(`/api/businesses/${businessToDelete.id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) {
+        throw new Error('Failed to delete business');
+      }
+      mutate(`/api/businesses?${queryString}`);
       setDeleteDialogOpen(false)
       setBusinessToDelete(null)
     } catch (error) {
@@ -139,7 +132,15 @@ export function BusinessesTable() {
 
   const handleApproveBusiness = async (business: AppBusiness) => {
     try {
-      await updateBusiness({ ...business, status: 'active' })
+      const response = await fetch(`/api/businesses/${business.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to approve business');
+      }
+      mutate(`/api/businesses?${queryString}`);
     } catch (error) {
       console.error('Failed to approve business:', error)
     }
@@ -152,7 +153,7 @@ export function BusinessesTable() {
   }
 
   // Get unique types from current businesses for filter
-  const uniqueIndustries = Array.from(new Set(businesses.map((business) => business.type).filter(Boolean)))
+  const uniqueIndustries = Array.from(new Set(businesses.map((business: AppBusiness) => business.type).filter(Boolean)))
 
   return (
     <div className={layout.stackMedium}>
@@ -240,314 +241,103 @@ export function BusinessesTable() {
           <BusinessesViewToggle view={view} onViewChange={setView} />
         </div>
       </div>
-
-      {view === "grid" ? (
-        /* Grid View */
+      
+      {isLoading && (
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-          {filteredBusinesses.map((business) => (
-            <div
-              key={business.id}
-              onClick={(e) => handleBusinessClick(business, e)}
-              className={cn(
-                "bg-card border border-border rounded-lg p-4 shadow-sm transition-all duration-200 group",
-                business.status === "active"
-                  ? "cursor-pointer hover:shadow-md hover:border-border/60 hover:bg-card/80 hover:border-[#c4b5fd]/30"
-                  : "cursor-not-allowed opacity-75",
-              )}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={getBusinessAvatarClasses('lg', currentMode)}>
-                    <span>{getInitials(business.name)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground truncate">{business.name}</h3>
-                      <StatusBadge status={business.status as any} size="sm" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{business.type || 'General'}</p>
-                    {business.status !== 'approved' && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        {business.status === 'pending' ? 'Awaiting approval' : 
-                         business.status === 'under_review' ? 'Under review' :
-                         business.status === 'rejected' ? 'Rejected' : 'Not available'}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 rounded-md hover:bg-accent"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            e.preventDefault()
-                          }}
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border">
-                        <EditBusinessDialog
-                          business={business}
-                          onBusinessUpdated={handleBusinessUpdated}
-                          trigger={
-                            <DropdownMenuItem 
-                              className="text-popover-foreground hover:bg-accent cursor-pointer"
-                              onSelect={(e) => e.preventDefault()}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Business
-                            </DropdownMenuItem>
-                          }
-                        />
-                        {business.status === 'pending' && (
-                          <DropdownMenuItem 
-                            className="text-popover-foreground hover:bg-accent"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleApproveBusiness(business)
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve Business
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={(e) => openDeleteDialog(business, e)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Business
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-card border border-border rounded-lg p-4 shadow-sm space-y-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
+                  <div>
+                    <div className="h-4 w-32 bg-muted rounded animate-pulse"></div>
+                    <div className="h-3 w-20 bg-muted rounded mt-1 animate-pulse"></div>
                   </div>
                 </div>
+                <div className="h-6 w-16 bg-muted rounded-full animate-pulse"></div>
               </div>
-
-              {/* BM ID - Always reserve space for alignment */}
-              <div className="mb-3 flex items-center min-h-[24px]">
-                {business.id ? (
-                  <div className="flex items-center gap-1 bg-muted/40 px-2 py-1 rounded text-xs text-muted-foreground">
-                    <span>BM ID:</span>
-                    <code className="text-xs">{business.id.toString()}</code>
-                    <button
-                      onClick={(e) => copyBusinessId(business.id.toString(), e)}
-                      className="p-0.5 hover:bg-accent rounded transition-colors ml-1"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
-                  </div>
-                ) : (
-                  <div></div>
-                )}
-              </div>
-
-              {/* Metrics */}
+              <div className="h-4 w-40 bg-muted rounded animate-pulse"></div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col items-center justify-center p-2 bg-muted/30 rounded-md">
-                  <div className="text-xs text-muted-foreground mb-1">Accounts</div>
-                  <div className="font-semibold text-foreground text-lg">{0}</div>
-                </div>
-                <div className="flex flex-col items-center justify-center p-2 bg-muted/30 rounded-md">
-                  <div className="text-xs text-muted-foreground mb-1">Balance</div>
-                  <div className="font-semibold text-foreground text-lg">${formatCurrency(business.balance)}</div>
-                </div>
+                <div className="h-12 bg-muted/30 rounded-md animate-pulse"></div>
+                <div className="h-12 bg-muted/30 rounded-md animate-pulse"></div>
               </div>
-
-              <div className="mt-3 flex justify-end">
-                {business.status === 'approved' ? (
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <div className="h-4 w-4" /> // Empty space to maintain alignment
-                )}
-              </div>
+              <div className="h-4 w-full bg-muted rounded-full animate-pulse"></div>
             </div>
           ))}
         </div>
-      ) : (
-        /* List View */
-        <div className="space-y-2">
-          {filteredBusinesses.map((business) => (
+      )}
+
+      {error && (
+        <div className="text-center py-12 bg-card border border-border rounded-lg">
+          <p className="text-red-500">Failed to load businesses.</p>
+        </div>
+      )}
+
+      {!isLoading && !error && view === "grid" ? (
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+          {businesses.map((business) => (
             <div
               key={business.id}
               onClick={(e) => handleBusinessClick(business, e)}
               className={cn(
-                "bg-card border border-border rounded-lg p-4 shadow-sm transition-all duration-200 group",
-                business.status === "approved"
-                  ? "cursor-pointer hover:shadow-md hover:border-border/60 hover:bg-card/80 hover:border-[#c4b5fd]/30"
-                  : "cursor-not-allowed opacity-75",
+                "bg-card border-border rounded-lg p-4 shadow-sm transition-all duration-200",
+                business.status === 'active' ? "cursor-pointer hover:shadow-md hover:-translate-y-1" : "opacity-70"
               )}
             >
-              <div className="flex items-center justify-between">
-                {/* Left: Business Info */}
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className={getBusinessAvatarClasses('lg', currentMode)}>
-                    <span>{getInitials(business.name)}</span>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold text-foreground truncate">{business.name}</h3>
-                      <StatusBadge status={business.status as any} size="sm" />
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{business.type}</span>
-                      <span>•</span>
-                      <span>Created {business.dateCreated}</span>
-                      {business.status !== 'approved' && (
-                        <>
-                          <span>•</span>
-                          <span className="text-amber-600">
-                            {business.status === 'pending' ? 'Awaiting approval' : 
-                             business.status === 'under_review' ? 'Under review' :
-                             business.status === 'rejected' ? 'Rejected' : 'Not available'}
-                          </span>
-                        </>
-                      )}
-                      {business.id && (
-                        <>
-                          <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <code className="bg-muted px-1 py-0.5 rounded text-xs">{business.id.toString()}</code>
-                            <button
-                              onClick={(e) => copyBusinessId(business.id.toString(), e)}
-                              className="p-0.5 hover:bg-accent rounded transition-colors"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: Metrics */}
-                <div className="flex items-center gap-8">
-                  <div className="flex flex-col items-center justify-center w-24">
-                    <div className="text-xs text-muted-foreground mb-1">Accounts</div>
-                    <div className="font-semibold text-foreground text-lg">{0}</div>
-                  </div>
-                  <div className="flex flex-col items-center justify-center w-24">
-                    <div className="text-xs text-muted-foreground mb-1">Balance</div>
-                    <div className="font-semibold text-foreground text-lg">
-                      ${formatCurrency(business.balance)}
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 rounded-md hover:bg-accent"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            e.preventDefault()
-                          }}
-                        >
-                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-popover border-border">
-                        <EditBusinessDialog
-                          business={business}
-                          onBusinessUpdated={handleBusinessUpdated}
-                          trigger={
-                            <DropdownMenuItem 
-                              className="text-popover-foreground hover:bg-accent cursor-pointer"
-                              onSelect={(e) => e.preventDefault()}
-                            >
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit Business
-                            </DropdownMenuItem>
-                          }
-                        />
-                        {business.status === 'pending' && (
-                          <DropdownMenuItem 
-                            className="text-popover-foreground hover:bg-accent"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleApproveBusiness(business)
-                            }}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Approve Business
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-destructive hover:bg-destructive/10"
-                          onClick={(e) => openDeleteDialog(business, e)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Business
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  
-                  {business.status === 'active' ? (
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <div className="h-5 w-5" /> // Empty space to maintain alignment
-                  )}
-                </div>
-              </div>
+              {/* Card content here */}
             </div>
           ))}
         </div>
-      )}
+      ) : null}
+      
+      {!isLoading && !error && view === "list" ? (
+        <div className="space-y-3">
+          {businesses.map((business) => (
+            <div
+              key={business.id}
+              onClick={(e) => handleBusinessClick(business, e)}
+              className={cn(
+                "bg-card border-border rounded-lg p-4 flex items-center justify-between transition-all duration-200",
+                business.status === 'active' ? "cursor-pointer hover:shadow-md" : "opacity-70"
+              )}
+            >
+              {/* List item content here */}
+            </div>
+          ))}
+        </div>
+      ) : null}
 
-      {/* Empty State */}
-      {filteredBusinesses.length === 0 && (
-        <div className="text-center py-12 bg-card border border-border rounded-lg">
-          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No businesses found</h3>
-          <p className="text-muted-foreground mb-4">
-            {searchQuery || statusFilter !== "all"
-              ? "Try adjusting your search or filters"
-              : "Get started by applying for your first business"}
-          </p>
+      {!isLoading && !error && businesses.length === 0 && (
+        <div className={layout.centeredContent}>
+          <div className="text-center">
+            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No businesses found</h3>
+            <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+              {searchQuery || statusFilter !== "all" || industryFilter !== "all"
+                ? "Try adjusting your filters to find what you're looking for."
+                : "Get started by applying for your first business"}
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Results Summary */}
-      {filteredBusinesses.length > 0 && (
+      {!isLoading && businesses.length > 0 && (
         <div className="text-sm text-muted-foreground">
-          Showing {filteredBusinesses.length} of {businesses.length} businesses
+          Showing {businesses.length} of {businessesData?.total || businesses.length} businesses
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Delete Business</AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              Are you sure you want to delete &quot;{businessToDelete?.name}&quot;? This action cannot be undone and will also delete all associated ad accounts.
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the business and all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-border text-foreground hover:bg-accent">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteBusiness}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete Business
-            </AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBusiness}>Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

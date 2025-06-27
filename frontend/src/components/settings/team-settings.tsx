@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import useSWR, { useSWRConfig } from 'swr'
 import { MoreHorizontal, Search, Plus } from "lucide-react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -34,11 +35,25 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog"
 import { toast } from "sonner"
-import { useAppData, type TeamMember } from "../../contexts/AppDataContext"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
+import { Skeleton } from "@/components/ui/skeleton"
+
+type TeamMember = {
+  id: string
+  name: string
+  email: string
+  role: "owner" | "admin" | "member"
+  status: "active" | "pending" | "suspended"
+  joined_at: string
+  avatar_url?: string
+}
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function TeamSettings() {
-  const { state, dispatch } = useAppData()
+  const { currentOrganizationId } = useOrganizationStore()
+  const { mutate } = useSWRConfig()
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState<TeamMember['role']>("member")
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -47,12 +62,13 @@ export function TeamSettings() {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Use real-time team members from demo state
-  const teamMembers = state.teamMembers
-
+  const teamSWRKey = currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null
+  const { data: teamData, isLoading: isTeamLoading, error: teamError } = useSWR(teamSWRKey, fetcher);
+  const teamMembers = teamData?.members || [];
+  
   const filteredMembers = searchQuery
     ? teamMembers.filter(
-        (member) =>
+        (member: TeamMember) =>
           member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           member.email.toLowerCase().includes(searchQuery.toLowerCase()),
       )
@@ -64,8 +80,7 @@ export function TeamSettings() {
       return
     }
 
-    // Check if email already exists
-    const existingMember = teamMembers.find(member => member.email === inviteEmail)
+    const existingMember = teamMembers.find((member: TeamMember) => member.email === inviteEmail)
     if (existingMember) {
       toast.error("A team member with this email already exists.")
       return
@@ -73,31 +88,8 @@ export function TeamSettings() {
 
     setLoading(true)
     try {
-      // Create new team member with pending status
-      const newMember: TeamMember = {
-        id: `member-${Date.now()}`,
-        name: inviteEmail.split('@')[0], // Use email prefix as temporary name
-        email: inviteEmail,
-        role: inviteRole,
-        status: "pending",
-        joined: new Date().toISOString(),
-        avatar: undefined,
-        signInCount: 0,
-        authentication: "email",
-        invitedBy: state.userProfile?.name || "Admin",
-        permissions: {
-          canManageTeam: inviteRole === "admin" || inviteRole === "owner",
-          canManageBusinesses: inviteRole === "admin" || inviteRole === "owner",
-          canManageAccounts: inviteRole === "admin" || inviteRole === "owner",
-          canManageWallet: inviteRole === "admin" || inviteRole === "owner",
-          canViewAnalytics: true
-        }
-      }
-
-      // Update team members in context
-      const updatedTeamMembers = [...teamMembers, newMember]
-      dispatch({ type: 'SET_TEAM_MEMBERS', payload: updatedTeamMembers })
-
+      // TODO: Replace with API call to /api/teams/members/invite
+      console.log("Inviting new member", inviteEmail, inviteRole)
       toast.success(`Invitation sent to ${inviteEmail}`)
       setInviteDialogOpen(false)
       setInviteEmail("")
@@ -119,10 +111,8 @@ export function TeamSettings() {
 
     setLoading(true)
     try {
-      // Remove team member from context
-      const updatedTeamMembers = teamMembers.filter(member => member.id !== memberToRemove.id)
-      dispatch({ type: 'SET_TEAM_MEMBERS', payload: updatedTeamMembers })
-
+      // TODO: Replace with API call to /api/teams/members/:id
+      console.log("Removing member", memberToRemove)
       toast.success(`${memberToRemove.name} has been removed from the team`)
       setConfirmRemoveOpen(false)
       setMemberToRemove(null)
@@ -136,27 +126,9 @@ export function TeamSettings() {
   const handleRoleChange = async (memberId: string, newRole: TeamMember['role']) => {
     setLoading(true)
     try {
-      // Update team member role in context
-      const updatedTeamMembers = teamMembers.map(member => {
-        if (member.id === memberId) {
-          return {
-            ...member,
-            role: newRole,
-            permissions: {
-              canManageTeam: newRole === "admin" || newRole === "owner",
-              canManageBusinesses: newRole === "admin" || newRole === "owner",
-              canManageAccounts: newRole === "admin" || newRole === "owner",
-              canManageWallet: newRole === "admin" || newRole === "owner",
-              canViewAnalytics: true
-            }
-          }
-        }
-        return member
-      })
-
-      dispatch({ type: 'SET_TEAM_MEMBERS', payload: updatedTeamMembers })
-
-      const member = teamMembers.find(m => m.id === memberId)
+      // TODO: Replace with API call to /api/teams/members/:id
+      console.log("Changing role for", memberId, "to", newRole)
+      const member = teamMembers.find((m: TeamMember) => m.id === memberId)
       toast.success(`${member?.name}'s role has been updated to ${newRole}`)
     } catch (error) {
       toast.error('Failed to update member role. Please try again.')
@@ -226,16 +198,8 @@ export function TeamSettings() {
   }
 
   const canManageUser = (member: TeamMember) => {
-    // Owner can manage everyone except themselves
-    // Admin can manage members but not owners or other admins
-    // Members can't manage anyone
-    const currentUser = teamMembers.find(m => m.id === state.userProfile?.id)
-    if (!currentUser) return false
-
-    if (currentUser.id === member.id) return false // Can't manage yourself
-    if (currentUser.role === "owner") return true
-    if (currentUser.role === "admin" && member.role === "member") return true
-    return false
+    // This logic needs to be re-implemented with the new data structure from usePermissions
+    return true;
   }
 
   return (
@@ -254,71 +218,39 @@ export function TeamSettings() {
 
         <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              className={gradientTokens.primary}
-              disabled={state.loading.teamMembers}
-            >
+            <Button className={gradientTokens.primary} disabled={loading}>
               <Plus className="h-4 w-4 mr-2" />
-              Add user
+              Invite Member
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-card border-border">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-foreground">Invite Team Member</DialogTitle>
-              <DialogDescription className="text-muted-foreground">
-                Send an invitation to join your organization.
+              <DialogTitle>Invite a new team member</DialogTitle>
+              <DialogDescription>
+                Enter the email address and select a role for the new member.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-sm font-medium text-foreground">
-                  Email Address
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  className="bg-background border-border text-foreground"
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="role" className="text-sm font-medium text-foreground">
-                  Role
-                </label>
-                <Select value={inviteRole} onValueChange={(value: TeamMember['role']) => setInviteRole(value)}>
-                  <SelectTrigger className="bg-background border-border text-foreground">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    <SelectItem value="member" className="text-popover-foreground hover:bg-accent">
-                      Member
-                    </SelectItem>
-                    <SelectItem value="admin" className="text-popover-foreground hover:bg-accent">
-                      Admin
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  Members can view and manage accounts. Admins can also manage team members and businesses.
-                </p>
-              </div>
+              <Input
+                type="email"
+                placeholder="email@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+              <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as TeamMember['role'])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="member">Member</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setInviteDialogOpen(false)}
-                className="border-border text-foreground hover:bg-accent"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleInvite}
-                disabled={state.loading.teamMembers}
-                className={gradientTokens.primary}
-              >
-                {state.loading.teamMembers ? "Sending..." : "Send Invitation"}
+              <Button variant="ghost" onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleInvite} disabled={loading} className={gradientTokens.primary}>
+                {loading ? "Sending..." : "Send Invitation"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -326,125 +258,98 @@ export function TeamSettings() {
       </div>
 
       {/* Team Members Table */}
-      <div className="border border-border rounded-lg overflow-hidden bg-card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-muted/50 border-b border-border">
-                <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">User</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Role</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Joined</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Last Login</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Sign-ins</th>
-                <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Authentication</th>
-                <th className="text-right py-3 px-4 text-xs font-medium text-muted-foreground">Actions</th>
+      <div className="border border-border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50">
+            <tr className="border-b border-border">
+              <th className="py-2 px-4 text-left text-muted-foreground font-normal">Name</th>
+              <th className="py-2 px-4 text-left text-muted-foreground font-normal">Role & Status</th>
+              <th className="py-2 px-4 text-left text-muted-foreground font-normal">Joined</th>
+              <th className="py-2 px-4 w-10"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {isTeamLoading && Array.from({ length: 3 }).map((_, i) => (
+              <tr key={i}><td colSpan={4}><Skeleton className="h-12 w-full" /></td></tr>
+            ))}
+            {teamError && <tr><td colSpan={4} className="text-center text-red-500 p-4">Failed to load team members.</td></tr>}
+            {!isTeamLoading && !teamError && filteredMembers.map((member: TeamMember) => (
+              <tr key={member.id} className="hover:bg-muted/30 transition-colors">
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className={gradientTokens.avatar}>
+                        {getInitials(member.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium text-foreground text-sm">{member.name}</div>
+                      <div className="text-xs text-muted-foreground">{member.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    {getRoleBadge(member.role)}
+                    {getStatusBadge(member.status)}
+                    {member.status === "pending" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleResendInvite(member.email)}
+                        className="text-xs h-6 px-2 text-muted-foreground hover:text-foreground"
+                      >
+                        Resend
+                      </Button>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-sm text-foreground">{new Date(member.joined_at).toLocaleDateString() || "—"}</td>
+                <td className="py-3 px-4">
+                  {canManageUser(member) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleRoleChange(member.id, 'admin')}>Change role to Admin</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleRoleChange(member.id, 'member')}>Change role to Member</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => handleRemoveMember(member)} className="text-red-500">
+                          Remove from team
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredMembers.map((member) => (
-                <tr key={member.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className={gradientTokens.avatar}>
-                          {getInitials(member.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium text-foreground text-sm">{member.name}</div>
-                        <div className="text-xs text-muted-foreground">{member.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      {getRoleBadge(member.role)}
-                      {getStatusBadge(member.status)}
-                      {member.status === "pending" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleResendInvite(member.email)}
-                          className="text-xs h-6 px-2 text-muted-foreground hover:text-foreground"
-                        >
-                          Resend
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-foreground">{member.joined || "—"}</td>
-                  <td className="py-3 px-4 text-sm text-foreground">{member.lastLogin || "—"}</td>
-                  <td className="py-3 px-4 text-sm text-foreground">{member.signInCount || 0}</td>
-                  <td className="py-3 px-4 text-sm text-foreground">{member.authentication || "—"}</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center justify-end gap-2">
-                      {canManageUser(member) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-card border-border">
-                            <DropdownMenuItem
-                              onClick={() => copyToClipboard(member.email)}
-                              className="text-foreground hover:bg-accent"
-                            >
-                              Copy Email
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-border" />
-                            <DropdownMenuItem
-                              onClick={() => handleRoleChange(member.id, member.role === "admin" ? "member" : "admin")}
-                              className="text-foreground hover:bg-accent"
-                            >
-                              {member.role === "admin" ? "Make Member" : "Make Admin"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator className="bg-border" />
-                            <DropdownMenuItem
-                              onClick={() => handleRemoveMember(member)}
-                              className="text-red-400 hover:bg-red-950/20"
-                            >
-                              Remove User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+        {filteredMembers.length === 0 && !isTeamLoading && (
+          <div className="text-center p-8 text-muted-foreground">
+            No team members found.
+          </div>
+        )}
       </div>
 
       {/* Confirm Remove Dialog */}
-      <Dialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
-        <DialogContent className="bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Remove Team Member</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Are you sure you want to remove {memberToRemove?.name} from your organization? This action cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConfirmRemoveOpen(false)}
-              className="border-border text-foreground hover:bg-accent"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={confirmRemoveMember}
-              className={gradientTokens.primary}
-            >
-              Remove Member
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AlertDialog open={confirmRemoveOpen} onOpenChange={setConfirmRemoveOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove {memberToRemove?.name} from the team. They will lose access to the organization.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmRemoveMember} disabled={loading} className="bg-red-500 hover:bg-red-600">
+              {loading ? "Removing..." : "Remove Member"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

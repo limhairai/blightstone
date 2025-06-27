@@ -4,8 +4,9 @@
 export type StatusType = 
   | "active" 
   | "pending" 
-  | "inactive" 
   | "suspended" 
+  | "restricted"
+  | "connection_error"
   | "error" 
   | "paused" 
   | "disabled" 
@@ -35,15 +36,20 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
     dotColor: "bg-[#FFC857] dark:bg-[#FFC857]",
     badgeStyles: "bg-amber-100/80 text-amber-800 border-amber-300/50 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-700/50"
   },
-  inactive: {
-    label: "Inactive",
-    dotColor: "bg-gray-400 dark:bg-gray-500",
-    badgeStyles: "bg-gray-100/80 text-gray-800 border-gray-300/50 dark:bg-gray-950/30 dark:text-gray-300 dark:border-gray-700/50"
-  },
   suspended: {
-    label: "Suspended",
+    label: "FB Suspended",
     dotColor: "bg-[#F56565] dark:bg-[#F56565]",
     badgeStyles: "bg-red-100/80 text-red-800 border-red-300/50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-700/50"
+  },
+  restricted: {
+    label: "FB Restricted",
+    dotColor: "bg-[#FF8A65] dark:bg-[#FF8A65]",
+    badgeStyles: "bg-orange-100/80 text-orange-800 border-orange-300/50 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-700/50"
+  },
+  connection_error: {
+    label: "Connection Issue",
+    dotColor: "bg-[#FFC857] dark:bg-[#FFC857]",
+    badgeStyles: "bg-yellow-100/80 text-yellow-800 border-yellow-300/50 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-700/50"
   },
   error: {
     label: "Failed",
@@ -56,17 +62,17 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
     badgeStyles: "bg-red-100/80 text-red-800 border-red-300/50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-700/50"
   },
   paused: {
-    label: "Inactive",
+    label: "Paused",
     dotColor: "bg-[#FFC857] dark:bg-[#FFC857]",
     badgeStyles: "bg-gray-100/80 text-gray-800 border-gray-300/50 dark:bg-gray-950/30 dark:text-gray-300 dark:border-gray-700/50"
   },
   disabled: {
-    label: "Inactive",
+    label: "Disabled",
     dotColor: "bg-gray-400 dark:bg-gray-500",
     badgeStyles: "bg-gray-100/80 text-gray-800 border-gray-300/50 dark:bg-gray-950/30 dark:text-gray-300 dark:border-gray-700/50"
   },
   idle: {
-    label: "Inactive",
+    label: "Idle",
     dotColor: "bg-gray-300 dark:bg-gray-600",
     badgeStyles: "bg-gray-100/80 text-gray-800 border-gray-300/50 dark:bg-gray-950/30 dark:text-gray-300 dark:border-gray-700/50"
   },
@@ -99,7 +105,7 @@ export const STATUS_CONFIG: Record<StatusType, StatusConfig> = {
 
 // Helper function to get status configuration
 export function getStatusConfig(status: StatusType): StatusConfig {
-  return STATUS_CONFIG[status] || STATUS_CONFIG.inactive
+  return STATUS_CONFIG[status] || STATUS_CONFIG.pending
 }
 
 // Helper function to normalize status values (handles legacy/variant status names)
@@ -111,15 +117,17 @@ export function normalizeStatus(status: string): StatusType {
     case "rejected":
       return "error"
     case "not_verified":
-      return "inactive"
+      return "pending"
     case "verified":
       return "active"
+    case "inactive":
+      return "pending" // Convert legacy inactive to pending
     default:
       // Check if it's a valid status type
       if (normalized in STATUS_CONFIG) {
         return normalized as StatusType
       }
-      // Fallback to inactive for unknown statuses
-      return "inactive"
+      // Fallback to pending for unknown statuses
+      return "pending"
   }
 } 

@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import useSWR, { useSWRConfig } from 'swr'
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -9,110 +11,100 @@ import { Building2, ArrowUpDown, Shuffle, CreditCard, Wallet } from 'lucide-reac
 import { toast } from "sonner"
 import { ConsolidateFundsDialog } from "./consolidate-funds-dialog"
 import { DistributeFundsDialog } from "./distribute-funds-dialog"
-import { useAppData } from "../../contexts/AppDataContext"
-import { formatCurrency } from "../../lib/mock-data"
+import { StripeCheckoutDialog } from "./stripe-checkout-dialog"
+import { formatCurrency } from "../../utils/format"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function WalletFundingPanel() {
-  const { state, addTransaction, updateWalletBalance } = useAppData()
+  const { mutate } = useSWRConfig();
+  const { currentOrganizationId } = useOrganizationStore();
+  
+  const { data, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  
+  const organization = data?.organizations?.[0];
+  const totalBalance = organization?.balance ?? 0;
+  
   const [mode, setMode] = useState<"add" | "withdraw">("add")
   const [amount, setAmount] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState("bank")
+  const [paymentMethod, setPaymentMethod] = useState("card")
   const [showConsolidateDialog, setShowConsolidateDialog] = useState(false)
   const [showDistributeDialog, setShowDistributeDialog] = useState(false)
+  const [showStripeDialog, setShowStripeDialog] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Handle preset amount selection
-  const handlePresetAmount = (value: number) => {
-    setAmount(value.toString())
-  }
+  const handlePresetAmount = (value: number) => setAmount(value.toString());
 
-  // Handle max amount
   const handleMaxAmount = () => {
-    if (mode === "withdraw") {
-      setAmount(state.financialData.totalBalance.toString())
-    } else {
-      setAmount("10000") // Max add amount
-    }
+    if (mode === "withdraw") setAmount(totalBalance.toString());
+    else setAmount("10000"); // Max add amount
   }
 
-  // Handle main action (Add/Withdraw)
   const handleMainAction = async () => {
-    const numAmount = Number.parseFloat(amount)
+    const numAmount = Number.parseFloat(amount);
     if (!amount || numAmount <= 0) {
-      toast.error("Please enter a valid amount")
-      return
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    if (mode === 'withdraw' && numAmount > totalBalance) {
+      toast.error("Amount exceeds available balance");
+      return;
     }
 
+    if (mode === "add" && paymentMethod === "card") {
+      setShowStripeDialog(true);
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      if (mode === "add") {
-        // 1. Add funds to wallet balance
-        await updateWalletBalance(numAmount, 'add')
-        
-        // 2. Add transaction record
-        await addTransaction({
-          type: 'topup',
+      const res = await fetch('/api/wallet/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           amount: numAmount,
-          date: new Date().toISOString(),
-          description: `Wallet funding via ${getPaymentMethodLabel()}`,
-          status: 'completed'
-        })
-        toast.success(`Successfully added $${numAmount} to wallet`)
-      } else {
-        if (numAmount > state.financialData.totalBalance) {
-          toast.error("Amount exceeds available balance")
-          return
-        }
-        
-        // 1. Subtract funds from wallet balance
-        await updateWalletBalance(numAmount, 'subtract')
-        
-        // 2. Add transaction record
-        await addTransaction({
-          type: 'withdrawal',
-          amount: numAmount,
-          date: new Date().toISOString(),
-          description: `Wallet withdrawal via ${getPaymentMethodLabel()}`,
-          status: 'completed'
-        })
-        toast.success(`Successfully withdrew $${numAmount} from wallet`)
-      }
+          type: mode === 'add' ? 'topup' : 'withdrawal',
+          description: `Wallet ${mode} via ${getPaymentMethodLabel()}`,
+          organization_id: currentOrganizationId,
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Something went wrong');
       
-      // Reset amount after successful action
-      setAmount("")
+      toast.success(`Successfully ${mode === 'add' ? 'added' : 'withdrew'} ${formatCurrency(numAmount)}`);
+      
+      // Revalidate organization data to update balance everywhere
+      mutate(`/api/organizations?id=${currentOrganizationId}`);
+      // Potentially revalidate a transactions endpoint as well if we have one
+      // mutate('/api/transactions');
+
+      setAmount("");
     } catch (error) {
-      toast.error(`Failed to ${mode === "add" ? "add funds" : "withdraw funds"}`)
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+      toast.error(`Failed to ${mode} funds: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
-  // Handle consolidate funds
-  const handleConsolidate = () => {
-    setShowConsolidateDialog(true)
-  }
-
-  // Handle distribute funds
-  const handleDistribute = () => {
-    setShowDistributeDialog(true)
-  }
+  const handleConsolidate = () => setShowConsolidateDialog(true);
+  const handleDistribute = () => setShowDistributeDialog(true);
 
   const getPaymentMethodLabel = () => {
     switch (paymentMethod) {
-      case "bank": return "Bank Transfer"
-      case "card": return "Credit Card"
-      case "crypto": return "Cryptocurrency"
-      default: return "Bank Transfer"
+      case "bank": return "Bank Transfer";
+      case "card": return "Credit Card";
+      case "crypto": return "Cryptocurrency";
+      default: return "Credit Card";
     }
   }
 
-  const getPaymentMethodIcon = () => {
-    switch (paymentMethod) {
-      case "bank": return Building2
-      case "card": return CreditCard
-      case "crypto": return Wallet
-      default: return Building2
-    }
-  }
-
-  const PaymentIcon = getPaymentMethodIcon()
-  const isLoading = state.loading.actions
+  const PaymentIcon = paymentMethod === 'bank' ? Building2 : paymentMethod === 'crypto' ? Wallet : CreditCard;
+  const isLoading = isOrgLoading || isSubmitting;
 
   return (
     <>
@@ -120,7 +112,7 @@ export function WalletFundingPanel() {
         <CardHeader className="pb-4">
           <CardTitle className="text-lg font-semibold text-foreground">Fund Wallet</CardTitle>
           <div className="text-sm text-muted-foreground">
-            Available: ${formatCurrency(state.financialData.totalBalance)}
+            Available: {formatCurrency(totalBalance)}
           </div>
         </CardHeader>
         <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
@@ -179,103 +171,113 @@ export function WalletFundingPanel() {
                     key={value}
                     variant="outline"
                     size="sm"
-                    className="text-sm h-9 bg-background border-border text-foreground hover:bg-accent"
+                    className="bg-background border-border text-foreground hover:bg-muted"
                     onClick={() => handlePresetAmount(value)}
                     disabled={isLoading}
                   >
-                    ${value >= 1000 ? `${value / 1000}k` : value}
+                    ${value}
                   </Button>
                 ))}
               </div>
             </div>
 
             {/* Payment Method */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label className="text-sm font-medium text-muted-foreground">Payment method</label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={isLoading}>
-                <SelectTrigger className="bg-background border-border text-foreground h-10">
+                <SelectTrigger className="bg-background border-border text-foreground">
                   <div className="flex items-center gap-2">
                     <PaymentIcon className="h-4 w-4" />
-                    <span>{getPaymentMethodLabel()}</span>
+                    <SelectValue />
                   </div>
                 </SelectTrigger>
-                <SelectContent className="bg-background border-border text-foreground">
-                  <SelectItem value="bank">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      <span>Bank Transfer</span>
-                    </div>
-                  </SelectItem>
+                <SelectContent>
                   <SelectItem value="card">
                     <div className="flex items-center gap-2">
                       <CreditCard className="h-4 w-4" />
-                      <span>Credit Card</span>
+                      Credit Card
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="bank">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      Bank Transfer
                     </div>
                   </SelectItem>
                   <SelectItem value="crypto">
                     <div className="flex items-center gap-2">
                       <Wallet className="h-4 w-4" />
-                      <span>Cryptocurrency</span>
+                      Cryptocurrency
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-
+          
           {/* Bottom Section */}
-          <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Current Balance</span>
+              <span>{formatCurrency(totalBalance)}</span>
+            </div>
+            <div className="flex justify-between text-sm font-medium text-foreground">
+              <span>{mode === 'add' ? 'You will add' : 'You will receive'}</span>
+              <span>{formatCurrency(Number.parseFloat(amount) || 0)}</span>
+            </div>
+
             {/* Main Action Button */}
-            <Button
-              className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black font-medium h-12"
-              disabled={!amount || Number.parseFloat(amount) <= 0 || isLoading}
+            <Button 
+              size="lg" 
+              className="w-full font-bold text-base" 
               onClick={handleMainAction}
+              disabled={isLoading}
             >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                  Processing...
-                </div>
-              ) : (
-                mode === "add" ? `Add $${amount || "0"} via ${getPaymentMethodLabel()}` : `Withdraw $${amount || "0"}`
-              )}
+              {isSubmitting ? 'Processing...' : `${mode === 'add' ? 'Add' : 'Withdraw'} Funds`}
             </Button>
 
-            {/* Fund Management Actions */}
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                variant="outline" 
-                className="text-sm h-9 bg-background border-border text-foreground hover:bg-accent"
+            {/* Fund Management */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="w-full text-muted-foreground hover:text-foreground"
                 onClick={handleConsolidate}
                 disabled={isLoading}
               >
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                Consolidate
+                <Shuffle className="h-4 w-4 mr-2" /> Consolidate
               </Button>
-              <Button 
-                variant="outline" 
-                className="text-sm h-9 bg-background border-border text-foreground hover:bg-accent"
+              <Button
+                variant="outline"
+                className="w-full text-muted-foreground hover:text-foreground"
                 onClick={handleDistribute}
                 disabled={isLoading}
               >
-                <Shuffle className="h-4 w-4 mr-2" />
-                Distribute
+                <ArrowUpDown className="h-4 w-4 mr-2" /> Distribute
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Dialogs */}
-      <ConsolidateFundsDialog 
-        open={showConsolidateDialog} 
-        onOpenChange={setShowConsolidateDialog}
-      />
-      <DistributeFundsDialog 
-        open={showDistributeDialog} 
-        onOpenChange={setShowDistributeDialog}
-        walletBalance={state.financialData.totalBalance}
-      />
+      
+      {showConsolidateDialog && (
+        <ConsolidateFundsDialog 
+          isOpen={showConsolidateDialog}
+          onClose={() => setShowConsolidateDialog(false)}
+        />
+      )}
+      {showDistributeDialog && (
+        <DistributeFundsDialog
+          isOpen={showDistributeDialog}
+          onClose={() => setShowDistributeDialog(false)}
+        />
+      )}
+      {showStripeDialog && (
+        <StripeCheckoutDialog 
+          isOpen={showStripeDialog}
+          onClose={() => setShowStripeDialog(false)}
+          amount={Number.parseFloat(amount) || 0}
+        />
+      )}
     </>
   )
 } 

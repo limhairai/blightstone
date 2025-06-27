@@ -14,7 +14,7 @@ import {
 } from '../ui/dropdown-menu';
 import { Badge } from '../ui/badge';
 import { Bell, ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X } from 'lucide-react';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { getPlaceholderUrl } from '@/lib/config/assets';
 
 interface AdminTopbarProps {
@@ -24,9 +24,11 @@ interface AdminTopbarProps {
 export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, signOut: authSignOut } = useAuth();
+  
   const hasNotifications = true;
-  const userInitial = "A";
-  const userEmail = "admin@adhub.com";
+  const userEmail = user?.email || 'admin@adhub.com';
+  const userInitial = user?.email?.charAt(0).toUpperCase() || "A";
 
   // Get page title from pathname if not provided
   const getPageTitle = () => {
@@ -40,8 +42,12 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
     return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace("-", " ");
   };
 
-  const signOut = () => {
-    console.log("Admin sign out");
+  const handleSignOut = async () => {
+    try {
+      await authSignOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (
@@ -139,7 +145,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Switch to Client View
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={signOut}>
+              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out
               </DropdownMenuItem>

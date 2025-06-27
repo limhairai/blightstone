@@ -12,6 +12,7 @@ import {
 } from "../ui/dropdown-menu"
 import { Checkbox } from "../ui/checkbox"
 import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
+import { RequestAccountFundingDialog } from "./request-account-funding-dialog"
 import { StatusBadge } from "../ui/status-badge"
 import { StatusDot } from "../ui/status-dot"
 
@@ -50,6 +51,8 @@ interface AccountsTableProps {
 export function AccountsTable({ accounts, selectedAccounts, onSelectAccount, onSelectAll }: AccountsTableProps) {
   const [isTopUpDialogOpen, setIsTopUpDialogOpen] = useState(false);
   const [selectedAccountForTopUp, setSelectedAccountForTopUp] = useState<Account | null>(null);
+  const [isFundingRequestDialogOpen, setIsFundingRequestDialogOpen] = useState(false);
+  const [selectedAccountForFunding, setSelectedAccountForFunding] = useState<Account | null>(null);
 
   const openTopUpDialog = (account: Account) => {
     setSelectedAccountForTopUp(account);
@@ -59,6 +62,16 @@ export function AccountsTable({ accounts, selectedAccounts, onSelectAccount, onS
   const closeTopUpDialog = () => {
     setSelectedAccountForTopUp(null);
     setIsTopUpDialogOpen(false);
+  };
+
+  const openFundingRequestDialog = (account: Account) => {
+    setSelectedAccountForFunding(account);
+    setIsFundingRequestDialogOpen(true);
+  };
+
+  const closeFundingRequestDialog = () => {
+    setSelectedAccountForFunding(null);
+    setIsFundingRequestDialogOpen(false);
   };
 
   return (
@@ -125,6 +138,14 @@ export function AccountsTable({ accounts, selectedAccounts, onSelectAccount, onS
                     >
                       <Plus className="h-4 w-4 mr-1" /> Top Up
                     </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                      onClick={() => openFundingRequestDialog(account)}
+                    >
+                      Request Funds
+                    </Button>
 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -177,6 +198,15 @@ export function AccountsTable({ accounts, selectedAccounts, onSelectAccount, onS
               ? `$${selectedAccountForTopUp.balance.toFixed(2)}`
               : selectedAccountForTopUp.balance
           }
+        />
+      )}
+      {selectedAccountForFunding && (
+        <RequestAccountFundingDialog
+          open={isFundingRequestDialogOpen}
+          onOpenChange={setIsFundingRequestDialogOpen}
+          accountId={selectedAccountForFunding.accountId}
+          accountName={selectedAccountForFunding.name}
+          onSuccess={closeFundingRequestDialog}
         />
       )}
     </>

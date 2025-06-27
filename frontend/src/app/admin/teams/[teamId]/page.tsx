@@ -14,7 +14,7 @@ import { Building2, ArrowLeft, Search } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { useAppData } from "../../../../contexts/AppDataContext"
+import { useAuth } from "../../../../contexts/AuthContext"
 import { useParams } from "next/navigation"
 
 interface Organization {
@@ -39,7 +39,7 @@ interface Team {
 }
 
 export default function TeamDetailPage() {
-  const { state } = useAppData()
+  const { session } = useAuth()
   const params = useParams()
   const teamId = params?.teamId as string
   

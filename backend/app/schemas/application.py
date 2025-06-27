@@ -3,15 +3,11 @@ from typing import Optional
 from datetime import datetime
 import uuid
 
-# Base Application Schema
+# Base schema for core application fields
 class ApplicationBase(BaseModel):
-    business_id: uuid.UUID = Field(..., description="Business ID for the application")
-    account_name: str = Field(..., min_length=1, max_length=100, description="Desired ad account name")
-    spend_limit: Optional[float] = Field(5000.00, ge=0, description="Monthly spend limit in USD")
-    landing_page_url: Optional[str] = Field(None, description="Landing page URL")
-    facebook_page_url: Optional[str] = Field(None, description="Facebook page URL")
-    campaign_description: Optional[str] = Field(None, description="Campaign description")
-    notes: Optional[str] = Field(None, description="Additional notes")
+    account_name: str = Field(..., min_length=3, max_length=100, description="Name for the new ad account")
+    business_id: str
+    user_id: str
 
 # Request Schemas
 class ApplicationCreate(ApplicationBase):
@@ -21,7 +17,7 @@ class ApplicationCreate(ApplicationBase):
 class ApplicationUpdate(BaseModel):
     """Schema for updating an application (only pending applications)"""
     account_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    spend_limit: Optional[float] = Field(None, ge=0)
+
     landing_page_url: Optional[str] = None
     facebook_page_url: Optional[str] = None
     campaign_description: Optional[str] = None
@@ -30,7 +26,7 @@ class ApplicationUpdate(BaseModel):
 class ApplicationReview(BaseModel):
     """Schema for admin review of applications"""
     status: str = Field(..., description="New status: approved, rejected, under_review")
-    admin_notes: Optional[str] = Field(None, description="Admin notes")
+
     assigned_account_id: Optional[str] = Field(None, description="Assigned ad account ID (for approved)")
     rejection_reason: Optional[str] = Field(None, description="Rejection reason (for rejected)")
 
@@ -49,7 +45,6 @@ class ApplicationRead(ApplicationBase):
     rejected_by: Optional[uuid.UUID] = None
     rejected_at: Optional[datetime] = None
     rejection_reason: Optional[str] = None
-    admin_notes: Optional[str] = None
     
     # Timestamps
     submitted_at: datetime

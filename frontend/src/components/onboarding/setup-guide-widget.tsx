@@ -6,8 +6,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "../ui/button"
 import { Card, CardContent } from "../ui/card"
 import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
-import { useAppData } from "../../contexts/AppDataContext"
-import { toast } from "../ui/use-toast"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { toast } from "sonner"
+import { useSWRConfig } from "swr"
 
 type WidgetState = "expanded" | "collapsed" | "closed"
 
@@ -20,18 +21,19 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   const [expandedSections, setExpandedSections] = useState<string[]>([])
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const router = useRouter()
-  const { createBusiness } = useAppData()
+  const { currentOrganizationId } = useOrganizationStore()
+  const { mutate } = useSWRConfig()
   
-  // Use the advanced onboarding hook
   const {
-    setupProgress,
-    completion,
-    nextStep,
-    shouldShowOnboarding,
-    loading,
+    progressData,
+    isLoading,
+    isError,
+    mutate: mutateOnboarding,
     dismissOnboarding,
-    markStepCompleted
   } = useAdvancedOnboarding()
+
+  const { completionPercentage, steps, isComplete } = progressData || { completionPercentage: 0, steps: [], isComplete: false };
+
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -49,37 +51,44 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
           break
           
         case 'business-setup':
-          // Create a quick business application
-          await createBusiness({
-            name: 'My Business',
-            status: 'pending',
-            balance: 0,
-            website: '',
-            description: 'Quick setup from widget'
-          })
+          if (!currentOrganizationId) {
+              toast.error("Organization not found. Please refresh.")
+              return;
+          }
+          const res = await fetch('/api/businesses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: 'My First Business',
+              organization_id: currentOrganizationId
+            }),
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.error || "Failed to create business");
+          }
           
-          // Mark step as completed
-          await markStepCompleted(stepId)
-          
-          toast({
-            title: "Business Application Submitted",
+          toast.success("Business Application Submitted", {
             description: "Your business application has been submitted for review.",
           })
+          
+          // Revalidate onboarding progress to reflect the new business
+          mutateOnboarding();
+          // Also revalidate businesses list if it's displayed elsewhere
+          mutate(`/api/businesses?organization_id=${currentOrganizationId}`);
           break
           
         case 'ad-account-setup':
-          router.push('/dashboard/accounts')
+          router.push('/dashboard/accounts?action=create')
           break
           
         default:
           break
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive"
-      })
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        toast.error("Error", { description: errorMessage });
     } finally {
       setActionLoading(null)
     }
@@ -89,27 +98,25 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     try {
       await dismissOnboarding()
       onStateChange("closed")
-      toast({
-        title: "Setup Guide Dismissed",
-        description: "You can always access the setup guide from your dashboard.",
+      toast.success("Setup Guide Dismissed", {
+        description: "You can always access this from your user menu.",
       })
     } catch (error) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to dismiss setup guide. Please try again.",
-        variant: "destructive"
       })
     }
   }
 
-  // Don't show if onboarding shouldn't be shown or if loading
-  if (!shouldShowOnboarding || loading) {
+  if (isLoading || isComplete) {
     return null
   }
 
   if (widgetState === "closed") {
-    return null // The button will be shown in the topbar
+    return null 
   }
+
+  const nextStep = steps.find(s => !s.isCompleted);
 
   if (widgetState === "collapsed") {
     return (
@@ -129,14 +136,14 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
             </div>
             <div className="w-full bg-muted rounded-full h-1 mb-2">
               <div 
-                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-1 rounded-full transition-all duration-300" 
-                style={{ width: `${completion.percentage}%` }}
+                className="bg-gradient-to-r from-violet-400 to-pink-400 h-1 rounded-full transition-all duration-300" 
+                style={{ width: `${completionPercentage}%` }}
               />
             </div>
             <div className="text-sm text-muted-foreground">
               {nextStep ? (
                 <>
-                  <span className="text-[#b4a0ff]">Next:</span> {nextStep.name}
+                  <span className="font-medium text-primary">Next:</span> {nextStep.title}
                 </>
               ) : (
                 <span className="text-green-500">Setup complete! 🎉</span>
@@ -168,76 +175,57 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
           <div className="mb-4">
             <div className="flex items-center justify-between text-sm mb-2">
               <span>Progress</span>
-              <span className="text-muted-foreground">{completion.completedSteps}/{completion.totalSteps}</span>
+              <span className="text-muted-foreground">{steps.filter(s => s.isCompleted).length}/{steps.length}</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-500" 
-                style={{ width: `${completion.percentage}%` }}
+                className="bg-gradient-to-r from-violet-400 to-pink-400 h-2 rounded-full transition-all duration-500" 
+                style={{ width: `${completionPercentage}%` }}
               />
             </div>
             <div className="text-xs text-muted-foreground mt-1">
-              {completion.percentage}% complete
+              {completionPercentage}% complete
             </div>
           </div>
 
           <div className="space-y-2">
-            {setupProgress && Object.entries(setupProgress).map(([key, step]) => (
+            {steps.map((step) => (
               <div key={step.id}>
                 <div
-                  className="flex items-center gap-2 py-1 px-2 rounded-md hover:bg-muted/50 cursor-pointer"
+                  className="flex items-center gap-3 py-2 px-2 rounded-md hover:bg-muted/50 cursor-pointer"
                   onClick={() => toggleSection(step.id)}
                 >
-                  {expandedSections.includes(step.id) ? (
-                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                  ) : (
-                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                  )}
-                  <span className={`text-sm ${step.completed ? 'font-medium' : 'text-muted-foreground'}`}>
-                    {step.name}
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                      step.isCompleted 
+                        ? 'bg-green-500' 
+                        : 'border-2 border-muted-foreground/50'
+                    }`}>
+                      {step.isCompleted && <Check className="h-3 w-3 text-white" />}
+                  </div>
+                  <span className={`text-sm font-medium ${!step.isCompleted && 'text-muted-foreground'}`}>
+                    {step.title}
                   </span>
-                  {step.completed && (
-                    <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center ml-auto">
-                      <Check className="h-2.5 w-2.5 text-white" />
-                    </div>
+                  {expandedSections.includes(step.id) ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto" />
                   )}
                 </div>
 
                 {expandedSections.includes(step.id) && (
-                  <div className="ml-6 space-y-2 mt-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
-                        step.completed 
-                          ? 'bg-green-500' 
-                          : 'border border-muted-foreground/50'
-                      }`}>
-                        {step.completed && <Check className="h-2.5 w-2.5 text-white" />}
-                      </div>
-                      <span className={`text-sm ${step.completed ? '' : 'text-muted-foreground'}`}>
-                        {getStepDescription(step.id, step.completed)}
-                      </span>
-                    </div>
+                  <div className="ml-5 pl-4 border-l-2 border-muted-foreground/20 pb-2">
+                    <p className="text-sm text-muted-foreground mt-1 mb-3">{step.description}</p>
                     
-                    {/* Action button for incomplete steps */}
-                    {!step.completed && step.id !== 'email-verification' && (
-                      <div className="mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => handleStepAction(step.id)}
-                          disabled={actionLoading === step.id}
-                        >
-                          {actionLoading === step.id ? (
-                            "Loading..."
-                          ) : (
-                            <>
-                              {getStepIcon(step.id)}
-                              {getStepActionText(step.id)}
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                    {!step.isCompleted && step.id !== 'email-verification' && (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-8 px-3 text-xs"
+                        onClick={() => handleStepAction(step.id)}
+                        disabled={actionLoading === step.id}
+                      >
+                        {actionLoading === step.id ? "Loading..." : getStepActionText(step.id)}
+                      </Button>
                     )}
                   </div>
                 )}
@@ -250,33 +238,11 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   )
 }
 
-function getStepDescription(stepId: string, completed: boolean): string {
-  const descriptions = {
-    'email-verification': completed ? 'Email verified' : 'Verify your email address',
-    'wallet-funding': completed ? 'Wallet funded' : 'Add funds to wallet',
-    'business-setup': completed ? 'Business created' : 'Submit business application',
-    'ad-account-setup': completed ? 'Ad account created' : 'Apply for ad account'
-  }
-  
-  return descriptions[stepId as keyof typeof descriptions] || 'Complete this step'
-}
-
-function getStepIcon(stepId: string) {
-  const icons = {
-    'wallet-funding': <CreditCard className="h-3 w-3 mr-1" />,
-    'business-setup': <Building2 className="h-3 w-3 mr-1" />,
-    'ad-account-setup': <Target className="h-3 w-3 mr-1" />
-  }
-  
-  return icons[stepId as keyof typeof icons] || <Plus className="h-3 w-3 mr-1" />
-}
-
 function getStepActionText(stepId: string): string {
-  const actions = {
-    'wallet-funding': 'Add Funds',
-    'business-setup': 'Create Business',
-    'ad-account-setup': 'Apply for Account'
+  switch (stepId) {
+    case 'business-setup': return 'Create Business';
+    case 'wallet-funding': return 'Fund Wallet';
+    case 'ad-account-setup': return 'Create Ad Account';
+    default: return 'Complete Step';
   }
-  
-  return actions[stepId as keyof typeof actions] || 'Complete'
 } 

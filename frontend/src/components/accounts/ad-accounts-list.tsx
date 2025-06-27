@@ -4,20 +4,11 @@ import { useState } from "react"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
-import { APP_ACCOUNTS, formatCurrency } from "../../lib/mock-data"
+import { formatCurrency } from "../../utils/format"
 
 export function AdAccountsList() {
-  // Use centralized mock data and convert to the format expected by this component
-  const accounts = APP_ACCOUNTS.slice(0, 4).map((account) => ({
-    id: `acc_${account.id}`,
-    name: account.name,
-    status: account.status === "active" ? "Active" : 
-            account.status === "under_review" ? "Under Review" : 
-            account.status === "paused" ? "Paused" : "Inactive",
-    balance: `$${formatCurrency(account.balance)}`,
-    platform: account.platform,
-    lastUpdated: account.dateAdded,
-  }))
+  // Use empty array for production mode - will be replaced with real data from API
+  const accounts: any[] = []
 
   return (
     <div className="space-y-4">

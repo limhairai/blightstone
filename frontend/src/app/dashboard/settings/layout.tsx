@@ -10,22 +10,28 @@ import { Badge } from "../../../components/ui/badge"
 import { Copy, Edit } from 'lucide-react'
 import { Button } from "../../../components/ui/button"
 import { useEffect } from "react"
-import { getInitials } from "../../../lib/mock-data"
+import useSWR from 'swr'
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { getInitials } from "../../../lib/utils"
 import { getAvatarClasses, gradientTokens } from "../../../lib/design-tokens"
-import { useTheme } from "next-themes"
-import { useAppData } from "../../../contexts/AppDataContext"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface SettingsLayoutProps {
   children: React.ReactNode
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
-  const { state } = useAppData()
+  const { currentOrganizationId } = useOrganizationStore();
   
-  // Use current organization from demo state
-  const currentOrganization = state.currentOrganization
+  const { data, error, isLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const currentOrganization = data?.organizations?.[0];
 
   useEffect(() => {
     setPageTitle("Settings")
@@ -36,6 +42,23 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
     { name: "Team", href: "/dashboard/settings/team" },
     { name: "Account", href: "/dashboard/settings/account" },
   ]
+  
+  if (isLoading) {
+    return (
+        <div className="max-w-full mx-auto py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-border">
+                <div className="flex items-center gap-4">
+                    <Skeleton className="h-16 w-16 rounded-lg" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-5 w-32" />
+                    </div>
+                </div>
+                <Skeleton className="h-9 w-40" />
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="max-w-full mx-auto py-4">
@@ -43,28 +66,23 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-border">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16 rounded-lg border border-border">
-            <AvatarImage src={currentOrganization?.avatar || "getPlaceholderUrl()?height=64&width=64"} alt={currentOrganization?.name || "Organization"} />
+            <AvatarImage src={currentOrganization?.avatar || ""} alt={currentOrganization?.name || "Organization"} />
             <AvatarFallback className={getAvatarClasses('lg')}>
-              {getInitials(currentOrganization?.name || "Demo Org")}
+              {getInitials(currentOrganization?.name || "My Org")}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{currentOrganization?.name || "Demo Organization"}</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{currentOrganization?.name || "My Organization"}</h1>
             <div className="flex items-center gap-2 mt-1">
               <code className="text-xs bg-muted px-2 py-1 rounded border border-border font-mono text-muted-foreground">
-                {currentOrganization?.id || "demo-org-1"}
+                {currentOrganization?.id || "org_id_placeholder"}
               </code>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
                   if (navigator.clipboard && currentOrganization?.id) {
-                    navigator.clipboard
-                      .writeText(currentOrganization.id)
-                      .then(() => {
-                        // You can add a toast notification here if needed
-                      })
-                      .catch((err) => console.error("Failed to copy:", err))
+                    navigator.clipboard.writeText(currentOrganization.id)
                   }
                 }}
                 className="h-6 w-6 p-0"

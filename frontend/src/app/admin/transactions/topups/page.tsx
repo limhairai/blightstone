@@ -3,7 +3,9 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { useAuth } from "../../../../contexts/AuthContext"
+import { toast } from "sonner"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
@@ -17,58 +19,64 @@ interface TopupRequest {
   id: string
   organizationName: string
   businessName: string
+  accountName: string
   amount: number
   currency: string
   status: "pending" | "approved" | "rejected"
   requestedAt: string
   notes?: string
+  adminNotes?: string
 }
 
 export default function TopupRequestsPage() {
-  const [requests] = useState<TopupRequest[]>([
-    {
-      id: "top-001",
-      organizationName: "TechCorp Solutions",
-      businessName: "TechCorp Marketing",
-      amount: 5000,
-      currency: "USD",
-      status: "pending",
-      requestedAt: "2024-01-15T10:30:00Z",
-      notes: "Monthly marketing budget"
-    },
-    {
-      id: "top-002",
-      organizationName: "Digital Pro Agency", 
-      businessName: "DPA Campaigns",
-      amount: 2500,
-      currency: "USD",
-      status: "pending",
-      requestedAt: "2024-01-14T14:20:00Z"
-    },
-    {
-      id: "top-003",
-      organizationName: "E-commerce Plus",
-      businessName: "ECP Store",
-      amount: 3000,
-      currency: "USD",
-      status: "approved",
-      requestedAt: "2024-01-13T09:15:00Z",
-      notes: "Q1 advertising budget"
-    },
-    {
-      id: "top-004",
-      organizationName: "StartupCo",
-      businessName: "StartupCo Main",
-      amount: 1000,
-      currency: "USD",
-      status: "rejected",
-      requestedAt: "2024-01-12T16:45:00Z",
-      notes: "Insufficient documentation"
-    }
-  ])
-
+  const { session } = useAuth()
+  const [requests, setRequests] = useState<TopupRequest[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
+  
+  // Fetch funding requests
+  useEffect(() => {
+    const fetchRequests = async () => {
+      if (!session?.access_token) return
+
+      try {
+        const response = await fetch('/api/funding-requests', {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch funding requests')
+        }
+        
+        const data = await response.json()
+        
+        // Transform funding requests to match TopupRequest interface
+        const transformedRequests = (data.requests || []).map((req: any) => ({
+          id: req.id,
+          organizationName: req.organization?.name || 'Unknown Organization',
+          businessName: req.business?.name || 'Unknown Business',
+          accountName: req.account_name,
+          amount: req.amount,
+          currency: 'USD',
+          status: req.status,
+          requestedAt: req.created_at,
+          notes: req.notes,
+          adminNotes: req.admin_notes
+        }))
+        
+        setRequests(transformedRequests)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load funding requests')
+        toast.error('Failed to load funding requests')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRequests()
+  }, [session])
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
@@ -76,6 +84,7 @@ export default function TopupRequestsPage() {
       const matchesSearch = searchTerm === "" || 
         request.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         request.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        request.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (request.notes && request.notes.toLowerCase().includes(searchTerm.toLowerCase()))
       return matchesStatus && matchesSearch
     })
@@ -87,13 +96,73 @@ export default function TopupRequestsPage() {
     approved: requests.filter(r => r.status === "approved").length,
     rejected: requests.filter(r => r.status === "rejected").length,
   }), [requests])
-
-  const handleApprove = (id: string) => {
-    console.log("Approving request:", id)
+  
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading funding requests...</div>
+  }
+  
+  if (error) {
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
   }
 
-  const handleReject = (id: string) => {
-    console.log("Rejecting request:", id)
+  const handleApprove = async (id: string) => {
+    try {
+      const response = await fetch('/api/funding-requests', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          id,
+          status: 'approved',
+          admin_notes: 'Approved by admin'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to approve request')
+      }
+
+      // Update local state
+      setRequests(prev => prev.map(req => 
+        req.id === id ? { ...req, status: 'approved' as const } : req
+      ))
+      
+      toast.success('Funding request approved')
+    } catch (err) {
+      toast.error('Failed to approve request')
+    }
+  }
+
+  const handleReject = async (id: string) => {
+    try {
+      const response = await fetch('/api/funding-requests', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          id,
+          status: 'rejected',
+          admin_notes: 'Rejected by admin'
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to reject request')
+      }
+
+      // Update local state
+      setRequests(prev => prev.map(req => 
+        req.id === id ? { ...req, status: 'rejected' as const } : req
+      ))
+      
+      toast.success('Funding request rejected')
+    } catch (err) {
+      toast.error('Failed to reject request')
+    }
   }
 
   const columns: ColumnDef<TopupRequest>[] = [
@@ -105,6 +174,7 @@ export default function TopupRequestsPage() {
         <div>
           <div className="font-medium">{row.original.organizationName}</div>
           <div className="text-sm text-muted-foreground">{row.original.businessName}</div>
+          <div className="text-xs text-muted-foreground">Account: {row.original.accountName}</div>
         </div>
       ),
     },

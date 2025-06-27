@@ -8,7 +8,7 @@ import { useParams, useRouter } from "next/navigation"
 import { Button } from "../../../../../components/ui/button"
 import { Badge } from "../../../../../components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../../../../../components/ui/dropdown-menu"
-import { formatCurrency, APP_BUSINESSES } from "../../../../../lib/mock-data"
+import { formatCurrency, APP_BUSINESSES } from "../../../../../utils/format"
 import { ArrowLeft, TrendingUp, TrendingDown, ChevronDown, Calendar, Info, ExternalLink } from 'lucide-react'
 import { layout } from "../../../../../lib/layout-utils"
 import { contentTokens } from "../../../../../lib/content-tokens"

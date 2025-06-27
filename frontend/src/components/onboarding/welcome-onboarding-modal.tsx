@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { CheckCircle, Sparkles, Building2, Target, CreditCard, ArrowRight, ArrowLeft } from "lucide-react"
+import { CheckCircle, Sparkles, Building2, Target, CreditCard, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import useSWR, { useSWRConfig } from 'swr'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -10,8 +11,9 @@ import { Label } from "../ui/label"
 import { Textarea } from "../ui/textarea"
 import { Card } from "../ui/card"
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/AppDataContext"
 import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { toast } from "sonner"
 
 interface OnboardingStep {
   id: string
@@ -26,12 +28,21 @@ interface WelcomeOnboardingModalProps {
   onClose: () => void
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function WelcomeOnboardingModal({ isOpen, onClose }: WelcomeOnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
-  const { state, createBusiness } = useAppData()
   const router = useRouter()
+  const { mutate } = useSWRConfig()
+  const { currentOrganizationId } = useOrganizationStore()
+
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const currentOrganization = orgData?.organizations?.[0];
   
   // Use advanced onboarding hook
   const {
@@ -82,24 +93,37 @@ export function WelcomeOnboardingModal({ isOpen, onClose }: WelcomeOnboardingMod
     if (currentStep === 2) {
       // Business creation step
       if (!businessName.trim()) {
+        toast.error("Business name is required.")
         return
       }
 
       setLoading(true)
       try {
-        await createBusiness({
-          name: businessName,
-          status: 'pending',
-          balance: 0,
-          website: businessWebsite,
-          description: description
-        })
+        const response = await fetch('/api/businesses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: businessName,
+            website: businessWebsite,
+            description: description,
+            organization_id: currentOrganizationId
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to create business");
+        }
         
         // Mark business setup step as completed
         await markStepCompleted('business-setup')
+        mutate(`/api/businesses?organization_id=${currentOrganizationId}`);
         
         setCurrentStep(currentStep + 1)
+        toast.success("Business created successfully and is under review.")
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        toast.error("Failed to create business", { description: errorMessage });
         console.error('Error creating business:', error)
       } finally {
         setLoading(false)
@@ -183,20 +207,24 @@ export function WelcomeOnboardingModal({ isOpen, onClose }: WelcomeOnboardingMod
               </div>
               <h3 className="text-lg font-semibold mb-2">Organization Setup</h3>
               <p className="text-muted-foreground">
-                {state.currentOrganization 
-                  ? `Your organization "${state.currentOrganization.name}" is ready to go!`
+                {isOrgLoading ? "Loading..." : currentOrganization 
+                  ? `Your organization "${currentOrganization.name}" is ready to go!`
                   : "We'll set up your organization automatically."
                 }
               </p>
             </div>
             
-            {state.currentOrganization && (
+            {isOrgLoading ? (
+               <div className="flex items-center justify-center p-4 bg-muted/50 rounded-lg">
+                 <Loader2 className="h-5 w-5 animate-spin" />
+               </div>
+            ) : currentOrganization && (
               <div className="bg-muted/50 p-4 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-medium">{state.currentOrganization.name}</div>
+                    <div className="font-medium">{currentOrganization.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      Plan: {state.currentOrganization.plan} • Balance: ${state.currentOrganization.balance}
+                      Plan: {currentOrganization.plan} • Balance: ${currentOrganization.balance_cents / 100}
                     </div>
                   </div>
                   <CheckCircle className="h-5 w-5 text-green-500" />
@@ -211,7 +239,8 @@ export function WelcomeOnboardingModal({ isOpen, onClose }: WelcomeOnboardingMod
                   id="orgName"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
-                  placeholder={state.currentOrganization?.name || "My Company"}
+                  placeholder={currentOrganization?.name || "My Company"}
+                  disabled={isOrgLoading}
                 />
               </div>
             </div>

@@ -399,9 +399,12 @@ async def stripe_webhook(request: Request):
     
     try:
         # Handle different event types
-        if event["type"] == "payment_intent.succeeded":
-            payment_intent = event["data"]["object"]
-            await handle_successful_payment(supabase, payment_intent)
+        if event["type"] == "checkout.session.completed":
+            session = event["data"]["object"]
+            # Retrieve the payment intent from the session
+            payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
+            # Pass the session metadata to the handler
+            await handle_successful_payment(supabase, payment_intent, session.metadata)
             
         elif event["type"] == "payment_intent.payment_failed":
             payment_intent = event["data"]["object"]
@@ -426,19 +429,20 @@ async def stripe_webhook(request: Request):
         logger.error(f"Error processing Stripe webhook: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Webhook processing failed")
 
-async def handle_successful_payment(supabase, payment_intent):
+async def handle_successful_payment(supabase, payment_intent, metadata=None):
     """Handle successful payment - add funds to wallet"""
     try:
-        organization_id = payment_intent["metadata"]["organization_id"]
-        user_id = payment_intent["metadata"]["user_id"]
-        amount = payment_intent["amount"] / 100  # Convert from cents
-        telegram_id = payment_intent["metadata"].get("telegram_id")
+        # Use metadata from the checkout session if provided, otherwise from the payment intent
+        payment_metadata = metadata if metadata is not None else payment_intent["metadata"]
         
-        # Calculate fee (3%)
-        FEE_PERCENT = 0.03
-        fee = round(amount * FEE_PERCENT, 2)
-        net_amount = round(amount - fee, 2)
-        
+        organization_id = payment_metadata.get("organization_id")
+        user_id = payment_metadata.get("user_id")
+        wallet_credit = float(payment_metadata.get("wallet_credit", 0))
+
+        if not organization_id or not user_id or wallet_credit <= 0:
+            logger.error(f"Missing or invalid metadata for payment {payment_intent['id']}. Org: {organization_id}, User: {user_id}, Credit: {wallet_credit}")
+            return
+
         # Get current organization balance
         org_response = (
             supabase.table("organizations")
@@ -453,7 +457,7 @@ async def handle_successful_payment(supabase, payment_intent):
             return
         
         current_balance = org_response.data.get("wallet_balance", 0.0)
-        new_balance = current_balance + net_amount
+        new_balance = current_balance + wallet_credit
         
         # Update organization balance
         supabase.table("organizations").update({
@@ -471,9 +475,9 @@ async def handle_successful_payment(supabase, payment_intent):
             "organization_id": organization_id,
             "user_id": user_id,
             "type": "topup",
-            "amount": net_amount,
-            "gross_amount": amount,
-            "fee": fee,
+            "amount": wallet_credit,
+            "gross_amount": payment_intent["amount"] / 100,
+            "fee": (payment_intent["amount"] / 100) - wallet_credit,
             "from_account": "stripe",
             "to_account": "org_wallet",
             "status": "completed",
@@ -483,7 +487,7 @@ async def handle_successful_payment(supabase, payment_intent):
         
         supabase.table("transactions").insert(transaction_data).execute()
         
-        logger.info(f"Successfully processed payment {payment_intent['id']} for org {organization_id}: +${net_amount}")
+        logger.info(f"Successfully processed payment {payment_intent['id']} for org {organization_id}: +${wallet_credit}")
         
     except Exception as e:
         logger.error(f"Error handling successful payment: {e}", exc_info=True)

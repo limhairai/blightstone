@@ -4,7 +4,7 @@ import * as React from "react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 // Removed incorrect import: import type { ThemeProviderProps as NextThemesProviderProps } from "next-themes"
 import { useEffect, type ReactNode } from "react"
-import designTokens from "../../lib/design-tokens" // Import the default export
+import designTokens from "../../lib/design-tokens"
 
 // Define ThemeProviderProps locally using React.ComponentProps
 type ThemeProviderProps = React.ComponentProps<typeof NextThemesProvider>;

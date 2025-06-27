@@ -12,38 +12,17 @@ import { contentTokens } from "../../lib/content-tokens"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
 import { TopUpWallet } from "./top-up-wallet"
 import { WithdrawFunds } from "./withdraw-funds"
-import { useAppData } from "../../contexts/AppDataContext"
+import { SimpleStripeDialog } from "./simple-stripe-dialog"
+import { useSWRConfig } from 'swr'
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { toast } from "sonner"
 
 export function WalletDashboard() {
-  const { updateWalletBalance, addTransaction } = useAppData()
   const [showTopUp, setShowTopUp] = useState(false)
   const [showWithdraw, setShowWithdraw] = useState(false)
-
-  // Mock current organization
-  const currentOrg = { id: "org-1", name: "Sample Organization" }
-
-  // Handler functions
-  const handleTopUp = async (amount: number, paymentMethod = "card") => {
-    try {
-      // 1. Add funds to wallet balance
-      await updateWalletBalance(amount, 'add')
-      
-      // 2. Add transaction record
-      await addTransaction({
-        type: 'topup',
-        amount: amount,
-        date: new Date().toISOString(),
-        description: `Wallet funding via ${paymentMethod === 'card' ? 'Credit Card' : 'Bank Transfer'}`,
-        status: 'completed'
-      })
-      
-      toast.success(`Successfully added $${amount} to wallet`)
-      setShowTopUp(false)
-    } catch (error) {
-      toast.error("Failed to add funds to wallet")
-    }
-  }
+  const [topUpAmount, setTopUpAmount] = useState(500) // Default amount
+  const { mutate } = useSWRConfig()
+  const { currentOrganizationId } = useOrganizationStore()
 
   return (
     <div className={layout.pageContent}>
@@ -93,21 +72,19 @@ export function WalletDashboard() {
         <RecentTransactions limit={5} />
       </div>
 
-      {/* Dialogs */}
-      <Dialog open={showTopUp} onOpenChange={setShowTopUp}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Add Funds</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Add money to your wallet to fund ad accounts
-            </DialogDescription>
-          </DialogHeader>
-          <TopUpWallet
-            onTopUp={handleTopUp}
-            orgId={currentOrg?.id}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Stripe Dialog for Add Funds */}
+      <SimpleStripeDialog
+        open={showTopUp}
+        onOpenChange={setShowTopUp}
+        amount={topUpAmount}
+        onSuccess={() => {
+          setShowTopUp(false)
+          toast.success("Payment successful! Your new balance will be reflected shortly.")
+          if (currentOrganizationId) {
+            mutate(`/api/organizations?id=${currentOrganizationId}`);
+          }
+        }}
+      />
 
       <Dialog open={showWithdraw} onOpenChange={setShowWithdraw}>
         <DialogContent className="sm:max-w-md bg-card border-border">

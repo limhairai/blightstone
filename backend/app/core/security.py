@@ -43,23 +43,24 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         if token.lower().startswith("bearer "):
             token = token.split(" ", 1)[1]
         
-        # Use Supabase to validate the token directly
-        supabase = get_supabase_client()
+        # Use the improved token validation method
+        user_data = get_current_user_data_from_token(token)
+        if not user_data:
+            logger.warning("[GET_CURRENT_USER] Invalid Supabase token - no user data returned")
+            raise credentials_exception
         
-        # Try to get user with the provided token
-        try:
-            user_response = supabase.auth.get_user(token)
-            if not user_response or not user_response.user:
-                logger.warning("[GET_CURRENT_USER] Invalid Supabase token - no user returned")
-                raise credentials_exception
+        # Extract user ID - handle both decoded JWT and user object formats
+        user_id = user_data.get('sub') or user_data.get('id')
+        if not user_id:
+            logger.warning("[GET_CURRENT_USER] No user ID found in token data")
+            raise credentials_exception
             
-            supabase_user = user_response.user
-            user_id = supabase_user.id
-            logger.debug(f"[GET_CURRENT_USER] Supabase token verified successfully. User ID: {user_id}")
-            
-        except Exception as e:
-            logger.warning(f"[GET_CURRENT_USER] Error verifying Supabase token: {e}")
-            raise credentials_exception from e
+        logger.debug(f"[GET_CURRENT_USER] Supabase token verified successfully. User ID: {user_id}")
+        
+        # For fallback user creation, we need some user info
+        user_email = user_data.get('email')
+        user_name = user_data.get('user_metadata', {}).get('full_name') or user_data.get('user_metadata', {}).get('name') or user_data.get('name')
+        user_avatar = user_data.get('user_metadata', {}).get('avatar_url') or user_data.get('avatar_url')
             
     except Exception as e:
         logger.warning(f"[GET_CURRENT_USER] Error processing token: {e}")
@@ -69,6 +70,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     max_retries = 2
     retry_delay = 1  # seconds
     response = None
+    supabase = get_supabase_client()
     
     for attempt in range(max_retries + 1):
         try:
@@ -92,13 +94,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     try:
         if not response or not hasattr(response, 'data') or not response.data:
             logger.warning(f"[GET_CURRENT_USER] No profile found in Supabase 'profiles' table for user ID: {user_id}")
-            # Create profile from Supabase user data as fallback
+            # Create profile from token data as fallback
             try:
                 profile_data = {
-                    "id": supabase_user.id,
-                    "email": supabase_user.email,
-                    "name": supabase_user.user_metadata.get("full_name") or supabase_user.user_metadata.get("name") or supabase_user.email.split('@')[0],
-                    "avatar_url": supabase_user.user_metadata.get("avatar_url"),
+                    "id": user_id,
+                    "email": user_email,
+                    "name": user_name or (user_email.split('@')[0] if user_email else "User"),
+                    "avatar_url": user_avatar,
                     "role": "client",
                     "is_superuser": False
                 }
@@ -116,24 +118,24 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
                         is_superuser=profile_data["is_superuser"]
                     )
                 else:
-                    # If profile creation fails, return user data from Supabase auth
-                    logger.warning(f"[GET_CURRENT_USER] Failed to create profile, using Supabase auth data")
+                    # If profile creation fails, return user data from token
+                    logger.warning(f"[GET_CURRENT_USER] Failed to create profile, using token data")
                     return UserRead(
-                        uid=supabase_user.id,
-                        email=supabase_user.email,
-                        name=supabase_user.user_metadata.get("full_name") or supabase_user.user_metadata.get("name") or "User",
-                        avatar=supabase_user.user_metadata.get("avatar_url"),
+                        uid=user_id,
+                        email=user_email,
+                        name=user_name or "User",
+                        avatar=user_avatar,
                         role="client",
                         is_superuser=False
                     )
             except Exception as profile_error:
                 logger.error(f"[GET_CURRENT_USER] Error creating profile: {profile_error}")
-                # Return user data from Supabase auth as final fallback
+                # Return user data from token as final fallback
                 return UserRead(
-                    uid=supabase_user.id,
-                    email=supabase_user.email,
-                    name=supabase_user.user_metadata.get("full_name") or supabase_user.user_metadata.get("name") or "User",
-                    avatar=supabase_user.user_metadata.get("avatar_url"),
+                    uid=user_id,
+                    email=user_email,
+                    name=user_name or "User",
+                    avatar=user_avatar,
                     role="client",
                     is_superuser=False
                 )

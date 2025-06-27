@@ -1,7 +1,9 @@
 // Central API configuration for AdHub
 // This prevents API endpoint mismatches and provides consistent API calling
 
-const API_BASE_URL = '/api/proxy'
+import { ENV_CONFIG } from './env-config'
+
+const API_BASE_URL = ENV_CONFIG.API_URL + '/api'
 
 // API endpoint paths
 export const API_ENDPOINTS = {
@@ -63,6 +65,14 @@ export const API_ENDPOINTS = {
     ORGANIZATIONS: `${API_BASE_URL}/admin/organizations`,
     TRANSACTIONS: `${API_BASE_URL}/admin/transactions`,
     ACTIVITY: `${API_BASE_URL}/admin/activity`,
+  },
+
+  // Dolphin Assets endpoints
+  DOLPHIN_ASSETS: {
+    LIST: `${API_BASE_URL}/dolphin-assets/all-assets`,
+    SYNC: `${API_BASE_URL}/dolphin-assets/sync/discover`,
+    BIND: `${API_BASE_URL}/dolphin-assets/bind`,
+    CLIENT_ASSETS: (orgId: string) => `${API_BASE_URL}/dolphin-assets/client/${orgId}`,
   },
 
   // Health check

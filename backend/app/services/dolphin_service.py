@@ -61,11 +61,11 @@ def calculate_days_remaining(remaining_budget: float, daily_spend: float) -> flo
 class DolphinCloudAPI:
     def __init__(self):
         # Use environment variables directly for backend
-        self.base_url = os.getenv("DOLPHIN_CLOUD_BASE_URL", "https://cloud.dolphin.tech")
-        self.token = os.getenv("DOLPHIN_CLOUD_TOKEN")
+        self.base_url = os.getenv("DOLPHIN_API_URL", "https://cloud.dolphin.tech")
+        self.token = os.getenv("DOLPHIN_API_KEY")
         
         if not self.token:
-            logger.warning("DOLPHIN_CLOUD_TOKEN not set - Dolphin Cloud features will be disabled")
+            logger.warning("DOLPHIN_API_KEY not set - Dolphin Cloud features will be disabled")
         
         self.headers = {
             "Authorization": f"Bearer {self.token}",
@@ -130,6 +130,44 @@ class DolphinCloudAPI:
             
         except Exception as e:
             logger.error(f"Error fetching FB accounts: {e}")
+            return []
+    
+    async def get_fb_cabs(self, per_page: int = 100, page: int = 1, 
+                         business_manager_id: Optional[str] = None,
+                         status_filters: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """
+        Get Facebook Ad Accounts (CABs = Cabinets) from Dolphin Cloud
+        
+        This returns the actual Facebook Ad Accounts, not profiles.
+        CABs = "Кабинеты" (Cabinets) = Facebook Ad Accounts in Dolphin terminology.
+        """
+        try:
+            params = {
+                "perPage": per_page,
+                "page": page,
+                "currency": "USD",
+                "showArchivedAdAccount": "1",  # Include archived
+                "with_trashed": "1",           # Include trashed
+                "showAccountArchivedAdAccount": "0"  # Account level archived setting
+            }
+            
+            # Add business manager filter if specified
+            if business_manager_id:
+                params["businessManagerId"] = business_manager_id
+            
+            # Add status filters if specified
+            if status_filters:
+                for status in status_filters:
+                    params[f"statusFilters[]"] = status
+            
+            response = await self._request("GET", "/api/v1/fb-cabs", params=params)
+            cabs = response.get("data", [])
+            
+            logger.info(f"Retrieved {len(cabs)} Facebook Ad Accounts (CABs) from Dolphin Cloud")
+            return cabs
+            
+        except Exception as e:
+            logger.error(f"Error fetching FB CABs (Ad Accounts): {e}")
             return []
     
     async def get_account_spend_data(self, account_id: str) -> Dict[str, Any]:

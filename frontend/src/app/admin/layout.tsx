@@ -1,14 +1,10 @@
 "use client";
 
 import React from "react";
-import { useSuperuser, useAppData } from "../../contexts/AppDataContext"
-import { Loader } from "../../components/core/Loader";
+import { AdminAccessCheck } from "../../components/admin/admin-access-check"
 import { Toaster } from "sonner";
-import { useAuth } from "../../contexts/AuthContext";
 import { AdminSidebar } from "../../components/admin/admin-sidebar";
 import { AdminTopbar } from "../../components/admin/admin-topbar";
-import { Button } from "../../components/ui/button";
-import { Shield, RefreshCw } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -91,110 +87,13 @@ function AdminShell({ children }: { children: React.ReactNode }) {
 }
 
 function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth()
-  
-  // State for UI
-  const [isRefreshing, setIsRefreshing] = React.useState(false)
-  const [adminDataLoaded, setAdminDataLoaded] = React.useState(false)
-  
-  // Call all hooks at the top - they must be called unconditionally
-  const { isSuperuser, loading, error, refreshStatus } = useSuperuser()
-  const { adminGetAllData, state } = useAppData()
-
-  // Load admin data when layout mounts and user is verified as superuser
-  React.useEffect(() => {
-    if (isSuperuser && !adminDataLoaded && !loading) {
-      adminGetAllData().then(() => {
-        setAdminDataLoaded(true)
-      });
-    }
-  }, [isSuperuser, adminDataLoaded, loading, adminGetAllData]);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshStatus();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
-        <div className="p-8 bg-card rounded-lg shadow-xl max-w-md text-center">
-          <Shield className="h-12 w-12 text-[#c4b5fd] mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Verifying Admin Access</h2>
-          <p className="text-muted-foreground mb-6">
-            Please wait while we verify your credentials...
-          </p>
-          <Loader />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
-        <div className="p-8 bg-card rounded-lg shadow-xl max-w-md text-center">
-          <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-destructive mb-4">Authentication Error</h1>
-          <p className="text-muted-foreground mb-6">
-            {error}
-          </p>
-          <Button 
-            onClick={handleRefresh} 
-            variant="outline"
-            className="w-full"
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Retrying...' : 'Retry'}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isSuperuser) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
-        <div className="p-8 bg-card rounded-lg shadow-xl max-w-md text-center">
-          <Shield className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-destructive mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">
-            You are not authorized to view this page. Please contact an administrator if you believe this is an error.
-          </p>
-          <div className="space-y-3">
-            <Button 
-              onClick={() => window.location.href = '/dashboard'} 
-              variant="outline"
-              className="w-full"
-            >
-              Return to Dashboard
-            </Button>
-            <Button 
-              onClick={handleRefresh} 
-              variant="ghost"
-              size="sm"
-              className="w-full"
-              disabled={isRefreshing}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Retrying...' : 'Retry Verification'}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <AdminShell>
-      {children}
-      <Toaster />
-    </AdminShell>
+    <AdminAccessCheck>
+      <AdminShell>
+        {children}
+        <Toaster />
+      </AdminShell>
+    </AdminAccessCheck>
   );
 }
 

@@ -11,11 +11,10 @@ import { StatusBadge } from "../ui/status-badge"
 import { EditBusinessDialog } from "../dashboard/edit-business-dialog"
 import { BusinessesViewToggle } from "./businesses-view-toggle"
 import { Button } from "../ui/button"
-import { getInitials } from "../../lib/mock-data"
+import { getInitials } from "../../utils/format"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
 import { Search, ArrowRight, Building2, Copy, Edit, MoreHorizontal, Trash2, CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { cn } from "../../lib/utils"
-import { useAppData, type AppBusiness } from "../../contexts/AppDataContext"
 import { LoadingState, ErrorState, EmptyState } from "../ui/comprehensive-states"
 import { showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 import {
@@ -36,22 +35,27 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog"
 import { getPlaceholderUrl } from '@/lib/config/assets'
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { toast } from "sonner"
 
-export function BusinessesTable() {
-  const { state, deleteBusiness, updateBusiness } = useAppData()
+interface BusinessesTableProps {
+  businesses: any[]
+  loading: boolean
+  onRefresh: () => void
+}
+
+export function BusinessesTable({ businesses, loading, onRefresh }: BusinessesTableProps) {
   const { theme } = useTheme()
+  const { currentOrganizationId } = useOrganizationStore();
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("activity")
   const [view, setView] = useState<"grid" | "list">("list")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [businessToDelete, setBusinessToDelete] = useState<AppBusiness | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [businessToDelete, setBusinessToDelete] = useState<any | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-
-  // Use real-time data from demo state
-  const businesses = state.businesses
 
   // Determine the current theme mode for avatar classes
   const currentMode = theme === "light" ? "light" : "dark"
@@ -77,7 +81,7 @@ export function BusinessesTable() {
         case "name":
           return a.name.localeCompare(b.name)
         case "activity":
-          return new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime()
+          return new Date(b.dateCreated || b.created_at).getTime() - new Date(a.dateCreated || a.created_at).getTime()
         case "accounts":
           return 0 // TODO: Add account count logic when available
         case "balance":
@@ -88,7 +92,7 @@ export function BusinessesTable() {
     })
   }, [businesses, searchQuery, statusFilter, sortBy])
 
-  const handleBusinessClick = (business: AppBusiness, e: React.MouseEvent) => {
+  const handleBusinessClick = (business: any, e: React.MouseEvent) => {
     // Don't navigate if clicking on interactive elements
     const target = e.target as HTMLElement
     if (
@@ -101,7 +105,7 @@ export function BusinessesTable() {
     }
 
     // Only allow navigation for approved businesses
-    if (business.status !== 'approved') {
+    if (business.status !== 'active') {
       return
     }
 
@@ -112,62 +116,68 @@ export function BusinessesTable() {
   const copyBmId = (bmId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     navigator.clipboard.writeText(bmId)
-    showSuccessToast("Business Manager ID copied to clipboard!")
+    toast.success("Business Manager ID copied to clipboard!")
   }
 
-  const handleBusinessUpdated = (updatedBusiness: AppBusiness) => {
-    // Use the demo state management to update the business
-    // This will automatically trigger re-renders across all components
-    console.log("Business updated:", updatedBusiness)
-    showSuccessToast("Business updated successfully!")
+  const handleBusinessUpdated = (updatedBusiness: any) => {
+    // Refresh the businesses list
+    onRefresh()
+    toast.success("Business updated successfully!")
   }
 
   const handleDeleteBusiness = async () => {
     if (!businessToDelete) return
     
-    setLoading(true)
+    setActionLoading(true)
     setError(null)
     
     try {
-      await deleteBusiness(businessToDelete.id)
+      const response = await fetch(`/api/businesses?id=${businessToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete business');
+      }
       setDeleteDialogOpen(false)
       setBusinessToDelete(null)
-      showSuccessToast("Business deleted successfully!")
+      onRefresh() // Refresh the list
+      toast.success("Business deleted successfully!")
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete business'
       setError(errorMessage)
-      showValidationErrors([{ field: 'general', message: errorMessage }])
+      toast.error("Deletion Failed", { description: errorMessage });
     } finally {
-      setLoading(false)
+      setActionLoading(false)
     }
   }
 
-  const handleApproveBusiness = async (business: AppBusiness) => {
-    setLoading(true)
+  const handleApproveBusiness = async (business: any) => {
+    setActionLoading(true)
     setError(null)
     
     try {
-      // Update business status to approved in context
-      const updatedBusiness: AppBusiness = {
-        ...business,
-        status: 'approved',
-        verification: 'verified'
+      const response = await fetch(`/api/businesses?id=${business.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'active' })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to approve business');
       }
-      
-      // Use the updateBusiness function from context (expects single business)
-      await updateBusiness(updatedBusiness)
-      
-      showSuccessToast("Business approved successfully!")
+      onRefresh() // Refresh the list
+      toast.success("Business approved successfully!")
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to approve business'
       setError(errorMessage)
-      showValidationErrors([{ field: 'general', message: errorMessage }])
+      toast.error("Approval Failed", { description: errorMessage });
     } finally {
-      setLoading(false)
+      setActionLoading(false)
     }
   }
 
-  const openDeleteDialog = (business: AppBusiness, e: React.MouseEvent) => {
+  const openDeleteDialog = (business: any, e: React.MouseEvent) => {
     e.stopPropagation()
     setBusinessToDelete(business)
     setDeleteDialogOpen(true)
@@ -214,8 +224,8 @@ export function BusinessesTable() {
               <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
                 All Statuses
               </SelectItem>
-              <SelectItem value="approved" className="text-popover-foreground hover:bg-accent">
-                Approved
+              <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+                Active
               </SelectItem>
               <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
                 Pending
@@ -264,10 +274,10 @@ export function BusinessesTable() {
               key={business.id}
               onClick={(e) => handleBusinessClick(business, e)}
               className={cn(
-                "bg-card border border-border/60 rounded-lg p-4 transition-all duration-150 group",
-                business.status === "approved" 
-                  ? "cursor-pointer hover:border-border hover:shadow-sm hover:border-[#c4b5fd]/40" 
-                  : "cursor-not-allowed opacity-75",
+                "bg-card border rounded-lg p-4 transition-all duration-150 group",
+                business.status === "active" 
+                  ? "border-border/60 cursor-pointer hover:border-border hover:shadow-sm hover:border-[#c4b5fd]/40" 
+                  : "border-border/30 cursor-not-allowed opacity-50 bg-muted/20 grayscale",
               )}
             >
               {/* Header */}
@@ -289,11 +299,12 @@ export function BusinessesTable() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-medium text-foreground truncate text-sm">{business.name}</h3>
                     <p className="text-xs text-muted-foreground/80 mt-0.5">{business.type}</p>
-                    {business.status !== 'approved' && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        {business.status === 'pending' ? 'Awaiting approval' : 
-                         business.status === 'under_review' ? 'Under review' :
-                         business.status === 'rejected' ? 'Rejected' : 'Not available'}
+                    {business.status !== 'active' && business.status !== 'Active' && (
+                      <p className="text-xs text-amber-600 font-medium mt-1">
+                        {business.status === 'pending' || business.status === 'In Review' ? 'Application submitted' : 
+                         business.status === 'under_review' || business.status === 'Processing' ? 'Setup in progress' :
+                         business.status === 'Ready' ? 'Almost ready' :
+                         business.status === 'rejected' || business.status === 'Rejected' ? 'Application declined' : 'Status unknown'}
                       </p>
                     )}
                   </div>
@@ -372,7 +383,7 @@ export function BusinessesTable() {
 
               {/* Footer */}
               <div className="flex items-center justify-between text-xs text-muted-foreground/60 pt-2 border-t border-border/40">
-                <span>Created {new Date(business.dateCreated).toLocaleDateString()}</span>
+                <span>Created {new Date(business.dateCreated || business.created_at).toLocaleDateString()}</span>
                 <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
               </div>
             </div>
@@ -386,10 +397,10 @@ export function BusinessesTable() {
               key={business.id}
               onClick={(e) => handleBusinessClick(business, e)}
               className={cn(
-                "bg-card border border-border rounded-lg p-3 shadow-sm transition-all duration-200 group",
-                business.status === "approved"
-                  ? "cursor-pointer hover:shadow-md hover:border-border/60 hover:bg-card/80 hover:border-[#c4b5fd]/30"
-                  : "cursor-not-allowed opacity-75",
+                "bg-card border rounded-lg p-3 shadow-sm transition-all duration-200 group",
+                business.status === "active"
+                  ? "border-border cursor-pointer hover:shadow-md hover:border-border/60 hover:bg-card/80 hover:border-[#c4b5fd]/30"
+                  : "border-border/30 cursor-not-allowed opacity-50 bg-muted/20 grayscale",
               )}
             >
               <div className="flex items-center justify-between">
@@ -417,13 +428,14 @@ export function BusinessesTable() {
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
                       <span>{business.type}</span>
                       <span>•</span>
-                      <span>Created {business.dateCreated}</span>
-                      {business.status !== 'approved' && (
-                        <p className="text-xs text-amber-600 mt-1">
-                          {business.status === 'pending' ? 'Awaiting approval' : 
-                           business.status === 'under_review' ? 'Under review' :
-                           business.status === 'rejected' ? 'Rejected' : 'Not available'}
-                        </p>
+                      <span>Created {new Date(business.dateCreated || business.created_at).toLocaleDateString()}</span>
+                      {business.status !== 'active' && business.status !== 'Active' && (
+                        <span className="text-xs text-amber-600 font-medium">
+                          • {business.status === 'pending' || business.status === 'In Review' ? 'Application submitted' : 
+                           business.status === 'under_review' || business.status === 'Processing' ? 'Setup in progress' :
+                           business.status === 'Ready' ? 'Almost ready' :
+                           business.status === 'rejected' || business.status === 'Rejected' ? 'Application declined' : 'Status unknown'}
+                        </span>
                       )}
                       {/* BM ID not available in production data yet */}
                     </div>
@@ -442,7 +454,7 @@ export function BusinessesTable() {
                                                 $0
                     </div>
                   </div>
-                  {business.status === 'approved' ? (
+                  {business.status === 'active' ? (
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   ) : (
                     <div className="h-4 w-4" /> // Empty space to maintain alignment

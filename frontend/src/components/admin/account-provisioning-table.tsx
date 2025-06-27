@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppData } from "../../contexts/AppDataContext"
+import useSWR from 'swr';
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
@@ -21,26 +21,34 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function AccountProvisioningTable() {
-  const { state } = useAppData();
+  const { data: bizData, isLoading: isBizLoading } = useSWR('/api/businesses', fetcher);
+  const { data: accData, isLoading: isAccLoading } = useSWR('/api/ad-accounts', fetcher);
+
+  const allBusinesses = bizData?.businesses || [];
+  const allAccounts = accData?.accounts || [];
+  const isLoading = isBizLoading || isAccLoading;
+  
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
   const [createAccountDialogOpen, setCreateAccountDialogOpen] = useState(false);
 
   // Filter only approved businesses
-  const approvedBusinesses = state.businesses.filter(business => business.status === "approved");
+  const approvedBusinesses = allBusinesses.filter(business => business.status === "approved" || business.status === "active");
 
   // Apply search and filters
   const filteredBusinesses = approvedBusinesses.filter((business) => {
     const matchesSearch = business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         business.type?.toLowerCase().includes(searchTerm.toLowerCase());
+                         (business.type || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     let matchesStatus = true;
     if (statusFilter === "with_accounts") {
-      matchesStatus = state.accounts.filter(acc => acc.businessId === business.id).length > 0;
+      matchesStatus = allAccounts.filter(acc => acc.business_id === business.id).length > 0;
     } else if (statusFilter === "no_accounts") {
-      matchesStatus = state.accounts.filter(acc => acc.businessId === business.id).length === 0;
+      matchesStatus = allAccounts.filter(acc => acc.business_id === business.id).length === 0;
     }
     
     return matchesSearch && matchesStatus;
@@ -73,8 +81,12 @@ export function AccountProvisioningTable() {
   };
 
   const getTotalBalance = (accounts: any[]) => {
-    return accounts.reduce((total, acc) => total + acc.balance, 0);
+    return accounts.reduce((total, acc) => total + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0);
   };
+
+  if (isLoading) {
+    return <div>Loading account provisioning data...</div>;
+  }
 
   return (
     <div className="space-y-4">
@@ -143,7 +155,7 @@ export function AccountProvisioningTable() {
                   <TableCell>
                     <div className="space-y-1">
                       {(() => {
-                        const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                        const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
                         return (
                           <>
                             <div className="text-sm font-medium text-foreground">
@@ -174,8 +186,8 @@ export function AccountProvisioningTable() {
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
                         ${(() => {
-                          const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
-                          const totalSpend = businessAccounts.reduce((total, acc) => total + (acc.spend || 0), 0);
+                          const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
+                          const totalSpend = businessAccounts.reduce((total, acc) => total + (acc.spent || 0), 0);
                           return totalSpend.toLocaleString();
                         })()}
                       </span>
@@ -187,8 +199,8 @@ export function AccountProvisioningTable() {
                       <CreditCard className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
                         ${(() => {
-                          const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
-                          const totalBalance = businessAccounts.reduce((total, acc) => total + (acc.balance || 0), 0);
+                          const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
+                          const totalBalance = businessAccounts.reduce((total, acc) => total + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0);
                           return totalBalance.toLocaleString();
                         })()}
                       </span>
@@ -199,7 +211,7 @@ export function AccountProvisioningTable() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
                       {(() => {
-                        const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                        const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
                         return businessAccounts.length > 0 ? (
                           <span>Recent activity</span>
                         ) : (
@@ -222,7 +234,7 @@ export function AccountProvisioningTable() {
                       </Button>
                       
                       {(() => {
-                        const businessAccounts = state.accounts.filter(acc => acc.businessId === business.id);
+                        const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
                         return businessAccounts.length > 0 && (
                           <Button
                             variant="ghost"

@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import useSWR from 'swr'
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
-import { formatCurrency, getInitials } from "../../lib/mock-data"
+import { formatCurrency, getInitials } from "../../utils/format"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
 import { ChevronUp, ChevronDown, MoreHorizontal } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useAppData } from "../../contexts/AppDataContext"
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useTheme } from "next-themes"
+import { Skeleton } from "../ui/skeleton"
 
 interface BusinessBalance {
   id: string
@@ -21,16 +23,31 @@ interface BusinessBalance {
   isUnallocated?: boolean
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function BusinessBalancesTable() {
-  const { state } = useAppData()
   const router = useRouter()
   const { theme } = useTheme()
+  const { currentOrganizationId } = useOrganizationStore()
   const [isExpanded, setIsExpanded] = useState(true)
 
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const { data: businessesData, isLoading: areBusinessesLoading } = useSWR(
+    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null,
+    fetcher
+  );
+
+  const organization = orgData?.organizations?.[0];
+  const businesses = businessesData?.businesses || [];
+  const isLoading = isOrgLoading || areBusinessesLoading;
+
   // Calculate total balance from all businesses to determine percentages
-  const totalAllocated = state.businesses.reduce((sum, business) => sum + (business.balance || 0), 0)
-  const unallocatedAmount = Math.max(0, state.financialData.totalBalance - totalAllocated)
-  const totalBalance = state.financialData.totalBalance
+  const totalAllocated = businesses.reduce((sum, business) => sum + (business.balance || 0), 0)
+  const totalBalance = organization?.balance ?? 0;
+  const unallocatedAmount = Math.max(0, totalBalance - totalAllocated)
 
   // Convert businesses to BusinessBalance format
   const businessBalances: BusinessBalance[] = [
@@ -43,7 +60,7 @@ export function BusinessBalancesTable() {
       accounts: 0,
       isUnallocated: true,
     },
-    ...state.businesses
+    ...businesses
       .filter(business => business.status === "approved" || business.status === "active")
       .map(business => ({
         id: business.id.toString(),
@@ -51,19 +68,34 @@ export function BusinessBalancesTable() {
         logo: getInitials(business.name),
         balance: business.balance || 0,
         allocationPercent: totalBalance > 0 ? ((business.balance || 0) / totalBalance) * 100 : 0,
-        accounts: 0,
+        accounts: 0, // TODO: Get real account count
         bmId: business.id.toString(),
       }))
   ]
 
   const handleBusinessClick = (business: BusinessBalance) => {
     if (!business.isUnallocated) {
-      router.push(`/dashboard/wallet/business/${business.id}`)
+      router.push(`/dashboard/businesses/${business.id}`)
     }
   }
 
   // Determine the current theme mode for avatar classes
   const currentMode = theme === "light" ? "light" : "dark"
+  
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-4">
+          <Skeleton className="h-6 w-1/2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-full mb-2" />
+          <Skeleton className="h-10 w-full mb-2" />
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className="bg-card border-border">

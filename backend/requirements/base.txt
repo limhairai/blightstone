@@ -15,7 +15,6 @@ bcrypt==4.3.0
 
 # Database & Supabase
 supabase>=1.0.0,<2.0.0
-SQLAlchemy==2.0.40
 
 # Data validation
 pydantic
@@ -36,4 +35,5 @@ click==8.1.8
 
 # Optional: Remove if not using 2FA
 pyotp==2.9.0
-qrcode==8.2 sentry-sdk[fastapi]==1.40.0
+qrcode==8.2
+sentry-sdk[fastapi]==1.40.0

@@ -2,7 +2,6 @@
 
 import { ThemeProvider } from "../ui/theme-provider"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
-import { AppDataProvider } from "../../contexts/AppDataContext"
 import { AppShell } from '../layout/app-shell'
 import { Toaster } from "../ui/sonner"
 import { Loader } from "./Loader"
@@ -46,7 +45,11 @@ function ErrorScreen({ message }: { message: string }) {
 }
 
 function isPublicOrAuthPage(pathname: string): boolean {
-  return pathname === "/" || pathname === "/login" || pathname === "/register";
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/confirm-email'];
+  if (publicRoutes.includes(pathname)) return true;
+  // Handle routes like /auth/callback
+  if (pathname.startsWith('/auth/')) return true;
+  return false;
 }
 
 function isAdminPage(pathname: string): boolean {
@@ -54,76 +57,43 @@ function isAdminPage(pathname: string): boolean {
 }
 
 function AppRouter({ children }: { children: React.ReactNode }) {
-  const [isMounted, setIsMounted] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
   const pathname = usePathname();
-  const { user, session, loading: authLoading } = useAuth();
-  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Handle redirects in useEffect
-  useEffect(() => {
-    if (!isMounted || authLoading || isRedirecting) return;
-
-    const isPublicPage = isPublicOrAuthPage(pathname);
-    const isAuthenticated = !!(user && session);
-
-    // If authenticated user is on login/register, redirect to dashboard
-    if (isAuthenticated && (pathname === "/login" || pathname === "/register")) {
-      setIsRedirecting(true);
-      router.push("/dashboard");
-      return;
-    }
-
-    // If unauthenticated user is on protected page, redirect to login
-    if (!isAuthenticated && !isPublicPage) {
-      setIsRedirecting(true);
-      router.push("/login");
-      return;
-    }
-  }, [isMounted, authLoading, user, session, pathname, router]);
-
-  // Reset redirecting flag when pathname changes
-  useEffect(() => {
-    setIsRedirecting(false);
-  }, [pathname]);
-
-  // Don't render anything until mounted and auth is ready
-  if (!isMounted || authLoading || isRedirecting) {
+  // While the authentication state is loading, show a loader to prevent a flash of the wrong content.
+  if (authLoading) {
     return <FullScreenLoader />;
   }
+  
+  const isAuthenticated = !!user;
+  const isProtectedPage = !isPublicOrAuthPage(pathname);
 
-  const isPublicPage = isPublicOrAuthPage(pathname);
-  const isAuthenticated = !!(user && session);
-
-  // For public pages, render directly
-  if (isPublicPage) {
-    return <>{children}</>;
+  // If trying to access a protected page without being authenticated,
+  // return null immediately. The middleware will handle the redirect.
+  // This prevents rendering children that rely on authenticated context.
+  if (!isAuthenticated && isProtectedPage) {
+    return null;
   }
 
-  // For authenticated users on protected routes
-  if (isAuthenticated) {
+  // If the user is authenticated and on a protected page, wrap the content in the AppShell.
+  // The AppDataProvider is included to provide necessary data for the authenticated experience.
+  // Exception: Admin pages have their own layout and should not be wrapped in AppShell.
+  if (isAuthenticated && isProtectedPage) {
     if (isAdminPage(pathname)) {
-      return (
-        <AppDataProvider>
-          {children}
-        </AppDataProvider>
-      );
+      // Admin pages handle their own layout and don't need AppShell
+      return <>{children}</>;
     }
     
     return (
-      <AppDataProvider>
         <AppShell>{children}</AppShell>
-      </AppDataProvider>
     );
   }
 
-  // Show loading while redirecting
-  return <FullScreenLoader />;
+  // For public pages (like /login) or when the user is not authenticated,
+  // render the children directly without the AppShell.
+  return <>{children}</>;
 }
+
 export function SimpleProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>

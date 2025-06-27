@@ -26,7 +26,6 @@ class OrganizationRead(OrganizationBase):
     owner_id: uuid.UUID # Reflects the actual DB column from your SQL schema
     created_at: datetime
     updated_at: Optional[datetime] = None
-    verification_status: str = "pending_review"
     # Stripe fields from your SQL schema (optional, as they might not always be present)
     stripe_customer_id: Optional[str] = None
     stripe_subscription_id: Optional[str] = None
@@ -49,8 +48,7 @@ class OrganizationUpdate(BaseModel):
     ad_spend_monthly: Optional[str] = None
     support_channel_type: Optional[str] = None
     support_channel_contact: Optional[str] = None
-    # Admin only fields
-    verification_status: Optional[str] = None 
+    # Admin only fields - verification_status removed since column no longer exists
     stripe_customer_id: Optional[str] = None # Typically set by backend processes
     stripe_subscription_id: Optional[str] = None # Typically set by backend processes
     stripe_subscription_status: Optional[str] = None # Typically set by backend processes
@@ -80,7 +78,6 @@ class UserOrganizationLink(BaseModel):
     user_role_in_org: str # e.g., 'owner', 'admin', 'member'
     avatar_url: Optional[str] = None # Add avatar for display in lists
     plan_id: Optional[str] = None
-    verification_status: Optional[str] = None
     
     class Config:
         from_attributes = True 

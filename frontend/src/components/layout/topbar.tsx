@@ -15,13 +15,14 @@ import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
 import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"
 import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
-import { useAppData } from "../../contexts/AppDataContext"
 import { useTheme } from "next-themes"
 import Link from "next/link"
-import { formatCurrency } from "../../lib/mock-data"
+import { formatCurrency } from "../../utils/format"
 import { useState, useEffect } from "react"
 import { gradientTokens } from "../../lib/design-tokens"
 import { useRouter } from "next/navigation"
+import { useOrganizationStore } from '@/lib/stores/organization-store'
+import useSWR from 'swr'
 
 interface TopbarProps {
   isAdmin?: boolean
@@ -37,6 +38,8 @@ interface TopbarProps {
   }
 }
 
+const fetcher = (url: string) => fetch(url).then(res => res.json());
+
 export function Topbar({ 
   isAdmin = false, 
   hasNotifications = false,
@@ -47,10 +50,18 @@ export function Topbar({
 }: TopbarProps) {
   const { pageTitle } = usePageTitle()
   const { user, signOut } = useAuth()
-  const { state } = useAppData()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const router = useRouter()
+
+  const { currentOrganizationId } = useOrganizationStore();
+  const { data: orgData, isLoading: isOrgLoading } = useSWR(
+    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
+    fetcher
+  );
+  const organization = orgData?.organizations?.[0];
+  const totalBalance = organization?.balance_cents ? organization.balance_cents / 100 : 0;
+  const plan = organization?.plan || 'Free';
 
   // Avoid hydration mismatch
   useEffect(() => {
@@ -67,10 +78,10 @@ export function Topbar({
   const setupPercentage = calculateSetupProgress()
 
   // Use real user data from demo state
-  const userProfile = state.userProfile
-  const userInitial = userProfile?.name ? userProfile.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2) : 'DA'
-  const userEmail = userProfile?.email || 'admin@adhub.tech'
-  const userName = userProfile?.name || 'Demo Admin'
+  const userInitial = user?.user_metadata?.name ? user.user_metadata.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2) : 'AD'
+  const userEmail = user?.email || ''
+  const userName = user?.user_metadata?.name || 'User'
+  const userAvatar = user?.user_metadata?.avatar_url
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme)
@@ -106,21 +117,11 @@ export function Topbar({
           )}
         </Button>
 
-        {/* Connect Account Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
-        >
-          <Globe className="h-4 w-4 text-[#b4a0ff]" />
-          <span className="font-medium text-foreground">Connect Account</span>
-          <ExternalLink className="h-3.5 w-3.5 ml-1 opacity-70" />
-        </Button>
 
         {/* Main Account Balance & Top Up - Now with real-time data */}
         <div className="hidden md:flex bg-muted rounded-full px-4 py-1.5 items-center border border-border">
           <span className="text-sm font-medium text-foreground">
-            ${formatCurrency(state.financialData.totalBalance)}
+            {isOrgLoading ? "..." : formatCurrency(totalBalance)}
           </span>
         </div>
 
@@ -129,7 +130,7 @@ export function Topbar({
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={userProfile?.avatar} alt="User" />
+                <AvatarImage src={userAvatar} alt="User" />
                 <AvatarFallback className={gradientTokens.avatar}>
                   {userInitial}
                 </AvatarFallback>
@@ -141,7 +142,7 @@ export function Topbar({
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium text-popover-foreground">{userName}</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
-                <p className="text-xs text-muted-foreground">{state.currentOrganization?.plan || 'Free'} Plan</p>
+                <p className="text-xs text-muted-foreground">{isOrgLoading ? "..." : plan} Plan</p>
               </div>
             </div>
 

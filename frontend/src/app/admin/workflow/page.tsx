@@ -3,79 +3,255 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Button } from '../../../components/ui/button';
-import { Badge } from '../../../components/ui/badge';
-import { ArrowLeft, Workflow, FileText, Clock, CheckCircle, XCircle } from 'lucide-react';
-import Link from 'next/link';
-import { useState, useMemo } from 'react';
-import { adminAppData } from '../../../lib/mock-data/admin-mock-data';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
+import { Badge } from "../../../components/ui/badge";
+import { Input } from "../../../components/ui/input";
+import { Alert, AlertDescription } from "../../../components/ui/alert";
+import { 
+  ArrowLeft,
+  Activity,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  Users,
+  Settings,
+  Play,
+  Pause,
+  RefreshCw,
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  ExternalLink,
+  Eye,
+  Edit,
+  Trash2,
+  GitBranch,
+  Zap,
+  Target,
+  Timer,
+  BarChart3,
+  TrendingUp,
+  AlertCircle
+} from "lucide-react";
+import Link from "next/link";
+import { useState, useMemo } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../../../components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../../components/ui/select";
+import { VirtualizedTable } from "../../../components/admin/VirtualizedTable";
+import { useDebouncedSearch } from "../../../hooks/useDebouncedSearch";
+
+// Temporary types until real admin service is implemented
+interface AppWorkflow {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  createdAt: string;
+  lastRun?: string;
+  nextRun?: string;
+  runsCount: number;
+  successRate: number;
+  avgDuration: number;
+  [key: string]: any;
+}
+
+interface AppWorkflowRun {
+  id: string;
+  workflowId: string;
+  status: string;
+  startedAt: string;
+  completedAt?: string;
+  duration?: number;
+  error?: string;
+  [key: string]: any;
+}
 
 export default function WorkflowPage() {
-  const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-  // Get real application data
-  const allApplications = adminAppData.getApplications();
+  const { debouncedTerm } = useDebouncedSearch(searchTerm, 300);
 
-  // Group applications by stage
-  const applicationsByStage = useMemo(() => {
-    const stages = ['received', 'document_prep', 'submitted', 'under_review', 'approved', 'rejected'];
+  // TODO: Replace with real admin data service
+  const allWorkflows: AppWorkflow[] = [];
+  const allWorkflowRuns: AppWorkflowRun[] = [];
+
+  // Enhanced workflow data with metrics
+  const enhancedWorkflows = useMemo(() => {
+    return allWorkflows.map(workflow => {
+      const recentRuns = allWorkflowRuns
+        .filter(run => run.workflowId === workflow.id)
+        .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
+        .slice(0, 10);
+
+      const successfulRuns = recentRuns.filter(run => run.status === 'completed').length;
+      const failedRuns = recentRuns.filter(run => run.status === 'failed').length;
+      const currentSuccessRate = recentRuns.length > 0 ? (successfulRuns / recentRuns.length) * 100 : 0;
+
+      return {
+        ...workflow,
+        recentRuns,
+        currentSuccessRate,
+        failedRuns,
+        isHealthy: currentSuccessRate >= 90 && failedRuns <= 1,
+        lastError: recentRuns.find(run => run.status === 'failed')?.error,
+        avgExecutionTime: recentRuns
+          .filter(run => run.duration)
+          .reduce((sum, run) => sum + (run.duration || 0), 0) / Math.max(recentRuns.length, 1)
+      };
+    });
+  }, [allWorkflows, allWorkflowRuns]);
+
+  // Filter and sort workflows
+  const filteredWorkflows = useMemo(() => {
+    return enhancedWorkflows
+      .filter(workflow => {
+        const matchesSearch = !debouncedTerm || 
+          workflow.name.toLowerCase().includes(debouncedTerm.toLowerCase()) ||
+          workflow.type.toLowerCase().includes(debouncedTerm.toLowerCase());
+        
+        const matchesStatus = statusFilter === "all" || workflow.status === statusFilter;
+        const matchesType = typeFilter === "all" || workflow.type === typeFilter;
+        
+        return matchesSearch && matchesStatus && matchesType;
+      })
+      .sort((a, b) => {
+        let aVal: any, bVal: any;
+        
+        switch (sortBy) {
+          case "createdAt":
+            aVal = new Date(a.createdAt).getTime();
+            bVal = new Date(b.createdAt).getTime();
+            break;
+          case "name":
+            aVal = a.name;
+            bVal = b.name;
+            break;
+          case "successRate":
+            aVal = a.currentSuccessRate;
+            bVal = b.currentSuccessRate;
+            break;
+          case "lastRun":
+            aVal = a.lastRun ? new Date(a.lastRun).getTime() : 0;
+            bVal = b.lastRun ? new Date(b.lastRun).getTime() : 0;
+            break;
+          default:
+            return 0;
+        }
+        
+        if (typeof aVal === "string") {
+          return sortOrder === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        
+        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+      });
+  }, [enhancedWorkflows, debouncedTerm, statusFilter, typeFilter, sortBy, sortOrder]);
+
+  // Workflow statistics
+  const stats = useMemo(() => {
+    const total = allWorkflows.length;
+    const active = allWorkflows.filter(w => w.status === 'active').length;
+    const paused = allWorkflows.filter(w => w.status === 'paused').length;
+    const failed = allWorkflows.filter(w => w.status === 'failed').length;
     
-    return stages.reduce((acc, stage) => {
-      acc[stage] = allApplications.filter(app => app.stage === stage);
-      return acc;
-    }, {} as Record<string, any[]>);
-  }, [allApplications]);
+    const totalRuns = allWorkflows.reduce((sum, w) => sum + w.runsCount, 0);
+    const avgSuccessRate = total > 0 
+      ? allWorkflows.reduce((sum, w) => sum + w.successRate, 0) / total 
+      : 0;
+    
+    const healthyWorkflows = enhancedWorkflows.filter(w => w.isHealthy).length;
+    const unhealthyWorkflows = enhancedWorkflows.filter(w => !w.isHealthy).length;
+    
+    const avgExecutionTime = enhancedWorkflows.length > 0
+      ? enhancedWorkflows.reduce((sum, w) => sum + w.avgExecutionTime, 0) / enhancedWorkflows.length
+      : 0;
+    
+    return {
+      total,
+      active,
+      paused,
+      failed,
+      totalRuns,
+      avgSuccessRate,
+      healthyWorkflows,
+      unhealthyWorkflows,
+      avgExecutionTime
+    };
+  }, [allWorkflows, enhancedWorkflows]);
 
-  // Calculate stage statistics
-  const stageStats = useMemo(() => {
-    return Object.entries(applicationsByStage).map(([stage, applications]) => ({
-      stage,
-      count: applications.length,
-      percentage: (applications.length / allApplications.length) * 100
-    }));
-  }, [applicationsByStage, allApplications.length]);
+  // Get unique workflow types for filter
+  const workflowTypes = useMemo(() => {
+    return [...new Set(allWorkflows.map(w => w.type))].sort();
+  }, [allWorkflows]);
 
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case "received":
-        return "bg-gray-100 text-gray-800";
-      case "document_prep":
-        return "bg-yellow-100 text-yellow-800";
-      case "submitted":
-        return "bg-blue-100 text-blue-800";
-      case "under_review":
-        return "bg-purple-100 text-purple-800";
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active":
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case "paused":
+        return <Badge className="bg-yellow-100 text-yellow-800">Paused</Badge>;
+      case "failed":
+        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+      case "draft":
+        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
       default:
-        return "bg-gray-100 text-gray-800";
+        return <Badge variant="secondary">Unknown</Badge>;
     }
   };
 
-  const getStageIcon = (stage: string) => {
-    switch (stage) {
-      case "received":
-        return <FileText className="h-4 w-4" />;
-      case "document_prep":
-        return <Clock className="h-4 w-4" />;
-      case "submitted":
-        return <FileText className="h-4 w-4" />;
-      case "under_review":
-        return <Clock className="h-4 w-4" />;
-      case "approved":
-        return <CheckCircle className="h-4 w-4" />;
-      case "rejected":
-        return <XCircle className="h-4 w-4" />;
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "automation":
+        return <Badge className="bg-blue-100 text-blue-800">Automation</Badge>;
+      case "notification":
+        return <Badge className="bg-purple-100 text-purple-800">Notification</Badge>;
+      case "integration":
+        return <Badge className="bg-orange-100 text-orange-800">Integration</Badge>;
+      case "maintenance":
+        return <Badge className="bg-indigo-100 text-indigo-800">Maintenance</Badge>;
       default:
-        return <FileText className="h-4 w-4" />;
+        return <Badge variant="outline">{type}</Badge>;
     }
   };
 
-  const formatStageName = (stage: string) => {
-    return stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  const getHealthBadge = (isHealthy: boolean, successRate: number) => {
+    if (isHealthy) {
+      return <Badge className="bg-green-100 text-green-800">Healthy</Badge>;
+    } else if (successRate >= 70) {
+      return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
+    } else {
+      return <Badge className="bg-red-100 text-red-800">Critical</Badge>;
+    }
+  };
+
+  const formatDuration = (milliseconds: number) => {
+    if (milliseconds < 1000) return `${Math.round(milliseconds)}ms`;
+    if (milliseconds < 60000) return `${Math.round(milliseconds / 1000)}s`;
+    return `${Math.round(milliseconds / 60000)}m`;
   };
 
   const formatDate = (dateString: string) => {
@@ -87,181 +263,196 @@ export default function WorkflowPage() {
     });
   };
 
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      return `${Math.floor(diffInHours * 60)}m ago`;
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}h ago`;
+    } else if (diffInHours < 24 * 7) {
+      return `${Math.floor(diffInHours / 24)}d ago`;
+    } else {
+      return formatDate(dateString);
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
-      {/* Stage Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {stageStats.map(({ stage, count, percentage }) => (
-          <Card 
-            key={stage} 
-            className={`border-border cursor-pointer transition-all hover:shadow-md ${
-              selectedStage === stage ? 'ring-2 ring-[#c4b5fd]' : ''
-            }`}
-            onClick={() => setSelectedStage(selectedStage === stage ? null : stage)}
+      {/* Workflow Overview Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Workflows</p>
+                <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <GitBranch className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Active</p>
+                <p className="text-2xl font-bold text-green-600">{stats.active.toLocaleString()}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <Play className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
+                <p className="text-2xl font-bold">{stats.avgSuccessRate.toFixed(1)}%</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Runs</p>
+                <p className="text-2xl font-bold">{stats.totalRuns.toLocaleString()}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <Activity className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Healthy</p>
+                <p className="text-2xl font-bold text-green-600">{stats.healthyWorkflows}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
+                <p className="text-2xl font-bold">{formatDuration(stats.avgExecutionTime)}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <Timer className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search workflows..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="paused">Paused</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {workflowTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="createdAt">Date Created</SelectItem>
+                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="successRate">Success Rate</SelectItem>
+                <SelectItem value="lastRun">Last Run</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results Summary */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredWorkflows.length.toLocaleString()} of {stats.total.toLocaleString()} workflows
+        </p>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Sort: {sortBy}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
           >
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {getStageIcon(stage)}
-                  <span className="text-sm font-medium">{formatStageName(stage)}</span>
-                </div>
-              </div>
-              <div className="text-2xl font-bold">{count}</div>
-              <div className="text-xs text-muted-foreground">
-                {percentage.toFixed(1)}% of total
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+            {sortOrder === "asc" ? "↑" : "↓"}
+          </Button>
+        </div>
       </div>
 
-      {/* Stage Details */}
-      {selectedStage && (
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {getStageIcon(selectedStage)}
-              {formatStageName(selectedStage)} Applications
-              <Badge className={getStageColor(selectedStage)}>
-                {applicationsByStage[selectedStage].length}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {applicationsByStage[selectedStage].slice(0, 10).map((application) => (
-                <div key={application.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="font-medium">{application.clientName}</div>
-                      <div className="text-sm text-muted-foreground">{application.businessName}</div>
-                      <Badge variant="outline" className="text-xs">
-                        {application.type.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      Created: {formatDate(application.createdAt)} • 
-                      Updated: {formatDate(application.lastUpdated)} • 
-                      Provider: {application.provider}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={`text-xs ${
-                      application.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                      application.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                      application.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {application.priority}
-                    </Badge>
-                    <Button variant="outline" size="sm">
-                      View Details
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              
-              {applicationsByStage[selectedStage].length > 10 && (
-                <div className="text-center py-4">
-                  <Button variant="outline">
-                    View All {applicationsByStage[selectedStage].length} Applications
-                  </Button>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Processing Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-lg">Processing Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm">Total Applications</span>
-                <span className="font-medium">{allApplications.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Completed</span>
-                <span className="font-medium text-green-600">
-                  {applicationsByStage.approved?.length + applicationsByStage.rejected?.length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">In Progress</span>
-                <span className="font-medium text-yellow-600">
-                  {applicationsByStage.received?.length + 
-                   applicationsByStage.document_prep?.length + 
-                   applicationsByStage.submitted?.length + 
-                   applicationsByStage.under_review?.length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Success Rate</span>
-                <span className="font-medium">
-                  {((applicationsByStage.approved?.length || 0) / 
-                    ((applicationsByStage.approved?.length || 0) + (applicationsByStage.rejected?.length || 0)) * 100
-                  ).toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-lg">Processing Time Priority</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {(() => {
-                // Calculate time-based priority buckets
-                const now = new Date();
-                const timeRanges = [
-                  { label: 'Overdue (7+ days)', min: 7, color: 'text-red-600' },
-                  { label: 'Urgent (4-6 days)', min: 4, max: 6, color: 'text-orange-600' },
-                  { label: 'High (2-3 days)', min: 2, max: 3, color: 'text-yellow-600' },
-                  { label: 'Normal (0-1 days)', min: 0, max: 1, color: 'text-green-600' }
-                ];
-
-                return timeRanges.map(range => {
-                  const count = allApplications.filter(app => {
-                    if (app.stage === 'approved' || app.stage === 'rejected') return false;
-                    
-                    const daysSinceCreated = Math.floor(
-                      (now.getTime() - new Date(app.createdAt).getTime()) / (1000 * 60 * 60 * 24)
-                    );
-                    
-                    if (range.max !== undefined) {
-                      return daysSinceCreated >= range.min && daysSinceCreated <= range.max;
-                    } else {
-                      return daysSinceCreated >= range.min;
-                    }
-                  }).length;
-
-                  const percentage = allApplications.length > 0 ? (count / allApplications.length) * 100 : 0;
-
-                  return (
-                    <div key={range.label} className="flex justify-between">
-                      <span className="text-sm">{range.label}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={`font-medium ${range.color}`}>{count}</span>
-                        <span className="text-xs text-muted-foreground">
-                          ({percentage.toFixed(1)}%)
-                        </span>
-                      </div>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Workflows Table */}
+      <Card>
+        <CardContent className="p-0">
+          <div className="text-center py-8 text-muted-foreground">
+            <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>No workflows available</p>
+            <p className="text-sm">Connect your admin data service to view workflow data</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

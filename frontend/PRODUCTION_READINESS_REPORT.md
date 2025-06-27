@@ -1,16 +1,16 @@
 # 🚨 Production Readiness Audit Report
 
-Generated: 2025-06-23T10:47:33.378Z
+Generated: 2025-06-26T22:35:35.627Z
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 539 |
-| Medium | 276 |
-| Low | 23 |
-| **Total** | **838** |
+| High | 230 |
+| Medium | 317 |
+| Low | 38 |
+| **Total** | **585** |
 
 ## ⚠️ Production Status: CAUTION
 
@@ -37,63 +37,77 @@ Demo mode code that should not run in production
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 42: `import { adminAppData } from "../../../lib/mock-data/admin-mock-data";`
-- Line 106: `// Growth calculations (mock data)`
+- Line 43: `// import { adminAppData } from "../../../lib/mock-data/admin-mock-data";`
+- Line 107: `// Growth calculations (mock data)`
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 42: `// TODO: Replace with real admin data service`
+- Line 59: `// TODO: Replace with real data from Supabase admin service`
 
 ### src/app/admin/applications/page.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 60: `console.error('Error fetching applications:', error)`
-- Line 228: `console.error('Error refreshing applications:', error)`
-- Line 241: `console.error('Error refreshing applications:', error)`
-- Line 255: `console.error('Error refreshing applications:', error)`
+- Line 88: `console.error(`Error during ${action}:`, errorMessage);`
 
 ### src/app/admin/assets/page.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 122: `console.error('Error fetching assets:', error);`
-- Line 155: `console.error('Error syncing assets:', error);`
+- Line 40: `console.error('Error loading assets:', err)`
+- Line 79: `console.error('Error syncing assets:', err)`
 
 ### src/app/admin/businesses/page.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-- Line 45: `import { adminAppData, AppBusiness, AppAdAccount } from "../../../lib/mock-data/admin-mock-data";`
+- Line 99: `// TODO: Replace with real admin data service`
+- Line 66: `// Temporary types until real admin service is implemented`
+- Line 66: `// Temporary types until real admin service is implemented`
 
 ### src/app/admin/finances/page.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-- Line 67: `import { adminAppData, AppTransaction, AppClient } from "../../../lib/mock-data/admin-mock-data";`
+- Line 101: `// TODO: Replace with real admin data service`
+- Line 68: `// Temporary types until real admin service is implemented`
+- Line 68: `// Temporary types until real admin service is implemented`
 
-### src/app/admin/infrastructure/page.tsx
+### src/app/admin/funding-requests/page.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 34: `import { APP_PROFILE_TEAMS, APP_TEAM_BUSINESS_MANAGERS, ProfileTeam, TeamBusinessManager } from "../../../lib/mock-data";`
+- Line 64: `console.error('Error fetching funding requests:', error)`
+- Line 103: `console.error(`Error ${actionType}ing request:`, error)`
 
 ### src/app/admin/organizations/[orgId]/page.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 56: `// Mock organizations data with enhanced properties`
-- Line 144: `// Mock businesses data`
+- Line 80: `console.error('Error fetching organization:', err)`
 
 ### src/app/admin/organizations/page.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 32: `// Mock organizations data`
-- Line 63: `// Mock teams data`
+- Line 79: `// For now, use mock teams data - in production this would also come from API`
+
+### src/app/admin/page.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 64: `console.error('Failed to fetch applications:', err)`
+- Line 88: `console.error('Failed to fetch funding requests:', err)`
 
 ### src/app/admin/stats/page.tsx
 
@@ -113,25 +127,19 @@ Mock data references that could leak into production
 
 ### src/app/admin/teams/page.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 27: `// Mock teams data`
-
-### src/app/admin/transactions/topups/page.tsx
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 92: `console.log("Approving request:", id)`
-- Line 96: `console.log("Rejecting request:", id)`
+- Line 98: `console.error(err);`
 
 ### src/app/admin/workflow/page.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-- Line 12: `import { adminAppData } from '../../../lib/mock-data/admin-mock-data';`
+- Line 99: `// TODO: Replace with real admin data service`
+- Line 64: `// Temporary types until real admin service is implemented`
+- Line 64: `// Temporary types until real admin service is implemented`
 
 ### src/app/api/access-codes/[id]/route.ts
 
@@ -150,200 +158,275 @@ Debug code that should be removed for production
 
 ### src/app/api/ad-accounts/route.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 16: `// In demo mode, return a mock token`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 3: `import { config, shouldUseAppData, isDemoMode } from '../../../lib/data/config';`
-- Line 16: `// In demo mode, return a mock token`
-- Line 17: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 18: `return 'demo-access-token-123';`
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 73: `console.error('Error fetching ad accounts:', error);`
-- Line 112: `console.error('Error creating ad account:', error);`
+- Line 117: `console.error('Error fetching ad accounts:', error);`
+- Line 104: `// Raw Dolphin data for debugging`
 
 ### src/app/api/admin/applications/route.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 15: `// In demo mode, return a mock token`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 3: `import { config, shouldUseAppData, isDemoMode } from '../../../../lib/data/config';`
-- Line 15: `// In demo mode, return a mock token`
-- Line 16: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 17: `return 'demo-access-token-123';`
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 64: `console.error('Error fetching admin applications:', error);`
-- Line 111: `console.error('Error reviewing application:', error);`
+- Line 88: `console.log('Found businesses:', businessAppsData?.length || 0);`
+- Line 90: `console.log(`Business: ${business.name}, Status: ${business.status}`);`
+- Line 109: `console.log('Total applications found:', allApplications.length);`
+- Line 41: `console.warn('Warning: Could not fetch users for email mapping:', usersError);`
+- Line 46: `console.warn('Warning: User fetching failed, continuing without email mapping:', userError);`
+- Line 57: `console.error('Supabase error fetching ad account apps:', error);`
+- Line 73: `console.error('Error fetching ad account applications:', adAccountError);`
+- Line 84: `console.error('Supabase error fetching business apps:', businessAppsError);`
+- Line 112: `console.error('Error in GET /api/admin/applications:', error);`
+- Line 157: `console.error('Error updating business application:', error);`
+- Line 196: `console.error('Supabase error:', error);`
+- Line 212: `console.error('Error updating application:', error)`
+- Line 248: `console.error('Supabase error:', error)`
+- Line 261: `console.error('Error creating application:', error)`
+- Line 14: `const debug = url.searchParams.get('debug')`
+- Line 16: `// Debug mode - just return all businesses with their statuses`
+- Line 17: `if (debug === 'true') {`
+- Line 18: `const { data: allBusinesses, error: debugError } = await supabase`
+- Line 23: `if (debugError) {`
+- Line 24: `return NextResponse.json({ error: 'Debug query failed', details: debugError }, { status: 500 });`
+- Line 28: `debug: true,`
 
 ### src/app/api/admin/assets/route.ts
 
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 91: `console.error('Assets API error:', error);`
+- Line 136: `console.error('Assets POST API error:', error);`
+
+#### HARDCODED_VALUES (HIGH)
+Hardcoded localhost/development URLs
+
+- Line 4: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
+- Line 4: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
+
+### src/app/api/admin/bind-asset/route.ts
+
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 6: `// In demo mode, return a mock token`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 2: `import { config, shouldUseAppData, isDemoMode } from '../../../../lib/data/config';`
-- Line 6: `// In demo mode, return a mock token`
-- Line 7: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 8: `return 'demo-access-token-123';`
+- Line 16: `// For now, return a mock success response since the backend binding is complex`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 75: `console.error('Error fetching admin assets:', error);`
-- Line 130: `console.error('Error in admin assets action:', error);`
+- Line 18: `console.log('Binding request:', { asset_id, asset_type, organization_id, notes });`
+- Line 30: `console.error('Binding API error:', error);`
+
+#### HARDCODED_VALUES (HIGH)
+Hardcoded localhost/development URLs
+
+- Line 3: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
+- Line 3: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
+
+### src/app/api/admin/businesses/[businessId]/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 49: `console.error('Error fetching business details:', error)`
+
+### src/app/api/admin/dolphin/route.ts
+
+#### MOCK_DATA (HIGH)
+Mock data references that could leak into production
+
+- Line 3: `// Mock Dolphin accounts for demo`
+- Line 4: `const mockDolphinAccounts = [`
+- Line 40: `const availableAccounts = mockDolphinAccounts.filter(account => account.status === 'available')`
+- Line 69: `const dolphinAccount = mockDolphinAccounts.find(acc => acc.id === dolphin_account_id)`
+- Line 125: `name: `Facebook Account #${mockDolphinAccounts.length + 1}`,`
+- Line 132: `mockDolphinAccounts.push(newAccount)`
+- Line 137: `synced_accounts: mockDolphinAccounts.length,`
+- Line 138: `available_accounts: mockDolphinAccounts.filter(acc => acc.status === 'available').length`
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 3: `// Mock Dolphin accounts for demo`
+- Line 122: `// Add a new "synced" account for demo`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 48: `console.error('Error fetching Dolphin accounts:', error)`
+- Line 103: `console.error('Error binding Dolphin account:', error)`
+- Line 141: `console.error('Error syncing with Dolphin:', error)`
+
+### src/app/api/admin/dolphin-assets/bind/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 64: `console.error('Error binding asset:', error);`
+
+### src/app/api/admin/dolphin-health/route.ts
+
+#### HARDCODED_VALUES (HIGH)
+Hardcoded localhost/development URLs
+
+- Line 3: `const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';`
+- Line 3: `const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';`
+
+### src/app/api/admin/organizations/[orgId]/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 59: `console.error('Error fetching organization details:', error)`
+
+### src/app/api/admin/organizations/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 44: `console.error('Error fetching organizations:', error);`
+
+### src/app/api/admin/teams/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 19: `console.error('Error fetching teams:', error)`
+- Line 30: `console.error('Error fetching organizations:', orgError);`
+- Line 58: `console.error('Error in GET /api/admin/teams:', error)`
+- Line 78: `console.error('Error creating team:', error)`
+- Line 84: `console.error('Error in POST /api/admin/teams:', error)`
+
+### src/app/api/admin/teams/setup/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 35: `console.error('Error creating teams table:', createError)`
+- Line 49: `console.error('Error adding team_id column:', alterError)`
+- Line 72: `console.error('Error creating initial team:', insertError)`
+- Line 81: `console.error('Error setting up teams:', error)`
+
+### src/app/api/admin/transactions/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 24: `console.error('Supabase error:', error)`
+- Line 48: `console.error('Error fetching transactions:', error)`
 
 ### src/app/api/applications/route.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 16: `// In demo mode, return a mock token`
+- Line 63: `console.error('Error fetching applications:', error);`
+- Line 128: `console.error('Error counting ad accounts, will use a non-unique name.', countError);`
+- Line 151: `console.error('Supabase error creating ad account application:', insertError);`
+- Line 162: `console.error('Error creating ad account application:', error);`
 
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 3: `import { config, shouldUseAppData, isDemoMode } from '../../../lib/data/config';`
-- Line 16: `// In demo mode, return a mock token`
-- Line 17: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 18: `return 'demo-access-token-123';`
+### src/app/api/auth/me/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 71: `console.error('Error fetching applications:', error);`
-- Line 110: `console.error('Error submitting application:', error);`
+- Line 42: `console.error('Profile fetch error:', profileError)`
+- Line 58: `console.error('Auth check error:', error)`
 
-### src/app/api/auth/login/route.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 59: `// ✅ SECURE: Mock authentication (replace with real authentication)`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 62: `// This is demo/development authentication`
-- Line 65: `// Demo users for development`
-- Line 66: `const demoUsers = [`
-- Line 89: `const user = demoUsers.find(u => u.email === email && u.password === password)`
-- Line 62: `// This is demo/development authentication`
-- Line 64: `if (process.env.NODE_ENV === 'development') {`
-- Line 65: `// Demo users for development`
-- Line 62: `// This is demo/development authentication`
-- Line 64: `if (process.env.NODE_ENV === 'development') {`
-- Line 65: `// Demo users for development`
+### src/app/api/auth/promote/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 51: `console.error('Login error:', error)`
-
-#### TODO_FIXME (LOW)
-Development comments that need attention
-
-- Line 61: `// TODO: Replace with real database authentication`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 64: `if (process.env.NODE_ENV === 'development') {`
-- Line 64: `if (process.env.NODE_ENV === 'development') {`
-
-### src/app/api/auth/logout/route.ts
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 16: `console.error('Logout error:', error)`
-
-### src/app/api/auth/verify/route.ts
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 28: `console.error('Auth verification error:', error)`
+- Line 31: `console.error('Error checking existing superusers:', countError)`
+- Line 46: `console.error('Error listing users:', userError)`
+- Line 72: `console.error('Error creating admin profile:', upsertError)`
+- Line 149: `console.error('Error promoting user:', updateError)`
+- Line 163: `console.error('Promotion error:', error)`
 
 ### src/app/api/businesses/route.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 16: `// In demo mode, return a mock token`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 3: `import { config, shouldUseAppData, isDemoMode } from '../../../lib/data/config';`
-- Line 16: `// In demo mode, return a mock token`
-- Line 17: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 18: `return 'demo-access-token-123';`
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 65: `console.error('Error fetching businesses:', error);`
-- Line 113: `console.error('Error creating business:', error);`
+- Line 25: `console.error('Supabase error fetching businesses:', error);`
+- Line 32: `console.error('Error fetching businesses:', error);`
+- Line 62: `console.error('Supabase error creating business:', error);`
+- Line 69: `console.error('Error creating business:', error);`
+- Line 100: `console.error('Supabase error updating business:', error);`
+- Line 107: `console.error('Error updating business:', error);`
 
 ### src/app/api/client/assets/route.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 8: `// In demo mode, return a mock token`
+- Line 72: `console.error('Error fetching client assets:', error);`
 
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 2: `import { config, shouldUseAppData, isDemoMode } from '../../../../lib/data/config';`
-- Line 8: `// In demo mode, return a mock token`
-- Line 9: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 10: `return 'demo-access-token-123';`
+### src/app/api/funding-requests/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 80: `console.error('Error fetching client assets:', error);`
+- Line 53: `console.error('Supabase error:', error)`
+- Line 66: `console.error('Error creating funding request:', error)`
+- Line 100: `console.error('Supabase error:', error)`
+- Line 140: `console.error('Error fetching funding requests:', error)`
+- Line 177: `console.error('Supabase error:', error)`
+- Line 197: `console.error('Error updating funding request:', error)`
+
+### src/app/api/onboarding-progress/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 71: `console.error('Error fetching onboarding progress:', error);`
+- Line 131: `console.error('Error dismissing onboarding:', error);`
 
 ### src/app/api/organizations/route.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 16: `// In demo mode, return a mock token`
+- Line 63: `console.error('Error fetching organization:', orgError);`
+- Line 85: `console.error('Error fetching organizations:', membershipError);`
+- Line 106: `console.error('Error fetching organizations:', error);`
+- Line 153: `console.error('Error creating organization:', orgError);`
+- Line 167: `console.error('Error adding organization member:', memberError);`
+- Line 179: `console.error('Error creating wallet:', walletError);`
+- Line 190: `console.error('Error creating organization:', error);`
 
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 3: `import { config, shouldUseAppData, isDemoMode } from '../../../lib/data/config';`
-- Line 16: `// In demo mode, return a mock token`
-- Line 17: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 18: `return 'demo-access-token-123';`
+### src/app/api/payments/create-checkout-session/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 65: `console.error('Error fetching organizations:', error);`
-- Line 104: `console.error('Error creating organization:', error);`
+- Line 12: `console.log("API Route is using Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);`
+- Line 13: `console.log("Stripe key configured:", !!process.env.STRIPE_SECRET_KEY);`
+- Line 14: `console.log("Supabase service role key configured:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);`
+- Line 22: `console.log('Received auth token:', token ? 'Present' : 'Missing');`
+- Line 29: `console.log('User auth result:', { user: user ? { id: user.id, email: user.email } : null, userError });`
+- Line 43: `console.log('Received payment data:', { amount, wallet_credit, success_url, cancel_url });`
+- Line 44: `console.log('User ID:', user.id);`
+- Line 53: `console.log('Organization query result:', { org, orgError });`
+- Line 32: `console.error('Auth error:', userError);`
+- Line 56: `console.error('Error fetching organization for user:', user.id, orgError)`
+- Line 92: `console.error('Checkout session creation error:', error)`
+- Line 95: `console.error('Stripe error:', error.message, error.type)`
+- Line 102: `console.error('General error:', error)`
+
+### src/app/api/payments/create-intent/route.ts
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 31: `// For demo purposes, we'll create a payment intent without a real customer`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 70: `console.error('Error creating payment intent:', error)`
 
 ### src/app/api/payments/intent/[id]/route.ts
 
@@ -359,6 +442,31 @@ Debug code that should be removed for production
 
 - Line 34: `console.error('Error fetching payment success details:', error)`
 
+### src/app/api/payments/verify-session/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 38: `console.error('Session verification failed:', error)`
+
+### src/app/api/payments/webhook/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 44: `console.log('Payment succeeded:', paymentIntent.id)`
+- Line 49: `console.log('Payment failed:', failedPayment.id)`
+- Line 53: `console.log(`Unhandled event type: ${event.type}`)`
+- Line 83: `console.log(`Processing wallet top-up:`, {`
+- Line 141: `console.log(`✅ Wallet updated successfully:`, {`
+- Line 28: `console.error('Webhook signature verification failed:', err)`
+- Line 59: `console.error('Webhook handler error:', error)`
+- Line 76: `console.error('Missing metadata in checkout session:', session.id)`
+- Line 99: `console.error('Error fetching wallet:', walletError)`
+- Line 112: `console.error('Error updating wallet balance:', updateError)`
+- Line 138: `console.error('Error creating transaction record:', transactionError)`
+- Line 148: `console.error('Error handling successful payment:', error)`
+
 ### src/app/api/security/csp-report/route.ts
 
 #### DEBUG_CODE (MEDIUM)
@@ -366,6 +474,46 @@ Debug code that should be removed for production
 
 - Line 30: `console.error('CSP Violation:', {`
 - Line 63: `console.error('Error processing CSP report:', error)`
+
+### src/app/api/teams/members/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 27: `console.error('Error fetching organization members:', membersError);`
+- Line 43: `console.error('Error fetching profiles:', profilesError);`
+- Line 65: `console.error('Error fetching team members:', error);`
+
+### src/app/api/transactions/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 74: `console.error('Error fetching transactions:', error);`
+
+### src/app/api/wallet/consolidate/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 43: `console.error('Error consolidating funds rpc:', error);`
+- Line 51: `console.error('Consolidation error:', errorMessage);`
+
+### src/app/api/wallet/transactions/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 91: `console.error(`CRITICAL: Wallet balance updated, but transaction failed for org ${organization_id}.`, transactionError);`
+- Line 98: `console.error('Error processing transaction:', error);`
+
+### src/app/api/wallet/transfer/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 38: `console.error('Supabase RPC error:', error);`
+- Line 44: `console.error('An unexpected error occurred:', err);`
 
 ### src/app/auth/callback/page.tsx
 
@@ -384,49 +532,17 @@ Debug code that should be removed for production
 
 ### src/app/dashboard/businesses/page.tsx
 
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-- Line 19: `// Use real-time data from demo state`
-
-### src/app/dashboard/settings/layout.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 13: `import { getInitials } from "../../../lib/mock-data"`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 27: `// Use current organization from demo state`
-- Line 48: `{getInitials(currentOrganization?.name || "Demo Org")}`
-- Line 52: `<h1 className="text-2xl font-semibold text-foreground">{currentOrganization?.name || "Demo Organization"}</h1>`
-- Line 55: `{currentOrganization?.id || "demo-org-1"}`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 67: `.catch((err) => console.error("Failed to copy:", err))`
-
-### src/app/dashboard/transactions/page.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 16: `import { formatCurrency, APP_BUSINESSES } from "../../../lib/mock-data"`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 71: `// Convert demo state transactions to component format and add business information`
+- Line 25: `// This effect is a temporary solution to bridge the gap from the old context.`
+- Line 25: `// This effect is a temporary solution to bridge the gap from the old context.`
 
 ### src/app/dashboard/wallet/business/[id]/page.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 11: `import { formatCurrency, APP_BUSINESSES } from "../../../../../lib/mock-data"`
 - Line 27: `// Find business from mock data`
 - Line 59: `allocated: 10000 + 1000, // Mock balance data`
 - Line 61: `remaining: 10000, // Mock balance data`
@@ -438,12 +554,19 @@ Demo mode code that should not run in production
 - Line 68: `description: "Leading software development and consulting company specializing in enterprise solutions.",`
 - Line 68: `description: "Leading software development and consulting company specializing in enterprise solutions.",`
 
+### src/app/dashboard/wallet/page.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 31: `console.log('🔄 Triggering SWR revalidation for organizations...');`
+
 ### src/app/layout.tsx
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 16: `generator: 'v0.dev'`
+- Line 20: `generator: 'v0.dev',`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
@@ -480,51 +603,30 @@ Debug code that should be removed for production
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 21: `import { APP_ACCOUNTS, formatCurrency } from "../../lib/mock-data"`
-- Line 31: `// Convert centralized mock data to the format expected by this component`
-- Line 32: `const mockAccounts = APP_ACCOUNTS.map((account) => ({`
-- Line 55: `const filteredAccounts = mockAccounts.filter((account) => {`
-- Line 126: `const selectedAccount = selectedAccountId ? mockAccounts.find((account) => account.id === selectedAccountId) : null`
+- Line 32: `const mockAccounts: any[] = []`
+- Line 35: `const filteredAccounts = mockAccounts.filter((account) => {`
+- Line 106: `const selectedAccount = selectedAccountId ? mockAccounts.find((account) => account.id === selectedAccountId) : null`
 
 ### src/components/accounts/accounts-metrics.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 11: `} from "../../lib/mock-data"`
-- Line 14: `// Use centralized mock data`
-- Line 17: `const businesses = 3 // Mock business count - could be centralized too`
-- Line 18: `const accountLimit = 50 // Mock limit`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 53: `const dpr = window.devicePixelRatio || 1`
-- Line 63: `window.addEventListener("resize", setCanvasDimensions)`
-- Line 127: `window.addEventListener("resize", drawChart)`
+- Line 67: `const dpr = window.devicePixelRatio || 1`
+- Line 77: `window.addEventListener("resize", setCanvasDimensions)`
+- Line 141: `window.addEventListener("resize", drawChart)`
 
-### src/components/accounts/ad-accounts-list.tsx
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+- Line 30: `const accountLimit = 50; // TODO: This could be fetched from user plan/settings`
 
-- Line 7: `import { APP_ACCOUNTS, formatCurrency } from "../../lib/mock-data"`
-- Line 10: `// Use centralized mock data and convert to the format expected by this component`
-
-### src/components/accounts/business-accounts-table.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 18: `import { APP_ACCOUNTS } from "../../lib/mock-data"`
-- Line 19: `import { formatCurrency } from "../../lib/mock-data"`
-
-### src/components/accounts/create-ad-account-dialog.tsx
+### src/components/accounts/request-account-funding-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 98: `console.error('Error submitting application:', error)`
+- Line 82: `console.error('Error submitting top-up request:', error)`
 
 ### src/components/admin/AccessCodeManager.tsx
 
@@ -542,12 +644,33 @@ Mock data references that could leak into production
 
 - Line 83: `const avgProcessingTime = 2.3; // Mock data - calculate from actual data`
 
+### src/components/admin/admin-access-check.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 42: `console.error('Error fetching profile:', profileError)`
+- Line 51: `console.error('Admin check error:', err)`
+
 ### src/components/admin/admin-client-accounts-table.tsx
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
 - Line 27: `// TODO: Use isSuperuser prop if needed for data fetching or conditional rendering`
+
+### src/components/admin/admin-org-accounts-table.tsx
+
+#### MOCK_DATA (HIGH)
+Mock data references that could leak into production
+
+- Line 19: `// Mock data for now`
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 21: `{ id: '1', name: 'Demo Account 1', status: 'active' },`
+- Line 22: `{ id: '2', name: 'Demo Account 2', status: 'pending' },`
 
 ### src/components/admin/admin-org-activity-log.tsx
 
@@ -575,30 +698,35 @@ Debug code that should be removed for production
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 26: `// Mock data for demonstration`
-- Line 27: `const mockOrganizations = [`
-- Line 33: `const filteredOrganizations = mockOrganizations.filter(org =>`
-- Line 100: `<div className="text-2xl font-bold">{mockOrganizations.length}</div>`
+- Line 25: `const { data: revenueData, isLoading: revenueLoading } = useSWR('/api/admin/revenue', fetcher); // Mock endpoint`
+- Line 26: `const { data: ticketsData, isLoading: ticketsLoading } = useSWR('/api/admin/tickets', fetcher); // Mock endpoint`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 22: `const [showDemoPanel, setShowDemoPanel] = useState(false)`
-- Line 26: `// Mock data for demonstration`
-- Line 61: `onClick={() => setShowDemoPanel(!showDemoPanel)}`
-- Line 65: `Demo Data`
-- Line 78: `{/* Demo Data Panel */}`
-- Line 79: `{showDemoPanel && (`
-- Line 82: `<CardTitle className="text-foreground">Demo Data Management</CardTitle>`
-- Line 84: `Generate and manage demo data for testing purposes`
-- Line 88: `<div className="text-sm text-muted-foreground">Demo data management coming soon...</div>`
+- Line 33: `const [showDemoPanel, setShowDemoPanel] = useState(false)`
+- Line 67: `onClick={() => setShowDemoPanel(!showDemoPanel)}`
+- Line 71: `Demo Data`
+- Line 84: `{/* Demo Data Panel */}`
+- Line 85: `{showDemoPanel && (`
+- Line 88: `<CardTitle className="text-foreground">Demo Data Management</CardTitle>`
+- Line 90: `Generate and manage demo data for testing purposes`
+- Line 94: `<div className="text-sm text-muted-foreground">Demo data management coming soon...</div>`
 
 ### src/components/admin/application-approval-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 58: `console.error("Error approving application:", error);`
+- Line 57: `console.error("Error approving application:", error);`
+
+### src/components/admin/application-asset-binding-dialog.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 70: `console.error('Error loading assets:', err)`
+- Line 95: `console.error('Error binding assets:', err)`
 
 ### src/components/admin/application-binding-dialog.tsx
 
@@ -617,7 +745,7 @@ Debug code that should be removed for production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 58: `console.error("Error marking application ready:", error);`
+- Line 56: `console.error("Error marking application ready:", error);`
 
 ### src/components/admin/application-review-dialog.tsx
 
@@ -644,6 +772,15 @@ Debug code that should be removed for production
 - Line 96: `console.error('Error fetching businesses:', error);`
 - Line 152: `console.error("Error binding asset:", error);`
 
+### src/components/admin/bind-asset-dialog.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 83: `console.error('Error loading organizations:', err)`
+- Line 98: `console.error('Error loading businesses:', err)`
+- Line 149: `console.error('Error binding asset:', err)`
+
 ### src/components/admin/create-account-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
@@ -651,77 +788,53 @@ Debug code that should be removed for production
 
 - Line 104: `console.error("Error creating account:", error);`
 
-### src/components/admin/demo-data-panel.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 84: `{storeType === 'supabase' ? 'Supabase' : 'Mock Store'}`
-- Line 93: `<strong>Current Store:</strong> {storeType === 'supabase' ? 'Supabase Database' : 'In-Memory Mock Store'}`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 20: `export function DemoDataPanel() {`
-- Line 29: `const handleSeedDemoData = async () => {`
-- Line 34: `title: "Demo Data Seeded! 🎉",`
-- Line 38: `console.error("Error seeding demo data:", error)`
-- Line 41: `description: error instanceof Error ? error.message : "Failed to seed demo data.",`
-- Line 82: `<CardTitle>Demo Data Management</CardTitle>`
-- Line 102: `{/* Demo Data Actions */}`
-- Line 106: `<span className="font-medium">Demo Data Actions</span>`
-- Line 111: `onClick={handleSeedDemoData}`
-- Line 121: `{seeding ? "Seeding..." : "Seed Demo Data"}`
-- Line 140: `{/* What Demo Data Includes */}`
-- Line 142: `<div className="font-medium text-sm">Demo data includes:</div>`
-- Line 156: `<strong>Environment:</strong> {process.env.NODE_ENV || 'development'}`
-- Line 158: `To use Supabase in development, set <code>NEXT_PUBLIC_USE_SUPABASE=true</code> in your .env file.`
-- Line 156: `<strong>Environment:</strong> {process.env.NODE_ENV || 'development'}`
-- Line 158: `To use Supabase in development, set <code>NEXT_PUBLIC_USE_SUPABASE=true</code> in your .env file.`
+### src/components/admin/dolphin-status-card.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 38: `console.error("Error seeding demo data:", error)`
-- Line 62: `console.error("Error clearing data:", error)`
+- Line 46: `console.error('Error checking Dolphin health:', error);`
 
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 156: `<strong>Environment:</strong> {process.env.NODE_ENV || 'development'}`
-
-### src/components/admin/onboarding-admin-panel.tsx
+### src/components/admin/enhanced-application-approval-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 81: `console.error('Error loading onboarding data:', error)`
-- Line 96: `console.error('Error resetting onboarding:', error)`
-- Line 109: `console.error('Error marking step completed:', error)`
+- Line 90: `console.error('Error fetching Dolphin accounts:', error)`
+- Line 142: `console.error('Error approving application:', error)`
+- Line 177: `console.error('Error rejecting application:', error)`
+- Line 198: `console.error('Error syncing with Dolphin:', error)`
 
 ### src/components/admin/promote-user.tsx
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 277: `<p>⚠️ This is for development purposes only.</p>`
-- Line 277: `<p>⚠️ This is for development purposes only.</p>`
+- Line 182: `<p>⚠️ This is for development purposes only.</p>`
+- Line 182: `<p>⚠️ This is for development purposes only.</p>`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 86: `console.log("👤 Create profile response:", { status: response.status, data });`
-- Line 135: `// 🚨 SECURITY: Removed dangerous console log - console.log("🚀 Starting promotion process for:", ...;`
-- Line 138: `console.log("📡 Trying bootstrap endpoint...");`
-- Line 150: `console.log("📡 Bootstrap response:", { status: response.status, data });`
-- Line 154: `console.log("📡 Bootstrap failed (admins exist), trying regular promotion...");`
-- Line 167: `console.log("📡 Promotion response:", { status: response.status, data });`
-- Line 171: `console.log("✅ Promotion successful!");`
-- Line 54: `console.error("💥 Error checking user:", error);`
-- Line 102: `console.error("💥 Error creating profile:", error);`
-- Line 183: `console.error("❌ Promotion failed:", data);`
-- Line 191: `console.error("💥 Error promoting user:", error);`
-- Line 279: `<p>1. Check if User Exists - Debug if you're in profiles table</p>`
+- Line 57: `// 🚨 SECURITY: Removed dangerous console log - console.log("🚀 Starting promotion process for:", ...;`
+- Line 60: `console.log("📡 Promoting user...");`
+- Line 73: `console.log("📡 Promotion response:", { status: response.status, data });`
+- Line 76: `console.log("✅ Promotion successful!");`
+- Line 88: `console.error("❌ Promotion failed:", data);`
+- Line 96: `console.error("💥 Error promoting user:", error);`
+- Line 184: `<p>1. Check if User Exists - Debug if you're in profiles table</p>`
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 22: `description: "User checking temporarily disabled. Just enter the email and click promote.",`
+
+### src/components/admin/provisioning-pipeline.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 152: `console.error(err);`
 
 ### src/components/admin/quick-actions.tsx
 
@@ -735,15 +848,17 @@ Test email addresses and sample data
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 63: `errorMessage = "Too many login attempts. Please wait a moment and try again.";`
+- Line 53: `errorMessage = "Too many login attempts. Please wait a moment and try again.";`
 
-### src/components/auth/register-view.tsx
+### src/components/businesses/business-application-form.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 105: `console.error("Register handleSubmit: Failed to get user ID after Supabase registration.", signUpResponse.data);`
-- Line 133: `console.error("Register handleSubmit: Unexpected error caught:", error);`
+- Line 50: `console.log("Form data at submission:", formData);`
+- Line 73: `console.log("Found organizationId:", organizationId);`
+- Line 83: `console.log("Sending payload to /api/businesses:", payload);`
+- Line 114: `console.error('Error submitting application:', error)`
 
 ### src/components/businesses/businesses-metrics.tsx
 
@@ -769,44 +884,25 @@ Test email addresses and sample data
 
 ### src/components/businesses/client-businesses-table.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 14: `import { getInitials } from "../../lib/mock-data"`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 53: `// Use real-time data from demo state`
-- Line 119: `// Use the demo state management to update the business`
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 121: `console.log("Business updated:", updatedBusiness)`
-- Line 326: `console.log('Edit business:', business.id)`
+- Line 337: `console.log('Edit business:', business.id)`
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 82: `return 0 // TODO: Add account count logic when available`
-- Line 84: `return 0 // TODO: Add balance logic when available`
-- Line 321: `{/* TODO: Update EditBusinessDialog to work with production Business type */}`
-- Line 327: `// TODO: Implement edit business functionality`
+- Line 86: `return 0 // TODO: Add account count logic when available`
+- Line 88: `return 0 // TODO: Add balance logic when available`
+- Line 332: `{/* TODO: Update EditBusinessDialog to work with production Business type */}`
+- Line 338: `// TODO: Implement edit business functionality`
 
 ### src/components/businesses/create-business-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 126: `console.log('Business application submitted:', result)`
-- Line 146: `console.error('Failed to create business:', error)`
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 83: `setUrlError("Please enter a valid website URL (e.g., example.com, www.example.com, or https://example.com)")`
-- Line 209: `placeholder="example.com, www.example.com, or https://example.com"`
+- Line 82: `console.error('Failed to create business:', error)`
 
 ### src/components/businesses/enhanced-business-card.tsx
 
@@ -815,24 +911,13 @@ Debug code that should be removed for production
 
 - Line 83: `console.log('Manage business:', business.id)`
 
-### src/components/core/simple-providers.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 78: `// // 🚨 SECURITY: Removed dangerous console log - console.log('Simplified Router:', {`
-- Line 85: `// 🚨 SECURITY: Removed dangerous console log - console.log('Redirecting to login: not authenticat...;`
-- Line 96: `// 🚨 SECURITY: Removed dangerous console log - // 🚨 SECURITY: Removed dangerous console log - console.log('Redirecting to dashboard: authenticat...;`
-- Line 144: `// // 🚨 SECURITY: Removed dangerous console log - console.log('Not wrapping with ProductionDataProvi...`
-- Line 77: `// Debug logging`
-
 ### src/components/dashboard/account-transactions-dialog.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
 - Line 8: `import { APP_ACCOUNTS } from "../../lib/mock-data"`
-- Line 31: `// Generate mock transaction data based on account`
+- Line 35: `// Generate mock transaction data based on account`
 
 ### src/components/dashboard/accounts-metrics.tsx
 
@@ -843,43 +928,24 @@ Mock data references that could leak into production
 
 ### src/components/dashboard/accounts-table.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 22: `import { APP_BUSINESSES } from "../../lib/mock-data"`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 249: `console.error('Failed to pause account:', error)`
-- Line 257: `console.error('Failed to resume account:', error)`
-
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 402: `style={{ gridTemplateColumns: "40px 2.5fr 0.3fr 1.5fr 1fr 1fr 1fr 1fr 1fr 120px" }}`
-- Line 431: `style={{ gridTemplateColumns: "40px 2.5fr 0.3fr 1.5fr 1fr 1fr 1fr 1fr 1fr 120px" }}`
+- Line 29: `// TODO: Define a proper type for the ad account object`
 
 ### src/components/dashboard/admin-businesses-table.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 14: `import { getInitials, formatCurrency } from "../../lib/mock-data"`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 51: `// Use real-time data from demo state`
-- Line 122: `// Use the demo state management to update the business`
-- Line 125: `// Note: The EditBusinessDialog should handle calling the updateBusiness function from demo state`
+- Line 15: `import { getInitials, formatCurrency } from "../../lib/mock-data"`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 124: `console.log("Business updated:", updatedBusiness)`
-- Line 136: `console.error('Failed to delete business:', error)`
-- Line 144: `console.error('Failed to approve business:', error)`
+- Line 112: `console.log("Business updated:", updatedBusiness)`
+- Line 129: `console.error('Failed to delete business:', error)`
+- Line 145: `console.error('Failed to approve business:', error)`
 
 ### src/components/dashboard/businesses-metrics.tsx
 
@@ -890,15 +956,10 @@ Mock data references that could leak into production
 
 ### src/components/dashboard/compact-accounts-table.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 17: `import { APP_ACCOUNTS } from "../../lib/mock-data"`
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 77: `console.log("New account created")`
+- Line 89: `console.log("New account created")`
 
 ### src/components/dashboard/compact-filters.tsx
 
@@ -910,122 +971,39 @@ Mock data references that could leak into production
 
 ### src/components/dashboard/create-business-dialog.tsx
 
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 115: `// Use demo state management to create business`
-
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 144: `console.error('Failed to create business:', error)`
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 97: `setUrlError("Please enter a valid website URL (e.g., example.com, www.example.com, or https://example.com)")`
-- Line 226: `placeholder="example.com, www.example.com, or https://example.com"`
+- Line 83: `console.error('Failed to create business:', error)`
 
 ### src/components/dashboard/dashboard-view.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 26: `} from "../../lib/mock-data"`
+- Line 200: `// This is HONEST - no fake historical buildup`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 62: `// Refresh app data (demo state is reactive and doesn't need manual refresh)`
-- Line 241: `// Setup progress tracking - always show as if we have data for demo`
-- Line 245: `realBalance > 0, // Has wallet balance (always true for demo)`
-- Line 246: `true, // Has businesses (always true for demo)`
-- Line 247: `accounts.length > 0 // Has ad accounts (always true for demo)`
-- Line 295: `// For demo purposes, we'll just show a success message`
-- Line 330: `// Always show filled dashboard for demo - no empty state`
+- Line 122: `// Refresh app data (demo state is reactive and doesn't need manual refresh)`
+- Line 302: `// Setup progress tracking - always show as if we have data for demo`
+- Line 306: `realBalance > 0, // Has wallet balance (always true for demo)`
+- Line 407: `// Always show filled dashboard for demo - no empty state`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 312: `console.log('Creating organization:', orgName)`
-- Line 67: `console.warn('Dashboard auto-refresh failed:', error)`
-- Line 314: `console.error('Failed to create organization:', error)`
+- Line 146: `console.log('Current organization not found, switching to first available organization');`
+- Line 127: `console.warn('Dashboard auto-refresh failed:', error)`
+- Line 345: `console.error('Failed to dismiss onboarding:', error)`
 
 ### src/components/dashboard/edit-business-dialog.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 24: `import { getInitials } from "../../lib/mock-data"`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 115: `// Use demo state management to update business`
-
 #### TEST_DATA (MEDIUM)
 Test email addresses and sample data
 
-- Line 295: `const newDomain = prompt("Enter domain name (e.g., example.com):")`
-
-### src/components/dashboard/top-up-dialog.tsx
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 29: `// Use real-time wallet balance from demo state`
-
-### src/components/dashboard/topbar.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 9: `import { APP_FINANCIAL_DATA } from "../../lib/mock-data"`
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 87: `<div className="text-sm text-muted-foreground">john@example.com</div>`
-
-### src/components/dashboard/withdraw-balance-dialog.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 11: `import { APP_FINANCIAL_DATA } from "../../lib/mock-data"`
-
-### src/components/debug/auth-debug.tsx
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 34: `if (process.env.NODE_ENV !== 'development') {`
-- Line 34: `if (process.env.NODE_ENV !== 'development') {`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 7: `export function AuthDebug() {`
-- Line 40: `<h3 className="font-bold mb-2">Auth Debug</h3>`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 34: `if (process.env.NODE_ENV !== 'development') {`
-
-### src/components/debug/dashboard-debug.tsx
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 5: `import { isDemoMode } from "../../lib/data/config"`
-- Line 46: `<strong>Demo Mode:</strong> {isDemoMode() ? "✓" : "✗"}`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 7: `export function DashboardDebug() {`
-- Line 14: `<h3 className="font-bold mb-2">Debug Info</h3>`
+- Line 305: `const newDomain = prompt("Enter domain name (e.g., example.com):")`
 
 ### src/components/debug/env-debug.tsx
 
@@ -1063,75 +1041,52 @@ Demo mode code that should not run in production
 
 ### src/components/layout/topbar.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 21: `import { formatCurrency } from "../../lib/mock-data"`
-
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 69: `// Use real user data from demo state`
-- Line 73: `const userName = userProfile?.name || 'Demo Admin'`
+- Line 80: `// Use real user data from demo state`
 
 ### src/components/onboarding/welcome-onboarding-modal.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 103: `console.error('Error creating business:', error)`
-- Line 127: `console.error('Error completing onboarding:', error)`
-- Line 137: `console.error('Error skipping onboarding:', error)`
-
-### src/components/organization/organization-selector.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 18: `import { getInitials } from "../../lib/mock-data"`
-- Line 22: `import { APP_BUSINESSES_BY_ORG } from "../../lib/mock-data"`
-- Line 23: `import { APP_ACCOUNTS_BY_ORG } from "../../lib/mock-data"`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 49: `// Use real organization data from demo state`
-- Line 66: `// Convert all organizations from demo state`
-- Line 77: `// Convert demo state businesses to the format expected by the component`
+- Line 127: `console.error('Error creating business:', error)`
+- Line 151: `console.error('Error completing onboarding:', error)`
+- Line 161: `console.error('Error skipping onboarding:', error)`
 
 ### src/components/organization/organization-switcher.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 53: `console.error('Failed to create organization:', error)`
+- Line 90: `console.error('Failed to create organization:', error)`
 
 ### src/components/settings/account-settings.tsx
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 638: `onClick={() => toast.error("Account deletion is not available in demo mode.")}`
-
-### src/components/settings/organization-settings.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 20: `import { pricingPlans } from "../../lib/mock-data"`
+- Line 26: `// Mock user data - in real app this would come from SWR or similar`
+
+#### TEST_DATA (MEDIUM)
+Test email addresses and sample data
+
+- Line 30: `email: "john.doe@example.com",`
+
+### src/components/settings/organization-settings.tsx
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 39: `// Get actual counts from demo state`
-- Line 93: `toast.error("Organization deletion is not available in demo mode.")`
+- Line 75: `// Get actual counts from demo state`
 
 ### src/components/settings/settings-view.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 35: `import { APP_ORGANIZATION } from "../../lib/mock-data"`
+- Line 35: `import { APP_ORGANIZATIONS } from "../../lib/mock-data"`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
@@ -1148,16 +1103,24 @@ Test email addresses and sample data
 
 ### src/components/settings/team-settings.tsx
 
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 50: `// Use real-time team members from demo state`
+- Line 92: `console.log("Inviting new member", inviteEmail, inviteRole)`
+- Line 115: `console.log("Removing member", memberToRemove)`
+- Line 130: `console.log("Changing role for", memberId, "to", newRole)`
+
+#### TEST_DATA (MEDIUM)
+Test email addresses and sample data
+
+- Line 236: `placeholder="email@example.com"`
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 79: `name: inviteEmail.split('@')[0], // Use email prefix as temporary name`
-- Line 79: `name: inviteEmail.split('@')[0], // Use email prefix as temporary name`
+- Line 91: `// TODO: Replace with API call to /api/teams/members/invite`
+- Line 114: `// TODO: Replace with API call to /api/teams/members/:id`
+- Line 129: `// TODO: Replace with API call to /api/teams/members/:id`
 
 ### src/components/ui/carousel.tsx
 
@@ -1235,134 +1198,52 @@ Demo mode code that should not run in production
 
 - Line 13: `mql.addEventListener("change", onChange)`
 
-### src/components/wallet/account-top-up-dialog.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 16: `import { formatCurrency, APP_CONSTANTS } from "../../lib/mock-data"`
-
-### src/components/wallet/advanced-transaction-manager.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 32: `import { formatCurrency, transactionColors } from "../../lib/mock-data"`
-
 ### src/components/wallet/balance-card.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 4: `import { formatCurrency } from '../../lib/mock-data'`
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 17: `const actualGrowth = growth ?? 0 // TODO: Calculate from transaction history`
+- Line 26: `const actualGrowth = growth ?? 0 // TODO: Calculate from transaction history`
 
 ### src/components/wallet/business-balances-table.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-- Line 6: `import { formatCurrency, getInitials } from "../../lib/mock-data"`
-
-### src/components/wallet/consolidate-funds-dialog.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 8: `import { formatCurrency } from "../../lib/mock-data"`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 99: `console.error('Consolidation failed:', error)`
-
-### src/components/wallet/distribute-funds-dialog.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 9: `import { formatCurrency } from "../../lib/mock-data"`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 146: `console.error('Distribution failed:', error)`
-
-### src/components/wallet/fund-wallet-dialog.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 47: `console.log(`Adding $${amount} via ${paymentMethod}`)`
-- Line 50: `console.log(`Withdrawing $${amount}`)`
-- Line 60: `console.log('Opening consolidate dialog')`
-- Line 66: `console.log('Opening distribute dialog')`
+- Line 71: `accounts: 0, // TODO: Get real account count`
 
 ### src/components/wallet/recent-transactions.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 6: `import { formatCurrency, transactionColors } from "../../lib/mock-data"`
 - Line 23: `// Mock data`
 
-### src/components/wallet/top-up-dialog.tsx
+### src/components/wallet/stripe-checkout-dialog.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 11: `import { formatCurrency } from "../../lib/mock-data"`
-- Line 25: `// Mock data for customer tiers and their commission rates`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 36: `// Use real-time wallet balance from demo state`
+- Line 64: `console.error("Error creating checkout session:", errorText);`
 
 ### src/components/wallet/top-up-wallet.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 53: `console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)`
+- Line 74: `console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)`
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 53: `console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)`
+- Line 74: `console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)`
 
 ### src/components/wallet/transaction-card.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 6: `import { formatCurrency, transactionColors } from "../../lib/mock-data"`
 - Line 19: `// Mock data`
-
-### src/components/wallet/wallet-dashboard.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 23: `// Mock current organization`
-
-### src/components/wallet/wallet-funding-panel.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 13: `import { formatCurrency } from "../../lib/mock-data"`
-
-### src/components/wallet/wallet-portfolio-card.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 6: `import { formatCurrency, APP_BALANCE_DATA } from "../../lib/mock-data"`
 
 ### src/components/wallet/withdraw-funds.tsx
 
@@ -1371,98 +1252,25 @@ Mock data references that could leak into production
 
 - Line 26: `// Mock data`
 
-### src/contexts/AppDataContext.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 17: `MOCK_TEAM_MEMBERS_BY_ORG`
-- Line 18: `} from '../lib/mock-data'`
-- Line 455: `const orgTeamMembers = MOCK_TEAM_MEMBERS_BY_ORG[action.payload] || []`
-- Line 615: `// Helper functions to convert mock data to app data`
-- Line 616: `function convertAppBusinessesToAppBusinesses(mockBusinesses: any[]): AppBusiness[] {`
-- Line 617: `return mockBusinesses.map(b => ({`
-- Line 645: `function convertAppAccountsToAppAccounts(mockAccounts: any[]): AppAccount[] {`
-- Line 646: `return mockAccounts.map(a => ({`
-- Line 668: `function convertAppTransactionsToAppTransactions(mockTransactions: any[]): AppTransaction[] {`
-- Line 669: `return mockTransactions.map(t => ({`
-- Line 690: `function convertFinancialData(mockFinancialData: any): AppState['financialData'] {`
-- Line 692: `totalBalance: mockFinancialData.walletBalance || 0,`
-- Line 693: `totalRevenue: mockFinancialData.monthlyAdSpend * 12 || 0, // Estimate annual revenue`
-- Line 694: `totalSpend: mockFinancialData.monthlyAdSpend || 0,`
-- Line 695: `monthlyRevenue: mockFinancialData.monthlyAdSpend || 0,`
-- Line 696: `monthlySpend: mockFinancialData.monthlyAdSpend || 0,`
-- Line 697: `growthRate: mockFinancialData.monthlyGrowth || 0`
-- Line 701: `function convertAppOrganizationsToAppOrganizations(mockOrgs: any[]): AppOrganization[] {`
-- Line 702: `return mockOrgs.map(o => ({`
-- Line 733: `dispatch({ type: 'SET_TEAM_MEMBERS', payload: MOCK_TEAM_MEMBERS_BY_ORG[orgId] || [] })`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 6: `import { USE_DEMO_DATA } from '../lib/env-config'`
-- Line 29: `// Unified interfaces that work with both demo and production data`
-- Line 37: `// Extended properties (rich data from demo mode)`
-- Line 64: `// Extended properties (rich data from demo mode)`
-- Line 86: `// Extended properties (rich data from demo mode)`
-- Line 149: `dataSource: 'demo' | 'supabase'`
-- Line 212: `| { type: 'SET_DATA_SOURCE'; payload: 'demo' | 'supabase' }`
-- Line 724: `if (state.dataSource === 'demo') {`
-- Line 725: `// Load demo data`
-- Line 736: `// Set demo user profile`
-- Line 738: `id: 'demo-user-123',`
-- Line 739: `name: 'Demo Admin',`
-- Line 746: `// Set demo setup progress`
-- Line 755: `// Simulate API call for demo mode`
-- Line 858: `// Fallback to demo data on error`
-- Line 859: `dispatch({ type: 'SET_DATA_SOURCE', payload: 'demo' })`
-- Line 884: `// Simulate API call for demo mode`
-- Line 6: `import { USE_DEMO_DATA } from '../lib/env-config'`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 766: `console.log('No authenticated user for Supabase data loading')`
-- Line 855: `console.error('Error loading Supabase data:', error)`
-- Line 890: `console.error('Error creating business:', error)`
-
 ### src/contexts/AuthContext.tsx
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 48: `// In demo mode, provide mock user and session`
-- Line 50: `const mockUser: SupabaseUser = {`
-- Line 64: `const mockSession: Session = {`
-- Line 70: `user: mockUser`
-- Line 73: `setUser(mockUser);`
-- Line 74: `setSession(mockSession);`
-
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 21: `import { config, shouldUseAppData, isDemoMode } from '../lib/data/config';`
-- Line 48: `// In demo mode, provide mock user and session`
-- Line 49: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 51: `id: 'demo-user-123',`
-- Line 55: `app_metadata: { provider: 'demo' },`
-- Line 57: `name: 'Demo Admin',`
-- Line 65: `access_token: 'demo-access-token-123',`
-- Line 66: `refresh_token: 'demo-refresh-token-123',`
-- Line 120: `// In demo mode, just clear local state`
-- Line 121: `if (isDemoMode() || shouldUseAppData()) {`
-- Line 156: `events.forEach((event) => window.addEventListener(event, resetTimer));`
+- Line 21: `// Removed demo mode imports - using real Supabase only`
+- Line 252: `window.addEventListener('mousemove', resetTimer);`
+- Line 253: `window.addEventListener('keydown', resetTimer);`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 84: `console.error("Error fetching initial session:", error);`
-- Line 131: `console.error("Error signing out:", error);`
-- Line 178: `console.error("Error signing up:", error);`
-- Line 214: `console.error("❌ Error signing in:", error, {`
-- Line 252: `console.error("Error sending password reset email:", error);`
-- Line 287: `console.error("Error initiating Google sign-in:", error);`
-- Line 307: `console.error("Error resending verification email:", error);`
+- Line 55: `console.error("Error signing out:", error);`
+- Line 78: `console.error("Error signing up:", error);`
+- Line 101: `console.error("❌ Error signing in:", error, {`
+- Line 131: `console.error("Error sending password reset email:", error);`
+- Line 159: `console.error("Error initiating Google sign-in:", error);`
+- Line 175: `console.error("Error resending verification email:", error);`
+- Line 204: `console.error("Error fetching initial session:", error);`
 
 ### src/hooks/use-mobile.tsx
 
@@ -1471,28 +1279,12 @@ Demo mode code that should not run in production
 
 - Line 13: `mql.addEventListener("change", onChange)`
 
-### src/hooks/useAdminRoute.ts
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 9: `// Simple admin check - in demo mode, always allow admin access`
-- Line 11: `const canViewAdmin = state.dataSource === 'demo' || state.userProfile?.email === 'admin@adhub.tech';`
-
 ### src/hooks/useAdvancedOnboarding.ts
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 56: `// For demo mode, use simulated persistence data`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 87: `console.error('Error loading onboarding data:', error)`
-- Line 141: `console.error('Error dismissing onboarding:', error)`
-- Line 175: `console.error('Error marking step completed:', error)`
-- Line 202: `console.error('Error resetting onboarding:', error)`
+- Line 91: `console.error('Error dismissing onboarding:', error);`
 
 ### src/hooks/useAutoRefresh.ts
 
@@ -1516,17 +1308,6 @@ Demo mode code that should not run in production
 
 - Line 15: `media.addEventListener("change", listener)`
 
-### src/hooks/usePermissions.ts
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 8: `// Simple permission logic for demo mode`
-- Line 9: `const isAppAdmin = state.dataSource === 'demo' || user?.email === 'admin@adhub.tech';`
-- Line 10: `const isOrgOwner = true; // In demo mode, user is always owner`
-- Line 11: `const isOrgAdmin = true; // In demo mode, user is always admin`
-- Line 12: `const canManageTeam = true; // In demo mode, user can manage team`
-
 ### src/hooks/useServerPagination.ts
 
 #### DEBUG_CODE (MEDIUM)
@@ -1534,19 +1315,32 @@ Debug code that should be removed for production
 
 - Line 126: `console.error('Failed to load more data:', error);`
 
+### src/instrumentation-client.ts
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 20: `// in development and sample at a lower rate in production`
+- Line 20: `// in development and sample at a lower rate in production`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 27: `debug: false,`
+
 ### src/lib/api-config.ts
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 114: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
-- Line 114: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 124: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 124: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
 
 #### ENV_LEAKS (HIGH)
 Environment variables that force development behavior
 
-- Line 114: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
-- Line 114: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 124: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
+- Line 124: `export const IS_DEVELOPMENT = process.env.NODE_ENV === 'development'`
 
 ### src/lib/config/api.ts
 
@@ -1634,56 +1428,21 @@ Debug code that should be removed for production
 
 ### src/lib/data/config.ts
 
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 6: `useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',`
-- Line 17: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
-- Line 23: `return null; // No API calls in mock mode`
-- Line 32: `useMockData: config.useMockData,`
-
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 7: `demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',`
-- Line 18: `export const isDemoMode = () => config.demoMode;`
-- Line 33: `demoMode: config.demoMode,`
-- Line 5: `environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',`
-- Line 16: `export const isDevelopment = () => config.environment === 'development';`
-- Line 17: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
-- Line 28: `// Debug logging (only in development)`
-- Line 29: `if (isDevelopment()) {`
-- Line 5: `environment: process.env.NEXT_PUBLIC_ENVIRONMENT || 'development',`
-- Line 16: `export const isDevelopment = () => config.environment === 'development';`
-- Line 17: `export const shouldUseAppData = () => config.useMockData || isDevelopment();`
-- Line 28: `// Debug logging (only in development)`
-- Line 29: `if (isDevelopment()) {`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 30: `console.log('🔧 AdHub Config:', {`
-- Line 28: `// Debug logging (only in development)`
+- Line 6: `isLocalDev: process.env.NODE_ENV === 'development',`
+- Line 15: `export const isLocalDevelopment = () => config.isLocalDev;`
+- Line 16: `export const isDevelopment = isLocalDevelopment; // Alias for backward compatibility`
+- Line 6: `isLocalDev: process.env.NODE_ENV === 'development',`
+- Line 15: `export const isLocalDevelopment = () => config.isLocalDev;`
+- Line 16: `export const isDevelopment = isLocalDevelopment; // Alias for backward compatibility`
 
 #### ENV_LEAKS (HIGH)
 Environment variables that force development behavior
 
-- Line 6: `useMockData: process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true',`
-- Line 7: `demoMode: process.env.NEXT_PUBLIC_DEMO_MODE === 'true',`
-
-### src/lib/data/mock-data.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 2: `// 🚀 CONSOLIDATED MOCK DATA - Single Source of Truth`
-- Line 5: `// Re-export everything from the original mock-data.ts for backward compatibility`
-- Line 6: `export * from '../mock-data';`
-- Line 8: `// Re-export admin mock data with explicit naming to avoid conflicts`
-- Line 17: `} from '../mock-data/admin-mock-data';`
-- Line 23: `import { AdminAppDataGenerator } from '../mock-data/admin-mock-data';`
-- Line 25: `// Utility to access all mock data in one place`
-- Line 26: `export const getAllMockData = () => ({`
+- Line 6: `isLocalDev: process.env.NODE_ENV === 'development',`
+- Line 6: `isLocalDev: process.env.NODE_ENV === 'development',`
 
 ### src/lib/env-config.ts
 
@@ -1769,229 +1528,6 @@ Test email addresses and sample data
 
 - Line 61: `return { field: fieldName, message: 'Please enter a valid URL (e.g., example.com, www.example.com, or https://example.com)' }`
 
-### src/lib/mock-business-store.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 1: `// Mock data store for businesses and ad accounts`
-- Line 59: `// Initial mock data`
-- Line 60: `let mockBusinesses: AppBusiness[] = [`
-- Line 361: `return [...mockBusinesses]`
-- Line 366: `return mockBusinesses.find(b => b.id === id)`
-- Line 398: `mockBusinesses.push(newBusiness)`
-- Line 402: `const business = mockBusinesses.find(b => b.id === newBusiness.id)`
-- Line 424: `const business = mockBusinesses.find(b => b.id === data.businessId)`
-- Line 470: `return mockBusinesses.filter(b => b.status === "active" && b.verification === "verified")`
-- Line 475: `const business = mockBusinesses.find(b => b.id === businessId)`
-- Line 481: `const business = mockBusinesses.find(b => b.id === businessId)`
-- Line 492: `for (const business of mockBusinesses) {`
-- Line 504: `for (const business of mockBusinesses) {`
-- Line 516: `mockBusinesses = [`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 173: `// Additional pending applications for admin review demo`
-- Line 400: `// Simulate admin review process - auto-approve after 3 seconds for demo`
-- Line 450: `// Simulate approval process - auto-approve after 2 seconds for demo`
-- Line 268: `description: "Cloud infrastructure and DevOps automation solutions",`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 406: `console.log(`Business "${business.name}" has been approved!`)`
-- Line 456: `console.log(`Ad Account "${account.name}" has been activated!`)`
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 66: `landingPage: "https://store.example.com",`
-- Line 67: `website: "https://store.example.com",`
-- Line 121: `landingPage: "https://blog.example.com",`
-- Line 122: `website: "https://blog.example.com",`
-- Line 136: `landingPage: "https://affiliate.example.com",`
-- Line 137: `website: "https://affiliate.example.com",`
-- Line 522: `landingPage: "https://store.example.com",`
-- Line 523: `website: "https://store.example.com",`
-
-### src/lib/mock-data/admin-mock-data.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 1: `// Centralized mock data for admin panel - consistent across all pages`
-- Line 123: `// Generate consistent mock data`
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 170: `email: `client${clientLetter.toLowerCase()}${clientNumber}@example.com`,`
-
-### src/lib/mock-data.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 419: `// Mock pricing plans data`
-- Line 520: `// Mock news data`
-- Line 557: `// Mock transactions data`
-- Line 677: `// Mock accounts data`
-- Line 870: `// Business type and mock businesses`
-- Line 885: `// Centralized mock data for consistent values across the application`
-- Line 1061: `// Mock businesses data - organized by organization`
-- Line 1062: `// ✅ PRODUCTION GUARD: Prevent mock data in production`
-- Line 1064: `throw new Error('🚨 CRITICAL: Mock data cannot be imported in production!')`
-- Line 1164: `// ✅ PRODUCTION GUARD: Prevent mock data in production`
-- Line 1166: `throw new Error('🚨 CRITICAL: Mock data cannot be imported in production!')`
-- Line 1251: `// Mock accounts data - updated to match businesses`
-- Line 1418: `// Mock transactions data (most recent first)`
-- Line 1602: `// Mock chart data for balance over time`
-- Line 1612: `// Mock chart data for spending over time`
-- Line 1717: `console.warn('Mock data validation errors:', validation.errors)`
-- Line 1719: `console.log('✅ Mock data validation passed')`
-- Line 1727: `export const MOCK_TEAM_MEMBERS_BY_ORG: Record<string, any[]> = {`
-- Line 1942: `// Generate mock profile teams`
-- Line 2008: `// Generate mock business managers with team assignments`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 102: `// Centralized organization data - multiple organizations for demo`
-- Line 1081: `description: "Leading software development and consulting company",`
-- Line 1713: `// Run validation in development`
-- Line 1714: `if (process.env.NODE_ENV === 'development') {`
-- Line 1081: `description: "Leading software development and consulting company",`
-- Line 1713: `// Run validation in development`
-- Line 1714: `if (process.env.NODE_ENV === 'development') {`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 1719: `console.log('✅ Mock data validation passed')`
-- Line 1717: `console.warn('Mock data validation errors:', validation.errors)`
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 245: `email: "personal@example.com",`
-- Line 290: `email: "personal@example.com",`
-- Line 1183: `website: "https://personal.example.com",`
-- Line 1187: `domains: [{ domain: "personal.example.com", verified: true }],`
-- Line 1808: `email: "personal@example.com",`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 1714: `if (process.env.NODE_ENV === 'development') {`
-- Line 1714: `if (process.env.NODE_ENV === 'development') {`
-
-### src/lib/production-guard.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 10: `'NEXT_PUBLIC_USE_MOCK_DATA',`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 3: `* CRITICAL: Prevents demo data and development code from running in production`
-- Line 11: `'NEXT_PUBLIC_DEMO_MODE',`
-- Line 12: `'NEXT_PUBLIC_USE_DEMO_DATA'`
-- Line 43: `// ✅ SECURE: Demo data prevention`
-- Line 44: `export function preventDemoDataInProduction(): void {`
-- Line 45: `if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
-- Line 46: `const error = '🚨 CRITICAL: Demo data cannot be used in production!'`
-- Line 69: `export function getValidatedDataSource(): 'demo' | 'supabase' {`
-- Line 72: `preventDemoDataInProduction()`
-- Line 78: `if (process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
-- Line 79: `console.log('🔧 Development: Using demo data')`
-- Line 80: `return 'demo'`
-- Line 90: `// Fallback to demo data in development`
-- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
-- Line 92: `return 'demo'`
-- Line 107: `// In production, crash the app rather than show demo data`
-- Line 121: `// Prevent demo data leaks`
-- Line 122: `assertNotDemo(): void {`
-- Line 123: `if (this.dataSource === 'demo' && this.isProduction) {`
-- Line 124: `throw new Error('🚨 CRITICAL: Demo data detected in production!')`
-- Line 3: `* CRITICAL: Prevents demo data and development code from running in production`
-- Line 77: `// In development, check the flag`
-- Line 79: `console.log('🔧 Development: Using demo data')`
-- Line 86: `console.log('🔧 Development: Using Supabase data')`
-- Line 90: `// Fallback to demo data in development`
-- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
-- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 3: `* CRITICAL: Prevents demo data and development code from running in production`
-- Line 77: `// In development, check the flag`
-- Line 79: `console.log('🔧 Development: Using demo data')`
-- Line 86: `console.log('🔧 Development: Using Supabase data')`
-- Line 90: `// Fallback to demo data in development`
-- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
-- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 12: `'NEXT_PUBLIC_USE_DEMO_DATA'`
-- Line 45: `if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
-- Line 78: `if (process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true') {`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 39: `console.log('✅ Production environment validation passed')`
-- Line 79: `console.log('🔧 Development: Using demo data')`
-- Line 86: `console.log('🔧 Development: Using Supabase data')`
-- Line 91: `console.log('🔧 Development: Falling back to demo data (Supabase not configured)')`
-- Line 102: `console.log(`🔒 Production Guard: Environment=${process.env.NODE_ENV}, DataSource=${dataSource}`)`
-- Line 18: `console.error(error)`
-- Line 34: `console.error(error)`
-- Line 47: `console.error(error)`
-- Line 60: `console.error(error)`
-- Line 105: `console.error('🚨 Production Guard failed:', error)`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
-- Line 117: `isDevelopment: process.env.NODE_ENV === 'development',`
-
-### src/lib/secure-env.ts
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 34: `USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,`
-- Line 90: `useDemoData: SECURE_CONFIG.USE_DEMO_DATA,`
-- Line 14: `IS_DEVELOPMENT: ENV_CONFIG.IS_DEVELOPMENT,`
-- Line 15: `NODE_ENV: process.env.NODE_ENV || 'development',`
-- Line 84: `isDevelopment: RUNTIME_ENV.IS_DEVELOPMENT,`
-- Line 95: `// 🎯 Development logging`
-- Line 96: `if (RUNTIME_ENV.IS_DEVELOPMENT) {`
-- Line 14: `IS_DEVELOPMENT: ENV_CONFIG.IS_DEVELOPMENT,`
-- Line 15: `NODE_ENV: process.env.NODE_ENV || 'development',`
-- Line 84: `isDevelopment: RUNTIME_ENV.IS_DEVELOPMENT,`
-- Line 95: `// 🎯 Development logging`
-- Line 96: `if (RUNTIME_ENV.IS_DEVELOPMENT) {`
-- Line 34: `USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,`
-- Line 90: `useDemoData: SECURE_CONFIG.USE_DEMO_DATA,`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 99: `console.log('🔒 Secure Environment Configuration:', getClientSafeEnvInfo())`
-- Line 102: `console.warn('⚠️ Environment validation warnings:', validation.errors)`
-- Line 35: `ENABLE_DEBUG: ENV_CONFIG.ENABLE_DEBUG,`
-- Line 91: `enableDebug: SECURE_CONFIG.ENABLE_DEBUG,`
-
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
-
-- Line 23: `// URLs (no hardcoded localhost)`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 15: `NODE_ENV: process.env.NODE_ENV || 'development',`
-
 ### src/lib/security/csp.ts
 
 #### DEMO_MODE (HIGH)
@@ -2003,7 +1539,7 @@ Demo mode code that should not run in production
 - Line 76: `* Development CSP Configuration - More permissive for development`
 - Line 78: `export const DEVELOPMENT_CSP: CSPConfig = {`
 - Line 83: `"'unsafe-eval'", // Required for development`
-- Line 129: `return "production" === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
+- Line 129: `return process.env.NODE_ENV === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
 - Line 195: `// Prevent search engines from indexing in development`
 - Line 196: `...((process.env.NODE_ENV === "development") && {`
 - Line 28: `"'unsafe-inline'", // Required for Next.js development - remove in production with nonces`
@@ -2012,7 +1548,7 @@ Demo mode code that should not run in production
 - Line 76: `* Development CSP Configuration - More permissive for development`
 - Line 78: `export const DEVELOPMENT_CSP: CSPConfig = {`
 - Line 83: `"'unsafe-eval'", // Required for development`
-- Line 129: `return "production" === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
+- Line 129: `return process.env.NODE_ENV === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
 - Line 195: `// Prevent search engines from indexing in development`
 - Line 196: `...((process.env.NODE_ENV === "development") && {`
 
@@ -2031,9 +1567,11 @@ Environment variables that force development behavior
 
 - Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
 - Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 129: `return process.env.NODE_ENV === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
 - Line 196: `...((process.env.NODE_ENV === "development") && {`
 - Line 59: `process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",`
 - Line 60: `process.env.NODE_ENV === "development" ? "http://localhost:*" : "",`
+- Line 129: `return process.env.NODE_ENV === 'production' ? PRODUCTION_CSP : DEVELOPMENT_CSP`
 - Line 196: `...((process.env.NODE_ENV === "development") && {`
 
 ### src/lib/security/rate-limiter.ts
@@ -2047,57 +1585,6 @@ Debug code that should be removed for production
 Development comments that need attention
 
 - Line 88: `maxRequests: 5,            // 5 attempts per 15 minutes`
-
-### src/lib/server-auth.ts
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 199: `if (process.env.NODE_ENV === 'development') {`
-- Line 199: `if (process.env.NODE_ENV === 'development') {`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 200: `console.log('🔒 JWT Authentication System loaded - PRODUCTION READY');`
-- Line 70: `console.error('JWT verification failed:', error)`
-- Line 87: `console.error('Failed to get user from request:', error)`
-- Line 103: `console.error('Admin role verification failed:', error)`
-- Line 125: `console.error('Failed to get user role:', error)`
-- Line 141: `console.error('Permission verification failed:', error)`
-
-#### ENV_LEAKS (HIGH)
-Environment variables that force development behavior
-
-- Line 199: `if (process.env.NODE_ENV === 'development') {`
-- Line 199: `if (process.env.NODE_ENV === 'development') {`
-
-### src/lib/stores/supabase-client.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 15: `// Create a mock client for development when env vars are not set`
-- Line 17: `console.warn('🚨 Using Supabase MOCK client - authentication will not work!')`
-
-#### DEMO_MODE (HIGH)
-Demo mode code that should not run in production
-
-- Line 23: `error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }`
-- Line 27: `error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }`
-- Line 32: `error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }`
-- Line 36: `error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }`
-- Line 39: `error: { message: 'Supabase not configured - using demo mode', name: 'AuthError', status: 400 }`
-- Line 15: `// Create a mock client for development when env vars are not set`
-- Line 15: `// Create a mock client for development when env vars are not set`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 8: `console.log('Supabase Environment Check:', {`
-- Line 59: `console.log('Supabase client created:', supabase ? 'Success' : 'Failed')`
-- Line 17: `console.warn('🚨 Using Supabase MOCK client - authentication will not work!')`
-- Line 7: `// Debug logging for production`
 
 ### src/lib/toast-messages.ts
 
@@ -2118,20 +1605,8 @@ Development comments that need attention
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 43: `console.log(`🔒 Security middleware: ${request.method} ${pathname}`)`
-- Line 82: `console.error('JWT verification failed:', error)`
-
-### src/pages/api/proxy/[...path].ts
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 33: `console.error('[PROXY ERROR] Proxying error:', err);`
-
-#### TODO_FIXME (LOW)
-Development comments that need attention
-
-- Line 47: `// http-proxy might have already handled or attempted to handle it.`
+- Line 18: `console.warn('Supabase environment variables not available in middleware, skipping auth check')`
+- Line 75: `console.warn('Error getting session in middleware:', error)`
 
 ### src/scripts/audit-ui-states.ts
 
@@ -2181,50 +1656,74 @@ Debug code that should be removed for production
 
 ### src/services/supabase-service.ts
 
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 14: `// In development, use localhost`
+- Line 14: `// In development, use localhost`
+
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 18: `console.error('Error fetching businesses:', error)`
-- Line 36: `console.error('Error fetching all businesses:', error)`
-- Line 59: `console.error('Error creating business:', error)`
-- Line 82: `console.error('Error updating business:', error)`
-- Line 97: `console.error('Error deleting business:', error)`
-- Line 117: `console.error('Error fetching accounts:', error)`
-- Line 136: `console.error('Error fetching organization accounts:', error)`
-- Line 155: `console.error('Error fetching all accounts:', error)`
-- Line 182: `console.error('Error creating account:', error)`
-- Line 205: `console.error('Error updating account:', error)`
-- Line 220: `console.error('Error deleting account:', error)`
-- Line 241: `console.error('Error fetching transactions:', error)`
-- Line 260: `console.error('Error fetching all transactions:', error)`
-- Line 284: `console.error('Error creating transaction:', error)`
-- Line 309: `console.error('Error fetching organizations:', error)`
-- Line 328: `console.error('Error fetching all organizations:', error)`
-- Line 348: `console.error('Error creating organization:', error)`
-- Line 381: `console.error('Error fetching team members:', error)`
-- Line 407: `console.error('Error fetching user profile:', error)`
-- Line 428: `console.error('Error updating user profile:', error)`
-- Line 448: `console.error('Error fetching onboarding progress:', error)`
-- Line 464: `console.error('Error updating onboarding step:', error)`
-- Line 476: `console.error('Error dismissing onboarding:', error)`
-- Line 488: `console.error('Error resetting onboarding:', error)`
-- Line 500: `console.error('Error checking onboarding completion:', error)`
+- Line 48: `console.error('Error fetching businesses:', error)`
+- Line 66: `console.error('Error fetching all businesses:', error)`
+- Line 88: `console.error('Error creating business:', error)`
+- Line 109: `console.error('Error updating business:', error)`
+- Line 124: `console.error('Error deleting business:', error)`
+- Line 144: `console.error('Error fetching accounts:', error)`
+- Line 163: `console.error('Error fetching organization accounts:', error)`
+- Line 182: `console.error('Error fetching all accounts:', error)`
+- Line 209: `console.error('Error creating account:', error)`
+- Line 232: `console.error('Error updating account:', error)`
+- Line 247: `console.error('Error deleting account:', error)`
+- Line 268: `console.error('Error fetching transactions:', error)`
+- Line 287: `console.error('Error fetching all transactions:', error)`
+- Line 311: `console.error('Error creating transaction:', error)`
+- Line 337: `console.error('Error fetching organizations:', error)`
+- Line 357: `console.error('Error fetching all organizations:', error)`
+- Line 377: `console.error('Error creating organization:', error)`
+- Line 408: `console.error('Error fetching organization members:', membersError)`
+- Line 424: `console.error('Error fetching profiles:', profilesError)`
+- Line 459: `console.error('Error fetching user profile:', error)`
+- Line 480: `console.error('Error updating user profile:', error)`
+- Line 500: `console.error('Error fetching onboarding progress:', error)`
+- Line 516: `console.error('Error updating onboarding step:', error)`
+- Line 528: `console.error('Error dismissing onboarding:', error)`
+- Line 540: `console.error('Error resetting onboarding:', error)`
+- Line 552: `console.error('Error checking onboarding completion:', error)`
+- Line 625: `console.error('Error fetching dolphin assets:', error)`
+- Line 661: `console.error('Error syncing dolphin assets:', error)`
+- Line 686: `console.error('Error fetching client assets:', error)`
+
+#### HARDCODED_VALUES (HIGH)
+Hardcoded localhost/development URLs
+
+- Line 11: `if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {`
+- Line 14: `// In development, use localhost`
+- Line 15: `return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'`
+- Line 15: `return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'`
 
 ### src/types/supabase.ts
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 1103: `add_user_to_demo_org: {`
-- Line 1122: `seed_demo_data_for_current_user: {`
-- Line 1126: `setup_demo_for_user: {`
+- Line 1085: `add_user_to_demo_org: {`
+- Line 1104: `seed_demo_data_for_current_user: {`
+- Line 1108: `setup_demo_for_user: {`
 
 ### src/utils/format.ts
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 1: `import { APP_ACCOUNTS } from "../lib/mock-data"`
+- Line 67: `// This function should now get data from the app context instead of mock data`
+- Line 69: `// TODO: Get accounts from useAppData context instead of mock data`
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 69: `// TODO: Get accounts from useAppData context instead of mock data`
 
 ## Recommendations
 
