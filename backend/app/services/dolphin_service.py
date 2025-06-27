@@ -37,20 +37,21 @@ def format_currency(amount: float) -> str:
     """Format currency amount"""
     return f"${amount:.2f}"
 
-def calculate_remaining_budget(total_topped_up: float, amount_spent: float, fee_percentage: float = 0.0) -> float:
+def calculate_remaining_budget(total_topped_up: float, amount_spent: float) -> float:
     """
-    Calculate remaining budget based on client top-ups and spending
+    Calculates the remaining ad spend budget.
     
     Args:
-        total_topped_up: Total amount client has topped up with payment provider
-        amount_spent: Amount spent by client (from Dolphin Cloud)
-        fee_percentage: Your fee percentage (e.g., 0.05 for 5%)
-    
+        total_topped_up: The total amount paid by the client.
+        amount_spent: The amount spent on ads so far.
+        
     Returns:
-        Remaining budget available for spending
+        The remaining budget in the same currency unit.
     """
-    spend_limit = total_topped_up * (1 - fee_percentage)
-    return max(0, spend_limit - amount_spent)
+    # Simplified calculation
+    spend_limit = total_topped_up
+    remaining_budget = spend_limit - amount_spent
+    return remaining_budget if remaining_budget > 0 else 0
 
 def calculate_days_remaining(remaining_budget: float, daily_spend: float) -> float:
     """Calculate days remaining based on remaining budget and daily spend"""
@@ -339,8 +340,7 @@ class DolphinCloudAPI:
             # Calculate remaining budget based on client top-ups and spending
             remaining_budget = calculate_remaining_budget(
                 client_topped_up, 
-                spend_data["amount_spent"], 
-                fee_percentage
+                spend_data["amount_spent"]
             )
             
             days_remaining = calculate_days_remaining(

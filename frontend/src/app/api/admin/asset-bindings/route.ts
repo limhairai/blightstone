@@ -49,20 +49,20 @@ export async function POST(request: NextRequest) {
             const bindingsToCreate = (ad_account_ids || []).map(ad_acc_id => ({
                 asset_id: ad_acc_id,
                 business_id: business_id,
-                linked_at: new Date().toISOString(),
+                bound_at: new Date().toISOString(),
             }));
 
             if (business_manager_id) {
                 bindingsToCreate.push({
                     asset_id: business_manager_id,
                     business_id: business_id,
-                    linked_at: new Date().toISOString(),
+                    bound_at: new Date().toISOString(),
                 });
             }
 
             if (bindingsToCreate.length > 0) {
                 const { data: bindingData, error: bindingError } = await supabase
-                    .from('asset_bindings')
+                    .from('client_asset_bindings')
                     .insert(bindingsToCreate)
                     .select();
 
@@ -111,7 +111,7 @@ export async function DELETE(request: NextRequest) {
 
     try {
         const { error } = await supabase
-            .from('asset_bindings')
+            .from('client_asset_bindings')
             .delete()
             .match({ asset_id: asset_id, business_id: business_id });
 

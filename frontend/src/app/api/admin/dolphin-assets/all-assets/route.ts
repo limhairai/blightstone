@@ -29,10 +29,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const assetType = searchParams.get('asset_type')
+    const unboundOnly = searchParams.get('unbound_only')
     
     const backendUrl = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/all-assets`)
     if (assetType) {
       backendUrl.searchParams.set('asset_type', assetType)
+    }
+    if (unboundOnly) {
+      backendUrl.searchParams.set('unbound_only', unboundOnly)
     }
 
     const response = await fetch(backendUrl.toString(), {

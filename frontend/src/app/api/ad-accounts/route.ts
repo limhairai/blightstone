@@ -75,35 +75,19 @@ export async function GET(request: NextRequest) {
     
     // Transform the data to match the expected format
     const accounts = data?.map(asset => {
-      const binding = asset.client_asset_bindings[0]; // Should only be one active binding
+      const binding = asset.client_asset_bindings[0];
       const metadata = asset.asset_metadata || {};
-      
+
       return {
         id: asset.id,
         name: asset.name,
-        ad_account_id: metadata.ad_account_id || asset.asset_id,
         status: asset.status,
-        health_status: asset.health_status,
-        // Use Dolphin data directly
-        balance_cents: Math.round((metadata.balance || 0) * 100), // Convert to cents
-        spend_cents: Math.round((metadata.amount_spent || 0) * 100), // Convert to cents
+        facebook_id: asset.asset_id,
+        parent_business_manager_id: asset.parent_business_manager_id,
+        balance: metadata.balance || 0,
         currency: metadata.currency || 'USD',
-        // Binding info
-        organization_id: binding.organization_id,
-        business_id: binding.business_id,
-        spend_limit_cents: binding.spend_limit_cents,
-        fee_percentage: binding.fee_percentage,
         bound_at: binding.bound_at,
-        businesses: binding.businesses,
-        // Dolphin metadata
-        managing_profile: metadata.managing_profile,
-        business_manager: metadata.business_manager,
-        pixel_id: metadata.pixel_id,
-        ads_count: metadata.ads_count || 0,
-        last_sync_at: asset.last_sync_at,
-        // Raw Dolphin data for debugging
-        dolphin_status: metadata.status,
-        full_dolphin_data: metadata.full_cab_data
+        is_business_manager: false
       };
     }) || [];
     

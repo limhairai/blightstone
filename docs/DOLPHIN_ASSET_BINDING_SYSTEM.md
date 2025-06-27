@@ -535,3 +535,30 @@ This corrected system reflects the reality that everything happens indirectly th
 4. **Client support** - Quick response to binding issues
 
 This system gives you complete control over your Facebook assets while providing seamless, isolated experiences for each of your clients. 
+
+## API Endpoints
+
+### `POST /api/admin/bind-asset`
+
+Binds a `DolphinAsset` to a `Business`. This is the core action for provisioning an account.
+
+**Request Body:**
+- `asset_id`
+- `business_id`
+
+**Response:**
+```json
+{
+  "id": "bind_...",
+  "asset_id": "asset_...",
+  "business_id": "biz_...",
+  "status": "active",
+  "bound_at": "..."
+}
+```
+
+## Unbinding
+
+To unbind, a `DELETE` request is sent to `/api/admin/asset-bindings` with the `asset_id` and `business_id`.
+This changes the status of the binding to `inactive`, making the asset available again.
+It does not delete the binding record, preserving historical data. 

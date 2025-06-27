@@ -667,7 +667,6 @@ export type Database = {
       plans: {
         Row: {
           ad_account_pool_limit: number
-          ad_spend_fee_percentage: number
           created_at: string
           features: Json
           id: string
@@ -685,7 +684,6 @@ export type Database = {
         }
         Insert: {
           ad_account_pool_limit?: number
-          ad_spend_fee_percentage?: number
           created_at?: string
           features?: Json
           id: string
@@ -703,7 +701,6 @@ export type Database = {
         }
         Update: {
           ad_account_pool_limit?: number
-          ad_spend_fee_percentage?: number
           created_at?: string
           features?: Json
           id?: string
@@ -719,7 +716,15 @@ export type Database = {
           unlimited_replacements?: boolean
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "plans_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -746,14 +751,11 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          created_at?: string
-          email?: string | null
+          full_name?: string | null
           id?: string
-          is_superuser?: boolean
-          name?: string | null
-          role?: string
-          telegram_id?: number | null
-          updated_at?: string
+          team_id?: string | null
+          updated_at?: string | null
+          website?: string | null
         }
         Relationships: []
       }

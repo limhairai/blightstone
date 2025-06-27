@@ -12,6 +12,8 @@ import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { AdAccount } from "@/types/ad-account"
 import useSWR from 'swr'
 import { useSWRConfig } from "swr"
+import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "sonner"
 
 interface TopUpDialogProps {
   open: boolean
@@ -24,6 +26,11 @@ const fetcher = (url: string) => fetch(url).then(res => res.json());
 export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
   const { currentOrganizationId } = useOrganizationStore();
   const { mutate } = useSWRConfig()
+  const { user, session } = useAuth()
+  const { organization, adAccounts } = useOrganizationStore()
+  const [selectedAccount, setSelectedAccount] = useState("")
+  const [amount, setAmount] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   const { data: orgData, error: orgError, isLoading: isOrgLoading } = useSWR(
     currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
@@ -32,47 +39,23 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
 
   const organization = orgData?.organizations?.[0];
   const walletBalance = organization?.wallets?.[0]?.balance_cents / 100 ?? 0;
-  const commissionRate = organization?.plans?.ad_spend_fee_percentage ?? 0.05;
-  const planName = organization?.plans?.name ?? 'Default Plan';
 
-  const [amount, setAmount] = useState<number>(100)
-  const [error, setError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (open) {
-      setAmount(100)
-      setError(null)
-      setIsSubmitting(false)
+  const handleTopUp = async () => {
+    if (!selectedAccount || !amount) {
+      toast.error("Please select an account and enter an amount.")
+      return;
     }
-  }, [open])
-
-  const handleAmountChange = (value: number) => {
-    setAmount(value)
-    if (value * 100 > walletBalance * 100) {
-      setError("Amount exceeds available wallet balance")
-    } else {
-      setError(null)
-    }
-  }
-
-  const commissionAmount = amount * commissionRate
-  const finalAmount = amount - commissionAmount
-
-  const handleSubmit = async () => {
-    if (!account || !currentOrganizationId) return;
 
     if (amount * 100 > walletBalance * 100) {
-      setError("Amount exceeds available wallet balance");
+      toast.error("Amount exceeds available wallet balance");
       return;
     }
     if (amount <= 0) {
-      setError("Please enter a valid positive amount");
+      toast.error("Please enter a valid positive amount");
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
+    setIsLoading(true);
 
     try {
       const response = await fetch('/api/ad-accounts/top-up', {
@@ -80,7 +63,7 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           organizationId: currentOrganizationId,
-          accountId: account.id,
+          accountId: selectedAccount,
           amount: amount,
         }),
       });
@@ -97,10 +80,15 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
 
       onOpenChange(false);
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'An unknown error occurred.');
+      toast.error(error instanceof Error ? error.message : 'An unknown error occurred.');
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
+  }
+
+  const getAccountBalance = (accountId: string) => {
+    const account = adAccounts.find(acc => acc.id === accountId);
+    return account ? `$${(account.balance_cents / 100).toFixed(2)}` : '$0.00';
   }
 
   const quickAmounts = [100, 500, 1000, 5000]
@@ -142,9 +130,9 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => handleAmountChange(quickAmount)}
+                        onClick={() => setAmount(quickAmount.toString())}
                         className="border-border text-foreground hover:bg-accent"
-                        disabled={isSubmitting}
+                        disabled={isLoading}
                     >
                         ${quickAmount}
                     </Button>
@@ -160,10 +148,10 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
                     id="amount"
                     type="number"
                     value={amount}
-                    onChange={(e) => handleAmountChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setAmount(e.target.value)}
                     placeholder="0.00"
                     className="bg-background border-border text-foreground mt-2"
-                    disabled={isSubmitting}
+                    disabled={isLoading}
                   />
               </div>
 
@@ -177,20 +165,9 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
               <div className="space-y-3 rounded-md bg-[#0a0812] p-3 border border-[#2C2C2E]">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center text-[#888888]">
-                    <span>Commission ({(commissionRate * 100).toFixed(1)}%)</span>
-                    <InfoIcon className="h-3.5 w-3.5 ml-1" />
+                    <span>Final Amount</span>
                   </div>
-                  <span className="text-[#888888]">-{formatCurrency(commissionAmount)}</span>
-                </div>
-
-                <div className="flex justify-between items-center pt-2 border-t border-[#2C2C2E]">
-                  <span className="font-medium">Final Amount</span>
-                  <span className="text-lg font-semibold">{formatCurrency(finalAmount)}</span>
-                </div>
-
-                <div className="text-xs flex items-center text-[#888888]">
-                  <InfoIcon className="h-3 w-3 mr-1" />
-                  <span>Commission based on your {planName}</span>
+                  <span className="text-lg font-semibold">{formatCurrency(amount * 100)}</span>
                 </div>
               </div>
             </div>
@@ -200,17 +177,17 @@ export function TopUpDialog({ open, onOpenChange, account }: TopUpDialogProps) {
                 variant="outline" 
                 onClick={() => onOpenChange(false)} 
                 className="border-[#2C2C2E]"
-                disabled={isSubmitting}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                disabled={!amount || isSubmitting || amount > walletBalance || isOrgLoading}
-                onClick={handleSubmit}
+                disabled={!amount || isLoading || amount > walletBalance || isOrgLoading}
+                onClick={handleTopUp}
                 className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
               >
-                {isSubmitting ? (
+                {isLoading ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Processing...

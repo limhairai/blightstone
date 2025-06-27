@@ -591,9 +591,7 @@ export interface DolphinAsset {
   binding_info?: {
     organization_name: string
     business_name?: string
-    spend_limit_cents: number
-    fee_percentage: number
-    bound_at: string
+    business_id?: string
   }
 }
 
@@ -693,9 +691,7 @@ export const DolphinAssetsService = {
       binding_info: {
         organization_name: binding.organizations.name,
         business_name: binding.businesses?.name,
-        spend_limit_cents: binding.spend_limit_cents,
-        fee_percentage: binding.fee_percentage,
-        bound_at: binding.bound_at
+        business_id: binding.businesses?.id,
       }
     }))
   }
@@ -815,9 +811,7 @@ function convertSupabaseDolphinAsset(supabaseAsset: any): DolphinAsset {
     binding_info: activeBinding ? {
       organization_name: activeBinding.organizations?.name,
       business_name: activeBinding.businesses?.name,
-      spend_limit_cents: activeBinding.spend_limit_cents,
-      fee_percentage: activeBinding.fee_percentage,
-      bound_at: activeBinding.bound_at
+      business_id: activeBinding.businesses?.id,
     } : undefined
   }
 } 

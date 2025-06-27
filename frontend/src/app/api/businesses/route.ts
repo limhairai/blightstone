@@ -64,22 +64,16 @@ export async function GET(request: NextRequest) {
                 id: asset.id,
                 name: asset.name,
                 status: asset.status,
-                // Map Dolphin BM data to business fields
                 website_url: metadata.website_url || null,
                 landing_page: metadata.landing_page || null,
                 organization_id: binding.organization_id,
                 created_at: asset.discovered_at,
-                // Business Manager specific data
                 facebook_id: asset.asset_id,
                 ad_accounts_count: metadata.cabs_count || 0,
                 monthly_spend: metadata.monthly_spend || 0,
                 balance: metadata.balance || 0,
                 currency: metadata.currency || 'USD',
-                // Binding info
-                spend_limit_cents: binding.spend_limit_cents,
-                fee_percentage: binding.fee_percentage,
                 bound_at: binding.bound_at,
-                // Indicate this is a Business Manager
                 is_business_manager: true
             };
         });
@@ -99,10 +93,7 @@ export async function GET(request: NextRequest) {
             monthly_spend: 0,
             balance: 0,
             currency: 'USD',
-            spend_limit_cents: null,
-            fee_percentage: null,
             bound_at: null,
-            // Indicate this is a business application
             is_business_manager: false
         }));
 

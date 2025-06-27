@@ -10,6 +10,7 @@ import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
 import { LinkIcon, Users, Shield, CheckCircle, Building2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext"
 
 interface Organization {
   id: string;
@@ -33,6 +34,8 @@ interface AssetBindingDialogProps {
   name: string;
   id: string;
 }
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function AssetBindingDialog({
   open,
