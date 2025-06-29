@@ -19,7 +19,7 @@ import { formatCurrency } from "../../utils/format"
 import { Search, MoreHorizontal, Eye, Edit, Trash2, Pause, Play, CreditCard, Plus } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
-import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
+import { TopUpDialog } from "./top-up-dialog"
 
 interface BusinessAccountsTableProps {
   businessName: string
@@ -298,12 +298,18 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
 
       {/* Top Up Dialog */}
       {selectedAccountForTopUp && (
-        <AccountTopUpDialog
-          isOpen={isTopUpDialogOpen}
-          onClose={closeTopUpDialog}
-          accountId={selectedAccountForTopUp.accountId}
-          accountName={selectedAccountForTopUp.name}
-          currentBalance={`$${formatCurrency(selectedAccountForTopUp.balance)}`}
+        <TopUpDialog
+          open={isTopUpDialogOpen}
+          onOpenChange={setIsTopUpDialogOpen}
+          trigger={<></>}
+          account={{
+            id: selectedAccountForTopUp.id,
+            name: selectedAccountForTopUp.name,
+            adAccount: selectedAccountForTopUp.accountId,
+            balance: selectedAccountForTopUp.balance,
+            currency: 'USD'
+          }}
+          onSuccess={closeTopUpDialog}
         />
       )}
     </div>

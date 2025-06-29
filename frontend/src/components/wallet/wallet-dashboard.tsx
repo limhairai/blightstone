@@ -10,7 +10,7 @@ import { Download, Plus } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog"
-import { TopUpWallet } from "./top-up-wallet"
+
 import { WithdrawFunds } from "./withdraw-funds"
 import { SimpleStripeDialog } from "./simple-stripe-dialog"
 import { useSWRConfig } from 'swr'

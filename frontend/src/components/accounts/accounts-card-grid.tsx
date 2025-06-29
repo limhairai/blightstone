@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { MoreHorizontal, ChevronRight, BarChart3, Edit, Trash2, Wallet } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
-import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
+import { TopUpDialog } from "./top-up-dialog"
 import { cn } from "../../lib/utils"
 
 interface Account {
@@ -130,12 +130,18 @@ export function AccountsCardGrid({ accounts, onViewAccount }: AccountsCardGridPr
         ))}
       </div>
       {selectedAccountForTopUp && (
-        <AccountTopUpDialog
-          isOpen={isTopUpDialogOpen}
-          onClose={closeTopUpDialog}
-          accountId={selectedAccountForTopUp.id}
-          accountName={selectedAccountForTopUp.name}
-          currentBalance={selectedAccountForTopUp.balance}
+        <TopUpDialog
+          open={isTopUpDialogOpen}
+          onOpenChange={setIsTopUpDialogOpen}
+          trigger={<></>}
+          account={{
+            id: selectedAccountForTopUp.id,
+            name: selectedAccountForTopUp.name,
+            adAccount: selectedAccountForTopUp.id,
+            balance: parseFloat(selectedAccountForTopUp.balance.replace('$', '').replace(',', '')),
+            currency: 'USD'
+          }}
+          onSuccess={closeTopUpDialog}
         />
       )}
     </>

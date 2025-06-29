@@ -15,7 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from "../ui/badge"
 import { BulkFundOperations } from "../wallet/bulk-fund-operations"
 import { CreateAdAccountDialog } from "./create-ad-account-dialog"
-import { AccountTopUpDialog } from "../wallet/account-top-up-dialog"
+import { TopUpDialog } from "./top-up-dialog"
 import { AccountsTable } from "./accounts-table"
 import { AccountsCardGrid } from "./accounts-card-grid"
 import { formatCurrency } from "../../utils/format"
@@ -464,12 +464,18 @@ export function AccountsManagement() {
       </Tabs>
 
       {selectedAccount && (
-        <AccountTopUpDialog
-          isOpen={isTopUpDialogOpen}
-          onClose={() => setIsTopUpDialogOpen(false)}
-          accountName={selectedAccount.name}
-          accountId={selectedAccount.accountId || selectedAccount.id.toString()}
-          currentBalance={selectedAccount.balance}
+        <TopUpDialog
+          open={isTopUpDialogOpen}
+          onOpenChange={setIsTopUpDialogOpen}
+          trigger={<></>}
+          account={{
+            id: selectedAccount.id,
+            name: selectedAccount.name,
+            adAccount: selectedAccount.accountId || selectedAccount.id,
+            balance: parseFloat(selectedAccount.balance.replace('$', '').replace(',', '')),
+            currency: 'USD'
+          }}
+          onSuccess={() => setIsTopUpDialogOpen(false)}
         />
       )}
     </div>
