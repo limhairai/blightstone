@@ -19,6 +19,8 @@ interface FundWalletDialogProps {
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
+const MINIMUM_WALLET_TOP_UP_AMOUNT = 500;
+
 export function FundWalletDialog({ open, onOpenChange }: FundWalletDialogProps) {
   const [amount, setAmount] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("card")
@@ -39,6 +41,11 @@ export function FundWalletDialog({ open, onOpenChange }: FundWalletDialogProps) 
     const numAmount = Number.parseFloat(amount);
     if (!amount || numAmount <= 0) {
       toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (numAmount < MINIMUM_WALLET_TOP_UP_AMOUNT) {
+      toast.error(`Minimum wallet top-up amount is $${MINIMUM_WALLET_TOP_UP_AMOUNT}`);
       return;
     }
 
@@ -128,9 +135,9 @@ export function FundWalletDialog({ open, onOpenChange }: FundWalletDialogProps) 
               </div>
 
               <div className="grid grid-cols-4 gap-2">
-                {[100, 500, 1000, 5000].map((value) => (
+                {[500, 1000, 5000, 10000].map((value) => (
                   <Button key={value} variant="outline" onClick={() => setAmount(value.toString())} disabled={isProcessing}>
-                    ${value}
+                    ${value >= 1000 ? `${value / 1000}k` : value}
                   </Button>
                 ))}
               </div>

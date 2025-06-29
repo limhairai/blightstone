@@ -19,6 +19,8 @@ import { validateForm, validators, showValidationErrors, showSuccessToast } from
 import { StripeFundWalletDialog } from "./stripe-fund-wallet-dialog"
 import { SimpleStripeDialog } from "./simple-stripe-dialog"
 
+const MINIMUM_WALLET_TOP_UP_AMOUNT = 500;
+
 interface TopUpWalletProps {
   onTopUp: (amount: number, paymentMethod?: string, orgId?: string) => void
   orgId?: string
@@ -54,7 +56,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
       () => validators.required(amount, 'Amount'),
       () => isNaN(numAmount) || numAmount <= 0 ? { field: 'amount', message: 'Please enter a valid positive amount' } : null,
       () => numAmount > 50000 ? { field: 'amount', message: 'Maximum top-up amount is $50,000' } : null,
-      () => numAmount < 50 ? { field: 'amount', message: 'Minimum top-up amount is $50' } : null,
+      () => numAmount < MINIMUM_WALLET_TOP_UP_AMOUNT ? { field: 'amount', message: `Minimum top-up amount is $${MINIMUM_WALLET_TOP_UP_AMOUNT}` } : null,
     ])
     
     if (!validation.isValid) {
@@ -88,7 +90,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
     // The StripeFundWalletDialog handles updating the wallet balance
   }
 
-  const predefinedAmounts = ["100", "500", "1000", "5000"]
+  const predefinedAmounts = ["500", "1000", "5000", "10000"]
   const numAmount = Number.parseFloat(amount) || 0
   const processingFee = getProcessingFee(numAmount, paymentMethod)
   const totalAmount = getTotalAmount(numAmount, paymentMethod)
@@ -112,11 +114,11 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
                 <Input
                   id="amount"
                   type="number"
-                  placeholder="0.00"
+                  placeholder="500.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   className="pl-8 bg-background border-border text-foreground"
-                  min="50"
+                  min={MINIMUM_WALLET_TOP_UP_AMOUNT}
                   step="0.01"
                 />
               </div>

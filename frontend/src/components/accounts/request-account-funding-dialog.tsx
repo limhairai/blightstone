@@ -71,8 +71,8 @@ export function RequestAccountFundingDialog({
       return
     }
 
-    if (amount < 10) {
-      toast.error('Minimum top-up amount is $10')
+    if (amount < 500) {
+      toast.error('Minimum top-up amount is $500')
       return
     }
 
@@ -124,7 +124,7 @@ export function RequestAccountFundingDialog({
     }
   }
 
-  const predefinedAmounts = [50, 100, 500, 1000, 5000]
+  const predefinedAmounts = [500, 1000, 5000, 10000]
   const maxAmount = Math.min(walletBalance, 100000)
 
   const getPriorityColor = (priority: TopupRequestPriority) => {
@@ -192,7 +192,7 @@ export function RequestAccountFundingDialog({
           <Input
             id="amount"
             type="number"
-            min="10"
+            min="500"
             max={maxAmount}
             step="0.01"
             value={amount || ''}
@@ -203,7 +203,7 @@ export function RequestAccountFundingDialog({
         </div>
         
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Minimum: $10</span>
+          <span>Minimum: $500</span>
           <span>Maximum: {formatCurrency(maxAmount)}</span>
         </div>
       </div>
