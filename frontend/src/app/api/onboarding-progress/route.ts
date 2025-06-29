@@ -38,22 +38,41 @@ export async function GET(request: NextRequest) {
   const userId = user.id;
 
   try {
+    // Get user's organization first
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile?.organization_id) {
+      return NextResponse.json({ 
+        progress: {
+          hasVerifiedEmail: !!user.user_metadata.email_confirmed_at,
+          hasCreatedBusiness: false,
+          hasFundedWallet: false,
+          hasCreatedAdAccount: false,
+        },
+        persistence: {
+          hasExplicitlyDismissed: false,
+          accountCreatedAt: user.user_metadata.created_at
+        }
+      });
+    }
+
     // Fetch all data points in parallel
     const [
-      organizationRes,
       walletRes,
       businessRes,
       adAccountRes,
       onboardingStateRes
     ] = await Promise.all([
-      supabaseAdmin.from('organizations').select('id').eq('user_id', userId).limit(1).single(),
-      supabaseAdmin.from('wallets').select('balance_cents').eq('user_id', userId).limit(1).single(),
-      supabaseAdmin.from('businesses').select('id').eq('user_id', userId).limit(1),
-      supabaseAdmin.from('ad_accounts').select('id').eq('user_id', userId).limit(1),
+      supabaseAdmin.from('wallets').select('balance_cents').eq('organization_id', profile.organization_id).limit(1).single(),
+      supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'business_manager' }),
+      supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'ad_account' }),
       supabaseAdmin.from('onboarding_states').select('*').eq('user_id', userId).single()
     ]);
     
-    const organization = organizationRes.data;
     const wallet = walletRes.data;
     const hasCreatedBusiness = businessRes.data && businessRes.data.length > 0;
     const hasFundedWallet = wallet ? wallet.balance_cents > 0 : false;

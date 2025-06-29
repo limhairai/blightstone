@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import useSWR, { useSWRConfig } from 'swr'
-import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -18,41 +18,45 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Label } from "../ui/label"
 import { Check, Loader2, Building2 } from "lucide-react"
 import { toast } from "sonner"
-import { EmptyState } from "../ui/comprehensive-states"
+import { EmptyState } from "../ui/states"
 import { timezones } from "../../lib/timezones"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
-  businessId?: string
+  bmId?: string | null // Business Manager ID if we're on a specific BM page
   onAccountCreated?: () => void
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
 
-export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }: CreateAdAccountDialogProps) {
+export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: CreateAdAccountDialogProps) {
+  const { session } = useAuth();
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { currentOrganizationId } = useOrganizationStore();
   const { mutate } = useSWRConfig();
 
-  const { data: businessesData, isLoading: areBusinessesLoading } = useSWR(
-    // Fetch only active businesses suitable for new ad accounts
-    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}&status=active` : null,
-    fetcher
+  // Fetch business managers
+  const { data: businessManagers, isLoading: areBusinessManagersLoading } = useSWR(
+    session ? ['/api/business-managers', session.access_token] : null,
+    ([url, token]) => fetcher(url, token)
   );
-  const approvedBusinesses = businessesData?.businesses || [];
+
+  const approvedBusinessManagers = businessManagers || [];
+
+  // Find the specific BM if bmId is provided
+  const selectedBM = bmId ? approvedBusinessManagers.find((bm: any) => bm.id === bmId) : null;
 
   const [formData, setFormData] = useState({
-    business: businessId || "",
+    business_manager_id: bmId || "",
     timezone: "UTC",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.business) {
-        toast.error("Please select a business.");
+    if (!formData.business_manager_id) {
+        toast.error("Please select a business manager.");
         return;
     }
     
@@ -61,9 +65,12 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
     try {
       const response = await fetch('/api/applications', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
-          business_id: formData.business,
+          business_manager_id: formData.business_manager_id,
           timezone: formData.timezone,
           type: 'ad_account', // Specify the application type
         }),
@@ -79,11 +86,14 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
         description: "Your ad account application has been submitted for review."
       })
 
-      // Revalidate the accounts table data after creation
-      mutate(`/api/ad-accounts?organization_id=${currentOrganizationId}`);
+      // Revalidate the accounts data after creation
+      mutate(['/api/ad-accounts', session?.access_token]);
+      if (bmId) {
+        mutate([`/api/ad-accounts?bm_id=${bmId}`, session?.access_token]);
+      }
 
       setTimeout(() => {
-        setFormData({ business: businessId || "", timezone: "UTC" })
+        setFormData({ business_manager_id: bmId || "", timezone: "UTC" })
         setShowSuccess(false)
         setOpen(false)
         onAccountCreated?.()
@@ -109,12 +119,12 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
         )
     }
 
-    if (!areBusinessesLoading && approvedBusinesses.length === 0) {
+    if (!areBusinessManagersLoading && approvedBusinessManagers.length === 0) {
         return (
             <EmptyState
                 icon={Building2}
-                title="No Approved Businesses"
-                description="You need at least one approved business to create an ad account. Please create a business and wait for its approval."
+                title="No Approved Business Managers"
+                description="You need at least one approved business manager to create an ad account. Please apply for a business manager and wait for its approval."
             />
         )
     }
@@ -124,32 +134,53 @@ export function CreateAdAccountDialog({ trigger, businessId, onAccountCreated }:
             <DialogHeader>
             <DialogTitle className="text-foreground">Request Ad Account</DialogTitle>
             <DialogDescription className="text-muted-foreground">
-                Request a new advertising account for one of your approved businesses.
+                {bmId && selectedBM 
+                  ? `Request a new advertising account for ${selectedBM.name || selectedBM.metadata?.business_manager || 'this business manager'}.`
+                  : "Request a new advertising account for one of your approved business managers."
+                }
             </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="business" className="text-foreground">
-                    Business
-                    </Label>
-                    <Select
-                    value={formData.business}
-                    onValueChange={(value) => setFormData({ ...formData, business: value })}
-                    required
-                    disabled={areBusinessesLoading}
-                    >
-                    <SelectTrigger>
-                        <SelectValue placeholder={areBusinessesLoading ? "Loading businesses..." : "Select a business"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {approvedBusinesses.map((business: any) => (
-                        <SelectItem key={business.id} value={business.id}>
-                            {business.name}
-                        </SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
+                {/* Only show BM selector if not on a specific BM page */}
+                {!bmId && (
+                  <div className="space-y-2">
+                      <Label htmlFor="business_manager" className="text-foreground">
+                      Business Manager
+                      </Label>
+                      <Select
+                      value={formData.business_manager_id}
+                      onValueChange={(value) => setFormData({ ...formData, business_manager_id: value })}
+                      required
+                      disabled={areBusinessManagersLoading}
+                      >
+                      <SelectTrigger>
+                          <SelectValue placeholder={areBusinessManagersLoading ? "Loading business managers..." : "Select a business manager"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {approvedBusinessManagers.map((bm: any) => (
+                          <SelectItem key={bm.asset_id || bm.id} value={bm.id}>
+                              {bm.name || bm.metadata?.business_manager || `BM ${bm.id}`}
+                          </SelectItem>
+                          ))}
+                      </SelectContent>
+                      </Select>
+                  </div>
+                )}
+
+                {/* Show selected BM info if on specific BM page */}
+                {bmId && selectedBM && (
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Business Manager</Label>
+                    <div className="p-3 bg-muted rounded-md border">
+                      <div className="font-medium text-foreground">
+                        {selectedBM.name || selectedBM.metadata?.business_manager || 'Business Manager'}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        ID: {selectedBM.id}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                     <Label htmlFor="timezone" className="text-foreground">

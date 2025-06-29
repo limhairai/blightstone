@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
-import { CircularProgress } from "../ui/circular-progress"
+
 import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
 import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"
 import { usePageTitle } from "../core/simple-providers"
@@ -104,7 +104,7 @@ export function Topbar({
             className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
             onClick={() => onSetupWidgetStateChange?.(setupWidgetState === "expanded" ? "collapsed" : "expanded")}
           >
-            <CircularProgress percentage={setupPercentage} size={16} />
+                            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
             <span className="font-medium text-foreground">Setup Guide</span>
           </Button>
         )}

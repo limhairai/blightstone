@@ -1,0 +1,1 @@
+require('../frontend/node_modules/@testing-library/jest-dom'); 

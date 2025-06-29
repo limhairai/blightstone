@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
   try {
     let query = supabaseAdmin
       .from('transactions')
-      .select('*, businesses(name)', { count: 'exact' })
+      .select('*', { count: 'exact' })
       .eq('organization_id', organizationId);
 
     if (status && status !== 'all') {

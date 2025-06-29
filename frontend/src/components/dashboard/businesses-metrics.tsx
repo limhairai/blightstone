@@ -1,14 +1,29 @@
-import { APP_BUSINESSES } from "../../lib/mock-data"
 import { formatCurrency } from "../../lib/utils"
 import { Building2, CreditCard, Wallet, TrendingUp } from "lucide-react"
+import { useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 
 export function BusinessesMetrics() {
-  const totalBusinesses = APP_BUSINESSES.length
-  const activeBusinesses = APP_BUSINESSES.filter((b) => b.status === "active").length
-  const pendingBusinesses = APP_BUSINESSES.filter((b) => b.status === "pending").length
-  const totalBalance = APP_BUSINESSES.reduce((total, business) => total + (business.totalBalance || 0), 0)
-  const totalAccounts = APP_BUSINESSES.reduce((total, business) => total + (business.accountsCount || 0), 0)
-  const totalSpend = APP_BUSINESSES.reduce((total, business) => total + (business.totalSpend || 0), 0)
+  const { data: businesses = [], isLoading: businessesLoading } = useBusinessManagers()
+  const { data: accounts = [], isLoading: accountsLoading } = useAdAccounts()
+  
+  if (businessesLoading || accountsLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-card border border-border rounded-lg p-4 animate-pulse">
+            <div className="h-16 bg-muted rounded"></div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  
+  const totalBusinesses = businesses.length
+  const activeBusinesses = businesses.filter((b) => b.status === "active").length
+  const pendingBusinesses = businesses.filter((b) => b.status === "pending").length
+  const totalBalance = accounts.reduce((total, account) => total + (account.balance || 0), 0)
+  const totalAccounts = accounts.length
+  const totalSpend = accounts.reduce((total, account) => total + (account.spent || 0), 0)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

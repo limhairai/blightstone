@@ -7,21 +7,29 @@ import "../styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
-import { Toaster } from "../components/ui/sonner";
-import * as Sentry from '@sentry/nextjs';
-
+import { Toaster } from "sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 // Add or edit your "generateMetadata" to include the Sentry trace data:
 export function generateMetadata(): Metadata {
-  return {
+  const baseMetadata = {
     title: "AdHub - Ad Account Management Platform",
     description: "Manage your advertising accounts across multiple platforms",
     generator: 'v0.dev',
-    other: {
-      ...Sentry.getTraceData()
-    }
   };
+
+  // Only add Sentry trace data in production
+  if (process.env.NODE_ENV === 'production') {
+    const Sentry = require('@sentry/nextjs');
+    return {
+      ...baseMetadata,
+      other: {
+        ...Sentry.getTraceData()
+      }
+    };
+  }
+
+  return baseMetadata;
 }
 
 // Production guard removed - using production data only
@@ -37,7 +45,17 @@ export default function RootLayout({
         <SimpleProviders>
           {children}
           <EnvIndicator />
-          <Toaster />
+                  <Toaster 
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'hsl(var(--background))',
+              color: 'hsl(var(--foreground))',
+              border: '1px solid hsl(var(--border))',
+            },
+          }}
+        />
         </SimpleProviders>
       </body>
     </html>

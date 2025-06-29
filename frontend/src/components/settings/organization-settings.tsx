@@ -17,9 +17,10 @@ import {
 } from "../ui/dialog"
 import { toast } from "sonner"
 import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings } from 'lucide-react'
-import { Progress } from "../ui/progress"
+
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
+import { useAuth } from "@/contexts/AuthContext"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -53,16 +54,25 @@ const pricingPlans = [
 export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
   const { mutate } = useSWRConfig();
+  const { session } = useAuth();
+
+  // Authenticated fetcher for business-managers API
+  const authFetcher = (url: string) => 
+    fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`
+      }
+    }).then(res => res.json());
 
   const { data: orgData, isLoading: isOrgLoading } = useSWR(currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null, fetcher);
-  const { data: bizData, isLoading: isBizLoading } = useSWR(currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null, fetcher);
+  const { data: bizData, isLoading: isBizLoading } = useSWR(currentOrganizationId && session ? `/api/business-managers?organization_id=${currentOrganizationId}` : null, authFetcher);
   const { data: accData, isLoading: isAccLoading } = useSWR(currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null, fetcher);
-  const { data: teamData, isLoading: isTeamLoading } = useSWR(currentOrganizationId ? `/api/team?organization_id=${currentOrganizationId}` : null, fetcher);
+  const { data: teamData, isLoading: isTeamLoading } = useSWR(currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null, fetcher);
   
   const organization = orgData?.organizations?.[0];
-  const businesses = bizData?.businesses || [];
+  const businesses = bizData || [];
   const accounts = accData?.accounts || [];
-  const teamMembers = teamData?.team_members || [];
+  const teamMembers = teamData?.members || [];
   
   const [editOrgOpen, setEditOrgOpen] = useState(false)
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false)
@@ -179,9 +189,13 @@ export function OrganizationSettings() {
     return <div>Loading organization settings...</div>;
   }
   
-  // Safety check - render nothing if no current organization
-  if (!organization) {
-    return <div>No organization selected or found.</div>
+  // Safety check - show loading if no organization ID or if still loading
+  if (!currentOrganizationId) {
+    return <div>Loading organization...</div>
+  }
+  
+  if (!organization && !globalLoading) {
+    return <div>No organization found.</div>
   }
 
   return (
@@ -207,7 +221,9 @@ export function OrganizationSettings() {
                     {totalBusinesses} / {planLimits.businessesLimit}
                   </span>
                 </div>
-                <Progress value={(totalBusinesses / planLimits.businessesLimit) * 100} className="h-2" />
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(totalBusinesses / planLimits.businessesLimit) * 100}%` }}></div>
+                  </div>
               </div>
 
               {/* Ad Accounts Usage */}
@@ -218,7 +234,9 @@ export function OrganizationSettings() {
                     {totalAccounts} / {planLimits.adAccountsLimit}
                   </span>
                 </div>
-                <Progress value={(totalAccounts / planLimits.adAccountsLimit) * 100} className="h-2" />
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(totalAccounts / planLimits.adAccountsLimit) * 100}%` }}></div>
+                  </div>
               </div>
 
               {/* Team Members Usage */}
@@ -229,7 +247,9 @@ export function OrganizationSettings() {
                     {totalTeamMembers} / {planLimits.teamMembersLimit}
                   </span>
                 </div>
-                <Progress value={(totalTeamMembers / planLimits.teamMembersLimit) * 100} className="h-2" />
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(totalTeamMembers / planLimits.teamMembersLimit) * 100}%` }}></div>
+                  </div>
               </div>
             </CardContent>
           </Card>

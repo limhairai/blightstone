@@ -94,7 +94,7 @@ export function AdvancedTransactionManager() {
     return params.toString();
   }, [currentOrganizationId, debouncedFilters, sortBy, sortOrder, currentPage, itemsPerPage]);
 
-  const { data: transactionsData, error, isLoading } = useSWR(
+  const { data: transactionsData, error, isLoading, mutate } = useSWR(
     currentOrganizationId ? `/api/transactions?${queryString}` : null,
     fetcher,
     { keepPreviousData: true }
@@ -316,20 +316,33 @@ export function AdvancedTransactionManager() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Transaction Management</CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                disabled={isExporting}
-              >
-                {isExporting ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4 mr-2" />
-                )}
-                Export
-              </Button>
+                          <div className="flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => mutate()}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
+                  Export
+                </Button>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Advanced Filters
+                </Button>
               {selectedTransactions.size > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>

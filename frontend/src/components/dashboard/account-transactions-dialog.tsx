@@ -5,7 +5,7 @@ import { Badge } from "../ui/badge"
 import { Separator } from "../ui/separator"
 import { formatCurrency, formatRelativeTime } from "../../utils/format"
 import { ArrowUpRight, ArrowDownLeft, Calendar, DollarSign } from "lucide-react"
-import { APP_ACCOUNTS } from "../../lib/mock-data"
+// Note: APP_ACCOUNTS import removed - using account prop instead
 import { AppAccount } from "../../types/account"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"

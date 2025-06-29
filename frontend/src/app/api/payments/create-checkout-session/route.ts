@@ -9,9 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 export async function POST(request: NextRequest) {
   try {
     // Diagnostic logging to confirm which Supabase project is being used
-    console.log("API Route is using Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log("Stripe key configured:", !!process.env.STRIPE_SECRET_KEY);
-    console.log("Supabase service role key configured:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,14 +17,14 @@ export async function POST(request: NextRequest) {
     )
 
     const token = request.headers.get('Authorization')?.split('Bearer ')[1]
-    console.log('Received auth token:', token ? 'Present' : 'Missing');
+
     
     if (!token) {
       return NextResponse.json({ error: 'Missing auth token' }, { status: 401 })
     }
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    console.log('User auth result:', { user: user ? { id: user.id, email: user.email } : null, userError });
+
 
     if (userError || !user) {
       console.error('Auth error:', userError);
@@ -40,8 +38,7 @@ export async function POST(request: NextRequest) {
       cancel_url 
     } = await request.json()
 
-    console.log('Received payment data:', { amount, wallet_credit, success_url, cancel_url });
-    console.log('User ID:', user.id);
+
 
     // Fetch the user's current organization
     const { data: org, error: orgError } = await supabase
@@ -50,7 +47,7 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id)
       .single()
 
-    console.log('Organization query result:', { org, orgError });
+
 
     if (orgError || !org) {
       console.error('Error fetching organization for user:', user.id, orgError)

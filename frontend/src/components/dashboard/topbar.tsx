@@ -3,7 +3,7 @@
 import { useState } from "react"
 import useSWR from 'swr'
 import { Button } from "../ui/button"
-import { CircularProgress } from "../ui/circular-progress"
+
 import { CompactHeaderMetrics } from "./compact-header-metrics"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { TopUpDialog } from "./top-up-dialog"
@@ -68,10 +68,7 @@ export function Topbar() {
         <div className="flex items-center gap-4">
           {/* Setup Progress */}
           <div className="flex items-center gap-3">
-            <CircularProgress 
-              percentage={setupProgress} 
-              size={32}
-            />
+            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
             <div className="text-sm">
               <div className="font-medium text-foreground">Setup Progress</div>
               <div className="text-muted-foreground">{setupProgress.toFixed(0)}% complete</div>

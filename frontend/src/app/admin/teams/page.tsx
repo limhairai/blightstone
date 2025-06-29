@@ -29,11 +29,23 @@ interface Team {
   id: string
   name: string
   description: string
+  profilesCount: number
+  activeProfiles: number
+  adminProfiles: number
+  backupProfiles: number
+  businessManagersCount: number
+  adAccountsCount: number
+  bmCapacity: number
+  bmUtilization: number
+  // Legacy compatibility fields
   organizationsCount: number
   activeBusinesses: number
   utilizationRate: number
   capacity: number
   status: "active" | "at_capacity" | "needs_backup" | "suspended"
+  profiles: any[]
+  businessManagers: any[]
+  adAccounts: any[]
 }
 
 export default function TeamsPage() {
@@ -43,8 +55,8 @@ export default function TeamsPage() {
   const [error, setError] = useState<string | null>(null)
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
-  const [isCreateDialogOpen, setCreateDialogOpen] = useState(false)
-  const [newTeamName, setNewTeamName] = useState("")
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
+  const [showTeamDetails, setShowTeamDetails] = useState(false)
 
   const fetchTeams = async () => {
     setLoading(true);
@@ -68,36 +80,9 @@ export default function TeamsPage() {
     if(session) fetchTeams()
   }, [session])
 
-  const handleCreateTeam = async () => {
-    if (!newTeamName.trim()) {
-      toast.error("Team name cannot be empty.");
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/admin/teams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
-        },
-        body: JSON.stringify({ name: newTeamName })
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to create team');
-      }
-      
-      toast.success("Team created successfully!");
-      fetchTeams(); // Refresh the list
-      
-      setCreateDialogOpen(false);
-      setNewTeamName("");
-
-    } catch (err) {
-      console.error(err);
-      toast.error(err instanceof Error ? err.message : 'An unexpected error occurred');
-    }
+  const handleTeamClick = (team: Team) => {
+    setSelectedTeam(team)
+    setShowTeamDetails(true)
   }
 
   const filteredTeams = useMemo(() => {
@@ -120,9 +105,9 @@ export default function TeamsPage() {
   const getStatusConfig = (status: Team["status"]) => {
     const configs = {
       active: { label: "Active", className: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle, color: "text-green-600" },
-      at_capacity: { label: "At Capacity", className: "bg-red-100 text-red-800 border-red-200", icon: AlertTriangle, color: "text-red-600" },
-      needs_backup: { label: "Needs Backup", className: "bg-purple-100 text-purple-800 border-purple-200", icon: Clock, color: "text-purple-600" },
-      suspended: { label: "Suspended", className: "bg-gray-100 text-gray-800 border-gray-200", icon: AlertTriangle, color: "text-gray-600" },
+      at_capacity: { label: "At BM Capacity", className: "bg-red-100 text-red-800 border-red-200", icon: AlertTriangle, color: "text-red-600" },
+      needs_backup: { label: "Needs Admin", className: "bg-purple-100 text-purple-800 border-purple-200", icon: Clock, color: "text-purple-600" },
+      suspended: { label: "No Active Profiles", className: "bg-gray-100 text-gray-800 border-gray-200", icon: AlertTriangle, color: "text-gray-600" },
     }
     return configs[status] || configs.active
   }
@@ -146,20 +131,55 @@ export default function TeamsPage() {
       cell: ({ row }) => {
         const team = row.original
         return (
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => handleTeamClick(team)}>
             <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
               <Users className="h-4 w-4 text-foreground" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-medium truncate">{team.name}</div>
-              <div className="text-sm text-muted-foreground truncate">{team.description || 'No description'}</div>
+              <div className="text-sm text-muted-foreground truncate">
+                {team.profilesCount} profiles ({team.adminProfiles} admin, {team.backupProfiles} backup)
+              </div>
             </div>
           </div>
         )
       },
     },
-    { accessorKey: "organizationsCount", header: "Organizations", size: 120, cell: ({ row }) => <div><div className="font-medium">{row.original.organizationsCount} orgs</div></div> },
-    { accessorKey: "utilizationRate", header: "Utilization", size: 100, cell: ({ row }) => <div className="text-center"><div className={`font-medium ${row.original.utilizationRate >= 95 ? "text-red-600" : "text-foreground"}`}>{row.original.utilizationRate}%</div><div className="text-xs text-muted-foreground">{row.original.organizationsCount}/{row.original.capacity}</div></div> },
+    { 
+      accessorKey: "businessManagers", 
+      header: "Business Managers", 
+      size: 150, 
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.businessManagersCount}/{row.original.bmCapacity}</div>
+          <div className="text-sm text-muted-foreground">BM capacity</div>
+        </div>
+      ) 
+    },
+    { 
+      accessorKey: "utilization", 
+      header: "Utilization", 
+      size: 120, 
+      cell: ({ row }) => (
+        <div className="text-center">
+          <div className={`font-medium ${row.original.bmUtilization >= 90 ? "text-red-600" : row.original.bmUtilization >= 70 ? "text-yellow-600" : "text-green-600"}`}>
+            {row.original.bmUtilization}%
+          </div>
+          <div className="text-xs text-muted-foreground">BM utilization</div>
+        </div>
+      ) 
+    },
+    { 
+      accessorKey: "adAccounts", 
+      header: "Ad Accounts", 
+      size: 120, 
+      cell: ({ row }) => (
+        <div>
+          <div className="font-medium">{row.original.adAccountsCount}</div>
+          <div className="text-sm text-muted-foreground">total accounts</div>
+        </div>
+      ) 
+    },
     { accessorKey: "status", header: "Status", size: 120, cell: ({ row }) => getStatusBadge(row.original.status) },
   ]
 
@@ -172,9 +192,9 @@ export default function TeamsPage() {
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="at_capacity">At Capacity</SelectItem>
-              <SelectItem value="needs_backup">Needs Backup</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="at_capacity">At BM Capacity</SelectItem>
+              <SelectItem value="needs_backup">Needs Admin</SelectItem>
+              <SelectItem value="suspended">No Active Profiles</SelectItem>
             </SelectContent>
           </Select>
 
@@ -186,45 +206,99 @@ export default function TeamsPage() {
         
         <div className="flex items-center gap-4">
           <div className="text-sm text-muted-foreground">{filteredTeams.length} teams total</div>
-          
-          <Dialog open={isCreateDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Team
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Team</DialogTitle>
-                <DialogDescription>
-                  Enter a name for the new team. Additional settings can be configured later.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Team Name
-                  </Label>
-                  <Input
-                    id="name"
-                    value={newTeamName}
-                    onChange={(e) => setNewTeamName(e.target.value)}
-                    className="col-span-3"
-                    placeholder="e.g., Alpha Team"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" onClick={handleCreateTeam}>Create Team</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <div className="text-xs text-muted-foreground">Teams are auto-generated from Dolphin profiles</div>
         </div>
       </div>
 
       <DataTable columns={columns} data={filteredTeams} />
+      
+      {/* Team Details Dialog */}
+      {selectedTeam && (
+        <Dialog open={showTeamDetails} onOpenChange={setShowTeamDetails}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle>{selectedTeam.name} Details</DialogTitle>
+                  <DialogDescription>
+                    Business Manager capacity and team asset management
+                  </DialogDescription>
+                </div>
+                <div>{getStatusBadge(selectedTeam.status)}</div>
+              </div>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Team Overview */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-blue-600">Profiles</div>
+                  <div className="text-2xl font-bold">{selectedTeam.profilesCount}</div>
+                  <div className="text-xs text-blue-500">{selectedTeam.activeProfiles} active</div>
+                </div>
+                <div className="bg-green-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-green-600">Business Managers</div>
+                  <div className="text-2xl font-bold">{selectedTeam.businessManagersCount}</div>
+                  <div className="text-xs text-green-500">of {selectedTeam.bmCapacity} capacity</div>
+                </div>
+                <div className="bg-purple-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-purple-600">BM Utilization</div>
+                  <div className={`text-2xl font-bold ${selectedTeam.bmUtilization >= 90 ? "text-red-600" : selectedTeam.bmUtilization >= 70 ? "text-yellow-600" : "text-purple-600"}`}>
+                    {selectedTeam.bmUtilization}%
+                  </div>
+                  <div className="text-xs text-purple-500">capacity used</div>
+                </div>
+                <div className="bg-orange-50 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-orange-600">Ad Accounts</div>
+                  <div className="text-2xl font-bold">{selectedTeam.adAccountsCount}</div>
+                  <div className="text-xs text-orange-500">total managed</div>
+                </div>
+              </div>
+              
+              {/* Profiles List */}
+              <div>
+                <h4 className="font-medium mb-2">Team Profiles</h4>
+                <div className="space-y-2">
+                  {selectedTeam.profiles.map((profile: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <div className="font-medium">{profile.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {profile.teamInfo.role} • Instance {profile.teamInfo.instance}
+                        </div>
+                      </div>
+                      <Badge variant={profile.status === 'active' ? 'default' : 'secondary'}>
+                        {profile.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Business Managers */}
+              {selectedTeam.businessManagers.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-2">Business Managers</h4>
+                  <div className="space-y-2">
+                    {selectedTeam.businessManagers.map((bm: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <div>
+                          <div className="font-medium">{bm.name}</div>
+                          <div className="text-sm text-gray-500">ID: {bm.dolphin_asset_id}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button onClick={() => setShowTeamDetails(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

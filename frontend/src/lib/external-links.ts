@@ -162,7 +162,7 @@ export const providerLinks = {
 export const openExternalLink = (url: string, trackingData?: Record<string, any>) => {
   // Optional: Track external link clicks for analytics
   if (trackingData) {
-    console.log('External link clicked:', { url, ...trackingData });
+  
     // You could send this to your analytics service
   }
   
@@ -179,7 +179,7 @@ export const openDesktopAppWithFallback = (
   trackingData?: Record<string, any>
 ) => {
   if (trackingData) {
-    console.log('Desktop app link clicked:', { desktopUrl, webFallbackUrl, ...trackingData });
+  
   }
 
   const protocol = desktopUrl.split('://')[0];

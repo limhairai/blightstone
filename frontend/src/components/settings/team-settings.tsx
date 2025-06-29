@@ -89,7 +89,7 @@ export function TeamSettings() {
     setLoading(true)
     try {
       // TODO: Replace with API call to /api/teams/members/invite
-      console.log("Inviting new member", inviteEmail, inviteRole)
+
       toast.success(`Invitation sent to ${inviteEmail}`)
       setInviteDialogOpen(false)
       setInviteEmail("")
@@ -112,7 +112,7 @@ export function TeamSettings() {
     setLoading(true)
     try {
       // TODO: Replace with API call to /api/teams/members/:id
-      console.log("Removing member", memberToRemove)
+
       toast.success(`${memberToRemove.name} has been removed from the team`)
       setConfirmRemoveOpen(false)
       setMemberToRemove(null)
@@ -127,7 +127,7 @@ export function TeamSettings() {
     setLoading(true)
     try {
       // TODO: Replace with API call to /api/teams/members/:id
-      console.log("Changing role for", memberId, "to", newRole)
+
       const member = teamMembers.find((m: TeamMember) => m.id === memberId)
       toast.success(`${member?.name}'s role has been updated to ${newRole}`)
     } catch (error) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "../../lib/utils"
 import { Button } from "../ui/button"
 import {
@@ -163,11 +163,15 @@ export function AdminSidebar({ className }: { className?: string }) {
                   >
                     {MainButton}
                   </div>
-                ) : (
-                  <Link href={item.href!} className="flex-1">
+                                ) : (
+                  <Link 
+                    href={item.href!} 
+                    className="flex-1"
+                    prefetch={true}
+                  >
                     {MainButton}
-                </Link>
-              )}
+                  </Link>
+                )}
               </div>
 
               {/* Sub-items */}
@@ -176,7 +180,7 @@ export function AdminSidebar({ className }: { className?: string }) {
                   {item.subItems!.map((sub) => {
                     const SubIcon = sub.icon
                     return (
-                      <Link href={sub.href} key={sub.name}>
+                      <Link href={sub.href} key={sub.name} prefetch={true}>
                         <Button
                           variant="ghost"
                       className={cn(

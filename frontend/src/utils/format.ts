@@ -26,7 +26,11 @@ export function formatRelativeTime(timestamp: Date | string): string {
   return date.toLocaleDateString()
 }
 
-export function getInitials(name: string): string {
+export function getInitials(name: string | undefined | null): string {
+  if (!name || typeof name !== 'string') {
+    return 'N/A';
+  }
+  
   return name
     .split(' ')
     .map(word => word.charAt(0))

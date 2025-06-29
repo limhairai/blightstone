@@ -71,7 +71,7 @@ export function TopUpWallet({ onTopUp, orgId }: TopUpWalletProps) {
     // For other payment methods (crypto), use existing flow
     setLoading(true)
     try {
-      console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)
+  
       onTopUp(numAmount, paymentMethod, orgId)
       showSuccessToast("Top-up Initiated!", `$${numAmount} has been added to your wallet.`)
       setAmount("")

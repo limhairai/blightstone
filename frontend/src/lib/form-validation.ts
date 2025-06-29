@@ -1,5 +1,5 @@
 // Form validation utilities and error handling
-import { toast } from "../hooks/use-toast"
+import { toast } from "sonner"
 
 // Validation error type
 export interface ValidationError {
@@ -131,19 +131,13 @@ export function showValidationErrors(errors: ValidationError[]) {
 
   // Show first error as toast
   const firstError = errors[0]
-  toast({
-    title: "Validation Error",
-    description: firstError.message,
-    variant: "destructive",
-  })
+  toast.error(firstError.message)
 
   // If multiple errors, show count
   if (errors.length > 1) {
     setTimeout(() => {
-      toast({
-        title: `${errors.length - 1} more validation error${errors.length > 2 ? 's' : ''}`,
-        description: "Please check all required fields",
-        variant: "destructive",
+      toast.error(`${errors.length - 1} more validation error${errors.length > 2 ? 's' : ''}`, {
+        description: "Please check all required fields"
       })
     }, 1000)
   }
@@ -151,10 +145,8 @@ export function showValidationErrors(errors: ValidationError[]) {
 
 // Success toast
 export function showSuccessToast(message: string, description?: string) {
-  toast({
-    title: message,
-    description,
-    variant: "default",
+  toast.success(message, {
+    description
   })
 }
 

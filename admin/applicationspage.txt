@@ -4,9 +4,8 @@ import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { CheckCircle, Clock, LinkIcon } from "lucide-react"
+import { CheckCircle, Clock } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { ApplicationBindingDialog } from "@/components/admin/application-binding-dialog"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DataTable } from "@/components/ui/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
@@ -19,7 +18,6 @@ export default function ApplicationsPage() {
   const [applications] = useState(MOCK_DATA.extended.applications)
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
-  const [bindingDialogOpen, setBindingDialogOpen] = useState(false)
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [readyDialogOpen, setReadyDialogOpen] = useState(false)
 
@@ -42,11 +40,6 @@ export default function ApplicationsPage() {
         color: "bg-blue-100 text-blue-800 border-blue-200",
         icon: Clock,
       },
-      needs_assignment: {
-        label: "Needs Binding",
-        color: "bg-purple-100 text-purple-800 border-purple-200",
-        icon: LinkIcon,
-      },
     }
     return statusMap[status as keyof typeof statusMap] || statusMap.needs_review
   }
@@ -56,7 +49,6 @@ export default function ApplicationsPage() {
       total: applications.length,
       needs_review: applications.filter((a) => a.status === "needs_review").length,
       submitted_to_bluefocus: applications.filter((a) => a.status === "submitted_to_bluefocus").length,
-      needs_assignment: applications.filter((a) => a.status === "needs_assignment").length,
     }),
     [applications],
   )
@@ -174,20 +166,6 @@ export default function ApplicationsPage() {
                 Ready
               </Button>
             )}
-            {app.status === "needs_assignment" && (
-              <Button
-                size="sm"
-                className="bg-purple-600 hover:bg-purple-700 h-7 text-xs text-white"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setSelectedApplication(app)
-                  setBindingDialogOpen(true)
-                }}
-              >
-                <LinkIcon className="h-3 w-3 mr-1" />
-                Bind
-              </Button>
-            )}
           </div>
         )
       },
@@ -207,7 +185,6 @@ export default function ApplicationsPage() {
               <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
               <TabsTrigger value="needs_review">Needs Review ({stats.needs_review})</TabsTrigger>
               <TabsTrigger value="submitted_to_bluefocus">At BlueFocus ({stats.submitted_to_bluefocus})</TabsTrigger>
-              <TabsTrigger value="needs_assignment">Needs Binding ({stats.needs_assignment})</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -227,7 +204,7 @@ export default function ApplicationsPage() {
         onOpenChange={setApprovalDialogOpen}
         application={selectedApplication || { id: "", businessName: "", organizationName: "", accountsRequested: 0 }}
         onApprove={async (applicationId) => {
-          console.log("Approving application:", applicationId)
+          // Handle application approval
         }}
       />
 
@@ -236,15 +213,8 @@ export default function ApplicationsPage() {
         onOpenChange={setReadyDialogOpen}
         application={selectedApplication || { id: "", businessName: "", organizationName: "", accountsRequested: 0 }}
         onMarkReady={async (applicationId) => {
-          console.log("Marking application ready:", applicationId)
+          // Handle application ready status
         }}
-      />
-
-      <ApplicationBindingDialog
-        open={bindingDialogOpen}
-        onOpenChange={setBindingDialogOpen}
-        applicationId={selectedApplication?.id || ""}
-        onBind={async () => {}}
       />
     </div>
   )

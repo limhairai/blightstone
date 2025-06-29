@@ -224,12 +224,12 @@ export function LandingView() {
                     <>
                       <div className="hidden lg:block relative z-10">
                         <div className="h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden rounded-xl sm:rounded-2xl">
-                          <Image src="/dashboard-wide.png" alt="AdHub Dashboard Interface" width={1920} height={1080} layout="responsive" priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
+                          <Image src="/dashboard-wide.png" alt="AdHub Dashboard Interface" width={1920} height={1080} style={{ width: '100%', height: 'auto' }} priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                       </div>
                       <div className="lg:hidden relative z-10">
                         <div className="h-[250px] sm:h-[300px] md:h-[400px] overflow-hidden rounded-xl sm:rounded-2xl">
-                          <Image src="/dashboard-compact.png" alt="AdHub Dashboard Interface" width={800} height={600} layout="responsive" priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
+                          <Image src="/dashboard-compact.png" alt="AdHub Dashboard Interface" width={800} height={600} style={{ width: '100%', height: 'auto' }} priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                       </div>
                     </>

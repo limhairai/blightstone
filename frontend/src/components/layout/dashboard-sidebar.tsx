@@ -26,11 +26,11 @@ export function DashboardSidebar() {
     { name: "Dashboard", href: "/dashboard", icon: Home },
     {
       name: "Businesses",
-      href: "/dashboard/businesses",
+      href: "/dashboard/business-managers",
       icon: Building2,
       subItems: [
-        { name: "All Businesses", href: "/dashboard/businesses" },
-        { name: "Ad Accounts", href: "/dashboard/accounts" },
+        { name: "Business Managers", href: "/dashboard/business-managers", icon: Building2 },
+        { name: "Ad Accounts", href: "/dashboard/accounts", icon: CreditCard },
       ],
     },
     { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
@@ -69,7 +69,7 @@ export function DashboardSidebar() {
     }
     
     // For sections that have sub-routes (businesses, settings), use startsWith
-    if (href === "/dashboard/businesses" || href === "/dashboard/settings") {
+    if (href === "/dashboard/businesses" || href === "/dashboard/business-managers" || href === "/dashboard/settings") {
       return pathname && pathname.startsWith(href)
     }
     
@@ -223,10 +223,6 @@ export function DashboardSidebar() {
                             )}
                           >
                             {SubIcon && <SubIcon className="h-3.5 w-3.5 mr-2" />}
-                            {!SubIcon && subItem.name === "All Businesses" && (
-                              <Building2 className="h-3.5 w-3.5 mr-2" />
-                            )}
-                            {!SubIcon && subItem.name === "Ad Accounts" && <CreditCard className="h-3.5 w-3.5 mr-2" />}
                             <span className="text-xs">{subItem.name}</span>
                           </Button>
                         </Link>

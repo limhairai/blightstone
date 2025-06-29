@@ -19,12 +19,36 @@ export async function GET(
   }
 
   try {
-    // Fetch organization details
-    const { data: organization, error: orgError } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', orgId)
-      .single()
+    // Single optimized query to get organization, business managers, and ad accounts in one go
+    const [orgResult, assetsResult] = await Promise.all([
+      // Fetch organization details
+      supabase
+        .from('organizations')
+        .select('*')
+        .eq('organization_id', orgId)
+        .single(),
+      
+      // Fetch ALL assets (both BMs and ad accounts) in one query
+      supabase
+        .from('asset_binding')
+        .select(`
+          *,
+          asset!inner(
+            id,
+            type,
+            dolphin_id,
+            name,
+            status,
+            metadata
+          )
+        `)
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .in('asset.type', ['business_manager', 'ad_account'])
+    ]);
+
+    const { data: orgData, error: orgError } = orgResult;
+    const { data: allAssets, error: assetsError } = assetsResult;
 
     if (orgError) {
       if (orgError.code === 'PGRST116') {
@@ -33,28 +57,82 @@ export async function GET(
       throw orgError
     }
 
-    // Fetch associated businesses, but *exclude* the old columns
-    const { data: businesses, error: bizError } = await supabase
-      .from('businesses')
-      .select('id, name, status, created_at, website_url') // Adjusted to select only existing columns
-      .eq('organization_id', orgId)
-
-    if (bizError) {
-      throw bizError
+    if (assetsError) {
+      throw assetsError
     }
 
-    // Calculate additional stats for the frontend
-    const businessesWithStats = businesses.map(b => ({
-      ...b,
-      adAccountsCount: 0, // Placeholder
-      totalSpend: 0, // Placeholder
-      monthlyBudget: 0, // Placeholder
-    }))
+    // Separate business managers and ad accounts
+    const businessManagers = allAssets?.filter(binding => binding.asset.type === 'business_manager') || [];
+    const adAccounts = allAssets?.filter(binding => binding.asset.type === 'ad_account') || [];
 
-    return NextResponse.json({
+    // Calculate totals efficiently
+    const totalAdAccounts = adAccounts.length;
+    const totalSpend = adAccounts.reduce((sum, binding) => {
+      const amountSpent = binding.asset?.metadata?.amount_spent || 0;
+      return sum + amountSpent;
+    }, 0);
+
+    // Create a map for faster lookups
+    const adAccountsByBM = new Map();
+    adAccounts.forEach(adBinding => {
+      const bmId = adBinding.asset?.metadata?.business_manager_id;
+      if (bmId) {
+        if (!adAccountsByBM.has(bmId)) {
+          adAccountsByBM.set(bmId, []);
+        }
+        adAccountsByBM.get(bmId).push(adBinding);
+      }
+    });
+
+    // Format organization data for frontend
+    const organization = {
+      id: orgData.organization_id,
+      name: orgData.name,
+      industry: 'Technology', // Placeholder
+      teamId: 'team-1', // Placeholder  
+      status: 'active' as const,
+      plan: 'professional' as const,
+      adAccountsCount: totalAdAccounts,
+      description: orgData.description || '',
+      tags: [],
+      totalSpend: totalSpend,
+      balance: 0,
+      teamMembersCount: 0
+    }
+
+    // Calculate stats for each business manager efficiently
+    const businessManagersWithStats = businessManagers.map((binding: any) => {
+      const bmId = binding.asset.dolphin_id;
+      const bmAdAccounts = adAccountsByBM.get(bmId) || [];
+      
+      // Calculate total spend for this business manager
+      const bmTotalSpend = bmAdAccounts.reduce((sum, adBinding) => {
+        const amountSpent = adBinding.asset?.metadata?.amount_spent || 0;
+        return sum + amountSpent;
+      }, 0);
+
+      return {
+        id: binding.asset.dolphin_id,
+        name: binding.asset.name || `Business Manager #${binding.asset.dolphin_id.substring(0, 8)}`,
+        status: binding.asset.status,
+        organizationId: orgId,
+        adAccountsCount: bmAdAccounts.length,
+        dolphin_business_manager_id: binding.asset.dolphin_id,
+        totalSpend: bmTotalSpend,
+        monthlyBudget: 0, // Placeholder for now
+        createdAt: binding.bound_at,
+      };
+    });
+
+    const response = NextResponse.json({
       organization,
-      businesses: businessesWithStats,
+      businessManagers: businessManagersWithStats,
     })
+    
+    // Add caching headers for better performance
+    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
+    
+    return response
   } catch (error: any) {
     console.error('Error fetching organization details:', error)
     return NextResponse.json(

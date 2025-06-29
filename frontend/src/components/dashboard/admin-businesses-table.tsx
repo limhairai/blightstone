@@ -12,7 +12,8 @@ import { StatusBadge } from "../ui/status-badge"
 import { EditBusinessDialog } from "./edit-business-dialog"
 import { BusinessesViewToggle } from "../businesses/businesses-view-toggle"
 import { Button } from "../ui/button"
-import { getInitials, formatCurrency } from "../../lib/mock-data"
+import { formatCurrency } from "../../lib/utils"
+import { getInitials } from "../../utils/format"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
 import { Search, ArrowRight, Building2, Copy, Edit, MoreHorizontal, Trash2, CheckCircle } from "lucide-react"
 import { cn } from "../../lib/utils"
@@ -97,9 +98,8 @@ export function BusinessesTable() {
       return
     }
 
-    // Navigate to ad accounts page with business filter
-    const businessParam = encodeURIComponent(business.name)
-    window.location.href = `/dashboard/accounts?business=${businessParam}`
+    // Navigate to business details page
+    router.push(`/dashboard/businesses/${business.id}`)
   }
 
   const copyBusinessId = (businessId: string, e: React.MouseEvent) => {
@@ -109,7 +109,7 @@ export function BusinessesTable() {
 
   const handleBusinessUpdated = (updatedBusiness: AppBusiness) => {
     // This will be handled by SWR revalidation
-    console.log("Business updated:", updatedBusiness)
+    
   }
 
   const handleDeleteBusiness = async () => {

@@ -1,106 +1,126 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-async function getAuthenticatedUser(request: NextRequest) {
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return cookieStore.get(name)?.value;
-                },
-            },
-        }
-    );
-    return await supabase.auth.getUser();
-}
-
-// GET handler for fetching accounts - now uses Dolphin assets
 export async function GET(request: NextRequest) {
-  const { data: { user } } = await getAuthenticatedUser(request);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { searchParams } = new URL(request.url);
-  const organizationId = searchParams.get('organization_id');
-  if (!organizationId) return NextResponse.json({ error: 'organization_id is required' }, { status: 400 });
-
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(searchParams.get('limit') || '10', 10);
-  const status = searchParams.get('status');
-  const businessId = searchParams.get('business_id');
-  const searchQuery = searchParams.get('search');
-  
   try {
-    // Get bound Dolphin ad accounts for this organization
-    let query = supabaseAdmin
-      .from('dolphin_assets')
-      .select(`
-        *,
-        client_asset_bindings!inner(
-          id,
-          organization_id,
-          business_id,
-          spend_limit_cents,
-          fee_percentage,
-          status,
-          bound_at,
-          businesses(name)
-        )
-      `, { count: 'exact' })
-      .eq('asset_type', 'ad_account')
-      .eq('client_asset_bindings.organization_id', organizationId)
-      .eq('client_asset_bindings.status', 'active');
-
-    // Apply filters
-    if (status && status !== 'all') query = query.eq('status', status);
-    if (businessId && businessId !== 'all') query = query.eq('client_asset_bindings.business_id', businessId);
-    if (searchQuery) {
-      query = query.or(`name.ilike.%${searchQuery}%,asset_id.ilike.%${searchQuery}%`);
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const offset = (page - 1) * limit;
-    query = query.range(offset, offset + limit - 1).order('discovered_at', { ascending: false });
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
 
-    const { data, error, count } = await query;
-    if (error) throw error;
-    
-    // Transform the data to match the expected format
-    const accounts = data?.map(asset => {
-      const binding = asset.client_asset_bindings[0];
-      const metadata = asset.asset_metadata || {};
+    if (profileError || !profile || !profile.organization_id) {
+        return NextResponse.json({ error: 'User organization not found.' }, { status: 404 });
+    }
 
+    // Get query parameters for filtering
+    const { searchParams } = new URL(request.url);
+    const bmId = searchParams.get('bm_id');
+
+    // Query ad accounts bound to this organization
+    const { data: boundAssets, error: assetsError } = await supabase
+      .from('asset_binding')
+      .select(`
+        id,
+        asset_id,
+        bound_at,
+        asset:asset_id (
+          id,
+          name,
+          type,
+          dolphin_id,
+          status,
+          metadata,
+          last_synced_at
+        )
+      `)
+      .eq('organization_id', profile.organization_id)
+      .eq('status', 'active')
+      .eq('asset.type', 'ad_account');
+
+    if (assetsError) {
+      console.error('Error fetching ad accounts:', assetsError);
+      return NextResponse.json({ error: assetsError.message }, { status: 500 });
+    }
+
+    // Filter by business manager if specified
+    let filteredAssets = boundAssets || [];
+    if (bmId) {
+      console.log('Filtering by BM ID:', bmId);
+      console.log('Available assets:', boundAssets?.map(b => ({
+        id: b.asset?.id,
+        name: b.asset?.name,
+        bm_id_in_metadata: b.asset?.metadata?.business_manager_id,
+        dolphin_id: b.asset?.dolphin_id
+      })));
+      
+      filteredAssets = filteredAssets.filter((binding: any) => 
+        binding.asset?.metadata?.business_manager_id === bmId
+      );
+      
+      console.log('Filtered assets:', filteredAssets.length);
+    }
+
+    // Filter out bindings with null/undefined assets
+    const validAssets = filteredAssets.filter((binding: any) => binding.asset && binding.asset.id);
+
+    // Transform the data to match the expected format for backward compatibility
+    const enrichedData = validAssets.map((binding: any) => {
+      const asset = binding.asset;
+      const metadata = asset?.metadata || {};
+      
+      // Debug: Log asset processing
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Processing asset:', {
+          id: asset?.id,
+          name: asset?.name,
+          metadata: metadata,
+          business_manager_name: metadata.business_manager_name
+        });
+      }
+      
       return {
-        id: asset.id,
-        name: asset.name,
-        status: asset.status,
-        facebook_id: asset.asset_id,
-        parent_business_manager_id: asset.parent_business_manager_id,
-        balance: metadata.balance || 0,
-        currency: metadata.currency || 'USD',
+        id: asset?.id,
+        name: asset?.name,
+        ad_account_id: metadata.ad_account_id || asset?.dolphin_id,
+        dolphin_account_id: asset?.dolphin_id,
+        business_manager_name: metadata.business_manager || metadata.business_manager_name || 'N/A',
+        business_manager_id: metadata.business_manager_id,
+        status: asset?.status,
+        balance_cents: Math.round(((metadata.spend_cap || 0) - (metadata.amount_spent || 0)) * 100),
+        spend_cents: Math.round((metadata.amount_spent || 0) * 100), // Total lifetime spend
+        binding_status: 'active', // Since we only get active bindings
+        last_sync_at: asset?.last_synced_at,
+        
+        // Additional useful metrics
+        timezone: metadata.timezone_id || 'UTC',
         bound_at: binding.bound_at,
-        is_business_manager: false
+        binding_id: binding.id
       };
-    }) || [];
-    
-    return NextResponse.json({
-      accounts,
-      totalCount: count,
-      totalPages: Math.ceil((count || 0) / limit),
-      currentPage: page,
     });
+
+    return NextResponse.json({ accounts: enrichedData });
+
   } catch (error) {
-    console.error('Error fetching ad accounts:', error);
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-    return NextResponse.json({ error: 'Failed to fetch ad accounts', details: errorMessage }, { status: 500 });
+    console.error('Error in ad-accounts API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 

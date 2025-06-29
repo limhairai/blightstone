@@ -36,10 +36,16 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
     if (!pathname) return "Admin Dashboard";
 
     const pathSegments = pathname.split("/").filter(Boolean);
-    if (pathSegments.length <= 1) return "Admin Dashboard";
+    // Use the second to last segment for sub-pages, or the last for main pages
+    const relevantSegment = pathSegments.length > 2 ? pathSegments[pathSegments.length - 2] : pathSegments[pathSegments.length - 1];
 
-    const lastSegment = pathSegments[pathSegments.length - 1];
-    return lastSegment.charAt(0).toUpperCase() + lastSegment.slice(1).replace("-", " ");
+    if (!relevantSegment) return "Admin Dashboard";
+
+    // Format the title: 'business-managers' -> 'Business Managers'
+    return relevantSegment
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const handleSignOut = async () => {

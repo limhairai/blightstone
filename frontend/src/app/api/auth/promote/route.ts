@@ -58,27 +58,27 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Create or update profile to make them admin
+      // Create or update profile to make them superuser
       const { error: upsertError } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
-          email: user.email,
-          name: user.user_metadata?.full_name || user.email?.split('@')[0] || '',
           is_superuser: true
+        }, {
+          onConflict: 'id'
         })
 
       if (upsertError) {
-        console.error('Error creating admin profile:', upsertError)
+        console.error('Error creating superuser profile:', upsertError)
         return NextResponse.json(
-          { error: 'Failed to create admin profile' },
+          { error: 'Failed to create superuser profile' },
           { status: 500 }
         )
       }
 
       return NextResponse.json({
         success: true,
-        message: `Successfully promoted ${email} to admin (first admin bootstrap)`,
+        message: `Successfully promoted ${email} to superuser (first admin bootstrap)`,
         is_first_admin: true
       })
     } else {
@@ -135,15 +135,11 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Promote user to admin
+      // Promote user to superuser
       const { error: updateError } = await supabase
         .from('profiles')
-        .upsert({
-          id: targetUser.id,
-          email: targetUser.email,
-          name: targetUser.user_metadata?.full_name || targetUser.email?.split('@')[0] || '',
-          is_superuser: true
-        })
+        .update({ is_superuser: true })
+        .eq('id', targetUser.id)
 
       if (updateError) {
         console.error('Error promoting user:', updateError)
@@ -155,7 +151,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: `Successfully promoted ${email} to admin`,
+        message: `Successfully promoted ${email} to superuser`,
         is_first_admin: false
       })
     }

@@ -3,20 +3,14 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useAdminRoute } from "../../../hooks/useAdminRoute"
 import { AdminOrgFiles } from "../../../components/admin/admin-org-files";
-import { Loader } from "../../../components/core/Loader";
 
 export default function AdminFilesPage() {
-  const { canViewAdmin, loading } = useAdminRoute();
-
-  if (loading) return <Loader fullScreen />;
-  if (!canViewAdmin) return <div className="text-red-500 p-4">Not authorized to view Files page.</div>;
-
+  // Auth is handled by the layout, no need for redundant checks
   return (
     <div>
-      <h1>Admin Files</h1>
-      <AdminOrgFiles orgId="some-org-id" isSuperuser={canViewAdmin} />
+      <h1 className="text-2xl font-bold mb-6">Admin Files</h1>
+      <AdminOrgFiles orgId="some-org-id" isSuperuser={true} />
     </div>
   );
 } 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useMemo, useEffect } from "react"
-import useSWR, { useSWRConfig } from 'swr'
+import { useSWRConfig } from 'swr'
 import { useAuth } from "../../contexts/AuthContext"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
@@ -27,14 +27,13 @@ import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from 
 import { getSetupProgress, shouldShowOnboarding } from "../../lib/state-utils"
 import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
-import { ErrorBoundary } from "../ui/error-boundary"
-import { FullPageLoading } from "../ui/enhanced-loading"
+
+import { Skeleton } from "../ui/skeleton"
 import { formatCurrency as financialFormatCurrency } from '@/lib/config/financial'
 
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { useDashboardData } from "../../lib/swr-config"
 
 export function DashboardView() {
   // ALL HOOKS MUST BE CALLED FIRST - NEVER AFTER CONDITIONAL LOGIC
@@ -52,52 +51,21 @@ export function DashboardView() {
   const { currentOrganizationId, setCurrentOrganizationId, onboardingDismissed, setOnboardingDismissed } = useOrganizationStore();
   const { mutate } = useSWRConfig();
 
-  // Fetch user's organizations (always fetch to ensure we have the latest data)
-  const { data: userOrgsData } = useSWR(
-    user ? '/api/organizations' : null, 
-    fetcher,
-    {
-      dedupingInterval: 5 * 60 * 1000, // 5 minutes cache
-      revalidateOnFocus: false,
-      refreshInterval: 0,
-    }
-  );
-  
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null, 
-    fetcher,
-    {
-      dedupingInterval: 2 * 60 * 1000, // 2 minutes cache for org data
-      revalidateOnFocus: false,
-    }
-  );
-  
-  const { data: bizData, isLoading: isBizLoading } = useSWR(
-    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null, 
-    fetcher,
-    {
-      dedupingInterval: 2 * 60 * 1000, // 2 minutes cache
-      revalidateOnFocus: false,
-    }
-  );
-  
-  const { data: accData, isLoading: isAccLoading } = useSWR(
-    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null, 
-    fetcher,
-    {
-      dedupingInterval: 1 * 60 * 1000, // 1 minute cache for accounts (more dynamic)
-      revalidateOnFocus: false,
-    }
-  );
-  
-  const { data: transData, isLoading: isTransLoading } = useSWR(
-    currentOrganizationId ? `/api/transactions?organization_id=${currentOrganizationId}` : null, 
-    fetcher,
-    {
-      dedupingInterval: 30 * 1000, // 30 seconds cache for transactions (most dynamic)
-      revalidateOnFocus: false,
-    }
-  );
+  // 🚀 PERFORMANCE: Use optimized dashboard data hook instead of 5 separate SWR calls
+  const {
+    organizations: userOrgsData,
+    currentOrganization: organization,
+    businessManagers,
+    adAccounts: accounts,
+    transactions: transactionsData,
+    isLoading: isDashboardLoading,
+    isLoadingOrgs,
+    isLoadingCurrentOrg: isOrgLoading,
+    isLoadingBusinessManagers: isBizLoading,
+    isLoadingAdAccounts: isAccLoading,
+    isLoadingTransactions: isTransLoading,
+    error: dashboardError
+  } = useDashboardData(currentOrganizationId)
 
   // Use setup widget hook (MUST be called before any conditional logic)
   const {
@@ -110,13 +78,13 @@ export function DashboardView() {
   // Auto-refresh hook (MUST be called before any conditional logic)
   const SWR_KEYS_TO_REFRESH = [
     `/api/organizations?id=${currentOrganizationId}`,
-    `/api/businesses?organization_id=${currentOrganizationId}`,
+    `/api/business-managers`,
     `/api/ad-accounts?organization_id=${currentOrganizationId}`,
     `/api/transactions?organization_id=${currentOrganizationId}`,
   ]
 
   const { manualRefresh, isRefreshing } = useAutoRefresh({
-    enabled: !!user && !authLoading && !isOrgLoading && !isBizLoading && !isAccLoading && !isTransLoading, // Only refresh when user is authenticated and not loading
+    enabled: !!user && !authLoading && !isDashboardLoading, // Simplified condition
     interval: REFRESH_INTERVALS.NORMAL,
     onRefresh: async () => {
       // Refresh app data (demo state is reactive and doesn't need manual refresh)
@@ -132,29 +100,18 @@ export function DashboardView() {
     dependencies: [user?.id, currentOrganizationId] // Restart refresh when user or org changes
   })
 
-  // Auto-set organization if user has one but none is currently selected, or if current org is invalid
+  // Organization is now handled by AuthContext - no manual initialization needed
+  // This effect is kept for edge cases where user switches organizations manually
   useEffect(() => {
-    if (userOrgsData?.organizations?.length > 0) {
-      // If no organization is currently selected, select the first one
-      if (!currentOrganizationId) {
-        setCurrentOrganizationId(userOrgsData.organizations[0].id);
-      } else {
-        // If an organization is selected, verify it still exists in the user's organizations
-        const currentOrgExists = userOrgsData.organizations.find(org => org.id === currentOrganizationId);
-        if (!currentOrgExists) {
-          // Current org doesn't exist, switch to the first available organization
-          console.log('Current organization not found, switching to first available organization');
-          setCurrentOrganizationId(userOrgsData.organizations[0].id);
-        }
+    if (userOrgsData?.length > 0 && currentOrganizationId) {
+      // Verify current org still exists in the user's organizations
+      const currentOrgExists = userOrgsData.find(org => org.id === currentOrganizationId);
+      if (!currentOrgExists) {
+        // Current org doesn't exist, switch to the first available organization
+        setCurrentOrganizationId(userOrgsData[0].id);
       }
     }
   }, [userOrgsData, currentOrganizationId, setCurrentOrganizationId]);
-
-  // Derived data (calculated after all hooks)
-  const organization = orgData?.organizations?.[0];
-  const businesses = bizData?.businesses || [];
-  const accounts = accData?.accounts || [];
-  const transactionsData = transData?.transactions || [];
 
   // Get user's first name for greeting
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'there'
@@ -304,10 +261,10 @@ export function DashboardView() {
     getSetupProgress(
       !!user?.email_confirmed_at, // Email verified
       realBalance > 0, // Has wallet balance (always true for demo)
-      businesses.length > 0, // Has created a business
+      businessManagers.length > 0, // Has created a business manager
       accounts.length > 0 // Has created an ad account
     ),
-    [user, realBalance, businesses, accounts]
+    [user, realBalance, businessManagers, accounts]
   )
 
   // Create empty state conditions for banner logic
@@ -389,7 +346,10 @@ export function DashboardView() {
   if (globalLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <FullPageLoading />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[250px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
       </div>
     )
   }

@@ -74,63 +74,82 @@ async def discover_dolphin_assets(
         supabase = get_supabase_client()
         dolphin_api = DolphinCloudAPI()
         
-        # Create sync log
-        sync_log_data = {
-            "id": str(uuid.uuid4()),
-            "sync_type": "discover",
-            "status": "started",
-            "assets_discovered": 0,
-            "assets_updated": 0,
-            "errors_count": 0,
-            "started_at": datetime.now(timezone.utc).isoformat()
-        }
-        
-        sync_response = supabase.table("dolphin_sync_logs").insert(sync_log_data).execute()
-        sync_log_id = sync_response.data[0]["id"]
-        
         discovered_count = 0
         updated_count = 0
         errors = []
+        
+        # If force_refresh, clean up any BMs with business names or placeholder names
+        if force_refresh:
+            logger.info("🧹 Force refresh: Cleaning up bad BM names...")
+            try:
+                # Delete BMs with business names or placeholder names - they'll be recreated with correct names
+                bad_bm_patterns = ["脸谱网中国区总代理", "YinoLink易诺", "AXIS Dealer LTD", "Popster LLC", "BM-"]
+                
+                # Also delete any BMs that start with "BM-" (all placeholder names)
+                all_placeholder_bms = supabase.table("asset").select("*").eq("type", "business_manager").like("name", "BM-%").execute()
+                if all_placeholder_bms.data:
+                    for placeholder_bm in all_placeholder_bms.data:
+                        supabase.table("asset").delete().eq("id", placeholder_bm["id"]).execute()
+                        logger.info(f"🧹 Deleted placeholder BM: {placeholder_bm['name']} ({placeholder_bm['dolphin_id']})")
+                        updated_count += 1
+                for pattern in bad_bm_patterns:
+                    bad_bms_response = supabase.table("asset").select("*").eq("type", "business_manager").ilike("name", f"%{pattern}%").execute()
+                    if bad_bms_response.data:
+                        for bad_bm in bad_bms_response.data:
+                            supabase.table("asset").delete().eq("id", bad_bm["id"]).execute()
+                            logger.info(f"🧹 Deleted bad BM: {bad_bm['name']} ({bad_bm['dolphin_id']})")
+                            updated_count += 1
+            except Exception as e:
+                logger.warning(f"🧹 Error during cleanup: {e}")
         
         # ========================================================================
         # 1. Get Facebook Profiles (these manage the ad accounts)
         # ========================================================================
         profiles_data = await dolphin_api.get_fb_accounts()
+        logger.info(f"🔍 Retrieved {len(profiles_data)} profiles")
         
         for profile in profiles_data:
             try:
                 # Process Profile
                 profile_asset_data = {
-                    "asset_type": "profile",
-                    "asset_id": profile["id"],
+                    "type": "profile",
+                    "dolphin_id": profile["id"],
                     "name": profile["name"],
                     "status": "active" if profile["status"] == "ACTIVE" else "restricted",
-                    "health_status": "healthy" if profile["status"] == "ACTIVE" else "warning",
-                    "asset_metadata": profile,
-                    "discovered_at": datetime.now(timezone.utc).isoformat(),
-                    "last_sync_at": datetime.now(timezone.utc).isoformat()
+                    "metadata": profile,
+                    "last_synced_at": datetime.now(timezone.utc).isoformat()
                 }
                 
                 # Upsert profile
-                supabase.table("dolphin_assets").upsert(profile_asset_data, on_conflict="asset_type,asset_id").execute()
+                supabase.table("asset").upsert(profile_asset_data, on_conflict="type,dolphin_id").execute()
                 discovered_count += 1
 
                 # Process Business Managers for this profile
-                for bm in profile.get("bms", []):
+                bm_list = profile.get("bms", [])
+                logger.info(f"🔍 Profile '{profile['name']}' has {len(bm_list)} BMs")
+                
+                for bm in bm_list:
+                    # Use "id" field for BM ID, fallback to "business_id"
+                    bm_id = bm.get("id") or bm.get("business_id")
+                    
+                    # Add managing profile info to BM metadata for team detection
+                    bm_metadata = dict(bm)
+                    bm_metadata["managing_profile"] = profile["name"]
+                    bm_metadata["managing_profiles"] = [{"name": profile["name"], "id": profile["id"]}]
+                    
                     bm_asset_data = {
-                        "asset_type": "business_manager",
-                        "asset_id": bm["business_id"],
-                        "name": bm["name"],
+                        "type": "business_manager",
+                        "dolphin_id": bm_id,
+                        "name": bm["name"],  # This is the CORRECT BM name
                         "status": "active",
-                        "health_status": "healthy",
-                        "asset_metadata": bm,
-                        "discovered_at": datetime.now(timezone.utc).isoformat(),
-                        "last_sync_at": datetime.now(timezone.utc).isoformat()
+                        "metadata": bm_metadata,
+                        "last_synced_at": datetime.now(timezone.utc).isoformat()
                     }
                     
-                    # Upsert business manager
-                    supabase.table("dolphin_assets").upsert(bm_asset_data, on_conflict="asset_type,asset_id").execute()
+                    # Force update to ensure correct BM name is preserved
+                    upsert_response = supabase.table("asset").upsert(bm_asset_data, on_conflict="type,dolphin_id").execute()
                     discovered_count += 1
+                    logger.info(f"🏢 Processed BM from profile: {bm['name']} ({bm_id}) - Profile: {profile['name']}")
                     
             except Exception as e:
                 error_msg = f"Error processing profile {profile.get('id', 'unknown')}: {str(e)}"
@@ -141,8 +160,10 @@ async def discover_dolphin_assets(
         # 2. Get Facebook Ad Accounts (CABs = Cabinets) - THE REAL AD ACCOUNTS
         # ========================================================================
         cabs_data = await dolphin_api.get_fb_cabs()
+
+        logger.info(f"🔍 Retrieved {len(cabs_data)} CABs")
         
-        for cab in cabs_data:
+        for i, cab in enumerate(cabs_data):
             try:
                 # Extract key information
                 cab_id = cab["id"]
@@ -155,39 +176,78 @@ async def discover_dolphin_assets(
                 # Dolphin statuses: ACTIVE, TOKEN_ERROR, SUSPENDED, RESTRICTED
                 if cab_status == "ACTIVE":
                     status = "active"
-                    health_status = "healthy"
                 elif cab_status == "SUSPENDED":
                     status = "suspended"  # Facebook suspended the account
-                    health_status = "warning"
                 elif cab_status == "RESTRICTED":
                     status = "restricted"  # Facebook restricted the account
-                    health_status = "warning"
                 elif cab_status == "TOKEN_ERROR":
                     status = "connection_error"  # Dolphin can't connect (auth issue)
-                    health_status = "disconnected"
                 else:
                     # Unknown status - default to connection error to be safe
                     status = "connection_error"
-                    health_status = "critical"
                 
                 # Get managing profile info
                 managing_profiles = cab.get("accounts", [])
                 managing_profile_name = managing_profiles[0]["name"] if managing_profiles else "Unknown"
                 
-                # Get business manager info
+                # Get business manager info - try multiple fields
                 business_managers = cab.get("bm", [])
-                parent_bm_id = business_managers[0]["business_id"] if business_managers else None
-                parent_bm_name = business_managers[0]["name"] if business_managers else "No BM"
+                parent_bm_id = None
+                parent_bm_name = "No BM"
+                
+                # First try the 'bm' field (array format) - this has the correct BM name
+                if business_managers:
+                    # The BM structure uses "id" not "business_id"
+                    parent_bm_id = business_managers[0].get("id") or business_managers[0].get("business_id")
+                    parent_bm_name = business_managers[0].get("name", "No BM")
+                    logger.info(f"🔍 CAB '{cab_name}' has BM: {parent_bm_name} ({parent_bm_id})")
+                    
+                    # Check if BM already exists from profile processing - don't overwrite!
+                    try:
+                        existing_bm_response = supabase.table("asset").select("name").eq("type", "business_manager").eq("dolphin_id", parent_bm_id).execute()
+                        if existing_bm_response.data and len(existing_bm_response.data) > 0:
+                            # BM already exists from profile processing, use that name
+                            parent_bm_name = existing_bm_response.data[0]["name"]
+                            logger.info(f"🏢 Using existing BM from profile: {parent_bm_name} ({parent_bm_id})")
+                        else:
+                            # BM doesn't exist in our database - this means it's not managed by our profiles
+                            # For these cases, we'll still track the BM relationship but mark it as unmanaged
+                            logger.warning(f"🏢 BM {parent_bm_name} ({parent_bm_id}) not found in profiles - ad account will show 'No BM'")
+                            parent_bm_id = None
+                            parent_bm_name = "No BM"
+                    except Exception as e:
+                        logger.warning(f"Error checking existing BM: {e}")
+                        parent_bm_id = None
+                        parent_bm_name = "No BM"
+                
+                # If no BM found in 'bm' field, check business field as fallback
+                if not parent_bm_id:
+                    business_info = cab.get("business")
+                    if business_info and business_info.get("id"):
+                        business_bm_id = business_info["id"]
+                        business_bm_name = business_info.get("name", "Unknown BM")
+                        
+                        # Try to find existing BM asset first to get the correct name
+                        try:
+                            existing_bm_response = supabase.table("asset").select("name").eq("type", "business_manager").eq("dolphin_id", business_bm_id).execute()
+                            if existing_bm_response.data and len(existing_bm_response.data) > 0:
+                                parent_bm_name = existing_bm_response.data[0]["name"]
+                                parent_bm_id = business_bm_id
+                            else:
+                                # This is a business entity, not a BM - don't use it
+                                parent_bm_id = None
+                                parent_bm_name = "No BM"
+                        except Exception as e:
+                            parent_bm_id = None
+                            parent_bm_name = "No BM"
                 
                 # Create ad account asset
                 ad_account_data = {
-                    "asset_type": "ad_account",
-                    "asset_id": cab_id,
+                    "type": "ad_account",
+                    "dolphin_id": cab_id,
                     "name": cab_name,
                     "status": status,
-                    "health_status": health_status,
-                    "parent_business_manager_id": parent_bm_id,
-                    "asset_metadata": {
+                    "metadata": {
                         "ad_account_id": cab["ad_account_id"],
                         "balance": balance,
                         "currency": currency,
@@ -201,56 +261,32 @@ async def discover_dolphin_assets(
                         "spend_cap": cab.get("spend_cap"),
                         "amount_spent": cab.get("amount_spent", 0),
                         "ads_count": cab.get("ads_count", 0),
-                        "last_sync_date": cab.get("last_sync_date"),
-                        "full_cab_data": cab
+                        "last_sync_date": cab.get("last_sync_date")
                     },
-                    "discovered_at": datetime.now(timezone.utc).isoformat(),
-                    "last_sync_at": datetime.now(timezone.utc).isoformat()
+                    "last_synced_at": datetime.now(timezone.utc).isoformat()
                 }
                 
                 # Upsert ad account
-                supabase.table("dolphin_assets").upsert(ad_account_data, on_conflict="asset_type,asset_id").execute()
+                supabase.table("asset").upsert(ad_account_data, on_conflict="type,dolphin_id").execute()
                 discovered_count += 1
                 
             except Exception as e:
                 error_msg = f"Error processing CAB {cab.get('id', 'unknown')}: {str(e)}"
                 errors.append(error_msg)
                 logger.error(error_msg)
-        
-        # Update sync log
-        supabase.table("dolphin_sync_logs").update({
-            "status": "completed" if not errors else "failed",
-            "assets_discovered": discovered_count,
-            "assets_updated": updated_count,
-            "errors_count": len(errors),
-            "error_details": errors if errors else None,
-            "completed_at": datetime.now(timezone.utc).isoformat()
-        }).eq("id", sync_log_id).execute()
-        
+
         return {
             "success": True,
             "profiles_found": len(profiles_data),
             "business_managers_found": sum(len(p.get("bms", [])) for p in profiles_data),
             "ad_accounts_found": len(cabs_data),
-            "sync_log_id": sync_log_id,
             "assets_discovered": discovered_count,
             "assets_updated": updated_count,
             "errors": errors
         }
         
     except Exception as e:
-        logger.error(f"Error in asset discovery: {e}")
-        
-        # Update sync log with error
-        try:
-            supabase.table("dolphin_sync_logs").update({
-                "status": "failed",
-                "error_details": [str(e)],
-                "completed_at": datetime.now(timezone.utc).isoformat()
-            }).eq("id", sync_log_id).execute()
-        except:
-            pass
-        
+        logger.error(f"Error in asset discovery: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Asset discovery failed: {str(e)}")
 
 @router.post("/sync/discover-debug")
@@ -265,7 +301,7 @@ async def discover_dolphin_assets_debug(
         
         # Test basic connectivity
         logger.info("🔍 Testing Supabase connectivity...")
-        test_response = supabase.table("dolphin_assets").select("count", count="exact").execute()
+        test_response = supabase.table("asset").select("count", count="exact").execute()
         logger.info(f"🔍 Supabase test response: {test_response}")
         
         # Test Dolphin API
@@ -291,82 +327,105 @@ async def discover_dolphin_assets_debug(
 @router.get("/all-assets")
 async def get_all_assets(
     asset_type: Optional[str] = Query(None, description="Filter by asset type"),
+    unbound_only: bool = Query(False, description="Return only unbound assets"),
     current_user: User = Depends(require_superuser)
 ):
     """
-    Get all discovered Dolphin assets from our database, with binding information.
-    This is the primary endpoint for the admin assets page.
+    Get all assets with their binding status.
     """
-    supabase = get_supabase_client()
+    logger.info(f"🔍 Fetching all assets (type={asset_type}, unbound_only={unbound_only})")
     
     try:
-        # 1. Fetch all ad accounts first to perform in-memory joining/counting.
-        # This is more efficient than N+1 queries.
-        ad_accounts_response = supabase.table("dolphin_assets").select("*").eq("asset_type", "ad_account").execute()
-        all_ad_accounts = ad_accounts_response.data
+        supabase = get_supabase_client()
         
-        # 2. Fetch all asset bindings with related org and business names
-        bindings_response = supabase.table("client_asset_bindings").select("*, organizations(name), businesses(name)").execute()
-        all_bindings = bindings_response.data
-
-        # Create a lookup map for bindings for quick access
-        bindings_map = {binding["asset_id"]: binding for binding in all_bindings}
-
-        # 3. Fetch all assets (or filter by type)
-        query = supabase.table("dolphin_assets").select("*").order("name", desc=False)
+        # Build query for new asset table
+        query = supabase.table("asset").select("*")
         
         if asset_type:
-            query = query.eq("asset_type", asset_type)
+            query = query.eq("type", asset_type)
+
+        # Note: unbound_only filtering will be done after fetching binding data
+        query = query.order("created_at", desc=True)
 
         response = query.execute()
-        assets = response.data
+
+        if response.data is None:
+            return []
+
+        logger.info(f"🔍 Raw response data count: {len(response.data)}")
+        if response.data:
+            logger.info(f"🔍 Sample asset: {response.data[0]}")
+
+        # Get all bindings first
+        bindings_response = supabase.table("asset_binding").select("""
+            asset_id,
+            organization_id,
+            status,
+            bound_at
+        """).eq("status", "active").execute()
         
-        # 4. Process assets to enrich them with binding and ad account info
-        enriched_assets = []
-        for asset in assets:
-            asset_id = asset["id"]
-            
-            # Check for binding info
-            binding_info = bindings_map.get(asset_id)
-            if binding_info:
-                asset["is_bound"] = True
-                # The organization name is nested, extract it
-                asset["binding_info"] = {
-                    "organization_name": binding_info.get("organizations", {}).get("name", "Unknown Org"),
-                    "business_name": (binding_info.get("businesses") or {}).get("name"),
-                    **binding_info  # Include all other binding fields
+        # Get organization names separately
+        org_names = {}
+        if bindings_response.data:
+            org_ids = list(set(binding["organization_id"] for binding in bindings_response.data))
+            orgs_response = supabase.table("organizations").select("organization_id, name").in_("organization_id", org_ids).execute()
+            if orgs_response.data:
+                org_names = {org["organization_id"]: org["name"] for org in orgs_response.data}
+        
+        # Create a mapping of asset_id to binding info
+        binding_map = {}
+        if bindings_response.data:
+            for binding in bindings_response.data:
+                org_id = binding["organization_id"]
+                binding_map[binding["asset_id"]] = {
+                    "organization_id": org_id,
+                    "organization_name": org_names.get(org_id, f"Org-{org_id}"),
+                    "bound_at": binding["bound_at"]
                 }
+        
+        logger.info(f"🔍 Found {len(binding_map)} active bindings")
+        
+        # Process the data to add binding information
+        processed_assets = []
+        for asset in response.data:
+            asset_id = asset.get("id")  # New schema uses 'id' instead of 'asset_id'
+            binding_info = binding_map.get(asset_id)
+            
+            logger.info(f"🔍 Asset {asset.get('name', 'Unknown')} ({asset_id}) binding: {binding_info}")
+            
+            # Transform to match frontend expectations
+            processed_asset = {
+                "asset_id": asset_id,  # Frontend expects 'asset_id'
+                "id": asset_id,
+                "name": asset.get("name"),
+                "type": asset.get("type"),
+                "asset_type": asset.get("type"),  # Alias for compatibility
+                "dolphin_id": asset.get("dolphin_id"),
+                "dolphin_asset_id": asset.get("dolphin_id"),  # Alias for compatibility
+                "status": asset.get("status"),
+                "metadata": asset.get("metadata"),
+                "asset_metadata": asset.get("metadata"),  # Alias for compatibility
+                "last_synced_at": asset.get("last_synced_at"),
+                "created_at": asset.get("created_at"),
+                "updated_at": asset.get("updated_at"),
+                "organization_id": binding_info["organization_id"] if binding_info else None,
+                "organization_name": binding_info["organization_name"] if binding_info else None,
+                "bound_at": binding_info["bound_at"] if binding_info else None
+            }
+            
+            # Apply unbound_only filter if requested
+            if unbound_only:
+                # Only include assets that have no binding info (i.e., are unbound)
+                if binding_info is None:
+                    processed_assets.append(processed_asset)
             else:
-                asset["is_bound"] = False
-                asset["binding_info"] = None
-                
-            # If it's a business manager, count its ad accounts
-            if asset["asset_type"] == "business_manager":
-                bm_asset_id = asset["asset_id"] # This is the Facebook BM ID
-                
-                # Filter ad accounts that belong to this BM
-                linked_ad_accounts = [
-                    acc for acc in all_ad_accounts 
-                    if acc.get("parent_business_manager_id") == bm_asset_id
-                ]
-                
-                # Add the count and the accounts to the metadata
-                if "asset_metadata" not in asset or asset["asset_metadata"] is None:
-                    asset["asset_metadata"] = {}
-                
-                asset["asset_metadata"]["ad_accounts_count"] = len(linked_ad_accounts)
-                asset["asset_metadata"]["ad_accounts"] = linked_ad_accounts
+                processed_assets.append(processed_asset)
 
-            enriched_assets.append(asset)
-
-        return {"assets": enriched_assets}
-
+        logger.info(f"🔍 Returning {len(processed_assets)} assets (unbound_only={unbound_only})")
+        return {"assets": processed_assets}
     except Exception as e:
-        logger.error(f"Error fetching all assets: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"An error occurred while fetching assets: {str(e)}"
-        )
+        logger.error(f"An unexpected error occurred while fetching assets: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"An unexpected server error occurred: {str(e)}")
 
 # ============================================================================
 # Asset Binding Operations
@@ -375,8 +434,7 @@ async def get_all_assets(
 class BindAssetRequest(BaseModel):
     asset_id: str
     organization_id: str
-    business_id: Optional[str] = None
-    notes: Optional[str] = None
+    bm_id: Optional[str] = None
 
 @router.post("/bind")
 async def bind_asset_to_client(
@@ -384,61 +442,80 @@ async def bind_asset_to_client(
     auto_bind_related: bool = Query(False, description="Auto-bind related ad accounts when binding a Business Manager"),
     current_user: User = Depends(require_superuser)
 ):
-    """Bind a Dolphin asset to a client organization"""
-    logger.info(f"🔗 Bind Request: asset_id={request.asset_id}, org_id={request.organization_id}, business_id={request.business_id}, auto_bind_related={auto_bind_related}")
+    """
+    Bind an asset (Business Manager or Ad Account) to a client organization.
+    For Business Managers: Only requires organization_id
+    For Ad Accounts: Requires both organization_id and bm_id
+    """
+    logger.info(f"🔗 Asset Bind Request: asset_id={request.asset_id}, org_id={request.organization_id}, bm_id={request.bm_id}")
+    
     try:
         supabase = get_supabase_client()
-        logger.info(f"🔗 Supabase client initialized: {type(supabase)}")
         
-        # Check if asset exists
-        logger.info(f"🔗 Checking if asset exists: {request.asset_id}")
-        try:
-            asset_response = supabase.table("dolphin_assets").select("*").eq("id", request.asset_id).execute()
-            logger.info(f"🔗 Asset response type: {type(asset_response)}")
-            logger.info(f"🔗 Asset response data count: {len(asset_response.data) if hasattr(asset_response, 'data') and asset_response.data else 0}")
-        except Exception as e:
-            logger.error(f"🔗 Error querying asset: {e}")
-            raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
-        
-        if not hasattr(asset_response, 'data') or not asset_response.data:
-            logger.error(f"🔗 Asset not found: {request.asset_id}")
+        # Verify asset exists
+        asset_response = supabase.table("asset").select("*").eq("id", request.asset_id).execute()
+        if not (hasattr(asset_response, 'data') and asset_response.data):
             raise HTTPException(status_code=404, detail="Asset not found")
         
         asset = asset_response.data[0]
-        logger.info(f"🔗 Found asset: {asset['name']} ({asset['asset_type']})")
+        asset_type = asset["type"]
         
-        # Check if asset is already bound - use a simpler query
-        logger.info(f"🔗 Checking existing bindings for asset: {request.asset_id}")
+        # Validation based on asset type
+        if asset_type == "ad_account" and not request.bm_id:
+            raise HTTPException(status_code=400, detail="Business Manager ID (bm_id) is required for ad account binding")
+        
+        # Check for existing active bindings
+        logger.info(f"🔗 Checking for existing bindings for asset: {request.asset_id}")
         try:
-            # Use a simpler query without maybe_single() to avoid potential issues
-            existing_bindings = supabase.table("client_asset_bindings").select("id").eq("asset_id", request.asset_id).eq("status", "active").execute()
-            logger.info(f"🔗 Existing bindings response type: {type(existing_bindings)}")
-            logger.info(f"🔗 Existing bindings count: {len(existing_bindings.data) if hasattr(existing_bindings, 'data') and existing_bindings.data else 0}")
+            existing_bindings = supabase.table("asset_binding").select("id, organization_id, status").eq("asset_id", request.asset_id).eq("status", "active").execute()
             
             if hasattr(existing_bindings, 'data') and existing_bindings.data:
-                logger.error(f"🔗 Asset already bound: {request.asset_id}")
-                raise HTTPException(status_code=400, detail="Asset is already bound to another client")
-                
+                existing_org_id = existing_bindings.data[0]["organization_id"]
+                if existing_org_id != request.organization_id:
+                    raise HTTPException(status_code=400, detail=f"Asset is already bound to a different organization")
+                else:
+                    raise HTTPException(status_code=400, detail=f"Asset is already bound to this organization")
+                    
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"🔗 Error querying existing bindings: {e}")
             raise HTTPException(status_code=500, detail=f"Database query error: {str(e)}")
         
+        # For Business Manager binding, create a business_managers record first
+        bm_id_for_binding = request.bm_id
+        if asset_type == "business_manager":
+            logger.info(f"🔗 Creating business_managers record for BM asset: {asset['dolphin_id']}")
+            try:
+                bm_record_data = {
+                    "organization_id": request.organization_id,
+                    "dolphin_business_manager_id": asset["dolphin_id"],
+                    "status": "active"
+                }
+                
+                bm_record_response = supabase.table("business_managers").insert(bm_record_data).execute()
+                if hasattr(bm_record_response, 'data') and bm_record_response.data:
+                    bm_id_for_binding = bm_record_response.data[0]["bm_id"]
+                    logger.info(f"🔗 Created business_managers record with bm_id: {bm_id_for_binding}")
+                else:
+                    logger.warning(f"🔗 Failed to create business_managers record")
+                    
+            except Exception as e:
+                logger.error(f"🔗 Error creating business_managers record: {e}")
+                # Continue without failing - we can still create the binding
+        
         # Create main binding
         binding_data = {
             "asset_id": request.asset_id,
             "organization_id": request.organization_id,
-            "business_id": request.business_id,
             "status": "active",
             "bound_at": datetime.now(timezone.utc).isoformat(),
-            "bound_by": current_user.uid,
-            "notes": request.notes
+            "bound_by": current_user.uid
         }
         
         logger.info(f"🔗 Creating binding: {binding_data}")
         try:
-            binding_response = supabase.table("client_asset_bindings").insert(binding_data).execute()
+            binding_response = supabase.table("asset_binding").insert(binding_data).execute()
             logger.info(f"🔗 Insert response type: {type(binding_response)}")
             logger.info(f"🔗 Insert response data: {binding_response.data if hasattr(binding_response, 'data') else 'No data'}")
         except Exception as e:
@@ -454,33 +531,36 @@ async def bind_asset_to_client(
         
         # Auto-bind related ad accounts if requested and this is a Business Manager
         related_bindings = []
-        if auto_bind_related and asset["asset_type"] == "business_manager":
-            logger.info(f"🔗 Auto-binding related ad accounts for BM: {asset['asset_id']}")
+        if auto_bind_related and asset["type"] == "business_manager":
+            logger.info(f"🔗 Auto-binding related ad accounts for BM: {asset['dolphin_id']}")
             
             try:
-                # Find all ad accounts that belong to this Business Manager
-                related_ads_response = supabase.table("dolphin_assets").select("*").eq("asset_type", "ad_account").eq("parent_business_manager_id", asset["asset_id"]).execute()
+                # Find all ad accounts that belong to this Business Manager (using metadata approach)
+                related_ads_response = supabase.table("asset").select("*").eq("type", "ad_account").execute()
                 
-                related_ad_accounts = related_ads_response.data if hasattr(related_ads_response, 'data') else []
+                all_ad_accounts = related_ads_response.data if hasattr(related_ads_response, 'data') else []
+                # Filter for ad accounts that belong to this business manager
+                related_ad_accounts = [
+                    ad for ad in all_ad_accounts 
+                    if ad.get("metadata", {}).get("business_manager_id") == asset["dolphin_id"]
+                ]
                 logger.info(f"🔗 Found {len(related_ad_accounts)} related ad accounts")
                 
                 for ad_account in related_ad_accounts:
                     # Check if this ad account is already bound
-                    existing_ad_bindings = supabase.table("client_asset_bindings").select("id").eq("asset_id", ad_account["id"]).eq("status", "active").execute()
+                    existing_ad_bindings = supabase.table("asset_binding").select("id").eq("asset_id", ad_account["id"]).eq("status", "active").execute()
                     
                     if not (hasattr(existing_ad_bindings, 'data') and existing_ad_bindings.data):
-                        # Bind this ad account
+                        # Bind this ad account using the same organization
                         ad_binding_data = {
                             "asset_id": ad_account["id"],
                             "organization_id": request.organization_id,
-                            "business_id": request.business_id,
                             "status": "active",
                             "bound_at": datetime.now(timezone.utc).isoformat(),
-                            "bound_by": current_user.uid,
-                            "notes": f"Auto-bound with Business Manager: {asset['name']}"
+                            "bound_by": current_user.uid
                         }
                         
-                        ad_binding_response = supabase.table("client_asset_bindings").insert(ad_binding_data).execute()
+                        ad_binding_response = supabase.table("asset_binding").insert(ad_binding_data).execute()
                         if hasattr(ad_binding_response, 'data') and ad_binding_response.data:
                             related_bindings.append({
                                 "binding_id": ad_binding_response.data[0]["id"],
@@ -502,7 +582,8 @@ async def bind_asset_to_client(
             "binding_id": main_binding_id,
             "message": "Asset bound successfully",
             "related_bindings": related_bindings,
-            "auto_bound_count": len(related_bindings)
+            "auto_bound_count": len(related_bindings),
+            "business_manager_id": bm_id_for_binding if asset_type == "business_manager" else None
         }
         
     except HTTPException:
@@ -526,12 +607,12 @@ async def bind_business_manager_with_accounts(
         supabase = get_supabase_client()
         
         # Verify this is a Business Manager
-        asset_response = supabase.table("dolphin_assets").select("*").eq("id", request.asset_id).execute()
+        asset_response = supabase.table("asset").select("*").eq("id", request.asset_id).execute()
         if not (hasattr(asset_response, 'data') and asset_response.data):
             raise HTTPException(status_code=404, detail="Asset not found")
         
         asset = asset_response.data[0]
-        if asset["asset_type"] != "business_manager":
+        if asset["type"] != "business_manager":
             raise HTTPException(status_code=400, detail="This endpoint is only for Business Managers")
         
         # Use the main bind endpoint with auto_bind_related=True
@@ -542,7 +623,7 @@ async def bind_business_manager_with_accounts(
         result = await bind_asset_to_client(request, auto_bind_related=True, current_user=current_user)
         
         # Get the BM metadata to show ad accounts count
-        bm_metadata = asset.get("asset_metadata", {})
+        bm_metadata = asset.get("metadata", {})
         expected_ad_accounts = bm_metadata.get("cabs_count", 0)
         
         return {
@@ -550,7 +631,7 @@ async def bind_business_manager_with_accounts(
             "business_manager": {
                 "id": asset["id"],
                 "name": asset["name"],
-                "facebook_id": asset["asset_id"]
+                "facebook_id": asset["dolphin_id"]
             },
             "binding_id": result["binding_id"],
             "expected_ad_accounts": expected_ad_accounts,
@@ -568,29 +649,104 @@ async def bind_business_manager_with_accounts(
 @router.post("/unbind/{binding_id}")
 async def unbind_asset_from_client(
     binding_id: str,
+    cascade: bool = Query(True, description="Auto-unbind related ad accounts when unbinding a Business Manager"),
     reason: Optional[str] = None,
     current_user: User = Depends(require_superuser)
 ):
-    """Unbind an asset from a client"""
+    """Unbind an asset from a client with optional cascading for Business Managers"""
     try:
         supabase = get_supabase_client()
         
-        # Check if binding exists
-        binding_response = supabase.table("client_asset_bindings").select("*").eq("id", binding_id).maybe_single().execute()
+        # Get binding with asset info (use LEFT JOIN to handle orphaned bindings)
+        binding_response = supabase.table("asset_binding").select("""
+            *,
+            asset(type, dolphin_id, name)
+        """).eq("id", binding_id).single().execute()
+        
         if not binding_response.data:
             raise HTTPException(status_code=404, detail="Binding not found")
         
-        # Update binding status to inactive
-        update_data = {
-            "status": "inactive",
-            "notes": f"Unbound by admin. Reason: {reason}" if reason else "Unbound by admin"
-        }
+        binding = binding_response.data
+        asset = binding.get("asset")
         
-        supabase.table("client_asset_bindings").update(update_data).eq("id", binding_id).execute()
+        # Handle orphaned bindings (binding exists but asset is missing)
+        if not asset:
+            logger.warning(f"🔗 Unbinding orphaned binding: {binding_id} (asset_id: {binding.get('asset_id')})")
+            asset_type = "orphaned"
+            asset_name = f"Missing Asset ({binding.get('asset_id', 'unknown')[:8]}...)"
+        else:
+            asset_type = asset["type"]
+            asset_name = asset["name"]
+        
+        logger.info(f"🔗 Unbinding {asset_type} asset: {asset_name} (binding_id: {binding_id})")
+        
+        unbind_count = 1
+        
+        # If this is a Business Manager and cascade is enabled, unbind all associated ad accounts FIRST
+        if asset_type == "business_manager" and cascade and asset:
+            logger.info(f"🔗 Cascading unbind for BM: {asset['dolphin_id']}")
+            
+            # Find all ad accounts bound to this organization that belong to this BM
+            related_bindings_response = supabase.table("asset_binding").select("""
+                id,
+                asset(type, metadata)
+            """).eq("organization_id", binding["organization_id"]).eq("status", "active").execute()
+            
+            if related_bindings_response.data:
+                for related_binding in related_bindings_response.data:
+                    related_asset = related_binding.get("asset")
+                    if (related_asset and 
+                        related_asset["type"] == "ad_account" and 
+                        related_asset.get("metadata", {}).get("business_manager_id") == asset["dolphin_id"]):
+                        
+                        # Unbind this related ad account
+                        supabase.table("asset_binding").update({
+                            "status": "inactive"
+                        }).eq("id", related_binding["id"]).execute()
+                        
+                        unbind_count += 1
+                        logger.info(f"🔗 Cascaded unbind for ad account: {related_binding['id']}")
+            
+            logger.info(f"🔗 Cascade complete for BM: {asset['dolphin_id']}")
+        # For orphaned bindings, we can still cascade by looking at the organization
+        elif asset_type == "orphaned" and cascade:
+            logger.info(f"🔗 Attempting cascade for orphaned BM binding: {binding_id}")
+            
+            # Try to find related ad accounts by organization
+            # This is a best-effort cleanup for orphaned Business Manager bindings
+            related_bindings_response = supabase.table("asset_binding").select("""
+                id,
+                asset_id
+            """).eq("organization_id", binding["organization_id"]).eq("status", "active").execute()
+            
+            if related_bindings_response.data:
+                # For orphaned bindings, we can't determine exact relationships
+                # But we can clean up other orphaned bindings in the same organization
+                for related_binding in related_bindings_response.data:
+                    if related_binding["id"] != binding_id:  # Don't unbind self
+                        # Check if this related binding is also orphaned
+                        asset_check = supabase.table("asset").select("id").eq("id", related_binding["asset_id"]).execute()
+                        if not asset_check.data:  # This is also orphaned
+                            supabase.table("asset_binding").update({
+                                "status": "inactive"
+                            }).eq("id", related_binding["id"]).execute()
+                            
+                            unbind_count += 1
+                            logger.info(f"🔗 Cleaned up orphaned binding: {related_binding['id']}")
+            
+            logger.info(f"🔗 Orphaned binding cleanup complete")
+        
+        # Now update the main binding status to inactive (after cascade is complete)
+        supabase.table("asset_binding").update({
+            "status": "inactive"
+        }).eq("id", binding_id).execute()
+        
+        logger.info(f"🔗 Unbind complete: {unbind_count} assets unbound")
         
         return {
             "success": True,
-            "message": "Asset unbound successfully"
+            "message": f"Asset unbound successfully ({unbind_count} total assets affected)",
+            "assets_unbound": unbind_count
         }
         
     except HTTPException:
@@ -606,250 +762,445 @@ async def unbind_asset_from_client(
 @router.get("/client/{organization_id}")
 async def get_client_assets(
     organization_id: str,
-    business_id: Optional[str] = None,
+    bm_id: Optional[str] = None,
     asset_type: Optional[str] = None,
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get all assets assigned to a specific client
-    This is what clients see on their dashboard
+    Get all assets that are bound to a specific client organization.
+    This replaces the old individual endpoints for ad accounts, bms, etc.
     """
+    logger.info(f"🔍 Getting client assets for org: {organization_id}, bm_id: {bm_id}, asset_type: {asset_type}")
+    
     try:
         supabase = get_supabase_client()
         
-        # Build query for client assets
-        query = supabase.table("client_asset_bindings").select("""
-            *,
-            dolphin_assets!inner(*),
-            organizations!inner(name),
-            businesses(name)
-        """).eq("organization_id", organization_id).eq("status", "active")
+        # First, let's get all bindings for this organization to see what we're working with
+        bindings_only_response = supabase.table("asset_binding").select("*").eq("organization_id", organization_id).eq("status", "active").execute()
         
-        if business_id:
-            query = query.eq("business_id", business_id)
+        logger.info(f"🔍 Found {len(bindings_only_response.data) if bindings_only_response.data else 0} active bindings for organization {organization_id}")
         
-        if asset_type:
-            query = query.eq("dolphin_assets.asset_type", asset_type)
+        if bindings_only_response.data:
+            for binding in bindings_only_response.data:
+                asset_id = binding.get("asset_id")
+                
+                # Check if the corresponding asset exists
+                asset_check = supabase.table("asset").select("id, name, type").eq("id", asset_id).execute()
+                if asset_check.data:
+                    logger.info(f"🔍 Asset exists: {asset_check.data[0]}")
+                else:
+                    logger.error(f"🔍 Asset NOT found in asset table for asset_id: {asset_id}")
         
-        response = query.execute()
+        # Use the RPC function instead of manual JOIN to avoid foreign key issues
+        # This RPC function handles the JOIN properly and returns clean data
+        logger.info(f"🔍 Using get_organization_assets RPC for organization: {organization_id}")
+        response = supabase.rpc("get_organization_assets", {
+            "p_organization_id": organization_id,
+            "p_asset_type": asset_type
+        }).execute()
         
-        # Format response
-        assets = []
-        for binding in response.data:
-            asset = binding["dolphin_assets"]
-            asset_data = {
-                "id": asset["id"],
-                "asset_type": asset["asset_type"],
-                "asset_id": asset["asset_id"],
-                "name": asset["name"],
-                "status": asset["status"],
-                "health_status": asset["health_status"],
-                "parent_business_manager_id": asset.get("parent_business_manager_id"),
-                "asset_metadata": asset.get("asset_metadata", {}),
-                "discovered_at": asset["discovered_at"],
-                "last_sync_at": asset.get("last_sync_at"),
-                "is_bound": True,
-                "binding_info": {
-                    "binding_id": binding["id"],
-                    "organization_name": binding["organizations"]["name"],
-                    "business_name": binding["businesses"]["name"] if binding.get("businesses") else None,
-                    "bound_at": binding["bound_at"]
-                }
+        if not hasattr(response, 'data'):
+            logger.error(f"🔍 No data in RPC response: {response}")
+            return []
+        
+        logger.info(f"🔍 RPC returned {len(response.data)} assets")
+        
+        client_assets = []
+        
+        for asset_data in response.data:
+            # The RPC returns clean data, no need for complex processing
+            asset_details = {
+                "binding_id": asset_data["binding_id"],
+                "asset_id": asset_data["id"],
+                "asset_type": asset_data["type"],
+                "name": asset_data["name"],
+                "status": asset_data["status"],
+                "binding_status": "active",  # RPC only returns active bindings
+                "bound_at": asset_data["bound_at"],
+                "bm_id": None,  # Not used in current implementation
+                "business_name": None,  # Not used in current implementation
+                "asset_metadata": asset_data.get("metadata"),
+                "dolphin_asset_id": asset_data.get("dolphin_id"),
+                "is_orphaned": False  # RPC only returns valid assets
             }
-            assets.append(asset_data)
+            
+            client_assets.append(asset_details)
         
-        return {
-            "assets": assets,
-            "total": len(assets),
-            "by_type": {
-                "profiles": len([a for a in assets if a["asset_type"] == "profile"]),
-                "business_managers": len([a for a in assets if a["asset_type"] == "business_manager"]),
-                "ad_accounts": len([a for a in assets if a["asset_type"] == "ad_account"])
-            }
-        }
-        
+        logger.info(f"🔍 Returning {len(client_assets)} client assets")
+        return client_assets
+
     except Exception as e:
-        logger.error(f"Error fetching client assets: {e}")
+        logger.error(f"Error fetching client assets for org {organization_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 # ============================================================================
-# Debug Operations
+# Debug and Testing Endpoints
 # ============================================================================
+
+@router.get("/debug/binding-check")
+async def debug_binding_check(current_user: User = Depends(require_superuser)):
+    """Debug endpoint to check binding relationships"""
+    try:
+        supabase = get_supabase_client()
+        
+        # Get all bindings
+        bindings_resp = supabase.table("asset_binding").select("id, asset_id").execute()
+        
+        return {
+            "bindings_count": len(bindings_resp.data) if bindings_resp.data else 0,
+            "sample_bindings": bindings_resp.data[:5] if bindings_resp.data else []
+        }
+        
+    except Exception as e:
+        logger.error(f"Debug binding check error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/debug/database-check")
 async def debug_database_check(
     current_user: User = Depends(require_superuser)
 ):
-    """Debug endpoint to check database connectivity and table existence"""
+    """Check database table accessibility and basic structure"""
     try:
         supabase = get_supabase_client()
-        logger.info(f"🔍 Debug: Supabase client type: {type(supabase)}")
         
-        # Test basic connectivity
-        try:
-            test_response = supabase.table("dolphin_assets").select("count", count="exact").execute()
-            logger.info(f"🔍 Debug: Test response type: {type(test_response)}")
-            logger.info(f"🔍 Debug: Test response: {test_response}")
-            
-            if test_response and hasattr(test_response, 'count'):
-                asset_count = test_response.count
-            else:
-                asset_count = "unknown"
-        except Exception as e:
-            logger.error(f"🔍 Debug: Error getting count: {e}")
-            asset_count = f"error: {str(e)}"
+        tables_status = {}
         
-        # Test getting actual assets
+        # Test asset table
         try:
-            assets_response = supabase.table("dolphin_assets").select("id, name, asset_type").limit(10).execute()
-            logger.info(f"🔍 Debug: Assets response type: {type(assets_response)}")
-            logger.info(f"🔍 Debug: Assets response: {assets_response}")
-            
-            if assets_response and hasattr(assets_response, 'data'):
-                assets_list = assets_response.data
-                logger.info(f"🔍 Debug: Found {len(assets_list)} assets")
-            else:
-                assets_list = []
+            assets_resp = supabase.table("asset").select("*").limit(1).execute()
+            tables_status["asset"] = {
+                "accessible": True,
+                "count": len(assets_resp.data) if assets_resp.data else 0,
+                "sample_columns": list(assets_resp.data[0].keys()) if assets_resp.data else []
+            }
         except Exception as e:
-            logger.error(f"🔍 Debug: Error getting assets: {e}")
-            assets_list = f"error: {str(e)}"
+            tables_status["asset"] = {"accessible": False, "error": str(e)}
         
-        # Test bindings table
+        # Test asset_binding table
         try:
-            bindings_response = supabase.table("client_asset_bindings").select("count", count="exact").execute()
-            if bindings_response and hasattr(bindings_response, 'count'):
-                bindings_count = bindings_response.count
-            else:
-                bindings_count = "unknown"
+            bindings_resp = supabase.table("asset_binding").select("*").limit(1).execute()
+            tables_status["asset_binding"] = {
+                "accessible": True,
+                "count": len(bindings_resp.data) if bindings_resp.data else 0,
+                "sample_columns": list(bindings_resp.data[0].keys()) if bindings_resp.data else []
+            }
         except Exception as e:
-            logger.error(f"🔍 Debug: Error getting bindings count: {e}")
-            bindings_count = f"error: {str(e)}"
+            tables_status["asset_binding"] = {"accessible": False, "error": str(e)}
         
         return {
-            "database_connected": True,
-            "supabase_client_type": str(type(supabase)),
-            "assets_count": asset_count,
-            "bindings_count": bindings_count,
-            "sample_assets": assets_list,
-            "environment_check": {
-                "supabase_url": settings.SUPABASE_URL[:50] + "..." if settings.SUPABASE_URL else "NOT SET",
-                "service_role_key": "SET" if settings.SUPABASE_SERVICE_ROLE_KEY else "NOT SET",
-                "anon_key": "SET" if settings.SUPABASE_ANON_KEY else "NOT SET"
-            }
+            "database_accessible": True,
+            "tables": tables_status,
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
         
     except Exception as e:
-        logger.error(f"🔍 Debug: Database check failed: {e}")
+        logger.error(f"Database check error: {e}")
         return {
-            "database_connected": False,
+            "database_accessible": False,
             "error": str(e),
-            "supabase_client_type": "failed to initialize"
+            "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
 @router.get("/debug/test-bindings-table")
 async def test_bindings_table(current_user: User = Depends(require_superuser)):
-    """Test if the client_asset_bindings table exists and is accessible"""
+    """Test basic CRUD operations on asset_binding table"""
     try:
         supabase = get_supabase_client()
         
-        # Test 1: Try to query the table structure
-        logger.info("🔍 Testing client_asset_bindings table access...")
+        # Test SELECT
+        select_resp = supabase.table("asset_binding").select("*").limit(5).execute()
         
-        # Test 2: Try a simple select
-        try:
-            response = supabase.table("client_asset_bindings").select("*").limit(1).execute()
-            logger.info(f"🔍 Bindings table query response: {response}")
-            logger.info(f"🔍 Response type: {type(response)}")
-            logger.info(f"🔍 Response data: {response.data if hasattr(response, 'data') else 'No data attr'}")
-            
-            table_accessible = True
-            row_count = len(response.data) if hasattr(response, 'data') and response.data else 0
-        except Exception as e:
-            logger.error(f"🔍 Error accessing bindings table: {e}")
-            table_accessible = False
-            row_count = "error"
-        
-        # Test 3: Try the exact query that's failing in bind
-        try:
-            test_asset_id = "test-id"
-            existing_binding = supabase.table("client_asset_bindings").select("id").eq("asset_id", test_asset_id).eq("status", "active").maybe_single().execute()
-            logger.info(f"🔍 Test binding query response: {existing_binding}")
-            logger.info(f"🔍 Test binding response type: {type(existing_binding)}")
-            
-            binding_query_works = existing_binding is not None
-        except Exception as e:
-            logger.error(f"🔍 Error with binding query: {e}")
-            binding_query_works = False
-        
+        # Test for orphaned bindings
+        orphaned_resp = supabase.table("asset_binding").select("id, asset_id").execute()
+
         return {
-            "table_accessible": table_accessible,
-            "row_count": row_count,
-            "binding_query_works": binding_query_works,
-            "supabase_client_type": str(type(supabase))
+            "table_accessible": True,
+            "total_bindings": len(select_resp.data) if select_resp.data else 0,
+            "sample_bindings": select_resp.data[:3] if select_resp.data else [],
+            "orphaned_bindings": orphaned_resp.data[:5] if orphaned_resp.data else [],  # Show first 5 orphaned
+            "schema_columns": list(select_resp.data[0].keys()) if select_resp.data else []
         }
         
     except Exception as e:
-        logger.error(f"🔍 Debug test failed: {e}")
-        return {
-            "error": str(e),
-            "table_accessible": False
-        }
+        logger.error(f"Test bindings table error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/bind-test")
 async def bind_asset_test(
     request: BindAssetRequest,
     current_user: User = Depends(require_superuser)
 ):
-    """Test version of bind endpoint to isolate the issue"""
-    logger.info(f"🔗 TEST Bind Request: asset_id={request.asset_id}")
+    """Test binding creation"""
     try:
         supabase = get_supabase_client()
         
-        # Step 1: Test basic table access
-        logger.info("🔗 TEST: Testing basic table access...")
-        try:
-            test_assets = supabase.table("dolphin_assets").select("id").limit(1).execute()
-            logger.info(f"🔗 TEST: Assets table works: {len(test_assets.data) if test_assets.data else 0} rows")
-        except Exception as e:
-            logger.error(f"🔗 TEST: Assets table error: {e}")
-            return {"error": f"Assets table error: {e}"}
+        test_binding = {
+            "asset_id": request.asset_id,
+            "organization_id": request.organization_id,
+            "status": "active",
+            "bound_at": datetime.now(timezone.utc).isoformat(),
+            "bound_by": current_user.uid
+        }
         
-        # Step 2: Test bindings table access
-        logger.info("🔗 TEST: Testing bindings table access...")
-        try:
-            test_bindings = supabase.table("client_asset_bindings").select("id").limit(1).execute()
-            logger.info(f"🔗 TEST: Bindings table works: {len(test_bindings.data) if test_bindings.data else 0} rows")
-        except Exception as e:
-            logger.error(f"🔗 TEST: Bindings table error: {e}")
-            return {"error": f"Bindings table error: {e}"}
+        response = supabase.table("asset_binding").insert(test_binding).execute()
         
-        # Step 3: Test specific asset lookup
-        logger.info(f"🔗 TEST: Looking for asset {request.asset_id}...")
-        try:
-            asset_response = supabase.table("dolphin_assets").select("*").eq("id", request.asset_id).execute()
-            if not asset_response.data:
-                return {"error": f"Asset {request.asset_id} not found"}
-            logger.info(f"🔗 TEST: Found asset: {asset_response.data[0]['name']}")
-        except Exception as e:
-            logger.error(f"🔗 TEST: Asset lookup error: {e}")
-            return {"error": f"Asset lookup error: {e}"}
-        
-        # Step 4: Test binding check
-        logger.info("🔗 TEST: Checking for existing bindings...")
-        try:
-            existing_bindings = supabase.table("client_asset_bindings").select("id").eq("asset_id", request.asset_id).execute()
-            logger.info(f"🔗 TEST: Found {len(existing_bindings.data)} existing bindings")
-        except Exception as e:
-            logger.error(f"🔗 TEST: Binding check error: {e}")
-            return {"error": f"Binding check error: {e}"}
+        if response.data:
+            binding_id = response.data[0]["id"]
+            # Clean up test binding
+            supabase.table("asset_binding").delete().eq("id", binding_id).execute()
         
         return {
-            "success": True,
-            "message": "All tests passed - ready for actual binding",
-            "asset_found": True,
-            "existing_bindings": len(existing_bindings.data)
+            "test_successful": True,
+            "message": "Test binding created and cleaned up successfully",
+            "test_data": test_binding
         }
         
     except Exception as e:
-        logger.error(f"🔗 TEST: Overall error: {e}")
-        return {"error": f"Overall error: {e}"} 
+        logger.error(f"🧪 Test bind error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/handle-profile-switch")
+async def handle_profile_switch(
+    old_profile_name: str,
+    new_profile_name: str,
+    current_user: User = Depends(require_superuser)
+):
+    """
+    Handle switching from one profile to another (e.g., A-Admin-1 to A-Backup-1)
+    Updates asset metadata but preserves all bindings and client assignments
+    
+    This is for failover scenarios where you need to switch from primary to backup profile
+    """
+    try:
+        logger.info(f"🔄 Profile switch request: {old_profile_name} → {new_profile_name}")
+        
+        supabase = get_supabase_client()
+        
+        # Validate that both profiles follow team naming convention
+        def extract_team_from_profile(profile_name: str):
+            import re
+            match = re.match(r'^([A-Z]+)-(Admin|Backup)-(\d+)$', profile_name)
+            if match:
+                return {
+                    'team': match.group(1),
+                    'role': match.group(2),
+                    'instance': match.group(3)
+                }
+            return None
+        
+        old_team_info = extract_team_from_profile(old_profile_name)
+        new_team_info = extract_team_from_profile(new_profile_name)
+        
+        if not old_team_info or not new_team_info:
+            raise HTTPException(
+                status_code=400, 
+                detail="Profile names must follow format: {TEAM}-{Admin|Backup}-{NUMBER}"
+            )
+        
+        if old_team_info['team'] != new_team_info['team']:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot switch between different teams: {old_team_info['team']} vs {new_team_info['team']}"
+            )
+        
+        # Find all assets managed by the old profile
+        assets_response = supabase.table("asset").select("*").execute()
+        
+        if not assets_response.data:
+            return {
+                "success": True,
+                "message": "No assets found to update",
+                "old_profile": old_profile_name,
+                "new_profile": new_profile_name,
+                "assets_updated": 0
+            }
+        
+        assets_updated = 0
+        
+        for asset in assets_response.data:
+            asset_metadata = asset.get("asset_metadata", {})
+            needs_update = False
+            
+            # Check if this asset is managed by the old profile
+            managing_profiles = asset_metadata.get("managing_profiles", [])
+            managing_profile = asset_metadata.get("managing_profile")
+            
+            # Update managing_profiles array
+            if managing_profiles:
+                for i, profile in enumerate(managing_profiles):
+                    if profile.get("name") == old_profile_name:
+                        managing_profiles[i]["name"] = new_profile_name
+                        needs_update = True
+            
+            # Update managing_profile string
+            if managing_profile == old_profile_name:
+                asset_metadata["managing_profile"] = new_profile_name
+                needs_update = True
+            
+            # Update the asset if needed
+            if needs_update:
+                asset_metadata["profile_switch_history"] = asset_metadata.get("profile_switch_history", [])
+                asset_metadata["profile_switch_history"].append({
+                    "from": old_profile_name,
+                    "to": new_profile_name,
+                    "switched_at": datetime.now(timezone.utc).isoformat(),
+                    "switched_by": current_user.uid
+                })
+                
+                supabase.table("asset").update({
+                    "asset_metadata": asset_metadata,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }).eq("id", asset["id"]).execute()
+                
+                assets_updated += 1
+                logger.info(f"🔄 Updated asset {asset['name']} profile reference: {old_profile_name} → {new_profile_name}")
+        
+        return {
+            "success": True,
+            "message": f"Profile switch completed successfully",
+            "old_profile": old_profile_name,
+            "new_profile": new_profile_name,
+            "team": old_team_info['team'],
+            "assets_updated": assets_updated,
+            "switch_timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"🔄 Profile switch error: {e}")
+        raise HTTPException(status_code=500, detail=f"Profile switch failed: {str(e)}")
+
+@router.get("/debug/test-logging")
+async def test_logging(
+    current_user: User = Depends(require_superuser)
+):
+    """Simple test endpoint to verify logging is working"""
+    logger.info("🧪 TEST: This is an INFO log message")
+    logger.warning("🧪 TEST: This is a WARNING log message")  
+    logger.error("🧪 TEST: This is an ERROR log message")
+    print("🧪 TEST: This is a print statement")
+    return {"message": "Test logging complete - check your backend terminal for log messages"}
+
+@router.get("/debug/dolphin-associations")
+async def debug_dolphin_associations(
+    current_user: User = Depends(require_superuser)
+):
+    """
+    Comprehensive diagnostic tool for Dolphin BM and ad account associations.
+    Helps identify permission and configuration issues.
+    """
+    try:
+        dolphin_api = DolphinCloudAPI()
+        
+        # Get raw data from both endpoints
+        profiles_data = await dolphin_api.get_fb_accounts()
+        cabs_data = await dolphin_api.get_fb_cabs()
+        
+        diagnosis = {
+            "summary": {
+                "profiles_count": len(profiles_data),
+                "cabs_count": len(cabs_data),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            },
+            "profiles_analysis": [],
+            "cabs_analysis": [],
+            "association_issues": [],
+            "recommendations": []
+        }
+        
+        # Analyze each profile
+        for profile in profiles_data:
+            profile_name = profile.get("name", "Unknown")
+            bms = profile.get("bm", [])
+            
+            profile_analysis = {
+                "name": profile_name,
+                "bm_count": len(bms),
+                "bms": [],
+                "raw_bm_data": bms,  # Add raw data for debugging
+                "profile_status": profile.get("status"),
+                "fb_id": profile.get("fb_id"),
+                "has_bm_field": "bm" in profile,
+                "bm_field_type": type(profile.get("bm", None)).__name__
+            }
+            
+            for bm in bms:
+                bm_info = {
+                    "id": bm.get("id"),
+                    "name": bm.get("name"),
+                    "business_id": bm.get("business_id"),
+                    "cabs_count": bm.get("cabs_count", 0)
+                }
+                profile_analysis["bms"].append(bm_info)
+            
+            diagnosis["profiles_analysis"].append(profile_analysis)
+        
+        # Analyze each CAB (ad account)
+        problematic_cabs = []
+        for cab in cabs_data:
+            cab_name = cab.get("name", "Unknown")
+            cab_id = cab.get("id")
+            bm_data = cab.get("bm", [])
+            business_data = cab.get("business")
+            accounts = cab.get("accounts", [])
+            
+            cab_analysis = {
+                "name": cab_name,
+                "id": cab_id,
+                "has_bm_data": len(bm_data) > 0,
+                "bm_data": bm_data,
+                "business_data": business_data,
+                "managing_profiles": [acc.get("name") for acc in accounts],
+                "status": cab.get("status"),
+                "account_status": cab.get("account_status")
+            }
+            
+            # Check for issues
+            if len(bm_data) == 0 and cab_name.startswith("AdHub-"):
+                problematic_cabs.append(cab_analysis)
+                diagnosis["association_issues"].append({
+                    "type": "missing_bm_association",
+                    "cab_name": cab_name,
+                    "cab_id": cab_id,
+                    "managing_profiles": [acc.get("name") for acc in accounts],
+                    "issue": "Ad account has no BM association in CAB data"
+                })
+            
+            diagnosis["cabs_analysis"].append(cab_analysis)
+        
+        # Generate recommendations
+        if problematic_cabs:
+            diagnosis["recommendations"].extend([
+                "Check if your profiles have proper permissions to the Business Managers",
+                "Verify that ad accounts are properly assigned to Business Managers in Facebook",
+                "Ensure your Dolphin profiles are added as admins to the relevant Business Managers",
+                "Check if there are pending invitations in Facebook Business Manager"
+            ])
+        
+        # Cross-reference analysis
+        profile_bm_ids = set()
+        for profile in diagnosis["profiles_analysis"]:
+            for bm in profile["bms"]:
+                if bm["id"]:
+                    profile_bm_ids.add(bm["id"])
+        
+        cab_bm_ids = set()
+        for cab in diagnosis["cabs_analysis"]:
+            for bm in cab["bm_data"]:
+                if bm.get("id"):
+                    cab_bm_ids.add(bm["id"])
+        
+        diagnosis["cross_reference"] = {
+            "bm_ids_in_profiles": list(profile_bm_ids),
+            "bm_ids_in_cabs": list(cab_bm_ids),
+            "bm_ids_only_in_profiles": list(profile_bm_ids - cab_bm_ids),
+            "bm_ids_only_in_cabs": list(cab_bm_ids - profile_bm_ids),
+            "common_bm_ids": list(profile_bm_ids & cab_bm_ids)
+        }
+        
+        return diagnosis
+        
+    except Exception as e:
+        logger.error(f"Error in Dolphin associations diagnosis: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Diagnosis failed: {str(e)}") 

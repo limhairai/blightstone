@@ -56,15 +56,14 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
       
       if (!organizationId) throw new Error('No organization found for user.');
 
-      const response = await fetch('/api/businesses', {
+      const response = await fetch('/api/bm-applications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token || ''}`,
         },
         body: JSON.stringify({
-          name: name,
-          website: website,
+          website_url: website,
           organization_id: organizationId,
         }),
       })

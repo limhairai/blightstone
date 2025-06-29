@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Loader2, AlertCircle } from "lucide-react"
+import { Loader2, AlertCircle, Building, Users } from "lucide-react"
 import { toast } from "sonner"
 import type { DolphinAsset } from "@/services/supabase-service"
 
@@ -24,28 +24,49 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const isBusinessManager = asset.asset_type === 'business_manager'
+
   const handleUnbind = async () => {
     setIsSubmitting(true)
     try {
-      const response = await fetch(`/api/admin/asset-bindings`, {
-        method: "DELETE",
+      console.log('🔗 Starting unbind process for asset:', {
+        name: asset.name,
+        asset_id: asset.asset_id || asset.id,
+        organization_id: asset.organization_id,
+        dolphin_id: asset.dolphin_asset_id || asset.dolphin_id
+      })
+
+      // Instead of trying to find the binding through the client endpoint,
+      // let's use the backend's unbind-by-asset-id endpoint directly
+      const response = await fetch(`/api/admin/dolphin-assets/unbind-by-asset`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          asset_id: asset.id,
-          business_id: asset.binding_info?.business_id
-        }),
+        body: JSON.stringify({
+          asset_id: asset.asset_id || asset.id,
+          organization_id: asset.organization_id,
+          cascade: isBusinessManager
+        })
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || "Failed to unbind asset.")
+        console.error('🔗 Unbind failed:', errorData)
+        throw new Error(errorData.error || errorData.detail || "Failed to unbind asset.")
       }
 
-      toast.success("Asset unbound successfully.")
+      const result = await response.json()
+      console.log('🔗 Unbind successful:', result)
+      
+      if (result.unbind_count > 1) {
+        toast.success(`Successfully unbound ${result.unbind_count} assets (${isBusinessManager ? 'Business Manager + related ad accounts' : 'asset'})`)
+      } else {
+        toast.success(result.message || "Asset unbound successfully")
+      }
+
       onSuccess() // Refresh the assets list
       setOpen(false) // Close the dialog
     } catch (error) {
-      console.error("Unbinding error:", error)
+      console.error("🔗 Unbinding error:", error)
       toast.error(error instanceof Error ? error.message : "An unknown error occurred.")
     } finally {
       setIsSubmitting(false)
@@ -61,12 +82,14 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
       </DialogTrigger>
       <DialogContent className="dark">
         <DialogHeader>
-          <DialogTitle>Manage Asset: {asset.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {isBusinessManager ? <Building className="h-5 w-5" /> : <Users className="h-5 w-5" />}
+            Manage Asset: {asset.name}
+          </DialogTitle>
           <DialogDescription>
-            This asset is currently bound to{" "}
+            This {isBusinessManager ? 'business manager' : 'ad account'} is currently bound to{" "}
             <span className="font-semibold text-primary">
-              {asset.binding_info?.organization_name}
-              {asset.binding_info?.business_name && ` > ${asset.binding_info.business_name}`}
+              {asset.organization_name}
             </span>.
           </DialogDescription>
         </DialogHeader>
@@ -75,10 +98,23 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
           <div className="flex items-start">
             <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
             <div className="flex-1">
-              <h4 className="font-semibold text-red-400">Unbind Asset</h4>
+              <h4 className="font-semibold text-red-400">
+                Unbind {isBusinessManager ? 'Business Manager' : 'Ad Account'}
+              </h4>
               <p className="text-sm text-gray-400 mt-1">
-                Unbinding this asset will remove its association with the current business. 
-                It can be reassigned later. This action cannot be undone.
+                {isBusinessManager ? (
+                  <>
+                    <strong>Cascade Effect:</strong> Unbinding this business manager will also unbind all associated ad accounts. 
+                    This will remove the entire business manager and its ad accounts from the client's dashboard.
+                  </>
+                ) : (
+                  <>
+                    Unbinding this ad account will remove it from the client's dashboard, but other ad accounts 
+                    in the same business manager will remain bound.
+                  </>
+                )}
+                <br /><br />
+                This action cannot be undone, but assets can be reassigned later.
               </p>
             </div>
           </div>
@@ -95,7 +131,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
                 Unbinding...
               </>
             ) : (
-              "Unbind Asset"
+              `Unbind ${isBusinessManager ? 'Business Manager' : 'Ad Account'}`
             )}
           </Button>
         </DialogFooter>

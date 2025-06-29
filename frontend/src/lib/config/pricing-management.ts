@@ -238,13 +238,13 @@ export const getPricingForUser = (
 export const updatePricingPlan = (planId: string, updates: Partial<PricingPlan>): boolean => {
   // In a real implementation, this would update the database
   // For now, this is a placeholder for the admin interface
-  console.log(`Updating plan ${planId} with:`, updates)
+
   return true
 }
 
 export const createPricingExperiment = (experiment: PricingExperiment): boolean => {
   // Placeholder for creating pricing experiments
-  console.log('Creating pricing experiment:', experiment)
+
   return true
 }
 

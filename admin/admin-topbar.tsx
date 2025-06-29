@@ -36,7 +36,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   }
 
   const signOut = () => {
-    console.log("Admin sign out")
+    
   }
 
   return (

@@ -32,7 +32,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../ui/dialog"
-import { APP_ORGANIZATIONS } from "../../lib/mock-data"
+// Note: APP_ORGANIZATIONS import removed - using real organization data instead
 import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 
 export function SettingsView() {

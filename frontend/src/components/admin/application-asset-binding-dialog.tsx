@@ -2,30 +2,43 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react"
 import { useSWRConfig } from "swr"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Label } from "../ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Loader2, AlertCircle, Building2, Users, CheckCircle } from "lucide-react"
+import { Loader2, AlertCircle, Building2, Users, CheckCircle, Search, Plus } from "lucide-react"
 import { Alert, AlertDescription } from "../ui/alert"
 import { toast } from "sonner"
 import { Badge } from "../ui/badge"
 import { useAuth } from "@/contexts/AuthContext"
 import type { DolphinAsset } from "@/services/supabase-service"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
+type RequestMode = 'new-bm' | 'additional-accounts-specific' | 'additional-accounts-general'
 
 interface Application {
   id: string
   organization_name: string
-  business_id?: string
   business_name: string
-  facebook_business_manager_id?: string
-  facebook_business_manager_name?: string
+  request_type?: string
+  target_bm_id?: string
+}
+
+interface BusinessManager {
+  id: string
+  name: string
+  asset_id: string
+  current_account_count: number
 }
 
 interface ApplicationAssetBindingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   application: Application | null;
+  mode: RequestMode;
+  targetBmId?: string; // For specific BM requests
+  existingBMs?: BusinessManager[]; // For general additional requests
   onSuccess: () => void;
 }
 
@@ -33,6 +46,9 @@ export function ApplicationAssetBindingDialog({
   open,
   onOpenChange,
   application,
+  mode,
+  targetBmId,
+  existingBMs = [],
   onSuccess,
 }: ApplicationAssetBindingDialogProps) {
   const { session } = useAuth()
@@ -40,70 +56,89 @@ export function ApplicationAssetBindingDialog({
   const [assets, setAssets] = useState<DolphinAsset[]>([])
   const [loadingAssets, setLoadingAssets] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
   
-  const [selectedAssets, setSelectedAssets] = useState<{
-    business_manager?: string
-    ad_accounts: string[]
-  }>({
-    ad_accounts: []
-  })
+  const [selectedBusinessManager, setSelectedBusinessManager] = useState<string | null>(null)
+  const [selectedAdAccounts, setSelectedAdAccounts] = useState<string[]>([])
 
   const { mutate } = useSWRConfig()
 
-  const hasPredefinedBM = !!application?.facebook_business_manager_id;
-
   const loadAvailableAssets = useCallback(async () => {
     setLoadingAssets(true)
+    setError(null)
     try {
       const response = await fetch("/api/admin/dolphin-assets/all-assets?unbound_only=true")
       if (!response.ok) {
-        throw new Error("Failed to fetch assets")
+        throw new Error("Failed to fetch available assets")
       }
       const data = await response.json()
       setAssets(data.assets || [])
     } catch (error) {
       console.error("Failed to load assets:", error)
-      toast.error("Could not load available assets.")
+      setError("Could not load available assets. Please try again.")
     } finally {
       setLoadingAssets(false)
     }
   }, []);
 
-  // Load available assets only when dialog opens
+  // Reset state when dialog opens/closes
   useEffect(() => {
     if (open) {
       loadAvailableAssets()
-    }
-  }, [open, loadAvailableAssets])
+      setSelectedAdAccounts([])
+      setSearchTerm("")
+      setError(null)
 
-  // Set the predefined Business Manager once assets are loaded
-  useEffect(() => {
-    if (open && hasPredefinedBM && assets.length > 0) {
-      const predefinedBmAsset = assets.find(asset => asset.asset_id === application?.facebook_business_manager_id);
-      if (predefinedBmAsset && selectedAssets.business_manager !== predefinedBmAsset.id) {
-        setSelectedAssets(prev => ({ ...prev, business_manager: predefinedBmAsset.id }));
+      // Set initial BM selection based on mode
+      if (mode === 'additional-accounts-specific' && targetBmId) {
+        setSelectedBusinessManager(targetBmId)
+      } else {
+        setSelectedBusinessManager(null)
       }
     }
-  }, [open, hasPredefinedBM, assets, application?.facebook_business_manager_id, selectedAssets.business_manager]);
+  }, [open, loadAvailableAssets, mode, targetBmId])
 
   const handleSubmit = async () => {
+    if (!application?.id) {
+      setError("Application ID is missing. Cannot proceed.")
+      return
+    }
+
+    if (!selectedBusinessManager) {
+      setError("Please select a Business Manager to proceed.")
+      return
+    }
+
+    if (mode !== 'new-bm' && selectedAdAccounts.length === 0) {
+      setError("Please select at least one ad account to assign.")
+      return
+    }
+
     setLoading(true)
+    setError(null)
+
     try {
-      if (!application?.id || !application?.business_id) {
-        throw new Error("Application or Business ID is missing. Cannot proceed.")
+      let endpoint = '/api/admin/fulfill-bm-application'
+      let payload: any = {
+        application_id: application.id,
+        organization_id: application.organization_id || null,
+        request_type: mode,
       }
 
-      const payload = {
-        application_id: application.id,
-        business_id: application.business_id,
-        business_manager_id: selectedAssets.business_manager,
-        ad_account_ids: selectedAssets.ad_accounts,
-      };
+      if (mode === 'new-bm') {
+        payload.dolphin_asset_id = selectedBusinessManager
+      } else {
+        // Additional accounts request
+        payload.target_bm_id = selectedBusinessManager
+        payload.selected_ad_accounts = selectedAdAccounts
+        endpoint = '/api/admin/fulfill-additional-accounts'
+      }
 
-      const response = await fetch('/api/admin/asset-bindings', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify(payload),
       });
@@ -113,192 +148,366 @@ export function ApplicationAssetBindingDialog({
         throw new Error(errorData.error || 'Failed to fulfill application');
       }
 
-      toast.success("Application fulfilled successfully!");
+      const result = await response.json();
+      console.log('Application fulfilled successfully:', result);
+
+      const successMessage = mode === 'new-bm' 
+        ? "Business Manager application fulfilled successfully!"
+        : `${selectedAdAccounts.length} ad accounts assigned successfully!`
+      
+      toast.success(successMessage);
+      
+      // Refresh relevant data
+      mutate('/api/bm-applications');
       mutate('/api/admin/applications');
-      mutate('/api/businesses');
+      
       onSuccess()
       onOpenChange(false)
     } catch (error) {
       console.error("Fulfillment error:", error)
-      toast.error(error instanceof Error ? error.message : "An unknown error occurred.")
+      setError(error instanceof Error ? error.message : "An unknown error occurred.")
     } finally {
       setLoading(false)
     }
   }
 
-  const businessManagers = Array.isArray(assets) ? assets.filter(asset => asset.asset_type === 'business_manager') : []
-  const adAccounts = Array.isArray(assets) ? assets.filter(asset => asset.asset_type === 'ad_account') : []
-
-  // Find the full asset object for the selected business manager
-  const selectedBmAsset = useMemo(() => {
-    if (hasPredefinedBM) {
-      return assets.find(asset => asset.asset_id === application?.facebook_business_manager_id);
+  // Filter and categorize assets based on mode
+  const businessManagers = useMemo(() => {
+    if (mode === 'additional-accounts-specific') {
+      // For specific BM requests, find the target BM in assets
+      return assets.filter(asset => asset.id === targetBmId)
     }
-    return businessManagers.find(asset => asset.id === selectedAssets.business_manager);
-  }, [selectedAssets.business_manager, businessManagers, hasPredefinedBM, application?.facebook_business_manager_id, assets]);
-
-  // Filter ad accounts based on the selected business manager
-  const filteredAdAccounts = useMemo(() => {
-    if (!selectedBmAsset) {
-      // If no BM is selected (and none is predefined), show no ad accounts to prevent mismatch.
-      return [];
+    
+    if (mode === 'additional-accounts-general') {
+      // For general additional requests, use existing BMs
+      return existingBMs.map(bm => ({
+        id: bm.id,
+        name: bm.name,
+        asset_id: bm.asset_id,
+        status: 'active',
+        asset_type: 'business_manager'
+      }))
     }
-    return adAccounts.filter(acc => acc.parent_business_manager_id === selectedBmAsset.asset_id);
-  }, [adAccounts, selectedBmAsset]);
+
+    // For new BM requests, show unbound BMs
+    return assets
+      .filter(asset => asset.asset_type === 'business_manager')
+      .filter(asset => 
+        searchTerm === "" || 
+        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        asset.asset_id.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+  }, [assets, searchTerm, mode, targetBmId, existingBMs])
+
+  const adAccounts = useMemo(() => {
+    if (!selectedBusinessManager) return []
+    
+    let selectedBM
+    if (mode === 'new-bm') {
+      selectedBM = assets.find(asset => asset.id === selectedBusinessManager)
+    } else {
+      // For additional accounts, we need to find unbound accounts that can be assigned to this BM
+      selectedBM = businessManagers.find(bm => bm.id === selectedBusinessManager)
+    }
+    
+    if (!selectedBM) return []
+
+    const filteredAccounts = assets
+      .filter(asset => asset.asset_type === 'ad_account')
+      .filter(asset => {
+        if (mode === 'new-bm') {
+          // For new BM, show accounts that belong to this BM
+          // Use dolphin_asset_id for comparison
+          const bmDolphinId = selectedBM.dolphin_asset_id || selectedBM.asset_id;
+          return asset.asset_metadata?.business_manager_id === bmDolphinId
+        } else {
+          // For additional accounts, show unbound accounts that can be assigned
+          const bmDolphinId = selectedBM.dolphin_asset_id || selectedBM.asset_id;
+          return !asset.asset_metadata?.business_manager_id || 
+                 asset.asset_metadata?.business_manager_id === bmDolphinId
+        }
+      })
+
+    // Debug logging
+    console.log('Ad Accounts Debug:', {
+      mode,
+      selectedBusinessManager,
+      selectedBM,
+      totalAssets: assets.length,
+      adAccountAssets: assets.filter(a => a.asset_type === 'ad_account').length,
+      filteredAccounts: filteredAccounts.length,
+      filteredAccountNames: filteredAccounts.map(a => a.name)
+    });
+
+    return filteredAccounts;
+  }, [assets, selectedBusinessManager, mode, businessManagers])
+
+  const handleBusinessManagerSelect = (bmId: string) => {
+    setSelectedBusinessManager(bmId)
+    setSelectedAdAccounts([]) // Reset ad account selection when BM changes
+  }
 
   const toggleAdAccount = (assetId: string) => {
-    setSelectedAssets(prev => ({
-      ...prev,
-      ad_accounts: prev.ad_accounts.includes(assetId)
-        ? prev.ad_accounts.filter(id => id !== assetId)
-        : [...prev.ad_accounts, assetId]
-    }))
+    setSelectedAdAccounts(prev => 
+      prev.includes(assetId)
+        ? prev.filter(id => id !== assetId)
+        : [...prev, assetId]
+    )
+  }
+
+  const selectAllAdAccounts = () => {
+    setSelectedAdAccounts(adAccounts.map(account => account.id))
+  }
+
+  const clearAdAccountSelection = () => {
+    setSelectedAdAccounts([])
+  }
+
+  const selectedBM = useMemo(() => {
+    return businessManagers.find(bm => bm.id === selectedBusinessManager)
+  }, [businessManagers, selectedBusinessManager])
+
+  const getCurrentAccountCount = useMemo(() => {
+    if (mode === 'additional-accounts-general') {
+      const existingBM = existingBMs.find(bm => bm.id === selectedBusinessManager)
+      return existingBM?.current_account_count || 0
+    }
+    return 0
+  }, [mode, existingBMs, selectedBusinessManager])
+
+  const getDialogConfig = () => {
+    switch (mode) {
+      case 'new-bm':
+        return {
+          title: "Fulfill New Business Manager Application",
+          description: `Assign a Business Manager and its ad accounts to "${application?.organization_name}".`,
+          badge: "New BM Request",
+          buttonText: "Assign Business Manager & Accounts"
+        }
+      case 'additional-accounts-specific':
+        return {
+          title: "Fulfill Additional Ad Accounts Request",
+          description: `Assign additional ad accounts to the specified Business Manager for "${application?.organization_name}".`,
+          badge: "Additional Accounts Request",
+          buttonText: "Assign Additional Accounts"
+        }
+      case 'additional-accounts-general':
+        return {
+          title: "Fulfill Additional Ad Accounts Request",
+          description: `Assign additional ad accounts to the selected Business Manager for "${application?.organization_name}".`,
+          badge: "Additional Accounts Request",
+          buttonText: "Assign Additional Accounts"
+        }
+    }
   }
 
   if (!application) return null;
 
+  const dialogConfig = getDialogConfig()
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="dark sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>Fulfill Application Request</DialogTitle>
-          <DialogDescription>
-            Assign available Dolphin assets to fulfill "{application.organization_name}"'s application and activate their account.
+      <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-lg">{dialogConfig.title}</DialogTitle>
+          <DialogDescription className="text-sm">
+            {application.organization_name} • {application.business_name}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Application Info */}
-          <div className="bg-muted/50 p-4 rounded-lg border border-border">
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="h-4 w-4 text-foreground" />
-              <span className="font-medium text-foreground">Client Application</span>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <p><strong>Organization:</strong> {application.organization_name}</p>
-              <p><strong>Business:</strong> {application.business_name}</p>
-              <p className="text-xs mt-1">Ready for asset assignment and activation</p>
-            </div>
-          </div>
-
+        <div className="space-y-4">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="py-2">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="text-sm">{error}</AlertDescription>
             </Alert>
           )}
 
           {loadingAssets ? (
-            <div className="flex items-center justify-center p-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2">Loading available assets...</span>
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+              <span className="text-sm">Loading assets...</span>
             </div>
           ) : (
-            <>
-              {/* Asset Selection */}
-              <div className="space-y-4">
-                {/* Business Manager Selection */}
+            <div className="space-y-4">
+              {/* Search - only for new BM mode */}
+              {mode === 'new-bm' && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search business managers..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+              )}
+
+              {/* Business Manager Selection */}
+              {mode !== 'additional-accounts-specific' && (
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Business Manager {hasPredefinedBM ? "" : "(Optional)"}
+                  <Label className="text-sm font-medium">
+                    {mode === 'new-bm' ? 'Business Manager' : 'Target Business Manager'}
                   </Label>
-                  <Select
-                    value={selectedAssets.business_manager || "none"}
-                    onValueChange={(value) => setSelectedAssets(prev => ({ 
-                      ...prev, 
-                      business_manager: value === "none" ? undefined : value,
-                      ad_accounts: [] // Reset ad accounts when BM changes
-                    }))}
-                    disabled={hasPredefinedBM}
-                  >
-                    <SelectTrigger>
-                      {hasPredefinedBM ? (
-                        <SelectValue placeholder={application.facebook_business_manager_name} />
-                      ) : (
-                        <SelectValue placeholder="Select a business manager to assign (optional)" />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No business manager</SelectItem>
-                      {businessManagers.map((asset) => (
-                        <SelectItem key={asset.id} value={asset.id}>
-                          <div className="flex items-center justify-between w-full">
-                            <div>
-                              <div className="font-medium">{asset.name}</div>
-                              <div className="text-xs text-muted-foreground">{asset.asset_id}</div>
+                  
+                  {businessManagers.length === 0 ? (
+                    <div className="text-center py-4 text-sm text-muted-foreground">
+                      {searchTerm ? 'No business managers match your search.' : 'No available business managers.'}
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {businessManagers.map((bm) => (
+                        <div 
+                          key={bm.id}
+                          className={cn(
+                            "flex items-center space-x-3 p-3 rounded-md border cursor-pointer transition-colors",
+                            selectedBusinessManager === bm.id 
+                              ? "bg-primary/10 border-primary" 
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => handleBusinessManagerSelect(bm.id)}
+                        >
+                          <input
+                            type="radio"
+                            name="business-manager"
+                            checked={selectedBusinessManager === bm.id}
+                            onChange={() => handleBusinessManagerSelect(bm.id)}
+                            className="w-4 h-4"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{bm.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {bm.dolphin_asset_id || bm.asset_id}
+                              {mode === 'additional-accounts-general' && (
+                                <span className="ml-2 text-blue-600">
+                                  {getCurrentAccountCount}/7 accounts
+                                </span>
+                              )}
                             </div>
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              {asset.status}
-                            </Badge>
                           </div>
-                        </SelectItem>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  {businessManagers.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No unassigned business managers available</p>
+                    </div>
                   )}
                 </div>
+              )}
 
-                {/* Ad Accounts Selection */}
+              {/* Pre-selected BM info for specific mode */}
+              {mode === 'additional-accounts-specific' && selectedBM && (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                  <div className="text-sm">
+                    <div className="font-medium text-blue-900">{selectedBM.name}</div>
+                    <div className="text-xs text-blue-600">{selectedBM.dolphin_asset_id || selectedBM.asset_id}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ad Accounts Selection */}
+              {selectedBusinessManager && (
                 <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Ad Accounts
-                  </Label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
-                    {filteredAdAccounts.length === 0 ? (
-                      <p className="text-sm text-muted-foreground p-2">
-                        {selectedBmAsset ? 'No unassigned ad accounts found for this BM.' : 'Select a Business Manager to see available ad accounts.'}
-                      </p>
-                    ) : (
-                      filteredAdAccounts.map((asset) => (
-                        <div key={asset.id} className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded">
-                          <input
-                            type="checkbox"
-                            id={`account-${asset.id}`}
-                            checked={selectedAssets.ad_accounts.includes(asset.id)}
-                            onChange={() => toggleAdAccount(asset.id)}
-                            className="rounded border-gray-300"
-                          />
-                          <label htmlFor={`account-${asset.id}`} className="flex-1 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <div className="font-medium text-sm">{asset.name}</div>
-                                <div className="text-xs text-muted-foreground">{asset.asset_id}</div>
-                              </div>
-                              <Badge variant="outline" className="text-xs">
-                                {asset.status}
-                              </Badge>
-                            </div>
-                          </label>
-                        </div>
-                      ))
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      {mode === 'new-bm' ? 'Ad Accounts' : 'Additional Accounts'} ({adAccounts.length})
+                    </Label>
+                    {adAccounts.length > 0 && (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={selectAllAdAccounts}
+                          disabled={selectedAdAccounts.length === adAccounts.length}
+                          className="h-7 px-2 text-xs"
+                        >
+                          All
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearAdAccountSelection}
+                          disabled={selectedAdAccounts.length === 0}
+                          className="h-7 px-2 text-xs"
+                        >
+                          Clear
+                        </Button>
+                      </div>
                     )}
                   </div>
-                  {selectedAssets.ad_accounts.length > 0 && (
-                    <p className="text-sm text-green-600 font-medium">
-                      ✓ {selectedAssets.ad_accounts.length} ad account(s) selected for assignment
-                    </p>
+
+                  {/* Provider limit warning */}
+                  {selectedAdAccounts.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      {mode === 'additional-accounts-general' && getCurrentAccountCount + selectedAdAccounts.length > 7 && (
+                        <span className="text-orange-600">⚠️ Exceeds 7-account limit</span>
+                      )}
+                      {mode === 'new-bm' && selectedAdAccounts.length > 7 && (
+                        <span className="text-orange-600">⚠️ More than 7 accounts selected</span>
+                      )}
+                    </div>
+                  )}
+
+                  {adAccounts.length === 0 ? (
+                    <div className="text-center py-4 text-sm text-muted-foreground">
+                      No available ad accounts.
+                    </div>
+                  ) : (
+                    <div className="space-y-1 max-h-36 overflow-y-auto">
+                      {adAccounts.map((account) => (
+                        <div 
+                          key={account.id}
+                          className={cn(
+                            "flex items-center space-x-3 p-2 rounded-md border cursor-pointer transition-colors",
+                            selectedAdAccounts.includes(account.id) 
+                              ? "bg-primary/10 border-primary" 
+                              : "hover:bg-muted/50"
+                          )}
+                          onClick={() => toggleAdAccount(account.id)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedAdAccounts.includes(account.id)}
+                            onChange={() => toggleAdAccount(account.id)}
+                            className="rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{account.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {account.asset_id} • {account.status}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-            </>
+              )}
+
+              {/* Compact Summary */}
+              {selectedBusinessManager && selectedAdAccounts.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                  <div className="text-sm text-green-800">
+                    <div className="font-medium">Ready to assign:</div>
+                    <div className="text-xs mt-1">
+                      {mode === 'new-bm' ? '1 Business Manager + ' : ''}{selectedAdAccounts.length} ad account{selectedAdAccounts.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+        <DialogFooter className="pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading} size="sm">
             Cancel
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || loadingAssets || (!selectedAssets.business_manager && selectedAssets.ad_accounts.length === 0)}
+            disabled={loading || loadingAssets || !selectedBusinessManager || (mode !== 'new-bm' && selectedAdAccounts.length === 0)}
             className="bg-green-600 hover:bg-green-700"
+            size="sm"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Fulfill Application & Activate
+            {dialogConfig.buttonText}
           </Button>
         </DialogFooter>
       </DialogContent>

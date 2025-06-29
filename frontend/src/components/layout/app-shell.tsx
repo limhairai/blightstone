@@ -11,6 +11,7 @@ import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
 import { getGreeting } from "../../lib/utils"
 import { layoutTokens } from "../../lib/design-tokens"
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 
 interface AppShellProps {
   children: ReactNode
@@ -39,8 +40,9 @@ export const useSetupWidget = () => {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("expanded")
+  const { setOrganization } = useOrganizationStore()
   
   // Use the new, simplified onboarding hook
   const {
@@ -56,6 +58,15 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [shouldShowOnboarding, isLoading])
 
+  useEffect(() => {
+    if (session?.user?.app_metadata?.organization_id && session?.user?.app_metadata?.organization_name) {
+      setOrganization(
+        session.user.app_metadata.organization_id,
+        session.user.app_metadata.organization_name
+      )
+    }
+  }, [session, setOrganization])
+
   // Improved page title extraction
   const getPageTitle = useCallback(() => {
     if (!pathname) return "Dashboard"
@@ -66,6 +77,7 @@ export function AppShell({ children }: AppShellProps) {
     }
     const pathTitles: Record<string, string> = {
       "/dashboard/businesses": "Businesses",
+      "/dashboard/business-managers": "Business Managers",
       "/dashboard/wallet": "Wallet",
       "/dashboard/transactions": "Transactions",
       "/dashboard/accounts": "Ad Accounts",
@@ -94,8 +106,7 @@ export function AppShell({ children }: AppShellProps) {
             hasNotifications={false} 
             setupWidgetState={setupWidgetState}
             onSetupWidgetStateChange={setSetupWidgetState}
-            showSetupProgress={shouldShowOnboarding}
-            setupCompletionPercentage={completionPercentage}
+            showEmptyStateElements={shouldShowOnboarding}
           />
           <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>{children}</main>
         </div>

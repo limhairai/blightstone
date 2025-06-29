@@ -2,24 +2,20 @@
 
 import { useState, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import useSWR from 'swr'
-import { Check, ChevronDown, Plus, Search, Building2, Loader2 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu"
+import { useTheme } from "next-themes"
 import { Button } from "../ui/button"
-import { Input } from "../ui/input"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from "../ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { Input } from "../ui/input"
+import { Separator } from "../ui/separator"
+import { Badge } from "../ui/badge"
+import { ChevronDown, Search, Building2, Users, Loader2, CreditCard, Check } from "lucide-react"
 import { cn } from "../../lib/utils"
+import { useOrganizationStore } from "../../lib/stores/organization-store"
+import { useAuth } from "../../contexts/AuthContext"
+import { useOrganizations, useBusinessManagers } from "../../lib/swr-config"
 import { getInitials } from "../../utils/format"
 import { getAvatarClasses } from "../../lib/design-tokens"
-import { useTheme } from "next-themes"
-import { useOrganizationStore } from "@/lib/stores/organization-store"
 
 interface Organization {
   id: string
@@ -29,7 +25,7 @@ interface Organization {
   businessCount: number
 }
 
-interface Business {
+interface BusinessManager {
   id: string
   name: string
   organizationId: string
@@ -37,34 +33,52 @@ interface Business {
   accountCount: number
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function OrganizationSelector() {
   const { theme } = useTheme()
   const router = useRouter()
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore()
+  const { session } = useAuth()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
   const [componentIsLoading, setComponentIsLoading] = useState(false)
 
-  const { data: orgData, isLoading: isOrgLoading } = useSWR('/api/organizations', fetcher);
-  const { data: bizData, isLoading: isBizLoading } = useSWR('/api/businesses', fetcher);
-  const { data: accData, isLoading: isAccLoading } = useSWR('/api/ad-accounts', fetcher);
+  // 🚀 PERFORMANCE: Use optimized hooks instead of multiple SWR calls
+  const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations()
+  const { data: bizData, isLoading: isBizLoading, error: bizError } = useBusinessManagers(currentOrganizationId)
   
   const allOrganizations = orgData?.organizations || [];
-  const allBusinesses = bizData?.businesses || [];
-  const allAccounts = accData?.accounts || [];
+  const allBusinessManagers = Array.isArray(bizData) ? bizData : [];
 
-  const currentOrganization = useMemo(() => allOrganizations.find(o => o.id === currentOrganizationId), [allOrganizations, currentOrganizationId]);
+  const currentOrganization = useMemo(() => 
+    allOrganizations.find(o => o.id === currentOrganizationId), 
+    [allOrganizations, currentOrganizationId]
+  );
 
   // Use real organization data from context
-  const selectedOrg = useMemo<Organization>(() => ({
-    id: currentOrganization?.id || "default",
-    name: currentOrganization?.name || "Default Organization",
-    avatar: currentOrganization?.avatar,
-    role: "Owner", // Could be derived from user's role in the organization
-    businessCount: allBusinesses.filter(b => b.organization_id === currentOrganization?.id).length,
-  }), [currentOrganization, allBusinesses])
+  const selectedOrg = useMemo<Organization>(() => {
+    if (!currentOrganization) {
+      return {
+        id: "loading",
+        name: "Loading...",
+        role: "Loading",
+        businessCount: 0,
+      };
+    }
+    
+    // For the current organization, use actual business manager count
+    // For other organizations, use the count from the organization data
+    const businessCount = currentOrganization.id === currentOrganizationId 
+      ? allBusinessManagers.length 
+      : currentOrganization.business_count || 0;
+    
+    return {
+      id: currentOrganization.id,
+      name: currentOrganization.name,
+      avatar: currentOrganization.avatar,
+      role: "Owner",
+      businessCount: businessCount,
+    };
+  }, [currentOrganization, allBusinessManagers, currentOrganizationId]);
 
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
@@ -80,22 +94,28 @@ export function OrganizationSelector() {
       name: org.name,
       avatar: org.avatar,
       role: org.id === currentOrganizationId ? "Owner" : "Member",
-      businessCount: allBusinesses.filter(b => b.organization_id === org.id).length
+      businessCount: org.id === currentOrganizationId 
+        ? allBusinessManagers.length 
+        : org.business_count || 0
     }))
-  }, [allOrganizations, currentOrganizationId, allBusinesses])
+  }, [allOrganizations, currentOrganizationId, allBusinessManagers])
 
-  // Convert context state businesses to the format expected by the component
-  const businesses: Business[] = useMemo(() => {
-    return allBusinesses.map(business => ({
-      id: business.id,
-      name: business.name,
-      organizationId: business.organization_id,
-      status: business.status === 'under_review' || business.status === 'provisioning' || business.status === 'ready' 
+  // Convert business managers to the format expected by the component
+  const businessManagers: BusinessManager[] = useMemo(() => {
+    if (!Array.isArray(allBusinessManagers)) {
+      return [];
+    }
+    
+    return allBusinessManagers.map(bm => ({
+      id: bm.id,
+      name: bm.name,
+      organizationId: currentOrganizationId!, // Business managers are always for current org
+      status: bm.status === 'processing' || bm.status === 'pending' 
         ? 'pending' as const 
-        : business.status as "active" | "pending" | "suspended" | "rejected",
-      accountCount: allAccounts.filter(account => account.business_id === business.id).length
+        : bm.status as "active" | "pending" | "suspended" | "rejected",
+      accountCount: bm.ad_account_count || 0
     }))
-  }, [allBusinesses, allAccounts])
+  }, [allBusinessManagers, currentOrganizationId])
 
   // Improved hover handlers with delays
   const handleOrgMouseEnter = useCallback((orgId: string) => {
@@ -143,30 +163,30 @@ export function OrganizationSelector() {
     }, 200) // 200ms delay
   }, [])
 
-  // Handle business click with proper Next.js navigation
-  const handleBusinessClick = useCallback(async (business: Business) => {
+  // Handle business manager click with proper Next.js navigation
+  const handleBusinessManagerClick = useCallback(async (bm: BusinessManager) => {
     setIsDropdownOpen(false)
     setSearchQuery("")
     setHoveredOrgId(null)
     
-    // Check if business belongs to a different organization
-    if (business.organizationId !== selectedOrg.id) {
-      // Switch to the business's organization first
+    // Check if business manager belongs to a different organization
+    if (bm.organizationId !== selectedOrg.id) {
+      // Switch to the business manager's organization first
       setComponentIsLoading(true)
       
       // Add a delay to make the switching more noticeable
       await new Promise(resolve => setTimeout(resolve, 800))
       
-      setCurrentOrganizationId(business.organizationId)
+      setCurrentOrganizationId(bm.organizationId)
       setComponentIsLoading(false)
       
       // Wait a bit more for the organization switch to complete
       await new Promise(resolve => setTimeout(resolve, 300))
     }
     
-    // Navigate to accounts page with business filter
-    const businessParam = encodeURIComponent(business.name)
-    router.push(`/dashboard/accounts?business=${businessParam}`)
+    // Navigate to accounts page with business manager filter
+    const bmParam = encodeURIComponent(bm.id)
+    router.push(`/dashboard/accounts?bm_id=${bmParam}`)
   }, [router, selectedOrg.id, setCurrentOrganizationId])
 
   // Clean up timeouts on unmount
@@ -186,11 +206,11 @@ export function OrganizationSelector() {
     : organizations
 
   const displayOrgId = hoveredOrgId || selectedOrg.id
-  const filteredBusinesses = searchQuery
-    ? businesses
-        .filter((business) => business.organizationId === displayOrgId)
-        .filter((business) => business.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : businesses.filter((business) => business.organizationId === displayOrgId)
+  const filteredBusinessManagers = searchQuery
+    ? businessManagers
+        .filter((bm) => bm.organizationId === displayOrgId)
+        .filter((bm) => bm.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : businessManagers.filter((bm) => bm.organizationId === displayOrgId)
 
   // Handle organization click with switching functionality
   const handleOrganizationClick = useCallback(async (org: Organization) => {
@@ -209,10 +229,26 @@ export function OrganizationSelector() {
     cleanupTimeouts()
   }, [selectedOrg.id, setCurrentOrganizationId, cleanupTimeouts])
 
-  const globalLoading = isOrgLoading || isBizLoading || isAccLoading;
+  const globalLoading = isOrgLoading || isBizLoading;
 
-  if (globalLoading) {
-    return <div>Loading...</div>
+  // Show a simple loading state instead of "Loading..."
+  if (globalLoading || selectedOrg.id === "loading") {
+    return (
+      <Button
+        variant="outline"
+        className="w-full justify-between bg-background border-border text-foreground"
+        disabled
+      >
+        <div className="flex items-center">
+          <div className="h-6 w-6 mr-2 rounded-full bg-muted animate-pulse" />
+          <div className="flex flex-col items-start">
+            <div className="h-3 w-20 bg-muted animate-pulse rounded" />
+            <div className="h-2 w-16 bg-muted animate-pulse rounded mt-1" />
+          </div>
+        </div>
+        <Loader2 className="h-4 w-4 ml-2 text-muted-foreground animate-spin" />
+      </Button>
+    )
   }
 
   return (
@@ -229,7 +265,7 @@ export function OrganizationSelector() {
                 {selectedOrg.avatar ? (
                   <AvatarImage src={selectedOrg.avatar} alt={selectedOrg.name} />
                 ) : (
-                  <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
+                  <AvatarFallback className={cn(getAvatarClasses('sm', currentTheme), "animate-pulse")}>
                     {getInitials(selectedOrg.name)}
                   </AvatarFallback>
                 )}
@@ -237,7 +273,7 @@ export function OrganizationSelector() {
               <div className="flex flex-col items-start">
                 <span className="truncate max-w-[150px] text-foreground text-sm font-medium">{selectedOrg.name}</span>
                 <span className="text-xs text-muted-foreground">
-                  {selectedOrg.businessCount} {selectedOrg.businessCount === 1 ? "business" : "businesses"}
+                  {selectedOrg.businessCount} {selectedOrg.businessCount === 1 ? "Business Manager" : "Business Managers"}
                 </span>
               </div>
             </div>
@@ -257,7 +293,7 @@ export function OrganizationSelector() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Find Organization or Business..."
+                placeholder="Find Organization or Business Manager..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-8 bg-background border-border text-foreground"
@@ -286,7 +322,7 @@ export function OrganizationSelector() {
                       {org.avatar ? (
                         <AvatarImage src={org.avatar} alt={org.name} />
                       ) : (
-                        <AvatarFallback className={getAvatarClasses('sm', currentTheme)}>
+                        <AvatarFallback className={cn(getAvatarClasses('sm', currentTheme), "animate-pulse")}>
                           {getInitials(org.name)}
                         </AvatarFallback>
                       )}
@@ -300,64 +336,46 @@ export function OrganizationSelector() {
                       </div>
                       <div className="flex items-center text-xs text-muted-foreground">
                         <span className="mr-2">{org.role}</span>
-                        <span>{org.businessCount} {org.businessCount === 1 ? "business" : "businesses"}</span>
+                        <span>{org.businessCount} {org.businessCount === 1 ? "Business Manager" : "Business Managers"}</span>
                       </div>
                     </div>
                   </DropdownMenuItem>
                 </div>
               ))}
 
-              {/* Show businesses for hovered or selected organization */}
-              {filteredBusinesses.length > 0 && (
+              {/* Show business managers for hovered or selected organization */}
+              {filteredBusinessManagers.length > 0 && (
                 <div
-                  className="mt-2"
+                  className="mt-2 ml-4 pl-4 border-l border-border"
                   onMouseEnter={handleBusinessesMouseEnter}
                   onMouseLeave={handleBusinessesMouseLeave}
                 >
-                  <DropdownMenuSeparator className="my-2" />
                   <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
-                    Businesses
+                    Business Managers
                   </DropdownMenuLabel>
-                  
-                  {filteredBusinesses.map((business) => (
+                  {filteredBusinessManagers.map((bm) => (
                     <DropdownMenuItem
-                      key={business.id}
-                      className="flex items-center p-2 cursor-pointer rounded-md hover:bg-accent ml-4"
-                      onClick={() => handleBusinessClick(business)}
+                      key={bm.id}
+                      className="flex items-center p-2 cursor-pointer rounded-md hover:bg-accent/50 ml-2"
+                      onClick={() => handleBusinessManagerClick(bm)}
                     >
                       <Building2 className="h-4 w-4 mr-3 text-muted-foreground" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{business.name}</p>
+                        <p className="text-sm text-foreground truncate">{bm.name}</p>
                         <div className="flex items-center text-xs text-muted-foreground">
                           <span className={cn(
-                            "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2",
-                            business.status === "active" && "bg-green-100 text-green-800",
-                            business.status === "pending" && "bg-yellow-100 text-yellow-800",
-                            business.status === "suspended" && "bg-red-100 text-red-800",
-                            business.status === "rejected" && "bg-gray-100 text-gray-800"
-                          )}>
-                            {business.status}
-                          </span>
-                          <span>{business.accountCount} {business.accountCount === 1 ? "account" : "accounts"}</span>
+                            "inline-block w-2 h-2 rounded-full mr-2",
+                            bm.status === "active" ? "bg-green-500" : 
+                            bm.status === "pending" ? "bg-yellow-500" : "bg-red-500"
+                          )} />
+                          <span className="mr-2 capitalize">{bm.status}</span>
+                          <span>{bm.accountCount} accounts</span>
                         </div>
                       </div>
                     </DropdownMenuItem>
                   ))}
                 </div>
               )}
-
-              <DropdownMenuSeparator className="my-2" />
-              
-              <DropdownMenuItem
-                className="flex items-center p-2 cursor-pointer rounded-md hover:bg-accent text-primary"
-                onClick={() => {
-                  setIsDropdownOpen(false)
-                  router.push("/dashboard/settings/organizations")
-                }}
-              >
-                <Plus className="h-4 w-4 mr-3" />
-                <span className="text-sm font-medium">Create Organization</span>
-              </DropdownMenuItem>
             </div>
           </div>
         </DropdownMenuContent>

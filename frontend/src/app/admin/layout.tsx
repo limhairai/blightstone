@@ -1,16 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { createContext, useContext } from "react";
 import { AdminAccessCheck } from "../../components/admin/admin-access-check"
 import { Toaster } from "sonner";
 import { AdminSidebar } from "../../components/admin/admin-sidebar";
 import { AdminTopbar } from "../../components/admin/admin-topbar";
+import { DevWidget } from "../../components/admin/dev-widget";
+import { PerformanceMonitor } from "../../components/debug/performance-monitor";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
+
+// Create a context to share admin status across all admin pages
+const AdminContext = createContext<{ isAdmin: boolean }>({ isAdmin: false });
+
+export const useAdminContext = () => useContext(AdminContext);
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [pageTitle, setPageTitle] = useState("");
+  const { profile } = useAuth();
 
   // Dynamic page title extraction for admin pages
   const getPageInfo = useCallback(() => {
@@ -68,21 +77,29 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   }, [getPageInfo]);
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Admin Sidebar */}
-      <AdminSidebar />
-      
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Admin Top Bar with dynamic title */}
-        <AdminTopbar pageTitle={pageTitle} />
+    <AdminContext.Provider value={{ isAdmin: true }}>
+      <div className="flex h-screen bg-background">
+        {/* Admin Sidebar */}
+        <AdminSidebar />
         
-        {/* Page Content with padding */}
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          {children}
-        </main>
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Admin Top Bar with dynamic title */}
+          <AdminTopbar pageTitle={pageTitle} />
+          
+          {/* Page Content with padding */}
+          <main className="flex-1 overflow-y-auto bg-background p-6">
+            {children}
+          </main>
+        </div>
+        
+        {/* Dev Widget - only show for superusers */}
+        {profile?.is_superuser && <DevWidget />}
+        
+        {/* Performance Monitor - only in development */}
+        <PerformanceMonitor />
       </div>
-    </div>
+    </AdminContext.Provider>
   );
 }
 
@@ -91,7 +108,6 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
     <AdminAccessCheck>
       <AdminShell>
         {children}
-        <Toaster />
       </AdminShell>
     </AdminAccessCheck>
   );

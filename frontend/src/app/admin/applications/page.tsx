@@ -3,334 +3,448 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import useSWR from 'swr';
-import { Button } from "../../../components/ui/button";
-import { Badge } from "../../../components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../../../components/ui/avatar";
-import { CheckCircle, Clock, LinkIcon, ExternalLink, Loader2, User, Building, Users } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs";
-import { DataTable } from "../../../components/ui/data-table";
-import type { ColumnDef } from "@tanstack/react-table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import Link from 'next/link';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "../../../components/ui/alert-dialog";
-import { ApplicationAssetBindingDialog } from "../../../components/admin/application-asset-binding-dialog";
-
-// Fetcher function for SWR
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { useAuth } from "@/contexts/AuthContext";
+import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
 
 interface Application {
   id: string;
+  organization_id: string;
   organization_name: string;
-  business_id?: string; // Business ID if it's for an existing business
   business_name: string;
-  facebook_business_manager_id?: string;
-  facebook_business_manager_name?: string;
-  account_count: number; // Number of accounts applied for
-  timezone: string;
-  status: 'In Review' | 'Processing' | 'Ready' | 'Active' | 'Rejected';
-  team_name?: string;
-  submitted_at: string;
-  user_email: string;
-  type?: 'Business' | 'Ad Account'; // Will be determined by business_id presence
+  request_type: string;
+  target_bm_dolphin_id?: string;
+  website_url: string;
+  status: string;
+  approved_by?: string;
+  approved_at?: string;
+  rejected_by?: string;
+  rejected_at?: string;
+  fulfilled_by?: string;
+  fulfilled_at?: string;
+  client_notes?: string;
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
-const statusConfig = {
-  "In Review": { label: "In Review", color: "bg-blue-100 text-blue-800 border-blue-200", icon: Clock },
-  "Processing": { label: "Processing", color: "bg-purple-100 text-purple-800 border-purple-200", icon: Clock },
-  "Ready": { label: "Ready", color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle },
-  "Active": { label: "Active", color: "bg-emerald-100 text-emerald-800 border-emerald-200", icon: CheckCircle },
-  "Rejected": { label: "Rejected", color: "bg-red-100 text-red-800 border-red-200", icon: CheckCircle },
+interface BusinessManager {
+  id: string;
+  name: string;
+  asset_id: string;
+  current_account_count: number;
+}
+
+type RequestMode = 'new-bm' | 'additional-accounts-specific' | 'additional-accounts-general';
+
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to fetch data');
+  }
+  return response.json();
 };
 
-export default function ApplicationsPage() {
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{ applicationId: string; action: 'approve' | 'ready' } | null>(null);
+export default function AdminApplicationsPage() {
+  const { session } = useAuth();
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [isBindingDialogOpen, setBindingDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [dialogMode, setDialogMode] = useState<RequestMode>('new-bm');
+  const [existingBMs, setExistingBMs] = useState<BusinessManager[]>([]);
 
-  // Use SWR for data fetching with caching
-  const { data: applications = [], error, isLoading, mutate } = useSWR<Application[]>(
+  // Fetch applications with SWR
+  const { data: applicationsData, error, mutate, isLoading } = useSWR(
     '/api/admin/applications',
     fetcher,
     {
-      refreshInterval: 30000, // Refresh every 30 seconds
-      revalidateOnFocus: false,
-      dedupingInterval: 10000, // 10 seconds deduping
+      refreshInterval: 5000, // Reduced to 5 seconds for more responsive updates
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      errorRetryCount: 3,
+      errorRetryInterval: 2000, // Reduced retry interval
+      dedupingInterval: 1000, // Prevent duplicate requests
+      focusThrottleInterval: 1000, // Throttle focus revalidation
     }
   );
 
-  const handleAction = async (applicationId: string, action: 'approve' | 'ready' | 'bind') => {
-    toast.info(`Processing ${action} action...`);
+  const applications = applicationsData?.applications || [];
+
+  const handleApprove = async (application: Application) => {
+    if (!session?.user?.id) {
+      toast.error('Authentication required');
+      return;
+    }
+    
+    setProcessingId(application.id);
+    
+    // Immediate optimistic update - approve moves to processing (BlueFocus submission)
+    const optimisticData = {
+      ...applicationsData,
+      applications: applications.map((app: Application) => 
+        app.id === application.id 
+          ? { ...app, status: 'processing' }
+          : app
+      )
+    };
+    
+    // Update UI immediately
+    mutate(optimisticData, false);
+    
     try {
-      const response = await fetch(`/api/admin/applications`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ application_id: applicationId, action }),
+      const response = await fetch(`/api/admin/applications/${application.id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          admin_user_id: session.user.id
+        })
       });
 
       if (!response.ok) {
+        // Revert optimistic update on error
+        mutate();
         const errorData = await response.json();
-        throw new Error(errorData.error || 'API request failed');
+        throw new Error(errorData.error || 'Failed to approve application');
       }
-      
-      const result = await response.json();
-      toast.success(result.message || `Application updated to ${result.new_status}`);
-      await mutate(); // Re-fetch data to update UI
 
+      toast.success('Application approved successfully!');
+      
+      // Revalidate to ensure consistency
+      setTimeout(() => mutate(), 500);
+      
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      console.error(`Error during ${action}:`, errorMessage);
-      toast.error(`Failed to perform ${action}: ${errorMessage}`);
+      console.error('Error approving application:', error);
+      toast.error(`Failed to approve application: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Revert the optimistic update
+      mutate();
+    } finally {
+      setProcessingId(null);
     }
   };
-  
-  const triggerConfirmation = (applicationId: string, action: 'approve' | 'ready') => {
-    setPendingAction({ applicationId, action });
+
+  const handleFulfill = async (application: Application) => {
+    // Determine the request mode based on application data
+    let mode: RequestMode = 'new-bm';
+    let targetBmId: string | undefined;
+    let existingBMsForOrg: BusinessManager[] = [];
+
+    if (application.request_type) {
+      switch (application.request_type) {
+        case 'new_business_manager':
+          mode = 'new-bm';
+          break;
+        case 'additional_accounts':
+          if (application.target_bm_dolphin_id) {
+            mode = 'additional-accounts-specific';
+            targetBmId = application.target_bm_dolphin_id;
+          } else {
+            mode = 'additional-accounts-general';
+            // Fetch existing BMs for this organization
+            if (application.organization_id) {
+              try {
+                const response = await fetch(`/api/admin/organizations/${application.organization_id}/business-managers`);
+                if (response.ok) {
+                  const data = await response.json();
+                  existingBMsForOrg = data.business_managers || [];
+                }
+              } catch (error) {
+                console.error('Failed to fetch existing BMs:', error);
+              }
+            }
+          }
+          break;
+      }
+    }
+
+    setSelectedApplication(application);
+    setDialogMode(mode);
+    setExistingBMs(existingBMsForOrg);
     setDialogOpen(true);
   };
 
-  const confirmAction = () => {
-    if (pendingAction) {
-      handleAction(pendingAction.applicationId, pendingAction.action);
-    }
+  const handleDialogSuccess = () => {
+    mutate(); // Refresh the applications list
+    setSelectedApplication(null);
     setDialogOpen(false);
-    setPendingAction(null);
   };
 
-  const handleFulfillSuccess = () => {
-    mutate(); // Refresh applications list
-  };
-
-  const handleFulfillClick = (app: Application) => {
-    setSelectedApplication(app);
-    setBindingDialogOpen(true);
-  };
-
-  const filteredApplications = useMemo(() => {
-    if (!Array.isArray(applications)) return [];
-    if (statusFilter === "all") return applications;
-    const normalizedFilter = statusFilter.replace(/\s+/g, '');
-    return applications.filter(app => 
-      app.status.replace(/\s+/g, '').toLowerCase() === normalizedFilter.toLowerCase()
-    );
-  }, [applications, statusFilter]);
-
-  const stats = useMemo(() => {
-    if (!Array.isArray(applications)) {
-      return { all: 0, inReview: 0, processing: 0, ready: 0 };
+  const handleReject = async (application: Application) => {
+    if (!session?.user?.id) {
+      toast.error('Authentication required');
+      return;
     }
-    return {
-      all: applications.length,
-      inReview: applications.filter(a => a.status === "In Review").length,
-      processing: applications.filter(a => a.status === "Processing").length,
-      ready: applications.filter(a => a.status === "Ready").length,
+    
+    setProcessingId(application.id);
+    
+    // Immediate optimistic update
+    const optimisticData = {
+      ...applicationsData,
+      applications: applications.map((app: Application) => 
+        app.id === application.id 
+          ? { ...app, status: 'rejected' }
+          : app
+      )
     };
-  }, [applications]);
+    
+    // Update UI immediately
+    mutate(optimisticData, false);
+    
+    try {
+      const response = await fetch(`/api/admin/applications/${application.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          admin_user_id: session.user.id
+        })
+      });
 
-  const columns: ColumnDef<Application>[] = useMemo(() => [
-    {
-      accessorKey: "organization_name",
-      header: "Organization",
-      size: 200,
-      cell: ({ row }) => {
-        const app = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8 flex-shrink-0">
-              <AvatarFallback>{app.organization_name?.substring(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm truncate">{app.organization_name}</div>
-              <div className="text-xs text-muted-foreground truncate">{app.user_email}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "business_id",
-      header: "Business ID",
-      size: 120,
-      cell: ({ row }) => {
-        const app = row.original;
-        return (
-          <div className="text-sm">
-            {app.business_id ? (
-              <div>
-                <div className="font-mono text-xs text-gray-600">{app.business_id}</div>
-                <div className="text-xs text-gray-500">{app.business_name}</div>
-              </div>
-            ) : (
-              <div className="text-gray-400 italic text-xs">New Business</div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "type",
-      header: "Type",
-      size: 120,
-      cell: ({ row }) => {
-        const app = row.original;
-        // Determine type based on whether business_id exists
-        const isNewBusiness = !app.business_id;
-        return (
-          <Badge variant="outline" className="text-xs">
-            {isNewBusiness ? <Building className="h-3 w-3 mr-1" /> : <User className="h-3 w-3 mr-1" />}
-            {isNewBusiness ? 'New Business' : 'Additional Accounts'}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "account_count",
-      header: "Accounts",
-      size: 80,
-      cell: ({ row }) => (
-        <div className="text-sm text-center font-medium">
-          {row.original.account_count}
-        </div>
-      )
-    },
-    {
-      accessorKey: "timezone",
-      header: "Timezone",
-      size: 120,
-      cell: ({ row }) => (
-        <div className="text-sm text-gray-600">
-          {row.original.timezone || 'UTC'}
-        </div>
-      )
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 120,
-      cell: ({ row }) => {
-        const status = row.original.status;
-        const config = statusConfig[status as keyof typeof statusConfig] || statusConfig["In Review"];
-        return (
-          <Badge className={`text-xs ${config.color}`}>
-            <config.icon className="h-3 w-3 mr-1" />
-            {config.label}
-          </Badge>
-        );
-      },
-    },
-    {
-      accessorKey: "team_name",
-      header: "Team",
-      size: 120,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-           <Users className="h-4 w-4" />
-           <span className="truncate">{row.original.team_name || "Unassigned"}</span>
-        </div>
-      )
-    },
-    {
-      accessorKey: "submitted_at",
-      header: "Submitted",
-      size: 120,
-      cell: ({ row }) => (
-        <div className="text-xs text-muted-foreground">
-          {formatDistanceToNow(new Date(row.original.submitted_at), { addSuffix: true })}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      size: 140,
-      cell: ({ row }) => {
-        const app = row.original;
-        if (app.status === 'In Review') {
-          return <Button size="sm" className="h-7 text-xs" onClick={() => triggerConfirmation(app.id, 'approve')}>Approve</Button>;
+      if (!response.ok) {
+        // Revert optimistic update on error
+        mutate();
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to reject application');
+      }
+
+      toast.success('Application rejected');
+      
+      // Revalidate to ensure consistency
+      setTimeout(() => mutate(), 500);
+      
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      toast.error(`Failed to reject application: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Revert the optimistic update
+      mutate();
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case 'processing':
+        return <AlertCircle className="h-4 w-4 text-blue-500" />;
+      case 'approved':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'rejected':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      pending: "outline",
+      processing: "secondary",
+      approved: "default",
+      rejected: "destructive"
+    };
+    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+  };
+
+  const getRequestTypeInfo = (application: Application) => {
+    if (!application.request_type) {
+      return { icon: <Building2 className="h-4 w-4" />, label: "New BM Request", variant: "default" as const };
+    }
+
+    switch (application.request_type) {
+      case 'new_business_manager':
+        return { icon: <Building2 className="h-4 w-4" />, label: "New Business Manager", variant: "default" as const };
+      case 'additional_accounts':
+        if (application.target_bm_dolphin_id) {
+          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Specific BM)", variant: "secondary" as const };
+        } else {
+          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Choose BM)", variant: "secondary" as const };
         }
-        if (app.status === 'Processing') {
-          return <Button size="sm" className="h-7 text-xs" onClick={() => triggerConfirmation(app.id, 'ready')}>Mark as Ready</Button>;
-        }
-        if (app.status === 'Ready') {
-          return <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleFulfillClick(app)}>Fulfill Request</Button>;
-        }
-        return null;
-      },
-    },
-  ], [applications, statusFilter]);
+      default:
+        return { icon: <Building2 className="h-4 w-4" />, label: "Unknown Request", variant: "outline" as const };
+    }
+  };
+
+  const filterApplications = (status: string) => {
+    return applications.filter((app: Application) => app.status === status);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+        Loading applications...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-600">
+        <AlertCircle className="h-6 w-6 mr-2" />
+        Failed to load applications: {error.message}
       </div>
     );
   }
 
   return (
-    <>
-      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    This will update the application status. This action cannot be undone.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setPendingAction(null)}>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmAction}>Confirm</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      <div className="h-full flex flex-col space-y-4 p-4">
-        <header>
-          <h1 className="text-2xl font-bold">Applications</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Fulfill client applications by assigning available Dolphin assets
-          </p>
-        </header>
-
-        <div className="flex-grow flex flex-col">
-          <Tabs value={statusFilter} onValueChange={setStatusFilter} className="mb-4">
-            <TabsList>
-              <TabsTrigger value="all">All ({stats.all})</TabsTrigger>
-              <TabsTrigger value="In Review">In Review ({stats.inReview})</TabsTrigger>
-              <TabsTrigger value="Processing">Processing ({stats.processing})</TabsTrigger>
-              <TabsTrigger value="Ready">Ready ({stats.ready})</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <div className="flex-grow rounded-lg border">
-              <DataTable columns={columns} data={filteredApplications} />
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => mutate()}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
-      {selectedApplication && (
-        <ApplicationAssetBindingDialog
-          open={isBindingDialogOpen}
-          onOpenChange={setBindingDialogOpen}
-          application={selectedApplication}
-          onSuccess={() => {
-            mutate(); // Re-fetch applications
-            setBindingDialogOpen(false);
-          }}
-        />
-      )}
-    </>
+      <Tabs defaultValue="pending" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="pending">
+            Pending ({filterApplications('pending').length})
+          </TabsTrigger>
+          <TabsTrigger value="processing">
+            Processing ({filterApplications('processing').length})
+          </TabsTrigger>
+          <TabsTrigger value="fulfilled">
+            Fulfilled ({filterApplications('fulfilled').length})
+          </TabsTrigger>
+          <TabsTrigger value="rejected">
+            Rejected ({filterApplications('rejected').length})
+          </TabsTrigger>
+        </TabsList>
+
+        {['pending', 'processing', 'fulfilled', 'rejected'].map((status) => (
+          <TabsContent key={status} value={status} className="space-y-4">
+            {filterApplications(status).length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <p className="text-center text-muted-foreground">
+                    No {status} applications found.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {filterApplications(status).map((application: Application) => {
+                  const requestTypeInfo = getRequestTypeInfo(application);
+                  return (
+                    <Card key={application.id}>
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <CardTitle className="text-lg">
+                              {application.organization_name}
+                            </CardTitle>
+                            <CardDescription>
+                              Website: {application.website_url}
+                            </CardDescription>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant={requestTypeInfo.variant}>
+                                <div className="flex items-center gap-1">
+                                  {requestTypeInfo.icon}
+                                  {requestTypeInfo.label}
+                                </div>
+                              </Badge>
+                              {application.target_bm_dolphin_id && (
+                                <Badge variant="outline" className="text-xs">
+                                  Target BM: {application.target_bm_dolphin_id}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(application.status)}
+                            {getStatusBadge(application.status)}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm text-muted-foreground">
+                            Applied: {formatDate(application.created_at)}
+                          </div>
+                          <div className="flex gap-2">
+                            {application.status === 'pending' && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleReject(application)}
+                                  disabled={processingId === application.id}
+                                >
+                                  {processingId === application.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    'Reject'
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApprove(application)}
+                                  disabled={processingId === application.id}
+                                >
+                                  {processingId === application.id ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    'Approve'
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                            {application.status === 'processing' && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleFulfill(application)}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                Mark as Fulfilled
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      <ApplicationAssetBindingDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        application={selectedApplication}
+        mode={dialogMode}
+        targetBmId={selectedApplication?.target_bm_dolphin_id}
+        existingBMs={existingBMs}
+        onSuccess={handleDialogSuccess}
+      />
+    </div>
   );
 } 

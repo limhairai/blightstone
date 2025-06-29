@@ -41,16 +41,16 @@ export async function POST(request: NextRequest) {
 
       case 'payment_intent.succeeded':
         const paymentIntent = event.data.object as Stripe.PaymentIntent
-        console.log('Payment succeeded:', paymentIntent.id)
+
         break
 
       case 'payment_intent.payment_failed':
         const failedPayment = event.data.object as Stripe.PaymentIntent
-        console.log('Payment failed:', failedPayment.id)
+
         break
 
       default:
-        console.log(`Unhandled event type: ${event.type}`)
+
     }
 
     return NextResponse.json({ received: true })
@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
 
 async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
   try {
+    
+    
     const {
       organization_id,
       wallet_credit,
@@ -73,32 +75,59 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
     } = session.metadata || {}
 
     if (!organization_id || !wallet_credit) {
-      console.error('Missing metadata in checkout session:', session.id)
+      console.error('❌ Missing metadata in checkout session:', {
+        sessionId: session.id,
+        metadata: session.metadata,
+        organization_id,
+        wallet_credit
+      })
       return
     }
 
     const walletCreditAmount = parseFloat(wallet_credit)
     const processingFeeAmount = parseFloat(processing_fee || '0')
 
-    console.log(`Processing wallet top-up:`, {
-      sessionId: session.id,
-      organizationId: organization_id,
-      walletCredit: walletCreditAmount,
-      processingFee: processingFeeAmount,
-      totalPaid: session.amount_total ? session.amount_total / 100 : 0
-    })
+
 
     // Update the wallet balance in the database
-    const { data: wallet, error: walletError } = await supabase
+
+    const { data: walletData, error: walletError } = await supabase
       .from('wallets')
       .select('balance_cents')
       .eq('organization_id', organization_id)
       .single()
+    
+    let wallet = walletData
 
-    if (walletError) {
-      console.error('Error fetching wallet:', walletError)
-      return
+    if (walletError || !wallet) {
+      console.error('❌ Error fetching wallet or wallet not found:', {
+        organization_id,
+        error: walletError,
+        wallet,
+        message: 'Wallet might not exist for this organization'
+      })
+      
+      // Try to create a wallet if it doesn't exist
+
+      const { data: newWallet, error: createError } = await supabase
+        .from('wallets')
+        .insert({
+          organization_id,
+          balance_cents: 0
+        })
+        .select('balance_cents')
+        .single()
+      
+      if (createError) {
+        console.error('❌ Failed to create wallet:', createError)
+        return
+      }
+      
+
+      wallet = newWallet
     }
+    
+
 
     const newBalanceCents = (wallet.balance_cents || 0) + Math.round(walletCreditAmount * 100)
 
@@ -138,11 +167,7 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
       console.error('Error creating transaction record:', transactionError)
     }
 
-    console.log(`✅ Wallet updated successfully:`, {
-      organizationId: organization_id,
-      newBalanceCents,
-      addedAmount: walletCreditAmount
-    })
+
 
   } catch (error) {
     console.error('Error handling successful payment:', error)

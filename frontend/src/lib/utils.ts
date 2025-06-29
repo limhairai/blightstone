@@ -51,7 +51,11 @@ export function getPageTitle(pathname: string): string {
 }
 
 // String utilities
-export function getInitials(name: string): string {
+export function getInitials(name: string | undefined | null): string {
+  if (!name || typeof name !== 'string') {
+    return 'N/A';
+  }
+  
   return name
     .split(' ')
     .map(word => word.charAt(0))

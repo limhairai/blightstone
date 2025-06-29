@@ -18,13 +18,14 @@ import { useAuth } from "../../../contexts/AuthContext"
 import { useEffect } from "react"
 
 interface Organization {
-  id: string
+  organization_id: string
   name: string
-  industry: string
-  teamId: string
-  status: "active" | "pending" | "suspended" | "inactive"
-  plan: "starter" | "professional" | "enterprise"
-  adAccountsCount: number
+  // These fields are not in the new API response, so they are optional or removed.
+  teamId?: string
+  status?: "active" | "pending" | "suspended" | "inactive"
+  plan?: "starter" | "professional" | "enterprise"
+  industry?: string;
+  adAccountsCount?: number
 }
 
 export default function OrganizationsPage() {
@@ -43,7 +44,8 @@ export default function OrganizationsPage() {
       if (!session?.access_token) return
 
       try {
-        const response = await fetch('/api/organizations', {
+        // Admins should fetch from the dedicated admin endpoint.
+        const response = await fetch('/api/admin/organizations', {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         })
         
@@ -70,7 +72,8 @@ export default function OrganizationsPage() {
       const planFilter = selectedPlan === "all" || org.plan === selectedPlan
       const searchFilter = searchTerm === "" || 
         org.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        org.industry.toLowerCase().includes(searchTerm.toLowerCase())
+        org.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        org.teamId?.toLowerCase().includes(searchTerm.toLowerCase())
 
       return teamFilter && statusFilter && planFilter && searchFilter
     })
@@ -146,7 +149,7 @@ export default function OrganizationsPage() {
       enableHiding: false,
       size: 50,
       cell: ({ row }) => (
-        <Link href={`/admin/organizations/${row.original.id}`} className="inline-flex">
+        <Link href={`/admin/organizations/${row.original.organization_id}`} className="inline-flex">
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Link>
       ),

@@ -39,12 +39,12 @@ export default function TopupRequestsPage() {
   }
 
   const handleApproveTopup = (requestId: string) => {
-    console.log("Approving top-up:", requestId)
+          // Handle top-up approval
     alert("Top-up request approved!")
   }
 
   const handleRejectTopup = (requestId: string) => {
-    console.log("Rejecting top-up:", requestId)
+          // Handle top-up rejection
     alert("Top-up request rejected")
   }
 

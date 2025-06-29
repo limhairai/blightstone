@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js'
-import { Business } from '../types/business'
 import { AdAccount, AppAccount } from '../types/account'
 import { Transaction } from '../types/transaction'
 import { Organization, Wallet } from '../types/organization'
@@ -21,7 +20,6 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // For backward compatibility, alias the new types
-interface AppBusiness extends Business {}
 interface AppTransaction extends Transaction {}
 interface AppOrganization extends Organization {}
 interface TeamMember {
@@ -29,102 +27,6 @@ interface TeamMember {
   name: string
   email: string
   role: string
-}
-
-// ============================================================================
-// BUSINESS OPERATIONS
-// ============================================================================
-
-export const BusinessService = {
-  // Get all businesses for an organization
-  async getBusinessesByOrganization(organizationId: string): Promise<AppBusiness[]> {
-    const { data, error } = await supabase
-      .from('businesses')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching businesses:', error)
-      throw new Error(`Failed to fetch businesses: ${error.message}`)
-    }
-
-    return data.map(convertSupabaseBusinessToAppBusiness)
-  },
-
-  // Get all businesses (admin only)
-  async getAllBusinesses(): Promise<AppBusiness[]> {
-    const { data, error } = await supabase
-      .from('businesses')
-      .select(`
-        *,
-        organizations!inner(name)
-      `)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching all businesses:', error)
-      throw new Error(`Failed to fetch all businesses: ${error.message}`)
-    }
-
-    return data.map(convertSupabaseBusinessToAppBusiness)
-  },
-
-  // Create a new business
-  async createBusiness(organizationId: string, businessData: Omit<AppBusiness, 'id' | 'dateCreated'>): Promise<AppBusiness> {
-    const { data, error } = await supabase
-      .from('businesses')
-      .insert({
-        organization_id: organizationId,
-        name: businessData.name,
-        website_url: businessData.website,
-        status: businessData.status || 'pending',
-        timezone: 'UTC'
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating business:', error)
-      throw new Error(`Failed to create business: ${error.message}`)
-    }
-
-    return convertSupabaseBusinessToAppBusiness(data)
-  },
-
-  // Update a business
-  async updateBusiness(business: AppBusiness): Promise<AppBusiness> {
-    const { data, error } = await supabase
-      .from('businesses')
-      .update({
-        name: business.name,
-        status: business.status,
-        website_url: business.website
-      })
-      .eq('id', business.id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating business:', error)
-      throw new Error(`Failed to update business: ${error.message}`)
-    }
-
-    return convertSupabaseBusinessToAppBusiness(data)
-  },
-
-  // Delete a business
-  async deleteBusiness(businessId: string): Promise<void> {
-    const { error } = await supabase
-      .from('businesses')
-      .delete()
-      .eq('id', businessId)
-
-    if (error) {
-      console.error('Error deleting business:', error)
-      throw new Error(`Failed to delete business: ${error.message}`)
-    }
-  }
 }
 
 // ============================================================================
@@ -137,7 +39,7 @@ export const AccountService = {
     const { data, error } = await supabase
       .from('ad_accounts')
       .select('*')
-      .eq('business_id', businessId)
+      .eq('bm_id', businessId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -193,7 +95,7 @@ export const AccountService = {
     const { data, error } = await supabase
       .from('ad_accounts')
       .insert({
-        business_id: businessId,
+        bm_id: businessId,
         user_id: user.user?.id,
         name: accountData.name,
         account_id: accountData.accountId || `acc_${Date.now()}`,
@@ -580,10 +482,10 @@ export interface DolphinAsset {
   id: string
   asset_type: 'profile' | 'business_manager' | 'ad_account'
   asset_id: string
+  dolphin_asset_id: string
   name: string
   status: string
   health_status: string
-  parent_business_manager_id?: string
   asset_metadata: any
   discovered_at: string
   last_sync_at?: string
@@ -697,17 +599,6 @@ export const DolphinAssetsService = {
   }
 }
 
-function convertSupabaseBusinessToAppBusiness(supabaseBusiness: any): AppBusiness {
-  return {
-    id: supabaseBusiness.id,
-    name: supabaseBusiness.name,
-    status: supabaseBusiness.status,
-    balance: 0, // Will be calculated from accounts
-    dateCreated: supabaseBusiness.created_at,
-    website: supabaseBusiness.website_url
-  }
-}
-
 function convertSupabaseAccountToAppAccount(supabaseAccount: any): AppAccount {
   return {
     id: supabaseAccount.id,
@@ -715,7 +606,7 @@ function convertSupabaseAccountToAppAccount(supabaseAccount: any): AppAccount {
     status: supabaseAccount.status,
     balance: parseFloat(supabaseAccount.balance) || 0,
     dateAdded: supabaseAccount.created_at,
-    businessId: supabaseAccount.business_id,
+    businessId: supabaseAccount.bm_id,
     accountId: supabaseAccount.account_id,
     
     spent: parseFloat(supabaseAccount.spent) || 0,
@@ -797,13 +688,13 @@ function convertSupabaseDolphinAsset(supabaseAsset: any): DolphinAsset {
   const activeBinding = bindings.find((b: any) => b.status === 'active')
 
   return {
-    id: supabaseAsset.id,
+    id: supabaseAsset.asset_id, // Use asset_id as the main ID
     asset_type: supabaseAsset.asset_type,
-    asset_id: supabaseAsset.asset_id,
+    asset_id: supabaseAsset.asset_id, // Primary key from database
+    dolphin_asset_id: supabaseAsset.dolphin_asset_id, // External identifier from Dolphin API
     name: supabaseAsset.name,
     status: supabaseAsset.status,
     health_status: supabaseAsset.health_status,
-    parent_business_manager_id: supabaseAsset.parent_business_manager_id,
     asset_metadata: supabaseAsset.asset_metadata,
     discovered_at: supabaseAsset.discovered_at,
     last_sync_at: supabaseAsset.last_sync_at,

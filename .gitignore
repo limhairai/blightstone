@@ -37,9 +37,9 @@ next-env.d.ts
 ad-hub-d1c0a-firebase-adminsdk-fbsvc-3a91ccbce3.json
 *-firebase-adminsdk-*.json
 
-# Project-specific directories
-scripts/
-test/
+# Project-specific directories (removed - now organized)
+# scripts/ - now organized in subdirectories
+# test/ - now organized as tests/
 
 # IDE
 .idea/
@@ -53,10 +53,21 @@ ehthumbs.db
 Desktop.ini
 *~
 
-# Test
+# Test outputs
 test-results/
 playwright-report/
 coverage/
+*.lcov
+
+# Database files (development)
+database/adhub.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration (keep configs but ignore sensitive data)
+config/sentry/*.key
+config/sentry/*.pem
 
 # Large files
 *.node

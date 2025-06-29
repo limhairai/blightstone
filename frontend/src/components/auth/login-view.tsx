@@ -62,11 +62,13 @@ export function LoginView() {
       return;
     }
     
-    // On success, the useEffect will handle the redirect. 
-    toast.success("Signed in!", {
-      description: "Welcome back. Redirecting..."
-    });
-    window.location.assign('/dashboard');
+    // On success, show toast and let AuthContext handle the redirect
+    toast.success("Signed in! Welcome back.");
+    
+    // Wait a moment for auth state to update, then redirect
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 100);
   };
 
   const handleGoogleSignIn = async () => {

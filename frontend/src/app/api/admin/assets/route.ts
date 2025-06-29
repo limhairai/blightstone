@@ -1,142 +1,177 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
-// Use your existing backend API endpoints
-const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-async function getAuthToken(request: NextRequest): Promise<string | null> {
-  // Get token from Authorization header
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-  return null;
-}
-
-async function makeBackendRequest(endpoint: string, token: string | null, options: RequestInit = {}) {
-  const url = `${BACKEND_API_URL}${endpoint}`;
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...options.headers as Record<string, string>,
-  };
-
-  // Add authorization header if we have a token
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Backend API error (${response.status}): ${errorText}`);
-  }
-
-  return response.json();
-}
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const assetType = searchParams.get('asset_type');
+    const { searchParams } = new URL(request.url)
+    const asset_type = searchParams.get('asset_type')
+    const unbound_only = searchParams.get('unbound_only') === 'true'
+
+    // Get all assets
+    let query = supabase.from('asset').select('*').order('created_at', { ascending: false })
     
-    // Extract auth token from request headers
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
+    if (asset_type) {
+      query = query.eq('type', asset_type)
     }
 
-    // Forward request to backend with auth
-    const backendUrl = `${BACKEND_API_URL}/api/dolphin-assets/all-assets`;
-    const url = new URL(backendUrl);
-    if (assetType) {
-      url.searchParams.set('asset_type', assetType);
-    }
+    const { data: assets, error: assetsError } = await query
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Authorization': authHeader,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
+    if (assetsError) {
+      console.error('Error fetching assets:', assetsError)
       return NextResponse.json(
-        { error: `Backend error: ${error}` },
-        { status: response.status }
-      );
+        { error: 'Failed to fetch assets' },
+        { status: 500 }
+      )
     }
 
-    const data = await response.json();
-    
-    // Return the organized data structure
-    return NextResponse.json({
-      status: 'success',
-      business_managers: data.business_managers || [],
-      facebook_profiles: data.facebook_profiles || [],
-      ad_accounts: data.ad_accounts || [],
-      summary: data.summary || {
-        total_business_managers: 0,
-        total_facebook_profiles: 0,
-        total_ad_accounts: 0,
+    // Get all active bindings
+    const { data: bindings, error: bindingsError } = await supabase
+      .from('asset_binding')
+      .select(`
+        asset_id,
+        organization_id,
+        status,
+        bound_at,
+        organizations!inner(name)
+      `)
+      .eq('status', 'active')
+
+    if (bindingsError) {
+      console.error('Error fetching bindings:', bindingsError)
+      return NextResponse.json(
+        { error: 'Failed to fetch bindings' },
+        { status: 500 }
+      )
+    }
+
+    // Create binding map
+    const bindingMap = new Map()
+    bindings?.forEach(binding => {
+      bindingMap.set(binding.asset_id, {
+        organization_id: binding.organization_id,
+        organization_name: binding.organizations?.name || 'Unknown Organization',
+        bound_at: binding.bound_at
+      })
+    })
+
+    // Process assets with binding information
+    const processedAssets = assets?.map(asset => {
+      const bindingInfo = bindingMap.get(asset.id)
+      
+      return {
+        asset_id: asset.id, // Frontend compatibility
+        id: asset.id,
+        name: asset.name,
+        type: asset.type,
+        asset_type: asset.type, // Frontend compatibility
+        dolphin_id: asset.dolphin_id,
+        dolphin_asset_id: asset.dolphin_id, // Frontend compatibility
+        status: asset.status,
+        metadata: asset.metadata,
+        asset_metadata: asset.metadata, // Frontend compatibility
+        last_synced_at: asset.last_synced_at,
+        created_at: asset.created_at,
+        updated_at: asset.updated_at,
+        organization_id: bindingInfo?.organization_id || null,
+        organization_name: bindingInfo?.organization_name || null,
+        bound_at: bindingInfo?.bound_at || null
       }
-    });
+    }).filter(asset => {
+      // Apply unbound_only filter if requested
+      if (unbound_only) {
+        return !asset.organization_id
+      }
+      return true
+    }) || []
+
+    return NextResponse.json({
+      assets: processedAssets
+    })
 
   } catch (error) {
-    console.error('Assets API error:', error);
+    console.error('Error in assets API:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { action } = body;
+    const body = await request.json()
+    const { type, dolphin_id, name, status = 'active', metadata } = body
 
-    // Extract auth token
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authorization header required' }, { status: 401 });
+    // Validate required fields
+    if (!type || !dolphin_id || !name) {
+      return NextResponse.json(
+        { error: 'Missing required fields: type, dolphin_id, name' },
+        { status: 400 }
+      )
     }
 
-    if (action === 'discover') {
-      // Sync/discover assets from Dolphin Cloud
-      const response = await fetch(`${BACKEND_API_URL}/api/dolphin-assets/sync/discover`, {
-        method: 'POST',
-        headers: {
-          'Authorization': authHeader,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ force_refresh: true }),
-      });
+    // Validate asset type
+    if (!['business_manager', 'ad_account', 'profile'].includes(type)) {
+      return NextResponse.json(
+        { error: 'Invalid type. Must be business_manager, ad_account, or profile' },
+        { status: 400 }
+      )
+    }
 
-      if (!response.ok) {
-        const error = await response.text();
+    // Create the asset
+    const { data: asset, error } = await supabase
+      .from('asset')
+      .insert({
+        type,
+        dolphin_id,
+        name,
+        status,
+        metadata,
+        last_synced_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating asset:', error)
+      
+      // Handle unique constraint violation
+      if (error.code === '23505') {
         return NextResponse.json(
-          { error: `Sync failed: ${error}` },
-          { status: response.status }
-        );
+          { error: 'Asset with this dolphin_id already exists for this type' },
+          { status: 409 }
+        )
       }
-
-      const result = await response.json();
-      return NextResponse.json(result);
+      
+      return NextResponse.json(
+        { error: 'Failed to create asset' },
+        { status: 500 }
+      )
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({
+      asset: {
+        id: asset.id,
+        type: asset.type,
+        dolphin_id: asset.dolphin_id,
+        name: asset.name,
+        status: asset.status,
+        metadata: asset.metadata,
+        last_synced_at: asset.last_synced_at,
+        created_at: asset.created_at
+      }
+    })
 
   } catch (error) {
-    console.error('Assets POST API error:', error);
+    console.error('Error creating asset:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
-    );
+    )
   }
 } 

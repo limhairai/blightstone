@@ -1,0 +1,169 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+// GET /api/business-managers
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile || !profile.organization_id) {
+        return NextResponse.json({ error: 'User organization not found.' }, { status: 404 });
+    }
+
+    // Query business managers bound to this organization
+    const { data: boundAssets, error: assetsError } = await supabase
+      .from('asset_binding')
+      .select(`
+        id,
+        asset_id,
+        bound_at,
+        asset:asset_id (
+          id,
+          name,
+          type,
+          dolphin_id,
+          status,
+          metadata
+        )
+      `)
+      .eq('organization_id', profile.organization_id)
+      .eq('status', 'active')
+      .eq('asset.type', 'business_manager');
+
+    if (assetsError) {
+      console.error('Error fetching business managers:', assetsError);
+      return NextResponse.json({ error: assetsError.message }, { status: 500 });
+    }
+
+    // Get pending/processing applications for that org (only new BM requests)
+    const { data: pendingApps, error: appsError } = await supabase
+      .from('application')
+      .select('*')
+      .eq('organization_id', profile.organization_id)
+      .eq('request_type', 'new_business_manager')
+      .in('status', ['pending', 'processing']);
+
+    if (appsError) {
+      console.error('Error fetching pending applications:', appsError);
+      return NextResponse.json({ error: appsError.message }, { status: 500 });
+    }
+
+    // Filter out bindings with null/undefined assets
+    const validBoundAssets = (boundAssets || []).filter((binding: any) => 
+      binding.asset && binding.asset.id && binding.asset.name
+    );
+
+    // Calculate ad account count for each business manager by counting actual ad accounts
+    const businessManagersWithCounts = await Promise.all(
+      validBoundAssets.map(async (binding: any) => {
+        const bmDolphinId = binding.asset?.dolphin_id;
+        
+        // Count ad accounts bound to this business manager
+        let adAccountCount = 0;
+        if (bmDolphinId) {
+          const { data: adAccountBindings, error: adAccountError } = await supabase
+            .from('asset_binding')
+            .select(`
+              asset:asset_id (
+                type,
+                metadata
+              )
+            `)
+            .eq('organization_id', profile.organization_id)
+            .eq('status', 'active')
+            .eq('asset.type', 'ad_account');
+
+          if (!adAccountError && adAccountBindings) {
+            // Filter ad accounts that belong to this business manager
+            adAccountCount = adAccountBindings.filter((adBinding: any) => {
+              const adAccountMetadata = adBinding.asset?.metadata;
+              return adAccountMetadata?.business_manager_id === bmDolphinId;
+            }).length;
+          }
+        }
+
+        return {
+          id: binding.asset?.dolphin_id, // Use dolphin_id for consistency with ad account filtering
+          name: binding.asset?.name,
+          status: binding.asset?.status,
+          created_at: binding.bound_at,
+          ad_account_count: adAccountCount, // Use calculated count instead of metadata
+          dolphin_business_manager_id: binding.asset?.dolphin_id,
+          binding_id: binding.id,
+          asset_id: binding.asset?.id // Keep the actual asset ID for reference
+        };
+      })
+    );
+
+    // Format pending applications as "pending" business managers
+    const formattedPendingApps = (pendingApps || []).map((app: any) => ({
+      id: `app-${app.id}`,
+      name: app.name || `Application ${app.id.toString().substring(0, 8)}...`,
+      status: app.status === 'pending' ? 'pending' : app.status === 'processing' ? 'processing' : 'pending',
+      created_at: app.created_at,
+      ad_account_count: 0,
+      dolphin_business_manager_id: null,
+      is_application: true,
+      application_id: app.id,
+      organization_id: app.organization_id
+    }));
+
+    return NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps]);
+
+  } catch (error) {
+    console.error('Error in business managers API:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+// DELETE /api/business-managers?id=<uuid>
+export async function DELETE(request: NextRequest) {
+    const { searchParams } = new URL(request.url);
+    const businessManagerId = searchParams.get('id');
+
+    if (!businessManagerId) {
+        return NextResponse.json({ error: 'Business Manager ID is required' }, { status: 400 });
+    }
+
+    try {
+        // For our new schema, we need to unbind the asset
+        const { error } = await supabase
+            .from('asset_binding')
+            .update({ status: 'inactive' })
+            .eq('asset_id', businessManagerId)
+            .eq('status', 'active');
+        
+        if (error) {
+            console.error('Error unbinding business manager:', error);
+            throw new Error(error.message);
+        }
+
+        return NextResponse.json({ message: 'Business Manager unbound successfully.' });
+
+    } catch (error) {
+        console.error('Failed to unbind business manager:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    }
+} 

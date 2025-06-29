@@ -1,6 +1,6 @@
 # 🚨 Production Readiness Audit Report
 
-Generated: 2025-06-26T22:35:35.627Z
+Generated: 2025-06-28T07:27:39.509Z
 
 ## Summary
 
@@ -8,9 +8,9 @@ Generated: 2025-06-26T22:35:35.627Z
 |----------|-------|
 | Critical | 0 |
 | High | 230 |
-| Medium | 317 |
-| Low | 38 |
-| **Total** | **585** |
+| Medium | 282 |
+| Low | 37 |
+| **Total** | **549** |
 
 ## ⚠️ Production Status: CAUTION
 
@@ -46,21 +46,6 @@ Development comments that need attention
 - Line 42: `// TODO: Replace with real admin data service`
 - Line 59: `// TODO: Replace with real data from Supabase admin service`
 
-### src/app/admin/applications/page.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 88: `console.error(`Error during ${action}:`, errorMessage);`
-
-### src/app/admin/assets/page.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 40: `console.error('Error loading assets:', err)`
-- Line 79: `console.error('Error syncing assets:', err)`
-
 ### src/app/admin/businesses/page.tsx
 
 #### TODO_FIXME (LOW)
@@ -87,27 +72,34 @@ Debug code that should be removed for production
 - Line 64: `console.error('Error fetching funding requests:', error)`
 - Line 103: `console.error(`Error ${actionType}ing request:`, error)`
 
+### src/app/admin/organizations/[orgId]/business-managers/[bmId]/page.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 77: `console.error('Error fetching business manager:', err)`
+
 ### src/app/admin/organizations/[orgId]/page.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 80: `console.error('Error fetching organization:', err)`
+- Line 82: `console.error('Error fetching organization:', err)`
 
 ### src/app/admin/organizations/page.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 79: `// For now, use mock teams data - in production this would also come from API`
+- Line 82: `// For now, use mock teams data - in production this would also come from API`
 
 ### src/app/admin/page.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 64: `console.error('Failed to fetch applications:', err)`
-- Line 88: `console.error('Failed to fetch funding requests:', err)`
+- Line 66: `console.error('Failed to fetch applications:', applicationsResponse.statusText)`
+- Line 90: `console.error('Failed to fetch funding requests:', err)`
 
 ### src/app/admin/stats/page.tsx
 
@@ -161,75 +153,55 @@ Debug code that should be removed for production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 117: `console.error('Error fetching ad accounts:', error);`
-- Line 104: `// Raw Dolphin data for debugging`
+- Line 43: `console.error('Error fetching ad accounts:', adAccountsError);`
+- Line 74: `console.error('Error in ad-accounts API:', error);`
 
-### src/app/api/admin/applications/route.ts
+#### TODO_FIXME (LOW)
+Development comments that need attention
 
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
+- Line 80: `// TODO: PATCH and DELETE handlers need to be implemented for Dolphin assets`
 
-- Line 88: `console.log('Found businesses:', businessAppsData?.length || 0);`
-- Line 90: `console.log(`Business: ${business.name}, Status: ${business.status}`);`
-- Line 109: `console.log('Total applications found:', allApplications.length);`
-- Line 41: `console.warn('Warning: Could not fetch users for email mapping:', usersError);`
-- Line 46: `console.warn('Warning: User fetching failed, continuing without email mapping:', userError);`
-- Line 57: `console.error('Supabase error fetching ad account apps:', error);`
-- Line 73: `console.error('Error fetching ad account applications:', adAccountError);`
-- Line 84: `console.error('Supabase error fetching business apps:', businessAppsError);`
-- Line 112: `console.error('Error in GET /api/admin/applications:', error);`
-- Line 157: `console.error('Error updating business application:', error);`
-- Line 196: `console.error('Supabase error:', error);`
-- Line 212: `console.error('Error updating application:', error)`
-- Line 248: `console.error('Supabase error:', error)`
-- Line 261: `console.error('Error creating application:', error)`
-- Line 14: `const debug = url.searchParams.get('debug')`
-- Line 16: `// Debug mode - just return all businesses with their statuses`
-- Line 17: `if (debug === 'true') {`
-- Line 18: `const { data: allBusinesses, error: debugError } = await supabase`
-- Line 23: `if (debugError) {`
-- Line 24: `return NextResponse.json({ error: 'Debug query failed', details: debugError }, { status: 500 });`
-- Line 28: `debug: true,`
-
-### src/app/api/admin/assets/route.ts
+### src/app/api/admin/asset-bindings/cascade-unbind/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 91: `console.error('Assets API error:', error);`
-- Line 136: `console.error('Assets POST API error:', error);`
+- Line 27: `console.error('Error finding ad accounts:', adAccountsError);`
+- Line 70: `console.error('Server error during cascade unbinding:', error);`
 
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
-
-- Line 4: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
-- Line 4: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
-
-### src/app/api/admin/bind-asset/route.ts
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 16: `// For now, return a mock success response since the backend binding is complex`
+### src/app/api/admin/asset-bindings/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 18: `console.log('Binding request:', { asset_id, asset_type, organization_id, notes });`
-- Line 30: `console.error('Binding API error:', error);`
+- Line 62: `console.error("Warning: Could not fetch the selected Business Manager asset to store its external ID.");`
+- Line 119: `console.error(`Warning: Failed to update ad_account_application status: ${appUpdateError.message}`);`
+- Line 127: `console.error('Fulfillment or binding error:', error);`
+- Line 158: `console.error(`Failed to update business after unbinding: ${updateError.message}`);`
+- Line 165: `console.error('Server error during unbinding:', error);`
 
-#### HARDCODED_VALUES (HIGH)
-Hardcoded localhost/development URLs
+### src/app/api/admin/asset-bindings/single-unbind/route.ts
 
-- Line 3: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
-- Line 3: `const BACKEND_API_URL = process.env.BACKEND_URL || 'http://localhost:8000';`
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 34: `console.error('Server error during single asset unbinding:', error);`
+
+### src/app/api/admin/business-managers/[bmId]/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 61: `console.error('Error fetching ad accounts:', adAccountsError)`
+- Line 99: `console.error('Error fetching business manager details:', error)`
 
 ### src/app/api/admin/businesses/[businessId]/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 49: `console.error('Error fetching business details:', error)`
+- Line 51: `console.error('Error fetching ad accounts:', adAccountsError)`
+- Line 85: `console.error('Error fetching business details:', error)`
 
 ### src/app/api/admin/dolphin/route.ts
 
@@ -258,12 +230,54 @@ Debug code that should be removed for production
 - Line 103: `console.error('Error binding Dolphin account:', error)`
 - Line 141: `console.error('Error syncing with Dolphin:', error)`
 
+### src/app/api/admin/dolphin-assets/all-assets/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 59: `console.error('Admin assets API error:', error)`
+
 ### src/app/api/admin/dolphin-assets/bind/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 64: `console.error('Error binding asset:', error);`
+- Line 53: `console.error('Admin bind asset API error:', error);`
+
+### src/app/api/admin/dolphin-assets/client/[organization_id]/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 45: `console.log('🔍 Frontend API: Calling backend URL:', backendUrl.toString())`
+- Line 55: `console.log('🔍 Frontend API: Backend response status:', response.status)`
+- Line 59: `console.log('🔍 Frontend API: Backend error:', errorData)`
+- Line 64: `console.log('🔍 Frontend API: Backend data:', data)`
+- Line 68: `console.error('Client assets API error:', error)`
+
+### src/app/api/admin/dolphin-assets/debug/binding-check/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 49: `console.error('Admin debug binding check API error:', error)`
+- Line 30: `const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/debug/binding-check``
+- Line 49: `console.error('Admin debug binding check API error:', error)`
+
+### src/app/api/admin/dolphin-assets/sync/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 42: `console.error("Backend sync error:", errorData);`
+- Line 50: `console.error('Admin sync API proxy error:', error);`
+
+### src/app/api/admin/dolphin-assets/unbind/[binding_id]/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 62: `console.error('Unbind API error:', error)`
 
 ### src/app/api/admin/dolphin-health/route.ts
 
@@ -273,19 +287,34 @@ Hardcoded localhost/development URLs
 - Line 3: `const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';`
 - Line 3: `const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';`
 
+### src/app/api/admin/fulfill-bm-application/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 49: `console.error('Error fulfilling application:', error);`
+
+### src/app/api/admin/get-associated-ad-accounts/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 30: `console.error("Error fetching associated ad accounts:", error);`
+- Line 36: `console.error("Failed to fetch associated ad accounts:", error);`
+
 ### src/app/api/admin/organizations/[orgId]/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 59: `console.error('Error fetching organization details:', error)`
+- Line 82: `console.error('Error fetching organization details:', error)`
 
 ### src/app/api/admin/organizations/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 44: `console.error('Error fetching organizations:', error);`
+- Line 16: `console.error('Error fetching organizations for admin:', error);`
 
 ### src/app/api/admin/teams/route.ts
 
@@ -316,15 +345,20 @@ Debug code that should be removed for production
 - Line 24: `console.error('Supabase error:', error)`
 - Line 48: `console.error('Error fetching transactions:', error)`
 
-### src/app/api/applications/route.ts
+### src/app/api/admin/unbound-assets/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 63: `console.error('Error fetching applications:', error);`
-- Line 128: `console.error('Error counting ad accounts, will use a non-unique name.', countError);`
-- Line 151: `console.error('Supabase error creating ad account application:', insertError);`
-- Line 162: `console.error('Error creating ad account application:', error);`
+- Line 26: `console.error("Error fetching unbound assets:", error);`
+- Line 34: `console.error("Failed to fetch unbound assets:", error);`
+
+### src/app/api/admin/update-application-status/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 48: `console.error('Error updating application status:', error);`
 
 ### src/app/api/auth/me/route.ts
 
@@ -341,21 +375,36 @@ Debug code that should be removed for production
 
 - Line 31: `console.error('Error checking existing superusers:', countError)`
 - Line 46: `console.error('Error listing users:', userError)`
-- Line 72: `console.error('Error creating admin profile:', upsertError)`
-- Line 149: `console.error('Error promoting user:', updateError)`
-- Line 163: `console.error('Promotion error:', error)`
+- Line 72: `console.error('Error creating superuser profile:', upsertError)`
+- Line 145: `console.error('Error promoting user:', updateError)`
+- Line 159: `console.error('Promotion error:', error)`
 
-### src/app/api/businesses/route.ts
+### src/app/api/bm-applications/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 25: `console.error('Supabase error fetching businesses:', error);`
-- Line 32: `console.error('Error fetching businesses:', error);`
-- Line 62: `console.error('Supabase error creating business:', error);`
-- Line 69: `console.error('Error creating business:', error);`
-- Line 100: `console.error('Supabase error updating business:', error);`
-- Line 107: `console.error('Error updating business:', error);`
+- Line 40: `console.error('Error fetching bm_applications:', error);`
+- Line 110: `console.error('Error creating BM application:', error);`
+
+### src/app/api/business-managers/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 39: `console.error('Error fetching business managers:', bmsError);`
+- Line 51: `console.error('Error fetching pending applications:', appsError);`
+- Line 81: `console.error('Error in business managers API:', error);`
+- Line 106: `console.error('Error unbinding business manager:', error);`
+- Line 113: `console.error('Failed to unbind business manager:', error);`
+
+### src/app/api/businesses/[businessId]/route.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 76: `console.error('Error fetching ad accounts:', adAccountsError);`
+- Line 110: `console.error('Error fetching business details:', error);`
 
 ### src/app/api/client/assets/route.ts
 
@@ -381,40 +430,30 @@ Debug code that should be removed for production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 71: `console.error('Error fetching onboarding progress:', error);`
-- Line 131: `console.error('Error dismissing onboarding:', error);`
+- Line 78: `console.error('Error fetching onboarding progress:', error);`
+- Line 146: `console.error('Error dismissing onboarding:', error);`
 
 ### src/app/api/organizations/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 63: `console.error('Error fetching organization:', orgError);`
-- Line 85: `console.error('Error fetching organizations:', membershipError);`
-- Line 106: `console.error('Error fetching organizations:', error);`
-- Line 153: `console.error('Error creating organization:', orgError);`
-- Line 167: `console.error('Error adding organization member:', memberError);`
-- Line 179: `console.error('Error creating wallet:', walletError);`
-- Line 190: `console.error('Error creating organization:', error);`
+- Line 59: `console.error("Error fetching organizations:", error);`
+- Line 75: `console.error('Error fetching organizations:', msg);`
+- Line 117: `console.error('Error creating organization:', msg);`
+- Line 166: `console.error('Error updating organization:', msg);`
+- Line 208: `console.error('Error deleting organization:', msg);`
 
 ### src/app/api/payments/create-checkout-session/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 12: `console.log("API Route is using Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);`
-- Line 13: `console.log("Stripe key configured:", !!process.env.STRIPE_SECRET_KEY);`
-- Line 14: `console.log("Supabase service role key configured:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);`
-- Line 22: `console.log('Received auth token:', token ? 'Present' : 'Missing');`
-- Line 29: `console.log('User auth result:', { user: user ? { id: user.id, email: user.email } : null, userError });`
-- Line 43: `console.log('Received payment data:', { amount, wallet_credit, success_url, cancel_url });`
-- Line 44: `console.log('User ID:', user.id);`
-- Line 53: `console.log('Organization query result:', { org, orgError });`
-- Line 32: `console.error('Auth error:', userError);`
-- Line 56: `console.error('Error fetching organization for user:', user.id, orgError)`
-- Line 92: `console.error('Checkout session creation error:', error)`
-- Line 95: `console.error('Stripe error:', error.message, error.type)`
-- Line 102: `console.error('General error:', error)`
+- Line 30: `console.error('Auth error:', userError);`
+- Line 53: `console.error('Error fetching organization for user:', user.id, orgError)`
+- Line 89: `console.error('Checkout session creation error:', error)`
+- Line 92: `console.error('Stripe error:', error.message, error.type)`
+- Line 99: `console.error('General error:', error)`
 
 ### src/app/api/payments/create-intent/route.ts
 
@@ -457,15 +496,27 @@ Debug code that should be removed for production
 - Line 44: `console.log('Payment succeeded:', paymentIntent.id)`
 - Line 49: `console.log('Payment failed:', failedPayment.id)`
 - Line 53: `console.log(`Unhandled event type: ${event.type}`)`
-- Line 83: `console.log(`Processing wallet top-up:`, {`
-- Line 141: `console.log(`✅ Wallet updated successfully:`, {`
+- Line 69: `console.log('🎯 handleSuccessfulPayment called for session:', session.id)`
+- Line 70: `console.log('📋 Session metadata:', session.metadata)`
+- Line 91: `console.log(`Processing wallet top-up:`, {`
+- Line 100: `console.log('🔍 Looking for wallet with organization_id:', organization_id)`
+- Line 118: `console.log('🔧 Attempting to create wallet for organization:', organization_id)`
+- Line 133: `console.log('✅ Created new wallet:', newWallet)`
+- Line 137: `console.log('💰 Found wallet:', wallet)`
+- Line 177: `console.log(`✅ Wallet updated successfully:`, {`
 - Line 28: `console.error('Webhook signature verification failed:', err)`
 - Line 59: `console.error('Webhook handler error:', error)`
-- Line 76: `console.error('Missing metadata in checkout session:', session.id)`
-- Line 99: `console.error('Error fetching wallet:', walletError)`
-- Line 112: `console.error('Error updating wallet balance:', updateError)`
-- Line 138: `console.error('Error creating transaction record:', transactionError)`
-- Line 148: `console.error('Error handling successful payment:', error)`
+- Line 79: `console.error('❌ Missing metadata in checkout session:', {`
+- Line 110: `console.error('❌ Error fetching wallet or wallet not found:', {`
+- Line 129: `console.error('❌ Failed to create wallet:', createError)`
+- Line 148: `console.error('Error updating wallet balance:', updateError)`
+- Line 174: `console.error('Error creating transaction record:', transactionError)`
+- Line 184: `console.error('Error handling successful payment:', error)`
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 118: `console.log('🔧 Attempting to create wallet for organization:', organization_id)`
 
 ### src/app/api/security/csp-report/route.ts
 
@@ -489,15 +540,15 @@ Debug code that should be removed for production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 74: `console.error('Error fetching transactions:', error);`
+- Line 76: `console.error('Error fetching transactions:', error);`
 
 ### src/app/api/wallet/consolidate/route.ts
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 43: `console.error('Error consolidating funds rpc:', error);`
-- Line 51: `console.error('Consolidation error:', errorMessage);`
+- Line 45: `console.error('Error consolidating funds rpc:', error);`
+- Line 53: `console.error('Consolidation error:', errorMessage);`
 
 ### src/app/api/wallet/transactions/route.ts
 
@@ -512,8 +563,8 @@ Debug code that should be removed for production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 38: `console.error('Supabase RPC error:', error);`
-- Line 44: `console.error('An unexpected error occurred:', err);`
+- Line 56: `console.error('Supabase RPC error:', error);`
+- Line 62: `console.error('An unexpected error occurred:', err);`
 
 ### src/app/auth/callback/page.tsx
 
@@ -530,13 +581,12 @@ Debug code that should be removed for production
 
 - Line 80: `console.error('Error fetching applications:', error);`
 
-### src/app/dashboard/businesses/page.tsx
+### src/app/dashboard/business-managers/page.tsx
 
-#### TODO_FIXME (LOW)
-Development comments that need attention
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
 
-- Line 25: `// This effect is a temporary solution to bridge the gap from the old context.`
-- Line 25: `// This effect is a temporary solution to bridge the gap from the old context.`
+- Line 41: `if (error) console.error("Failed to load business managers:", error)`
 
 ### src/app/dashboard/wallet/business/[id]/page.tsx
 
@@ -553,13 +603,6 @@ Demo mode code that should not run in production
 
 - Line 68: `description: "Leading software development and consulting company specializing in enterprise solutions.",`
 - Line 68: `description: "Leading software development and consulting company specializing in enterprise solutions.",`
-
-### src/app/dashboard/wallet/page.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 31: `console.log('🔄 Triggering SWR revalidation for organizations...');`
 
 ### src/app/layout.tsx
 
@@ -637,6 +680,20 @@ Debug code that should be removed for production
 - Line 91: `console.error('Error creating access code:', error);`
 - Line 133: `console.error('Error deactivating code:', error);`
 
+### src/components/admin/BindAssetDialog.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 113: `console.error('Binding error:', error)`
+
+### src/components/admin/ManageAssetDialog.tsx
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 70: `console.error("Unbinding error:", error)`
+
 ### src/components/admin/WorkflowManagement.tsx
 
 #### MOCK_DATA (HIGH)
@@ -649,8 +706,8 @@ Mock data references that could leak into production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 42: `console.error('Error fetching profile:', profileError)`
-- Line 51: `console.error('Admin check error:', err)`
+- Line 53: `console.error('Error fetching profile:', profileError)`
+- Line 64: `console.error('Admin check error:', err)`
 
 ### src/components/admin/admin-client-accounts-table.tsx
 
@@ -691,27 +748,21 @@ Test email addresses and sample data
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 44: `console.log("Admin sign out");`
+- Line 55: `console.error("Error signing out:", error);`
 
 ### src/components/admin/admin-view.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 25: `const { data: revenueData, isLoading: revenueLoading } = useSWR('/api/admin/revenue', fetcher); // Mock endpoint`
-- Line 26: `const { data: ticketsData, isLoading: ticketsLoading } = useSWR('/api/admin/tickets', fetcher); // Mock endpoint`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 33: `const [showDemoPanel, setShowDemoPanel] = useState(false)`
-- Line 67: `onClick={() => setShowDemoPanel(!showDemoPanel)}`
-- Line 71: `Demo Data`
-- Line 84: `{/* Demo Data Panel */}`
-- Line 85: `{showDemoPanel && (`
-- Line 88: `<CardTitle className="text-foreground">Demo Data Management</CardTitle>`
-- Line 90: `Generate and manage demo data for testing purposes`
-- Line 94: `<div className="text-sm text-muted-foreground">Demo data management coming soon...</div>`
+- Line 27: `const [showDemoPanel, setShowDemoPanel] = useState(false)`
+- Line 56: `onClick={() => setShowDemoPanel(!showDemoPanel)}`
+- Line 60: `Demo Data`
+- Line 73: `{/* Demo Data Panel */}`
+- Line 74: `{showDemoPanel && (`
+- Line 77: `<CardTitle className="text-foreground">Demo Data Management</CardTitle>`
+- Line 79: `Generate and manage demo data for testing purposes`
+- Line 83: `<div className="text-sm text-muted-foreground">Demo data management coming soon...</div>`
 
 ### src/components/admin/application-approval-dialog.tsx
 
@@ -725,20 +776,8 @@ Debug code that should be removed for production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 70: `console.error('Error loading assets:', err)`
-- Line 95: `console.error('Error binding assets:', err)`
-
-### src/components/admin/application-binding-dialog.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 29: `// Mock data for teams and business managers`
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 61: `console.error("Error binding application:", error);`
+- Line 69: `console.error("Failed to load assets:", error)`
+- Line 126: `console.error("Fulfillment error:", error)`
 
 ### src/components/admin/application-ready-dialog.tsx
 
@@ -763,24 +802,6 @@ Debug code that should be removed for production
 - Line 174: `console.error('Error approving application:', error);`
 - Line 205: `console.error('Error rejecting application:', error);`
 
-### src/components/admin/asset-binding-dialog.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 68: `console.error('Error fetching organizations:', error);`
-- Line 96: `console.error('Error fetching businesses:', error);`
-- Line 152: `console.error("Error binding asset:", error);`
-
-### src/components/admin/bind-asset-dialog.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 83: `console.error('Error loading organizations:', err)`
-- Line 98: `console.error('Error loading businesses:', err)`
-- Line 149: `console.error('Error binding asset:', err)`
-
 ### src/components/admin/create-account-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
@@ -795,34 +816,21 @@ Debug code that should be removed for production
 
 - Line 46: `console.error('Error checking Dolphin health:', error);`
 
-### src/components/admin/enhanced-application-approval-dialog.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 90: `console.error('Error fetching Dolphin accounts:', error)`
-- Line 142: `console.error('Error approving application:', error)`
-- Line 177: `console.error('Error rejecting application:', error)`
-- Line 198: `console.error('Error syncing with Dolphin:', error)`
-
 ### src/components/admin/promote-user.tsx
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 182: `<p>⚠️ This is for development purposes only.</p>`
-- Line 182: `<p>⚠️ This is for development purposes only.</p>`
+- Line 179: `<p>⚠️ This is for development purposes only.</p>`
+- Line 179: `<p>⚠️ This is for development purposes only.</p>`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
 - Line 57: `// 🚨 SECURITY: Removed dangerous console log - console.log("🚀 Starting promotion process for:", ...;`
-- Line 60: `console.log("📡 Promoting user...");`
-- Line 73: `console.log("📡 Promotion response:", { status: response.status, data });`
-- Line 76: `console.log("✅ Promotion successful!");`
-- Line 88: `console.error("❌ Promotion failed:", data);`
-- Line 96: `console.error("💥 Error promoting user:", error);`
-- Line 184: `<p>1. Check if User Exists - Debug if you're in profiles table</p>`
+- Line 85: `console.error("❌ Promotion failed:", data);`
+- Line 93: `console.error("💥 Error promoting user:", error);`
+- Line 181: `<p>1. Check if User Exists - Debug if you're in profiles table</p>`
 
 #### TODO_FIXME (LOW)
 Development comments that need attention
@@ -850,66 +858,17 @@ Development comments that need attention
 
 - Line 53: `errorMessage = "Too many login attempts. Please wait a moment and try again.";`
 
-### src/components/businesses/business-application-form.tsx
+### src/components/business-managers/apply-for-bm-dialog.tsx
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 50: `console.log("Form data at submission:", formData);`
-- Line 73: `console.log("Found organizationId:", organizationId);`
-- Line 83: `console.log("Sending payload to /api/businesses:", payload);`
-- Line 114: `console.error('Error submitting application:', error)`
-
-### src/components/businesses/businesses-metrics.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 1: `import { APP_BUSINESSES } from "../../lib/mock-data"`
-
-### src/components/businesses/businesses-view.tsx
-
-#### MOCK_DATA (HIGH)
-Mock data references that could leak into production
-
-- Line 36: `// Mock data based on the new onboarding workflow - businesses that would be created from onboarding`
+- Line 61: `console.error("Application submission error:", error);`
 
 #### TEST_DATA (MEDIUM)
 Test email addresses and sample data
 
-- Line 45: `landingPage: "https://store.example.com",`
-- Line 56: `landingPage: "https://blog.example.com",`
-- Line 67: `landingPage: "https://affiliate.example.com",`
-- Line 78: `landingPage: "https://saas.example.com",`
-
-### src/components/businesses/client-businesses-table.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 337: `console.log('Edit business:', business.id)`
-
-#### TODO_FIXME (LOW)
-Development comments that need attention
-
-- Line 86: `return 0 // TODO: Add account count logic when available`
-- Line 88: `return 0 // TODO: Add balance logic when available`
-- Line 332: `{/* TODO: Update EditBusinessDialog to work with production Business type */}`
-- Line 338: `// TODO: Implement edit business functionality`
-
-### src/components/businesses/create-business-dialog.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 82: `console.error('Failed to create business:', error)`
-
-### src/components/businesses/enhanced-business-card.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 83: `console.log('Manage business:', business.id)`
+- Line 84: `placeholder="https://example.com"`
 
 ### src/components/dashboard/account-transactions-dialog.tsx
 
@@ -931,7 +890,8 @@ Mock data references that could leak into production
 #### TODO_FIXME (LOW)
 Development comments that need attention
 
-- Line 29: `// TODO: Define a proper type for the ad account object`
+- Line 31: `// TODO: Define a proper type for the ad account object`
+- Line 97: `// TODO: Bulk actions disabled - backend PATCH/DELETE endpoints removed`
 
 ### src/components/dashboard/admin-businesses-table.tsx
 
@@ -943,9 +903,8 @@ Mock data references that could leak into production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 112: `console.log("Business updated:", updatedBusiness)`
-- Line 129: `console.error('Failed to delete business:', error)`
-- Line 145: `console.error('Failed to approve business:', error)`
+- Line 128: `console.error('Failed to delete business:', error)`
+- Line 144: `console.error('Failed to approve business:', error)`
 
 ### src/components/dashboard/businesses-metrics.tsx
 
@@ -953,13 +912,6 @@ Debug code that should be removed for production
 Mock data references that could leak into production
 
 - Line 1: `import { APP_BUSINESSES } from "../../lib/mock-data"`
-
-### src/components/dashboard/compact-accounts-table.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 89: `console.log("New account created")`
 
 ### src/components/dashboard/compact-filters.tsx
 
@@ -974,36 +926,28 @@ Mock data references that could leak into production
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 83: `console.error('Failed to create business:', error)`
+- Line 82: `console.error('Failed to create business:', error)`
 
 ### src/components/dashboard/dashboard-view.tsx
 
 #### MOCK_DATA (HIGH)
 Mock data references that could leak into production
 
-- Line 200: `// This is HONEST - no fake historical buildup`
+- Line 157: `// This is HONEST - no fake historical buildup`
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 122: `// Refresh app data (demo state is reactive and doesn't need manual refresh)`
-- Line 302: `// Setup progress tracking - always show as if we have data for demo`
-- Line 306: `realBalance > 0, // Has wallet balance (always true for demo)`
-- Line 407: `// Always show filled dashboard for demo - no empty state`
+- Line 90: `// Refresh app data (demo state is reactive and doesn't need manual refresh)`
+- Line 259: `// Setup progress tracking - always show as if we have data for demo`
+- Line 263: `realBalance > 0, // Has wallet balance (always true for demo)`
+- Line 364: `// Always show filled dashboard for demo - no empty state`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 146: `console.log('Current organization not found, switching to first available organization');`
-- Line 127: `console.warn('Dashboard auto-refresh failed:', error)`
-- Line 345: `console.error('Failed to dismiss onboarding:', error)`
-
-### src/components/dashboard/edit-business-dialog.tsx
-
-#### TEST_DATA (MEDIUM)
-Test email addresses and sample data
-
-- Line 305: `const newDomain = prompt("Enter domain name (e.g., example.com):")`
+- Line 95: `console.warn('Dashboard auto-refresh failed:', error)`
+- Line 302: `console.error('Failed to dismiss onboarding:', error)`
 
 ### src/components/debug/env-debug.tsx
 
@@ -1055,13 +999,6 @@ Debug code that should be removed for production
 - Line 151: `console.error('Error completing onboarding:', error)`
 - Line 161: `console.error('Error skipping onboarding:', error)`
 
-### src/components/organization/organization-switcher.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 90: `console.error('Failed to create organization:', error)`
-
 ### src/components/settings/account-settings.tsx
 
 #### MOCK_DATA (HIGH)
@@ -1079,7 +1016,7 @@ Test email addresses and sample data
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 75: `// Get actual counts from demo state`
+- Line 85: `// Get actual counts from demo state`
 
 ### src/components/settings/settings-view.tsx
 
@@ -1102,13 +1039,6 @@ Test email addresses and sample data
 - Line 353: `<p className="font-medium text-xs">alex.johnson@example.com</p>`
 
 ### src/components/settings/team-settings.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 92: `console.log("Inviting new member", inviteEmail, inviteRole)`
-- Line 115: `console.log("Removing member", memberToRemove)`
-- Line 130: `console.log("Changing role for", memberId, "to", newRole)`
 
 #### TEST_DATA (MEDIUM)
 Test email addresses and sample data
@@ -1226,18 +1156,6 @@ Debug code that should be removed for production
 
 - Line 64: `console.error("Error creating checkout session:", errorText);`
 
-### src/components/wallet/top-up-wallet.tsx
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 74: `console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)`
-
-#### TODO_FIXME (LOW)
-Development comments that need attention
-
-- Line 74: `console.log(`Attempting top-up of ${numAmount} via ${paymentMethod} for orgId: ${orgId}`)`
-
 ### src/components/wallet/transaction-card.tsx
 
 #### MOCK_DATA (HIGH)
@@ -1257,20 +1175,22 @@ Mock data references that could leak into production
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 21: `// Removed demo mode imports - using real Supabase only`
-- Line 252: `window.addEventListener('mousemove', resetTimer);`
-- Line 253: `window.addEventListener('keydown', resetTimer);`
+- Line 22: `// Removed demo mode imports - using real Supabase only`
+- Line 302: `window.addEventListener('mousemove', resetTimer);`
+- Line 303: `window.addEventListener('keydown', resetTimer);`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 55: `console.error("Error signing out:", error);`
-- Line 78: `console.error("Error signing up:", error);`
-- Line 101: `console.error("❌ Error signing in:", error, {`
-- Line 131: `console.error("Error sending password reset email:", error);`
-- Line 159: `console.error("Error initiating Google sign-in:", error);`
-- Line 175: `console.error("Error resending verification email:", error);`
-- Line 204: `console.error("Error fetching initial session:", error);`
+- Line 58: `console.error("Error signing out:", error);`
+- Line 82: `console.error("Error signing up:", error);`
+- Line 105: `console.error("❌ Error signing in:", error, {`
+- Line 135: `console.error("Error sending password reset email:", error);`
+- Line 163: `console.error("Error initiating Google sign-in:", error);`
+- Line 179: `console.error("Error resending verification email:", error);`
+- Line 222: `console.error('Failed to fetch organization:', error);`
+- Line 231: `console.error("Error fetching initial session:", error);`
+- Line 273: `console.error('Failed to fetch organization:', error);`
 
 ### src/hooks/use-mobile.tsx
 
@@ -1278,6 +1198,14 @@ Debug code that should be removed for production
 Demo mode code that should not run in production
 
 - Line 13: `mql.addEventListener("change", onChange)`
+
+### src/hooks/useAdminRoute.ts
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 29: `console.error('Error fetching profile:', profileError)`
+- Line 36: `console.error('Admin check error:', err)`
 
 ### src/hooks/useAdvancedOnboarding.ts
 
@@ -1418,14 +1346,6 @@ Environment variables that force development behavior
 - Line 26: `DEBUG: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true',`
 - Line 26: `DEBUG: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEBUG === 'true',`
 
-### src/lib/config/pricing-management.ts
-
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 241: `console.log(`Updating plan ${planId} with:`, updates)`
-- Line 247: `console.log('Creating pricing experiment:', experiment)`
-
 ### src/lib/data/config.ts
 
 #### DEMO_MODE (HIGH)
@@ -1503,12 +1423,6 @@ Demo mode code that should not run in production
 - Line 205: `document.addEventListener('visibilitychange', handleVisibilityChange);`
 - Line 279: `'http:', // Only for localhost/development`
 
-#### DEBUG_CODE (MEDIUM)
-Debug code that should be removed for production
-
-- Line 165: `console.log('External link clicked:', { url, ...trackingData });`
-- Line 182: `console.log('Desktop app link clicked:', { desktopUrl, webFallbackUrl, ...trackingData });`
-
 #### HARDCODED_VALUES (HIGH)
 Hardcoded localhost/development URLs
 
@@ -1527,6 +1441,41 @@ Development comments that need attention
 Test email addresses and sample data
 
 - Line 61: `return { field: fieldName, message: 'Please enter a valid URL (e.g., example.com, www.example.com, or https://example.com)' }`
+
+### src/lib/id-utils.ts
+
+#### TODO_FIXME (LOW)
+Development comments that need attention
+
+- Line 70: `* TODO: Remove this once we standardize the schema`
+- Line 69: `* Temporary helper to handle the current ID confusion`
+- Line 69: `* Temporary helper to handle the current ID confusion`
+
+### src/lib/performance.ts
+
+#### DEMO_MODE (HIGH)
+Demo mode code that should not run in production
+
+- Line 99: `// Bundle size analyzer (development only)`
+- Line 102: `if (process.env.NODE_ENV === 'development') {`
+- Line 125: `if (usage && process.env.NODE_ENV === 'development') {`
+- Line 99: `// Bundle size analyzer (development only)`
+- Line 102: `if (process.env.NODE_ENV === 'development') {`
+- Line 125: `if (usage && process.env.NODE_ENV === 'development') {`
+
+#### DEBUG_CODE (MEDIUM)
+Debug code that should be removed for production
+
+- Line 104: `console.log(`📦 ${componentName} size: ${(size / 1024).toFixed(2)}KB`)`
+- Line 126: `console.log(`🧠 ${label} - Memory: ${usage.used}MB / ${usage.total}MB (limit: ${usage.limit}MB)`)`
+
+#### ENV_LEAKS (HIGH)
+Environment variables that force development behavior
+
+- Line 102: `if (process.env.NODE_ENV === 'development') {`
+- Line 125: `if (usage && process.env.NODE_ENV === 'development') {`
+- Line 102: `if (process.env.NODE_ENV === 'development') {`
+- Line 125: `if (usage && process.env.NODE_ENV === 'development') {`
 
 ### src/lib/security/csp.ts
 
@@ -1659,58 +1608,53 @@ Debug code that should be removed for production
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 14: `// In development, use localhost`
-- Line 14: `// In development, use localhost`
+- Line 13: `// In development, use localhost`
+- Line 13: `// In development, use localhost`
 
 #### DEBUG_CODE (MEDIUM)
 Debug code that should be removed for production
 
-- Line 48: `console.error('Error fetching businesses:', error)`
-- Line 66: `console.error('Error fetching all businesses:', error)`
-- Line 88: `console.error('Error creating business:', error)`
-- Line 109: `console.error('Error updating business:', error)`
-- Line 124: `console.error('Error deleting business:', error)`
-- Line 144: `console.error('Error fetching accounts:', error)`
-- Line 163: `console.error('Error fetching organization accounts:', error)`
-- Line 182: `console.error('Error fetching all accounts:', error)`
-- Line 209: `console.error('Error creating account:', error)`
-- Line 232: `console.error('Error updating account:', error)`
-- Line 247: `console.error('Error deleting account:', error)`
-- Line 268: `console.error('Error fetching transactions:', error)`
-- Line 287: `console.error('Error fetching all transactions:', error)`
-- Line 311: `console.error('Error creating transaction:', error)`
-- Line 337: `console.error('Error fetching organizations:', error)`
-- Line 357: `console.error('Error fetching all organizations:', error)`
-- Line 377: `console.error('Error creating organization:', error)`
-- Line 408: `console.error('Error fetching organization members:', membersError)`
-- Line 424: `console.error('Error fetching profiles:', profilesError)`
-- Line 459: `console.error('Error fetching user profile:', error)`
-- Line 480: `console.error('Error updating user profile:', error)`
-- Line 500: `console.error('Error fetching onboarding progress:', error)`
-- Line 516: `console.error('Error updating onboarding step:', error)`
-- Line 528: `console.error('Error dismissing onboarding:', error)`
-- Line 540: `console.error('Error resetting onboarding:', error)`
-- Line 552: `console.error('Error checking onboarding completion:', error)`
-- Line 625: `console.error('Error fetching dolphin assets:', error)`
-- Line 661: `console.error('Error syncing dolphin assets:', error)`
-- Line 686: `console.error('Error fetching client assets:', error)`
+- Line 46: `console.error('Error fetching accounts:', error)`
+- Line 65: `console.error('Error fetching organization accounts:', error)`
+- Line 84: `console.error('Error fetching all accounts:', error)`
+- Line 111: `console.error('Error creating account:', error)`
+- Line 134: `console.error('Error updating account:', error)`
+- Line 149: `console.error('Error deleting account:', error)`
+- Line 170: `console.error('Error fetching transactions:', error)`
+- Line 189: `console.error('Error fetching all transactions:', error)`
+- Line 213: `console.error('Error creating transaction:', error)`
+- Line 239: `console.error('Error fetching organizations:', error)`
+- Line 259: `console.error('Error fetching all organizations:', error)`
+- Line 279: `console.error('Error creating organization:', error)`
+- Line 310: `console.error('Error fetching organization members:', membersError)`
+- Line 326: `console.error('Error fetching profiles:', profilesError)`
+- Line 361: `console.error('Error fetching user profile:', error)`
+- Line 382: `console.error('Error updating user profile:', error)`
+- Line 402: `console.error('Error fetching onboarding progress:', error)`
+- Line 418: `console.error('Error updating onboarding step:', error)`
+- Line 430: `console.error('Error dismissing onboarding:', error)`
+- Line 442: `console.error('Error resetting onboarding:', error)`
+- Line 454: `console.error('Error checking onboarding completion:', error)`
+- Line 525: `console.error('Error fetching dolphin assets:', error)`
+- Line 561: `console.error('Error syncing dolphin assets:', error)`
+- Line 586: `console.error('Error fetching client assets:', error)`
 
 #### HARDCODED_VALUES (HIGH)
 Hardcoded localhost/development URLs
 
-- Line 11: `if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {`
-- Line 14: `// In development, use localhost`
-- Line 15: `return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'`
-- Line 15: `return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'`
+- Line 10: `if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {`
+- Line 13: `// In development, use localhost`
+- Line 14: `return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'`
+- Line 14: `return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'`
 
 ### src/types/supabase.ts
 
 #### DEMO_MODE (HIGH)
 Demo mode code that should not run in production
 
-- Line 1085: `add_user_to_demo_org: {`
-- Line 1104: `seed_demo_data_for_current_user: {`
-- Line 1108: `setup_demo_for_user: {`
+- Line 1087: `add_user_to_demo_org: {`
+- Line 1106: `seed_demo_data_for_current_user: {`
+- Line 1110: `setup_demo_for_user: {`
 
 ### src/utils/format.ts
 

@@ -9,8 +9,6 @@ import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Building2, ArrowUpDown, Shuffle, CreditCard, Wallet } from 'lucide-react'
 import { toast } from "sonner"
-import { ConsolidateFundsDialog } from "./consolidate-funds-dialog"
-import { DistributeFundsDialog } from "./distribute-funds-dialog"
 import { StripeCheckoutDialog } from "./stripe-checkout-dialog"
 import { formatCurrency } from "../../utils/format"
 
@@ -31,8 +29,6 @@ export function WalletFundingPanel() {
   const [mode, setMode] = useState<"add" | "withdraw">("add")
   const [amount, setAmount] = useState("")
   const [paymentMethod, setPaymentMethod] = useState("card")
-  const [showConsolidateDialog, setShowConsolidateDialog] = useState(false)
-  const [showDistributeDialog, setShowDistributeDialog] = useState(false)
   const [showStripeDialog, setShowStripeDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -90,9 +86,6 @@ export function WalletFundingPanel() {
       setIsSubmitting(false);
     }
   }
-
-  const handleConsolidate = () => setShowConsolidateDialog(true);
-  const handleDistribute = () => setShowDistributeDialog(true);
 
   const getPaymentMethodLabel = () => {
     switch (paymentMethod) {
@@ -192,24 +185,9 @@ export function WalletFundingPanel() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="card">
-                    <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Credit Card
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="bank">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Bank Transfer
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="crypto">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="h-4 w-4" />
-                      Cryptocurrency
-                    </div>
-                  </SelectItem>
+                  <SelectItem value="card">Credit Card</SelectItem>
+                  <SelectItem value="bank">Bank Transfer</SelectItem>
+                  <SelectItem value="crypto">Cryptocurrency</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -235,47 +213,24 @@ export function WalletFundingPanel() {
             >
               {isSubmitting ? 'Processing...' : `${mode === 'add' ? 'Add' : 'Withdraw'} Funds`}
             </Button>
-
-            {/* Fund Management */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="w-full text-muted-foreground hover:text-foreground"
-                onClick={handleConsolidate}
-                disabled={isLoading}
-              >
-                <Shuffle className="h-4 w-4 mr-2" /> Consolidate
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full text-muted-foreground hover:text-foreground"
-                onClick={handleDistribute}
-                disabled={isLoading}
-              >
-                <ArrowUpDown className="h-4 w-4 mr-2" /> Distribute
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
       
-      {showConsolidateDialog && (
-        <ConsolidateFundsDialog 
-          isOpen={showConsolidateDialog}
-          onClose={() => setShowConsolidateDialog(false)}
-        />
-      )}
-      {showDistributeDialog && (
-        <DistributeFundsDialog
-          isOpen={showDistributeDialog}
-          onClose={() => setShowDistributeDialog(false)}
-        />
-      )}
       {showStripeDialog && (
         <StripeCheckoutDialog 
-          isOpen={showStripeDialog}
-          onClose={() => setShowStripeDialog(false)}
-          amount={Number.parseFloat(amount) || 0}
+          open={showStripeDialog}
+          onOpenChange={(open) => {
+            setShowStripeDialog(open);
+            if (!open) {
+              setAmount("");
+            }
+          }}
+          amount={Number.parseFloat(amount)}
+          onSuccess={() => {
+            mutate(`/api/organizations?id=${currentOrganizationId}`);
+            setAmount("");
+          }}
         />
       )}
     </>

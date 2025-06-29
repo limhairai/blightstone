@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import useSWR from 'swr'
-import { useAdminRoute } from "../../hooks/useAdminRoute"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Badge } from "../ui/badge"
 import { Input } from "../ui/input"
@@ -18,17 +18,11 @@ import { StatusBadge } from "../ui/status-badge"
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function AdminView() {
-  const { canViewAdmin, loading: adminRouteLoading } = useAdminRoute()
-  
+  // Auth is handled by the layout, no need for redundant checks
   const { data: orgsData, isLoading: orgsLoading } = useSWR('/api/organizations', fetcher);
-  const { data: usersData, isLoading: usersLoading } = useSWR('/api/users', fetcher); // Assuming a /api/users endpoint
-  const { data: revenueData, isLoading: revenueLoading } = useSWR('/api/admin/revenue', fetcher); // Mock endpoint
-  const { data: ticketsData, isLoading: ticketsLoading } = useSWR('/api/admin/tickets', fetcher); // Mock endpoint
-
+  // Removed unnecessary API calls for better performance
+  
   const organizations = orgsData?.organizations || [];
-  const totalUsers = usersData?.users?.length || 0;
-  const totalRevenue = revenueData?.total_revenue || 0;
-  const supportTickets = ticketsData?.count || 0;
   
   const [showDemoPanel, setShowDemoPanel] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -38,18 +32,13 @@ export function AdminView() {
     org.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const isLoading = adminRouteLoading || orgsLoading || usersLoading || revenueLoading || ticketsLoading;
-
-  if (isLoading) {
+  if (orgsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin" />
+        <span className="ml-2 text-muted-foreground">Loading organizations...</span>
       </div>
     )
-  }
-
-  if (!canViewAdmin) {
-    return null // The hook will redirect
   }
 
   return (
@@ -220,13 +209,13 @@ export function AdminView() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1">
-              <CardTitle className="text-xs font-medium">Total Users</CardTitle>
+              <CardTitle className="text-xs font-medium">Active Organizations</CardTitle>
               <Users className="h-3 w-3 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 pt-0">
-              <div className="text-xl font-bold">{totalUsers}</div>
+              <div className="text-xl font-bold">{organizations.length}</div>
               <p className="text-xs text-muted-foreground">
-                Across all organizations
+                Currently active
               </p>
             </CardContent>
           </Card>

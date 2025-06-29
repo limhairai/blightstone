@@ -57,7 +57,6 @@ export function PromoteUser() {
       // 🚨 SECURITY: Removed dangerous console log - console.log("🚀 Starting promotion process for:", ...;
       
       // Use the unified promotion endpoint
-      console.log("📡 Promoting user...");
       const response = await fetch("/api/auth/promote", {
         method: "POST",
         headers: {
@@ -70,10 +69,8 @@ export function PromoteUser() {
       });
 
       const data = await response.json();
-      console.log("📡 Promotion response:", { status: response.status, data });
 
       if (response.ok) {
-        console.log("✅ Promotion successful!");
         toast({
           title: "Success!",
           description: `User ${email} has been promoted to admin. Please refresh the page.`,

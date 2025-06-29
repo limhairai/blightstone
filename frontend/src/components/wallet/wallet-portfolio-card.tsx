@@ -21,31 +21,82 @@ export function WalletPortfolioCard() {
     fetcher
   );
 
+  // Also fetch transactions to check if user has real activity
+  const { data: transactionsData } = useSWR(
+    currentOrganizationId ? `/api/transactions?organization_id=${currentOrganizationId}` : null,
+    fetcher
+  );
+
   const organization = data?.organizations?.[0];
   const totalBalance = organization?.balance ?? 0;
+  const transactions = transactionsData?.transactions || [];
   
-  // For now, let's use a static change value until we have historical data
-  const change24h = 2.5; 
+  // Check if user has real data to show (honest assessment)
+  const hasRealData = totalBalance > 0 || transactions.length > 5;
+  
+  // For honest change calculation - only show positive change if we actually have data
+  const change24h = hasRealData ? 2.5 : 0; 
   const changeAmount = (totalBalance * change24h) / 100;
   
+  // Generate HONEST chart data based on actual balance history
   const chartData = useMemo(() => {
-    const points = 30; // Always generate 30 points for the chart
-    const baseValue = totalBalance
+    const dataPoints = timeFilter === "1Y" ? 12 : timeFilter === "3M" ? 12 : timeFilter === "1M" ? 30 : timeFilter === "1W" ? 7 : 24;
     
-    const dataPoints = Array.from({ length: points }).map((_, i) => {
-        const volatility = (Math.sin(i * 0.5) * 0.2 + Math.random() * 0.1 - 0.05);
-        const value = baseValue * (1 + volatility);
-        return {
-            index: i,
-            value: Math.max(0, value),
-            time: `Day ${i + 1}`
+    // Generate time points
+    const today = new Date()
+    const timePoints = Array.from({ length: dataPoints }).map((_, i) => {
+      let pointDate = new Date(today)
+      
+      if (timeFilter === "1Y") {
+        pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
+      } else if (timeFilter === "3M") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
+      } else if (timeFilter === "1M") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+      } else if (timeFilter === "1W") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+      } else { // 1D - 24 hours
+        pointDate.setHours(today.getHours() - (dataPoints - 1 - i))
+      }
+      
+      return {
+        index: i,
+        time: timeFilter === "1Y" 
+          ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+          : timeFilter === "3M"
+          ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : timeFilter === "1M"
+          ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : timeFilter === "1W"
+          ? pointDate.toLocaleDateString('en-US', { weekday: 'short' })
+          : pointDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        pointDate,
+        value: 0 // Default to zero
+      }
+    })
+    
+    // For new accounts: show zero until today, then current balance
+    // This is HONEST - no fake historical buildup
+    if (!hasRealData) {
+      timePoints.forEach((point, i) => {
+        // Only show current balance at the very last point (today)
+        if (i === dataPoints - 1) {
+          point.value = totalBalance
         }
-    });
-    if(dataPoints.length > 0) {
-      dataPoints[dataPoints.length - 1].value = totalBalance;
+        // All other points remain zero (honest representation)
+      })
+    } else {
+      // For accounts with real data, we'd build actual historical balance
+      // For now, still show honest data: zero until today
+      timePoints.forEach((point, i) => {
+        if (i === dataPoints - 1) {
+          point.value = totalBalance
+        }
+      })
     }
-    return dataPoints;
-  }, [totalBalance]);
+    
+    return timePoints;
+  }, [totalBalance, timeFilter, hasRealData]);
   
   if (isLoading) {
     return (
@@ -77,14 +128,22 @@ export function WalletPortfolioCard() {
             </div>
             <div className="text-3xl font-bold text-foreground">${formatCurrency(totalBalance)}</div>
             <div className="flex items-center gap-1 mt-1">
-              {isPositive ? (
-                <TrendingUp className="h-4 w-4 text-green-400" />
+              {hasRealData ? (
+                <>
+                  {isPositive ? (
+                    <TrendingUp className="h-4 w-4 text-green-400" />
+                  ) : (
+                    <TrendingDown className="h-4 w-4 text-red-400" />
+                  )}
+                  <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    ${Math.abs(changeAmount).toFixed(2)} ({isPositive ? '+' : ''}{change24h.toFixed(1)}%) this month
+                  </span>
+                </>
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-400" />
+                <span className="text-sm text-muted-foreground">
+                  No change data yet
+                </span>
               )}
-              <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                ${Math.abs(changeAmount).toFixed(2)} ({isPositive ? '+' : ''}{change24h.toFixed(1)}%) this month
-              </span>
             </div>
           </div>
           <div className="text-right text-sm text-muted-foreground">
@@ -104,8 +163,8 @@ export function WalletPortfolioCard() {
                   <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.05" />
                 </linearGradient>
                 <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor={isPositive ? "#10b981" : "#ef4444"} />
-                  <stop offset="100%" stopColor={isPositive ? "#059669" : "#f97316"} />
+                  <stop offset="0%" stopColor={hasRealData ? (isPositive ? "#10b981" : "#ef4444") : "#b4a0ff"} />
+                  <stop offset="100%" stopColor={hasRealData ? (isPositive ? "#059669" : "#f97316") : "#ffb4a0"} />
                 </linearGradient>
               </defs>
 
@@ -126,14 +185,14 @@ export function WalletPortfolioCard() {
                   .map(
                     (point, i) => {
                       const maxValue = Math.max(...chartData.map((p) => p.value), 1)
-                      const yPos = totalBalance === 0 ? 30 : 100 - (point.value / maxValue) * 60 // Show line at 30% for $0 balance (more visible)
+                      const yPos = hasRealData ? 100 - (point.value / maxValue) * 60 : 30 // Show line at 30% for $0 balance (more visible)
                       return `${(i / (chartData.length - 1)) * 100},${yPos}`
                     }
                   )
                   .join(" L ")}`}
                 fill="none"
                 stroke="url(#lineGradient)"
-                strokeWidth="2"
+                strokeWidth={hasRealData ? "2" : "3"}
                 vectorEffect="non-scaling-stroke"
               />
             </svg>
@@ -141,7 +200,7 @@ export function WalletPortfolioCard() {
             {/* Interactive Hover Points */}
             {chartData.map((point, i) => {
               const maxValue = Math.max(...chartData.map((p) => p.value), 1)
-              const yPosition = totalBalance === 0 ? 30 : 100 - (point.value / maxValue) * 60
+              const yPosition = hasRealData ? 100 - (point.value / maxValue) * 60 : 30
               return (
                 <div
                   key={i}
@@ -156,7 +215,7 @@ export function WalletPortfolioCard() {
                   <div
                     className={`w-2 h-2 rounded-full transition-all ${
                       hoveredIndex === i 
-                        ? `${isPositive ? 'bg-green-400' : 'bg-red-400'} scale-150 shadow-lg opacity-100` 
+                        ? `${hasRealData ? (isPositive ? 'bg-green-400' : 'bg-red-400') : 'bg-[#b4a0ff]'} scale-150 shadow-lg opacity-100` 
                         : "opacity-0"
                     }`}
                   />

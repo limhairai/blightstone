@@ -1,37 +1,49 @@
+import * as React from "react"
+
 interface CircularProgressProps {
-  percentage: number
+  value?: number
   size?: number
+  strokeWidth?: number
+  className?: string
 }
 
-export function CircularProgress({ percentage, size = 16 }: CircularProgressProps) {
-  const radius = (size - 2) / 2
+export function CircularProgress({ 
+  value = 0, 
+  size = 40, 
+  strokeWidth = 4,
+  className = ""
+}: CircularProgressProps) {
+  const radius = (size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
-  const strokeDashoffset = circumference - (percentage / 100) * circumference
+  const strokeDasharray = circumference
+  const strokeDashoffset = circumference - (value / 100) * circumference
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
-        {/* Background circle */}
+    <div className={`inline-flex items-center justify-center ${className}`}>
+      <svg
+        width={size}
+        height={size}
+        className="transform -rotate-90"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          fill="none"
           stroke="currentColor"
-          strokeWidth="2"
-          className="text-muted-foreground/30"
+          strokeWidth={strokeWidth}
+          fill="none"
+          className="text-gray-200"
         />
-        {/* Progress circle */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          fill="none"
           stroke="currentColor"
-          strokeWidth="2"
-          strokeDasharray={circumference}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
-          className="text-[#c4b5fd] transition-all duration-300"
+          className="text-blue-600 transition-all duration-300 ease-in-out"
           strokeLinecap="round"
         />
       </svg>

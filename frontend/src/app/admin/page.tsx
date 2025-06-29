@@ -33,35 +33,37 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Fetch real data
+  // Fetch real data with optimized parallel requests
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const activities = []
+        const activities: any[] = []
 
-        // Fetch applications (this includes businesses that need review)
-        try {
-          const applicationsResponse = await fetch('/api/admin/applications')
-          if (applicationsResponse.ok) {
-            const applicationsData = await applicationsResponse.json()
-            const applicationsList = Array.isArray(applicationsData) ? applicationsData : []
-            setApplications(applicationsList)
+        // Fetch applications and other data in parallel for better performance
+        const [applicationsResponse] = await Promise.all([
+          fetch('/api/bm-applications'),
+          // Add other parallel requests here if needed
+        ])
 
-            // Add recent business applications
-            applicationsList
-              .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
-              .slice(0, 3)
-              .forEach(application => {
-                activities.push({
-                  type: "application",
-                  message: `New business application: ${application.business_name}`,
-                  time: formatTimeAgo(application.submitted_at),
-                  status: application.status || "pending"
-                })
+        if (applicationsResponse.ok) {
+          const applicationsData = await applicationsResponse.json()
+          const applicationsList = Array.isArray(applicationsData) ? applicationsData : []
+          setApplications(applicationsList)
+
+          // Add recent business applications
+          applicationsList
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 3)
+            .forEach(application => {
+              activities.push({
+                type: "application",
+                message: `New application for ${application.website_url}`,
+                time: formatTimeAgo(application.created_at),
+                status: application.status || "pending"
               })
-          }
-        } catch (err) {
-          console.error('Failed to fetch applications:', err)
+            })
+        } else {
+          console.error('Failed to fetch applications:', applicationsResponse.statusText)
         }
 
         // Fetch funding requests
@@ -122,10 +124,8 @@ export default function AdminDashboard() {
   const dashboardStats = {
     totalOrganizations: 1, // For now
     activeTeams: 1,
-    pendingApplications: applications.filter(a => 
-      ['In Review', 'Processing', 'Ready'].includes(a.status)
-    ).length,
-    monthlyRevenue: applications.reduce((sum, a) => sum + (a.revenue || 0), 0)
+    pendingApplications: applications.filter(a => a.status === 'pending').length,
+    monthlyRevenue: 0 // Placeholder
   }
   
   if (loading) {

@@ -28,7 +28,7 @@ export default function WalletPage() {
       // Wait a moment for webhook to process, then revalidate the organizations API cache
       setTimeout(() => {
         if (currentOrganizationId) {
-          console.log('🔄 Triggering SWR revalidation for organizations...');
+      
           mutate(`/api/organizations?id=${currentOrganizationId}`);
         }
       }, 1000)

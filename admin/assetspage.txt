@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, RefreshCw, ExternalLink, AlertTriangle, CheckCircle, Clock, LinkIcon } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
-import { AssetBindingDialog } from "@/components/admin/asset-binding-dialog"
+import { BindAssetDialog } from "@/components/admin/bind-asset-dialog"
 
 interface BusinessManager {
   id: string
@@ -197,7 +197,7 @@ export default function AssetsPage() {
   }
 
   const handleSync = () => {
-    console.log("Syncing with Dolphin Cloud...")
+    // Handle Dolphin sync
   }
 
   const handleBindAsset = (type: "business-manager" | "ad-account", name: string, id: string) => {
@@ -428,7 +428,7 @@ export default function AssetsPage() {
         </TabsContent>
       </Tabs>
 
-      <AssetBindingDialog
+      <BindAssetDialog
         open={bindingDialogOpen}
         onOpenChange={setBindingDialogOpen}
         assetType={selectedAsset?.type || "business-manager"}

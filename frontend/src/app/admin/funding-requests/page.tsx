@@ -1,65 +1,48 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Badge } from "../../../components/ui/badge"
-import { Avatar, AvatarFallback } from "../../../components/ui/avatar"
-import { CheckCircle, XCircle, Clock, Search, Filter, DollarSign } from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
-import { Tabs, TabsList, TabsTrigger } from "../../../components/ui/tabs"
-import { DataTable } from "../../../components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Search, DollarSign, CheckCircle, Clock, AlertCircle, RefreshCw } from "lucide-react"
+import { formatCurrency } from '@/lib/config/financial'
 import { toast } from "sonner"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../../components/ui/dialog"
-import { Label } from "../../../components/ui/label"
-import { Textarea } from "../../../components/ui/textarea"
-import { formatCurrency } from "../../../utils/format"
 
 interface FundingRequest {
   id: string
   account_id: string
   account_name: string
   requested_amount: number
-  notes?: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'pending' | 'completed'
   submitted_at: string
   user_email: string
   user_name: string
   organization_id: string
-  admin_notes?: string
-  approved_amount?: number
-  approved_at?: string
-  rejected_at?: string
-  rejection_reason?: string
+  organization_name: string
+  processed_at?: string
 }
 
 export default function FundingRequestsPage() {
   const [requests, setRequests] = useState<FundingRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all')
   const [selectedRequest, setSelectedRequest] = useState<FundingRequest | null>(null)
-  const [actionDialogOpen, setActionDialogOpen] = useState(false)
-  const [actionType, setActionType] = useState<'approve' | 'reject'>('approve')
-  const [adminNotes, setAdminNotes] = useState("")
-  const [approvedAmount, setApprovedAmount] = useState("")
-  const [rejectionReason, setRejectionReason] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Fetch funding requests
-  useEffect(() => {
-    fetchRequests()
-  }, [])
+  const [processDialogOpen, setProcessDialogOpen] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const fetchRequests = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/funding-requests')
-      if (response.ok) {
-        const data = await response.json()
-        setRequests(data.requests || [])
-      }
+      const response = await fetch('/api/admin/funding-requests')
+      if (!response.ok) throw new Error('Failed to fetch requests')
+      const data = await response.json()
+      setRequests(data.requests || [])
     } catch (error) {
       console.error('Error fetching funding requests:', error)
       toast.error('Failed to load funding requests')
@@ -68,173 +51,56 @@ export default function FundingRequestsPage() {
     }
   }
 
-  const handleAction = async () => {
+  useEffect(() => {
+    fetchRequests()
+  }, [])
+
+  const handleProcessRequest = async () => {
     if (!selectedRequest) return
 
-    setIsSubmitting(true)
     try {
-      const response = await fetch('/api/funding-requests', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          request_id: selectedRequest.id,
-          action: actionType,
-          admin_notes: adminNotes,
-          approved_amount: actionType === 'approve' ? parseFloat(approvedAmount) || selectedRequest.requested_amount : undefined,
-          rejection_reason: actionType === 'reject' ? rejectionReason : undefined
-        }),
+      setIsProcessing(true)
+      const response = await fetch(`/api/admin/funding-requests/${selectedRequest.id}/process`, {
+        method: 'POST',
       })
 
-      if (response.ok) {
-        toast.success(`Funding request ${actionType}d successfully!`)
-        setActionDialogOpen(false)
-        setSelectedRequest(null)
-        setAdminNotes("")
-        setApprovedAmount("")
-        setRejectionReason("")
-        fetchRequests() // Refresh the list
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || `Failed to ${actionType} request`)
-      }
+      if (!response.ok) throw new Error('Failed to process request')
+
+      toast.success('Funding request marked as processed')
+      setProcessDialogOpen(false)
+      setSelectedRequest(null)
+      fetchRequests() // Refresh the list
     } catch (error) {
-      console.error(`Error ${actionType}ing request:`, error)
-      toast.error(error instanceof Error ? error.message : `Failed to ${actionType} request`)
+      console.error('Error processing request:', error)
+      toast.error('Failed to process request')
     } finally {
-      setIsSubmitting(false)
+      setIsProcessing(false)
     }
   }
 
-  const openActionDialog = (request: FundingRequest, action: 'approve' | 'reject') => {
+  const openProcessDialog = (request: FundingRequest) => {
     setSelectedRequest(request)
-    setActionType(action)
-    setApprovedAmount(request.requested_amount.toString())
-    setActionDialogOpen(true)
+    setProcessDialogOpen(true)
   }
-
-
 
   const getStatusBadge = (status: string) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800"
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+      case 'completed':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>
+      default:
+        return <Badge variant="secondary">{status}</Badge>
     }
-    return (
-      <Badge className={colors[status as keyof typeof colors] || colors.pending}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    )
   }
-
-  const columns: ColumnDef<FundingRequest>[] = [
-    {
-      accessorKey: "id",
-      header: "Request ID",
-      size: 150,
-      cell: ({ row }) => {
-        const request = row.original
-        return (
-          <div className="min-w-0">
-            <div className="font-mono text-sm">{request.id}</div>
-            <div className="text-xs text-gray-500 truncate">{request.user_name}</div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "account_name",
-      header: "Account",
-      size: 200,
-      cell: ({ row }) => {
-        const request = row.original
-        return (
-          <div className="min-w-0">
-            <div className="font-medium truncate">{request.account_name}</div>
-            <div className="text-sm text-gray-500 font-mono">{request.account_id}</div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "requested_amount",
-      header: "Amount",
-      size: 100,
-      cell: ({ row }) => (
-        <div className="font-medium text-green-600">
-          {formatCurrency(row.original.requested_amount)}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "notes",
-      header: "Notes",
-      size: 200,
-      cell: ({ row }) => (
-        <div className="truncate max-w-[200px]" title={row.original.notes}>
-          {row.original.notes || 'No notes'}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 100,
-      cell: ({ row }) => getStatusBadge(row.original.status),
-    },
-    {
-      accessorKey: "submitted_at",
-      header: "Submitted",
-      size: 120,
-      cell: ({ row }) => (
-        <div className="text-sm">
-          {formatDistanceToNow(new Date(row.original.submitted_at), { addSuffix: true })}
-        </div>
-      ),
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      size: 200,
-      cell: ({ row }) => {
-        const request = row.original
-        if (request.status !== 'pending') {
-          return <div className="text-sm text-gray-500">No actions available</div>
-        }
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => openActionDialog(request, 'approve')}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-red-500 text-red-600 hover:bg-red-50"
-              onClick={() => openActionDialog(request, 'reject')}
-            >
-              <XCircle className="h-4 w-4 mr-1" />
-              Reject
-            </Button>
-          </div>
-        )
-      },
-    },
-  ]
 
   // Filter requests based on search and status
   const filteredRequests = requests.filter(request => {
     const matchesSearch = 
       request.account_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      request.reason.toLowerCase().includes(searchQuery.toLowerCase())
+      request.organization_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      request.id.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter
     
@@ -245,9 +111,8 @@ export default function FundingRequestsPage() {
   const stats = {
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending').length,
-    approved: requests.filter(r => r.status === 'approved').length,
-    rejected: requests.filter(r => r.status === 'rejected').length,
-    totalAmount: requests
+    completed: requests.filter(r => r.status === 'completed').length,
+    totalPendingAmount: requests
       .filter(r => r.status === 'pending')
       .reduce((sum, r) => sum + r.requested_amount, 0)
   }
@@ -259,29 +124,42 @@ export default function FundingRequestsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Funding Requests</h1>
           <p className="text-gray-600 mt-1">
-            Manage client requests for ad account funding
+            Process client requests for ad account top-ups
           </p>
         </div>
         
-        {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-lg border">
+        <Button onClick={fetchRequests} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
             <div className="text-2xl font-bold text-gray-900">{stats.pending}</div>
-            <div className="text-sm text-gray-600">Pending</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
-            <div className="text-sm text-gray-600">Approved</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-            <div className="text-sm text-gray-600">Rejected</div>
-          </div>
-          <div className="bg-white p-4 rounded-lg border">
-            <div className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalAmount)}</div>
+            <div className="text-sm text-gray-600">Pending Requests</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+            <div className="text-sm text-gray-600">Completed</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-blue-600">{formatCurrency(stats.totalPendingAmount)}</div>
             <div className="text-sm text-gray-600">Pending Amount</div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+            <div className="text-sm text-gray-600">Total Requests</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -296,157 +174,156 @@ export default function FundingRequestsPage() {
           />
         </div>
         
-        <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      {/* Data Table */}
-      <div className="bg-white rounded-lg border">
-        <DataTable
-          columns={columns}
-          data={filteredRequests}
-          loading={loading}
-        />
-      </div>
+      {/* Requests Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Request ID</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Ad Account</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center">
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                      Loading requests...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredRequests.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                    No funding requests found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredRequests.map((request) => (
+                  <TableRow key={request.id}>
+                    <TableCell className="font-mono text-sm">
+                      {request.id.substring(0, 8)}...
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{request.user_name}</div>
+                        <div className="text-sm text-muted-foreground">{request.organization_name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{request.account_name}</div>
+                      <div className="text-sm text-muted-foreground font-mono">{request.account_id}</div>
+                    </TableCell>
+                    <TableCell className="font-mono font-medium text-green-600">
+                      {formatCurrency(request.requested_amount)}
+                    </TableCell>
+                    <TableCell>
+                      {getStatusBadge(request.status)}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(request.submitted_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      {request.status === 'pending' && (
+                        <Button
+                          size="sm"
+                          onClick={() => openProcessDialog(request)}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          Mark Processed
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-      {/* Action Dialog */}
-      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+      {/* Process Request Dialog */}
+      <Dialog open={processDialogOpen} onOpenChange={setProcessDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>
-              {actionType === 'approve' ? 'Approve' : 'Reject'} Funding Request
-            </DialogTitle>
+            <DialogTitle>Mark Funding Request as Processed</DialogTitle>
           </DialogHeader>
 
           {selectedRequest && (
             <div className="space-y-4">
-              {/* Request Summary */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <Label className="font-medium">Account</Label>
-                    <p>{selectedRequest.account_name}</p>
+                    <Label className="font-medium">Client</Label>
+                    <p>{selectedRequest.user_name}</p>
+                    <p className="text-muted-foreground">{selectedRequest.organization_name}</p>
                   </div>
                   <div>
-                    <Label className="font-medium">Requested Amount</Label>
-                    <p className="font-medium text-green-600">
+                    <Label className="font-medium">Amount</Label>
+                    <p className="font-medium text-green-600 text-lg">
                       {formatCurrency(selectedRequest.requested_amount)}
                     </p>
                   </div>
                   <div>
-                    <Label className="font-medium">Reason</Label>
-                    <p>{selectedRequest.reason}</p>
+                    <Label className="font-medium">Ad Account</Label>
+                    <p>{selectedRequest.account_name}</p>
+                    <p className="text-muted-foreground font-mono text-xs">{selectedRequest.account_id}</p>
                   </div>
                   <div>
-                    <Label className="font-medium">Priority</Label>
-                    <div>{getUrgencyBadge(selectedRequest.urgency)}</div>
+                    <Label className="font-medium">Submitted</Label>
+                    <p>{new Date(selectedRequest.submitted_at).toLocaleDateString()}</p>
                   </div>
                 </div>
-                {selectedRequest.campaign_details && (
-                  <div className="mt-3">
-                    <Label className="font-medium">Campaign Details</Label>
-                    <p className="text-sm mt-1">{selectedRequest.campaign_details}</p>
-                  </div>
-                )}
               </div>
 
-              {actionType === 'approve' ? (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="approvedAmount">Approved Amount</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        id="approvedAmount"
-                        type="number"
-                        value={approvedAmount}
-                        onChange={(e) => setApprovedAmount(e.target.value)}
-                        placeholder="Enter approved amount"
-                        className="pl-10"
-                      />
-                    </div>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium mb-1">Next Steps:</p>
+                    <ol className="list-decimal list-inside space-y-1 text-xs">
+                      <li>Go to your provider and process the top-up for this ad account</li>
+                      <li>Provider will update the spend limit via Dolphin API</li>
+                      <li>Client will see the updated balance in their dashboard</li>
+                      <li>Mark this request as processed once completed</li>
+                    </ol>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="adminNotes">Admin Notes (Optional)</Label>
-                    <Textarea
-                      id="adminNotes"
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Add any notes about this approval..."
-                      rows={3}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="rejectionReason">Rejection Reason *</Label>
-                    <Textarea
-                      id="rejectionReason"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="Explain why this request is being rejected..."
-                      rows={3}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="adminNotes">Additional Notes (Optional)</Label>
-                    <Textarea
-                      id="adminNotes"
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Add any additional notes..."
-                      rows={2}
-                    />
-                  </div>
-                </>
-              )}
+                </div>
+              </div>
             </div>
           )}
 
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setActionDialogOpen(false)}
-              disabled={isSubmitting}
+              onClick={() => setProcessDialogOpen(false)}
+              disabled={isProcessing}
             >
               Cancel
             </Button>
             <Button
-              onClick={handleAction}
-              disabled={
-                isSubmitting ||
-                (actionType === 'approve' && !approvedAmount) ||
-                (actionType === 'reject' && !rejectionReason.trim())
-              }
-              className={
-                actionType === 'approve'
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-red-600 hover:bg-red-700"
-              }
+              onClick={handleProcessRequest}
+              disabled={isProcessing}
+              className="bg-green-600 hover:bg-green-700"
             >
-              {isSubmitting ? (
-                <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {actionType === 'approve' ? (
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                  ) : (
-                    <XCircle className="h-4 w-4 mr-2" />
-                  )}
-                  {actionType === 'approve' ? 'Approve Request' : 'Reject Request'}
-                </>
-              )}
+              {isProcessing && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+              Mark as Processed
             </Button>
           </DialogFooter>
         </DialogContent>

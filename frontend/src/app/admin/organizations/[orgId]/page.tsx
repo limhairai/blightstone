@@ -10,14 +10,14 @@ import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
 import { DataTable } from "../../../../components/ui/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Building, ArrowLeft, Search } from "lucide-react"
+import { Building, ArrowLeft, Search, RefreshCw } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "../../../../contexts/AuthContext"
 import { useParams } from "next/navigation"
 
-interface Business {
+interface BusinessManager {
   id: string
   name: string
   organizationId: string
@@ -26,6 +26,7 @@ interface Business {
   totalSpend: number
   monthlyBudget: number
   createdAt: string
+  dolphin_business_manager_id?: string
 }
 
 interface Organization {
@@ -49,57 +50,59 @@ export default function OrganizationDetailPage() {
   const orgId = params?.orgId as string
   
   const [organization, setOrganization] = useState<Organization | null>(null)
-  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [businessManagers, setBusinessManagers] = useState<BusinessManager[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
 
   // Fetch organization data
-  useEffect(() => {
-    async function fetchOrganization() {
-      if (!orgId) return
+  const fetchData = async () => {
+    if (!orgId) return
+    
+    try {
+      setLoading(true)
       
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/admin/organizations/${orgId}`)
-        
-        if (!response.ok) {
-          if (response.status === 404) {
-            setError('Organization not found')
-          } else {
-            setError('Failed to fetch organization')
-          }
-          return
+      // Fetch organization details
+      const orgResponse = await fetch(`/api/admin/organizations/${orgId}`)
+      
+      if (!orgResponse.ok) {
+        if (orgResponse.status === 404) {
+          setError('Organization not found')
+        } else {
+          setError('Failed to fetch organization')
         }
-        
-        const data = await response.json()
-        setOrganization(data.organization)
-        setBusinesses(data.businesses || [])
-      } catch (err) {
-        console.error('Error fetching organization:', err)
-        setError('Failed to fetch organization')
-      } finally {
-        setLoading(false)
+        return
       }
+      
+      const orgData = await orgResponse.json()
+      setOrganization(orgData.organization)
+      setBusinessManagers(orgData.businessManagers || [])
+    } catch (err) {
+      console.error('Error fetching organization:', err)
+      setError('Failed to fetch organization')
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchOrganization()
+  useEffect(() => {
+    fetchData()
   }, [orgId])
 
-  const filteredBusinesses = useMemo(() => {
-    return businesses.filter((business) => {
-      const statusFilter = selectedStatus === "all" || business.status === selectedStatus
+  const filteredBusinessManagers = useMemo(() => {
+    return businessManagers.filter((businessManager) => {
+      const statusFilter = selectedStatus === "all" || businessManager.status === selectedStatus
       const searchFilter = searchTerm === "" || 
-        business.name.toLowerCase().includes(searchTerm.toLowerCase())
+        businessManager.name.toLowerCase().includes(searchTerm.toLowerCase())
       return statusFilter && searchFilter
     })
-  }, [businesses, selectedStatus, searchTerm])
+  }, [businessManagers, selectedStatus, searchTerm])
 
-  const columns: ColumnDef<Business>[] = [
+  const columns: ColumnDef<BusinessManager>[] = [
     {
       accessorKey: "name",
-      header: "Business",
+      header: "Business Manager",
       size: 300,
       cell: ({ row }) => (
         <div className="flex items-center gap-2 min-w-0">
@@ -116,35 +119,28 @@ export default function OrganizationDetailPage() {
       ),
     },
     {
+      accessorKey: "dolphin_business_manager_id",
+      header: "Business Manager ID",
+      size: 200,
+      cell: ({ row }) => (
+        <div className="font-mono text-sm">
+          {row.original.dolphin_business_manager_id ? 
+            `${row.original.dolphin_business_manager_id.substring(0, 12)}...` : 
+            'N/A'
+          }
+        </div>
+      ),
+    },
+    {
       accessorKey: "status",
       header: "Status",
       size: 100,
       cell: ({ row }) => <StatusBadge status={row.getValue("status")} size="sm" />,
     },
     {
-      accessorKey: "totalSpend",
-      header: "Total Spend",
-      size: 120,
-      cell: ({ row }) => (
-        <div className="text-right font-medium">
-          ${row.original.totalSpend.toLocaleString()}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "monthlyBudget",
-      header: "Monthly Budget",
-      size: 130,
-      cell: ({ row }) => (
-        <div className="text-right font-medium text-muted-foreground">
-          ${row.original.monthlyBudget.toLocaleString()}
-        </div>
-      ),
-    },
-    {
       accessorKey: "adAccountsCount",
       header: "Ad Accounts",
-      size: 100,
+      size: 120,
       cell: ({ row }) => (
         <div className="text-center font-medium">
           {row.original.adAccountsCount}
@@ -153,12 +149,12 @@ export default function OrganizationDetailPage() {
     },
     {
       id: "actions",
-      header: "",
-      enableHiding: false,
       size: 50,
       cell: ({ row }) => (
-        <Link href={`/admin/organizations/${orgId}/businesses/${row.original.id}`} className="inline-flex">
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        <Link href={`/admin/organizations/${orgId}/business-managers/${row.original.id}`}>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </Link>
       ),
     },
@@ -209,15 +205,24 @@ export default function OrganizationDetailPage() {
           {organization.industry}
         </Badge>
         <Badge variant="outline" className="text-xs">
-          {businesses.length} businesses
+          {businessManagers.length} business managers
         </Badge>
       </div>
 
-      {/* Businesses Section */}
+      {/* Business Managers Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Businesses</h2>
+          <h2 className="text-lg font-semibold">Business Managers</h2>
           <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={fetchData}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue placeholder="All Status" />
@@ -234,7 +239,7 @@ export default function OrganizationDetailPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search businesses..."
+                placeholder="Search business managers..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-[250px]"
@@ -242,14 +247,14 @@ export default function OrganizationDetailPage() {
             </div>
             
             <div className="text-sm text-muted-foreground">
-              {filteredBusinesses.length} businesses shown
+              {filteredBusinessManagers.length} business managers shown
             </div>
           </div>
         </div>
 
         <DataTable
           columns={columns}
-          data={filteredBusinesses}
+          data={filteredBusinessManagers}
         />
       </div>
     </div>

@@ -14,7 +14,7 @@ import { Calendar } from "../../../components/ui/calendar"
 import { format } from "date-fns"
 import { formatCurrency } from "../../../utils/format"
 import { usePageTitle } from "../../../components/core/simple-providers"
-import { ErrorBoundary } from "../../../components/ui/error-boundary"
+
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { Skeleton } from "@/components/ui/skeleton";
 

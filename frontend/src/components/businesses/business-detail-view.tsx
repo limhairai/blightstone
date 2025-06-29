@@ -1,465 +1,300 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from "react"
-import useSWR from 'swr'
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { Card, CardContent, CardHeader } from "../ui/card"
 import { Badge } from "../ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
+import { Building, ArrowLeft, Search, MoreHorizontal, Loader2 } from "lucide-react"
 import { StatusBadge } from "../ui/status-badge"
-import { StatusDot } from "../ui/status-dot"
-import { 
-  ArrowLeft,
-  Search, 
-  PlusCircle, 
-  Building2, 
-  ExternalLink, 
-  MoreHorizontal,
-  Settings,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Users,
-  Globe,
-  Calendar,
-  DollarSign
-} from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu"
-import { useRouter } from "next/navigation"
-import { gradients } from "../../lib/design-system"
-import { CreateAdAccountDialog } from "../accounts/create-ad-account-dialog"
-import { useToast } from "../../hooks/use-toast"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu"
+import Link from "next/link"
+import { useAuth } from "../../contexts/AuthContext"
+import { formatCurrency } from '@/lib/config/financial'
+import useSWR from 'swr'
+
+interface AdAccount {
+  id: string
+  name: string
+  account_id: string
+  status: "active" | "pending" | "suspended" | "inactive"
+  balance_cents?: number
+  spend_cents?: number
+  business_manager_name?: string
+  created_at: string
+  last_activity?: string
+  timezone?: string
+}
+
+interface Business {
+  id: string
+  name: string
+  description?: string
+  status: "active" | "pending" | "suspended" | "inactive"
+  organization_id: string
+  created_at: string
+  updated_at: string
+  organization?: {
+    id: string
+    name: string
+  }
+}
 
 interface BusinessDetailViewProps {
   businessId: string
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = async (url: string, token: string) => {
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  if (!response.ok) {
+    throw new Error('Failed to fetch data');
+  }
+  return response.json();
+};
 
 export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [searchQuery, setSearchQuery] = useState("")
+  const { session } = useAuth()
+  
+  const [selectedStatus, setSelectedStatus] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("")
 
-  const { data: businessData, isLoading: isBusinessLoading, error: businessError } = useSWR(`/api/businesses?id=${businessId}`, fetcher);
-  const { data: accountsData, isLoading: areAccountsLoading, error: accountsError } = useSWR(`/api/ad-accounts?business_id=${businessId}`, fetcher);
+  // Fetch business data
+  const { data: businessData, error, isLoading } = useSWR(
+    session && businessId ? [`/api/businesses/${businessId}`, session.access_token] : null,
+    ([url, token]) => fetcher(url, token)
+  );
 
-  const business = businessData?.businesses?.[0];
-  const businessAccounts = accountsData?.accounts || [];
+  const business: Business | null = businessData?.business || null;
+  const adAccounts: AdAccount[] = businessData?.adAccounts || [];
 
-  const isLoading = isBusinessLoading || areAccountsLoading;
+  const filteredAccounts = useMemo(() => {
+    return adAccounts.filter((account) => {
+      const statusFilter = selectedStatus === "all" || account.status === selectedStatus
+      const searchFilter = searchTerm === "" || 
+        account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        account.account_id.toLowerCase().includes(searchTerm.toLowerCase())
+      return statusFilter && searchFilter
+    })
+  }, [adAccounts, selectedStatus, searchTerm])
+
+  // Calculate metrics
+  const totalBalance = adAccounts.reduce((sum, acc) => sum + ((acc.balance_cents || 0) / 100), 0);
+  const totalSpend = adAccounts.reduce((sum, acc) => sum + ((acc.spend_cents || 0) / 100), 0);
+  const activeAccounts = adAccounts.filter(acc => acc.status === 'active').length;
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/dashboard/businesses')}
-            className="h-8 px-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Businesses
-          </Button>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#b4a0ff]"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading business details...</p>
         </div>
       </div>
     )
   }
 
-  if (businessError || accountsError || !business) {
+  if (error || !business) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.push('/dashboard/businesses')}
-            className="h-8 px-2"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Businesses
-          </Button>
-        </div>
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="rounded-full bg-muted p-3 mb-4">
-            <Building2 className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold">Business not found</h3>
-          <p className="text-muted-foreground mt-2">
-            The business you&apos;re looking for doesn&apos;t exist or has been removed.
-          </p>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold mb-2">Business Not Found</h2>
+          <p className="text-muted-foreground mb-4">The requested business could not be found.</p>
+          <Link href="/dashboard">
+            <Button variant="outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
         </div>
       </div>
     )
   }
-
-  // Filter ad accounts based on search
-  const filteredAccounts = businessAccounts.filter((account) =>
-    account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (account.accountId || account.id.toString()).toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (account.platform || 'Facebook').toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  // Calculate metrics
-  const totalBalance = businessAccounts.reduce((sum, acc) => sum + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0)
-  const totalSpent = businessAccounts.reduce((sum, acc) => sum + (acc.spent || 0), 0)
-  const activeAccounts = businessAccounts.filter(acc => acc.status === 'active').length
-  const pendingAccounts = businessAccounts.filter(acc => acc.status === 'pending').length
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "active":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "pending":
-        return <Clock className="h-4 w-4 text-yellow-500" />
-      case "pending":
-        return <AlertCircle className="h-4 w-4 text-orange-500" />
-      case "error":
-        return <AlertCircle className="h-4 w-4 text-red-500" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-500" />
-    }
-  }
-
-  const canCreateAdAccounts = business.status === "active"
 
   return (
     <div className="space-y-6">
-      {/* Header with Back Button */}
+      {/* Header */}
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push('/dashboard/businesses')}
-          className="h-8 px-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Businesses
-        </Button>
+        <Link href="/dashboard">
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+        </Link>
+        <div className="h-4 w-px bg-border" />
+        <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+          <Building className="h-4 w-4 text-foreground" />
+        </div>
+        <h1 className="text-lg font-semibold">{business.name}</h1>
+        <StatusBadge status={business.status} />
+        {business.organization && (
+          <Badge variant="outline" className="text-xs">
+            {business.organization.name}
+          </Badge>
+        )}
+        <Badge variant="outline" className="text-xs">
+          {adAccounts.length} ad accounts
+        </Badge>
       </div>
 
-      {/* Business Header Card */}
-      <Card className={`${gradients.cardGradient} border border-border`}>
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10">
-                <Building2 className="h-8 w-8 text-[#b4a0ff]" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-medium">{business.name}</h1>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-sm text-muted-foreground font-mono">
-                    Business ID: {business.bm_id || business.id}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {getStatusIcon(business.status)}
-                    <StatusBadge status={business.status} size="sm" />
-                  </div>
-                  <Badge 
-                    variant={business.verification_status === "verified" ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {business.verification_status === "verified" ? "✓ Verified" : 
-                     business.verification_status === "pending" ? "⏳ Verifying" : "Unverified"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Manage
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Business Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Users
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Globe className="h-4 w-4 mr-2" />
-                  View Pages
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
-                  Suspend Business
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </CardHeader>
+      {/* Business Info */}
+      {business.description && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-muted-foreground">{business.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Balance</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
+            <p className="text-xs text-muted-foreground">Across {adAccounts.length} accounts</p>
+          </CardContent>
+        </Card>
         
-        <CardContent className="space-y-4">
-          {/* Business Details */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Globe className="h-4 w-4" />
-                Website
-              </div>
-              {business.website ? (
-                <div className="flex items-center gap-1">
-                  <span className="text-sm">{business.website}</span>
-                  <a 
-                    href={business.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-muted-foreground hover:text-foreground"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              ) : (
-                <span className="text-sm text-muted-foreground">Not provided</span>
-              )}
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                Created
-              </div>
-              <span className="text-sm">{new Date(business.created_at).toLocaleDateString()}</span>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Building2 className="h-4 w-4" />
-                Industry
-              </div>
-              <span className="text-sm">{business.businessType || "Not specified"}</span>
-            </div>
-          </div>
-          
-          {business.description && (
-            <div className="space-y-1">
-              <div className="text-sm text-muted-foreground">Description</div>
-              <p className="text-sm">{business.description}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Spend</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{formatCurrency(totalSpend)}</div>
+            <p className="text-xs text-muted-foreground">All time</p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Accounts</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{activeAccounts}</div>
+            <p className="text-xs text-muted-foreground">of {adAccounts.length} total</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Ad Accounts Section */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-medium">Ad Accounts</h2>
-            <p className="text-xs text-[#888888]">Manage advertising accounts for this business</p>
-          </div>
-          {canCreateAdAccounts && (
-            <CreateAdAccountDialog
-              businessId={business.id.toString()}
-              trigger={
-                <Button className={`${gradients.primary} text-primary-foreground hover:opacity-90 h-8 text-xs`}>
-                  <PlusCircle className="h-3 w-3 mr-1" />
-                  Create Ad Account
-                </Button>
-              }
-            />
-          )}
-        </div>
+          <h2 className="text-lg font-semibold">Ad Accounts</h2>
+          <div className="flex items-center gap-4">
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
 
-        {/* Metrics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Card className={`${gradients.cardGradient} border border-border`}>
-            <CardContent className="p-3">
-              <div className="flex flex-col">
-                <span className="text-xs text-[#888888]">Total accounts</span>
-                <span className="text-sm font-medium">{businessAccounts.length}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${gradients.cardGradient} border border-border`}>
-            <CardContent className="p-3">
-              <div className="flex flex-col">
-                <span className="text-xs text-[#888888]">Active accounts</span>
-                <span className="text-sm font-medium text-green-600">{activeAccounts}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${gradients.cardGradient} border border-border`}>
-            <CardContent className="p-3">
-              <div className="flex flex-col">
-                <span className="text-xs text-[#888888]">Total balance</span>
-                <span className="text-sm font-medium">${totalBalance.toLocaleString()} USD</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className={`${gradients.cardGradient} border border-border`}>
-            <CardContent className="p-3">
-              <div className="flex flex-col">
-                <span className="text-xs text-[#888888]">Total spent</span>
-                <span className="text-sm font-medium">${totalSpent.toLocaleString()} USD</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search ad accounts..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-8 text-xs"
-          />
-        </div>
-
-        {/* Ad Accounts Table */}
-        {filteredAccounts.length === 0 && businessAccounts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-border rounded-lg">
-            <div className="rounded-full bg-muted p-3 mb-4">
-              <DollarSign className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold">No ad accounts yet</h3>
-            <p className="text-muted-foreground mt-2 mb-6">
-              {canCreateAdAccounts 
-                ? "Create your first ad account to start advertising." 
-                : "Business must be approved before creating ad accounts."
-              }
-            </p>
-            {canCreateAdAccounts && (
-              <CreateAdAccountDialog
-                businessId={business.id.toString()}
-                trigger={
-                  <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-white border-0">
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Create Ad Account
-                  </Button>
-                }
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search accounts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-[250px]"
               />
-            )}
+            </div>
+            
+            <div className="text-sm text-muted-foreground">
+              {filteredAccounts.length} accounts shown
+            </div>
           </div>
-        ) : (
-          <div className="w-full overflow-auto bg-white dark:bg-transparent rounded-md border border-[#eaecf0] dark:border-[#222222] shadow-sm">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#eaecf0] dark:border-[#222222] bg-[#f9fafb] dark:bg-transparent">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Account Name</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Account ID</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Balance</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Spent</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Limit</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Last Activity</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium text-[#667085] dark:text-[#888888]">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAccounts.map((account) => (
-                  <tr key={account.id} className="border-b border-[#eaecf0] dark:border-[#222222] hover:bg-[#f9fafb] dark:hover:bg-[#1a1a1a] transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1.5 rounded-md bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10">
-                          <DollarSign className="h-3.5 w-3.5 text-[#b4a0ff]" />
-                        </div>
-                        <div>
-                          <div className="font-medium text-sm">{account.name}</div>
-                          <div className="text-xs text-[#667085] dark:text-[#888888]">
-                            Created {account.dateAdded} • Meta
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-[#667085] dark:text-[#888888]">
-                        {account.accountId || account.id.toString()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <StatusDot status={account.status} />
-                        <StatusBadge status={account.status} size="sm" />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-medium">
-                        ${account.balance.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm font-medium">
-                          ${account.spent?.toLocaleString() || '0'}
-                        </span>
-                        {account.spent && account.spent > 0 && (
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm">
-                        ${account.spendLimit?.toLocaleString() || '0'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs text-[#667085] dark:text-[#888888]">
-                        {account.dateAdded}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                            <MoreHorizontal className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Settings className="h-4 w-4 mr-2" />
-                            Manage Account
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <DollarSign className="h-4 w-4 mr-2" />
-                            Top Up Balance
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            View Analytics
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
-                            Pause Account
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        </div>
 
-        {/* Results Summary */}
-        {filteredAccounts.length > 0 && (
-          <div className="text-xs text-[#888888]">
-            Showing {filteredAccounts.length} of {businessAccounts.length} ad accounts
-          </div>
-        )}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Business Manager</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">Total Spend</TableHead>
+                  <TableHead>Timezone</TableHead>
+                  <TableHead className="w-12"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAccounts.length > 0 ? (
+                  filteredAccounts.map((account) => (
+                    <TableRow key={account.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{account.name}</div>
+                          <div className="text-sm text-muted-foreground font-mono">{account.account_id}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={account.status} size="sm" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {account.business_manager_name || 'N/A'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency((account.balance_cents || 0) / 100)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency((account.spend_cents || 0) / 100)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {account.timezone || 'UTC'}
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem>Top-up Balance</DropdownMenuItem>
+                            <DropdownMenuItem>View Transactions</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-red-500">
+                              Remove from Business
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <div className="text-muted-foreground">
+                        {searchTerm || selectedStatus !== "all" 
+                          ? "No accounts match your filters."
+                          : "No ad accounts found for this business."
+                        }
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

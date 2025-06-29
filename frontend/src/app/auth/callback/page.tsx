@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../../lib/stores/supabase-client"
-import { FullPageLoading } from "../../../components/ui/enhanced-loading"
+import { Skeleton } from "../../../components/ui/skeleton"
 import { toast } from "../../../components/ui/use-toast"
 
 export default function AuthCallbackPage() {
@@ -64,7 +64,10 @@ export default function AuthCallbackPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <FullPageLoading />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
           <p className="text-muted-foreground">Confirming your email...</p>
         </div>
       </div>

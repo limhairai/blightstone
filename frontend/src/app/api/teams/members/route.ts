@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const userIds = members.map(m => m.user_id);
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, full_name, email, avatar_url')
+      .select('id, name, email, avatar_url')
       .in('id', userIds);
 
     if (profilesError) {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       return {
         id: member.user_id,
         user_id: member.user_id,
-        name: profile?.full_name || 'Unknown',
+        name: profile?.name || 'Unknown',
         email: profile?.email || '',
         avatar_url: profile?.avatar_url,
         role: member.role,

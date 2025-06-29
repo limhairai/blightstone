@@ -1,74 +1,109 @@
 "use client"
 
+import { Card, CardContent } from "@/components/ui/card"
+import { formatCurrency } from "@/utils/format"
+import { DollarSign, CreditCard, TrendingUp, AlertCircle } from "lucide-react"
 import useSWR from 'swr'
-import { formatCurrency } from "@/lib/utils"
-import { TrendingUp, Wallet, CreditCard, Loader2 } from "lucide-react"
-import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useAuth } from "@/contexts/AuthContext"
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
 
 export function CompactHeaderMetrics() {
+  const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
+  
   const { data: accData, isLoading } = useSWR(
-    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null,
-    fetcher
+    session ? ['/api/ad-accounts', session.access_token] : null,
+    ([url, token]) => fetcher(url, token)
   );
 
   const accounts = accData?.accounts || [];
-  const totalAccounts = accounts.length
-  const activeAccounts = accounts.filter((account) => account.status === "active").length
-  const totalBalance = accounts.reduce((total, account) => total + (account.balance_cents ? account.balance_cents / 100 : 0), 0)
+  const totalAccounts = accounts.length;
+  const activeAccounts = accounts.filter((account: any) => account.status === "active").length;
+  const pendingAccounts = accounts.filter((account: any) => account.status === "pending").length;
+  
+  // Calculate total balance using spend_cap - amount_spent
+  const totalBalance = accounts.reduce((total: number, account: any) => {
+    const spendCap = account.metadata?.spend_cap || 0;
+    const amountSpent = account.metadata?.amount_spent || 0;
+    const calculatedBalance = spendCap - amountSpent;
+    return total + calculatedBalance;
+  }, 0);
+
+  // Calculate total spent
+  const totalSpent = accounts.reduce((total: number, account: any) => {
+    return total + (account.metadata?.amount_spent || 0);
+  }, 0);
+
+  const metrics = [
+    {
+      title: "Total Balance",
+      value: `$${formatCurrency(totalBalance)}`,
+      icon: DollarSign,
+      color: "text-green-600",
+      bgColor: "bg-green-50 dark:bg-green-950/20",
+    },
+    {
+      title: "Active Accounts",
+      value: activeAccounts.toString(),
+      icon: CreditCard,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50 dark:bg-blue-950/20",
+    },
+    {
+      title: "Monthly Spend",
+      value: `$${formatCurrency(totalSpent)}`,
+      icon: TrendingUp,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50 dark:bg-purple-950/20",
+    },
+    {
+      title: "Pending Setup",
+      value: pendingAccounts.toString(),
+      icon: AlertCircle,
+      color: "text-amber-600",
+      bgColor: "bg-amber-50 dark:bg-amber-950/20",
+    },
+  ]
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-6">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex items-center gap-2 animate-pulse">
-            <div className="h-8 w-8 rounded-md bg-muted"></div>
-            <div>
-              <div className="h-4 w-10 rounded-md bg-muted mb-1"></div>
-              <div className="h-3 w-12 rounded-md bg-muted"></div>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Card key={i} className="border-border bg-card animate-pulse">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="h-4 w-20 bg-muted rounded"></div>
+                  <div className="h-8 w-16 bg-muted rounded"></div>
+                </div>
+                <div className="h-9 w-9 bg-muted rounded-lg"></div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     )
   }
-  
+
   return (
-    <div className="flex items-center gap-6">
-      {/* Total Accounts */}
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-md bg-blue-500/10 flex items-center justify-center">
-          <CreditCard className="h-4 w-4 text-blue-500" />
-        </div>
-        <div>
-          <div className="text-sm font-medium text-foreground">{totalAccounts}</div>
-          <div className="text-xs text-muted-foreground">Accounts</div>
-        </div>
-      </div>
-
-      {/* Active Accounts */}
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center">
-          <TrendingUp className="h-4 w-4 text-emerald-500" />
-        </div>
-        <div>
-          <div className="text-sm font-medium text-foreground">{activeAccounts}</div>
-          <div className="text-xs text-muted-foreground">Active</div>
-        </div>
-      </div>
-
-      {/* Total Balance */}
-      <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded-md bg-purple-500/10 flex items-center justify-center">
-          <Wallet className="h-4 w-4 text-purple-500" />
-        </div>
-        <div>
-          <div className="text-sm font-medium text-foreground">{formatCurrency(totalBalance)}</div>
-          <div className="text-xs text-muted-foreground">Balance</div>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {metrics.map((metric) => (
+        <Card key={metric.title} className="border-border bg-card">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">{metric.title}</p>
+                <p className="text-2xl font-bold text-foreground">{metric.value}</p>
+              </div>
+              <div className={`p-2 rounded-lg ${metric.bgColor}`}>
+                <metric.icon className={`h-5 w-5 ${metric.color}`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
