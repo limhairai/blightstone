@@ -34,6 +34,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { ad_account_id, amount, notes } = body;
 
+    console.log('Top-up request received:', {
+      ad_account_id,
+      amount,
+      organization_id: profile.organization_id,
+      user_id: user.id
+    });
+
     if (!ad_account_id || !amount || amount <= 0) {
       return NextResponse.json({ error: 'Ad account ID and valid amount are required' }, { status: 400 });
     }
@@ -45,41 +52,67 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the ad account belongs to the user's organization
-    const { data: adAccount, error: adAccountError } = await supabase
+    // Search by dolphin_id (which is what the frontend sends as ad_account_id)
+    const { data: adAccountBindings, error: adAccountError } = await supabase
       .from('asset_binding')
       .select(`
         id,
         asset:asset_id (
           id,
           dolphin_id,
+          name,
           metadata
         )
       `)
       .eq('organization_id', profile.organization_id)
       .eq('status', 'active')
       .eq('asset.type', 'ad_account')
-      .or(`asset.dolphin_id.eq.${ad_account_id},asset.metadata->>ad_account_id.eq.${ad_account_id}`)
-      .single();
+      .eq('asset.dolphin_id', ad_account_id);
+
+    // Take the first valid binding (in case there are duplicates)
+    const adAccount = adAccountBindings && adAccountBindings.length > 0 ? adAccountBindings[0] : null;
 
     if (adAccountError || !adAccount) {
+      // Debug: Let's see what accounts actually exist for this organization
+      const { data: allAssets } = await supabase
+        .from('asset_binding')
+        .select(`
+          id,
+          asset:asset_id (
+            id,
+            dolphin_id,
+            metadata,
+            name,
+            type
+          )
+        `)
+        .eq('organization_id', profile.organization_id)
+        .eq('status', 'active')
+        .eq('asset.type', 'ad_account');
+
+              console.error('Ad account lookup failed:', {
+          ad_account_id,
+          organization_id: profile.organization_id,
+          error: adAccountError,
+          available_accounts: allAssets?.map(binding => ({
+            asset_id: binding.asset?.id,
+            dolphin_id: binding.asset?.dolphin_id,
+            name: binding.asset?.name,
+            ad_account_id_in_metadata: binding.asset?.metadata?.ad_account_id
+          }))
+        });
       return NextResponse.json({ error: 'Ad account not found or not accessible' }, { status: 404 });
     }
 
-    // Create the top up request
+    // Create the top up request using funding_requests table instead
     const { data: topUpRequest, error: insertError } = await supabase
-      .from('application')
+      .from('funding_requests')
       .insert({
         organization_id: profile.organization_id,
-        request_type: 'top_up',
-        status: 'pending',
-        metadata: {
-          ad_account_id,
-          amount,
-          notes: notes || null,
-          asset_binding_id: adAccount.id,
-          requested_by: user.id,
-          requested_at: new Date().toISOString()
-        }
+        user_id: user.id,
+        requested_amount_cents: amount * 100, // Convert to cents
+        notes: `Top-up request for ad account: ${adAccount.asset?.name} (${ad_account_id})\nAmount: $${amount}\n${notes ? `Notes: ${notes}` : ''}`,
+        status: 'pending'
       })
       .select()
       .single();
@@ -124,12 +157,12 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'User organization not found.' }, { status: 404 });
     }
 
-    // Get top up requests for this organization
+    // Get top up requests for this organization from funding_requests
     const { data: requests, error: requestsError } = await supabase
-      .from('application')
+      .from('funding_requests')
       .select('*')
       .eq('organization_id', profile.organization_id)
-      .eq('request_type', 'top_up')
+      .ilike('notes', '%Top-up request for ad account:%')
       .order('created_at', { ascending: false });
 
     if (requestsError) {
@@ -137,7 +170,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch top up requests' }, { status: 500 });
     }
 
-    return NextResponse.json({ requests: requests || [] });
+    // Transform the data to match TopupRequest interface
+    const transformedRequests = (requests || []).map(request => {
+      // Parse ad account info from notes
+      let adAccountName = 'Account Name Not Available';
+      let adAccountId = 'Account ID Not Available';
+
+      if (request.notes) {
+        const accountNameMatch = request.notes.match(/Top-up request for ad account:\s*([^(]+)/);
+        const accountIdMatch = request.notes.match(/\(([^)]+)\)/);
+        
+        if (accountNameMatch) {
+          adAccountName = accountNameMatch[1].trim();
+        }
+        if (accountIdMatch) {
+          adAccountId = accountIdMatch[1].trim();
+        }
+      }
+
+      return {
+        id: request.request_id,
+        organization_id: request.organization_id,
+        requested_by: request.user_id,
+        ad_account_id: adAccountId,
+        ad_account_name: adAccountName,
+        amount_cents: request.requested_amount_cents || 0,
+        currency: 'USD',
+        status: request.status,
+        priority: 'normal', // Default priority since not stored in funding_requests
+        notes: request.notes,
+        admin_notes: request.admin_notes,
+        processed_by: null, // Not tracked in funding_requests
+        processed_at: null, // Not tracked in funding_requests
+        created_at: request.created_at,
+        updated_at: request.updated_at
+      };
+    });
+
+    return NextResponse.json({ requests: transformedRequests });
 
   } catch (error) {
     console.error('Error in top-up-requests GET API:', error);

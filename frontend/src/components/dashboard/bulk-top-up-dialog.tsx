@@ -1,16 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { useState, useEffect, useMemo } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Checkbox } from "../ui/checkbox"
 import { ScrollArea } from "../ui/scroll-area"
-import { useToast } from "../../hooks/use-toast"
+import { Separator } from "../ui/separator"
+// Removed old useToast - using toast from sonner instead
 import { formatCurrency } from "../../utils/format"
 import { Wallet, DollarSign, Check, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { AppAccount } from "../../types/account"
 
 interface BulkTopUpDialogProps {
@@ -39,7 +41,6 @@ export function BulkTopUpDialog({
   const [distributions, setDistributions] = useState<Distribution[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { toast } = useToast()
 
   // Initialize distributions when dialog opens or selected accounts change
   useEffect(() => {
@@ -108,19 +109,15 @@ export function BulkTopUpDialog({
 
   const handleTopUp = async () => {
     if (totalDistributed <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount greater than $0",
-        variant: "destructive",
+      toast.error("Please enter a valid amount greater than $0", {
+        description: "Invalid Amount"
       })
       return
     }
 
     if (totalDistributed > mainBalance) {
-      toast({
-        title: "Insufficient Funds",
-        description: "Total amount exceeds your main account balance",
-        variant: "destructive",
+      toast.error("Total amount exceeds your main account balance", {
+        description: "Insufficient Funds"
       })
       return
     }
@@ -132,9 +129,8 @@ export function BulkTopUpDialog({
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       setShowSuccess(true)
-      toast({
-        title: "Bulk Top Up Successful!",
-        description: `$${formatCurrency(totalDistributed)} has been distributed to ${selectedAccounts.length} accounts`,
+      toast.success(`$${formatCurrency(totalDistributed)} has been distributed to ${selectedAccounts.length} accounts`, {
+        description: "Bulk Top Up Successful!"
       })
 
       setTimeout(() => {
@@ -144,10 +140,8 @@ export function BulkTopUpDialog({
         onTopUpComplete()
       }, 2000)
     } catch (error) {
-      toast({
-        title: "Bulk Top Up Failed",
-        description: "Failed to process bulk top up. Please try again.",
-        variant: "destructive",
+      toast.error("Failed to process bulk top up. Please try again.", {
+        description: "Bulk Top Up Failed"
       })
     } finally {
       setIsLoading(false)

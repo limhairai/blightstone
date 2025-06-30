@@ -15,8 +15,11 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Check, Loader2, Building2, Upload, X } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+import { Upload, X, Loader2, Building2 } from "lucide-react"
+import { Business } from "@/types/business"
+import { toast } from "sonner"
 
 interface CreateBusinessDialogProps {
   trigger: React.ReactNode
@@ -27,7 +30,6 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -112,8 +114,7 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
       }
 
       setShowSuccess(true)
-      toast({
-        title: "Application Submitted!",
+      toast.success("Application Submitted!", {
         description: "Your business application has been submitted for review.",
       })
 
@@ -129,11 +130,7 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
         resetForm()
       }, 2000)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to submit business application. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to submit business application. Please try again.")
     } finally {
       setIsLoading(false)
     }

@@ -1,32 +1,21 @@
 "use client"
 
-import useSWR from 'swr'
 import { ArrowUpRight, Wallet, FolderKanban, CreditCard, Loader2 } from "lucide-react"
 import { useEffect, useRef } from "react"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { formatCurrency } from "@/lib/utils"
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "@/lib/swr-config"
 
 export default function AccountMetrics() {
   const { currentOrganizationId } = useOrganizationStore();
   
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
-  const { data: bizData, isLoading: isBizLoading } = useSWR(
-    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null,
-    fetcher
-  );
-  const { data: accData, isLoading: isAccLoading } = useSWR(
-    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
+  const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
 
   const totalAccounts = accData?.accounts?.length ?? 0;
-  const totalBalance = orgData?.organizations?.[0]?.balance_cents / 100 ?? 0;
-  const businesses = bizData?.businesses?.length ?? 0;
+  const totalBalance = orgData?.balance_cents ? orgData.balance_cents / 100 : 0;
+  const businesses = bizData?.length ?? 0;
   const accountLimit = 50; // TODO: This could be fetched from user plan/settings
   
   const isLoading = isOrgLoading || isBizLoading || isAccLoading;

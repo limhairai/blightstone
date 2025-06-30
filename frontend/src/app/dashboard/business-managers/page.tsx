@@ -5,6 +5,7 @@ import { ApplyForBmDialog } from "@/components/business-managers/apply-for-bm-di
 import { Button } from "@/components/ui/button"
 import { Plus, Building2 } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 import useSWR from 'swr'
 import { useMemo } from 'react'
 
@@ -12,14 +13,15 @@ const fetcher = (url: string, token: string) => fetch(url, { headers: { Authoriz
 
 export default function BusinessManagersPage() {
   const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
 
   const { data: bms, error, isLoading, mutate } = useSWR(
-    session ? ['/api/business-managers', session.access_token] : null,
+    session && currentOrganizationId ? [`/api/business-managers?organization_id=${currentOrganizationId}`, session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   )
 
   const businessManagers = useMemo(() => {
-    if (!bms) return []
+    if (!bms || !Array.isArray(bms)) return []
     return bms.map((bm: any) => ({
       id: bm.id,
       name: bm.name,

@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
             .single();
 
         if (orgError || !orgMembership) {
+            console.error('Organization membership error:', orgError);
             return NextResponse.json({ error: 'User is not a member of any organization.' }, { status: 403 });
         }
 
@@ -50,25 +51,46 @@ export async function POST(request: NextRequest) {
             }
 
             // Check if the business manager exists and belongs to the user's organization
-            const { data: bmData, error: bmError } = await supabase
+            // We need to join asset_binding with asset table to check dolphin_id
+            const { data: bmBindings, error: bmError } = await supabase
                 .from('asset_binding')
-                .select('*')
+                .select(`
+                    id,
+                    asset:asset_id (
+                        id,
+                        dolphin_id,
+                        type,
+                        name
+                    )
+                `)
                 .eq('organization_id', organization_id)
-                .eq('dolphin_id', business_manager_id)
-                .eq('asset_type', 'business_manager')
-                .single();
+                .eq('status', 'active');
 
-            if (bmError || !bmData) {
+            if (bmError) {
+                console.error('Business manager lookup error:', bmError);
+                return NextResponse.json({ error: 'Failed to lookup business managers.' }, { status: 500 });
+            }
+
+            // Filter to find the matching business manager
+            const matchingBM = bmBindings?.find(binding => 
+                binding.asset && 
+                binding.asset.type === 'business_manager' && 
+                binding.asset.dolphin_id === business_manager_id
+            );
+
+            if (!matchingBM || !matchingBM.asset) {
+                console.error('Business manager not found for dolphin_id:', business_manager_id);
                 return NextResponse.json({ error: 'Business manager not found or not accessible.' }, { status: 404 });
             }
 
-            // Create ad account application
+            // Create application for additional ad accounts
             const { data, error } = await supabase
-                .from('ad_account_applications')
+                .from('application')
                 .insert({
                     organization_id,
-                    business_id: bmData.id, // Use the asset_binding ID
-                    timezone: timezone || 'UTC',
+                    request_type: 'additional_accounts',
+                    target_bm_dolphin_id: business_manager_id,
+                    website_url: website_url || 'N/A', // website_url is required in schema
                     status: 'pending'
                 })
                 .select()
@@ -124,8 +146,7 @@ export async function POST(request: NextRequest) {
                     website_url,
                     organization_id,
                     request_type: 'new_business_manager',
-                    status: 'pending',
-                    name: applicationName
+                    status: 'pending'
                 })
                 .select()
                 .single();

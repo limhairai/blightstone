@@ -30,15 +30,19 @@ export default function ClientTopupRequestsPage() {
   const [selectedAccount, setSelectedAccount] = useState<AdAccount | null>(null)
 
   useEffect(() => {
-    if (currentOrganizationId) {
+    if (currentOrganizationId && session?.access_token) {
       fetchRequests()
       fetchAdAccounts()
     }
-  }, [currentOrganizationId])
+  }, [currentOrganizationId, session?.access_token])
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch(`/api/topup-requests?organization_id=${currentOrganizationId}`)
+      const response = await fetch('/api/top-up-requests', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
       
       if (!response.ok) {
         throw new Error('Failed to fetch top-up requests')
@@ -55,7 +59,11 @@ export default function ClientTopupRequestsPage() {
 
   const fetchAdAccounts = async () => {
     try {
-      const response = await fetch(`/api/ad-accounts?organization_id=${currentOrganizationId}`)
+      const response = await fetch('/api/ad-accounts', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
       
       if (response.ok) {
         const data = await response.json()

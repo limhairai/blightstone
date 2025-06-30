@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
 import { Check, Loader2, Building2 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "sonner"
+import { validateBusinessManagerApplicationForm, showValidationErrors } from "@/lib/form-validation"
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -26,7 +27,6 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { toast } = useToast()
   const { session } = useAuth()
 
   const [formData, setFormData] = useState({
@@ -41,9 +41,20 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate form
+    const validation = validateBusinessManagerApplicationForm(formData)
+    
+    if (!validation.isValid) {
+      showValidationErrors(validation.errors)
+      return
+    }
+    
     setIsLoading(true)
 
     try {
+      console.log('🏢 Submitting business manager application:', formData);
+      
       const response = await fetch('/api/applications', {
         method: 'POST',
         headers: { 
@@ -51,20 +62,21 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
           'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          website: formData.website,
+          website_url: formData.website, // Fixed: send website_url instead of website
           type: 'business_manager',
         }),
       });
 
+      const responseData = await response.json();
+      console.log('🏢 Application response:', responseData);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit application');
+        throw new Error(responseData.error || 'Failed to submit application');
       }
 
       setShowSuccess(true)
-      toast({
-        title: "Application Submitted!",
-        description: "Your business manager application has been submitted for review.",
+      toast.success("Application Submitted!", {
+        description: "Your business manager application has been submitted for review."
       })
 
       // Call the callback
@@ -79,11 +91,10 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
         resetForm()
       }, 2000)
     } catch (error) {
+      console.error('🏢 Application submission error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast({
-        title: "Submission Failed",
-        description: errorMessage,
-        variant: "destructive",
+      toast.error("Submission Failed", {
+        description: errorMessage
       })
     } finally {
       setIsLoading(false)
@@ -129,13 +140,16 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             </Label>
             <Input
               id="website"
-              type="url"
+              type="text"
               value={formData.website}
               onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              placeholder="https://your-website.com"
+              placeholder="https://your-website.com or your-website.com"
               required
               className="bg-background border-border text-foreground"
             />
+            <p className="text-xs text-muted-foreground">
+              Enter your website URL in any format: domain.com, www.domain.com, or https://domain.com
+            </p>
           </div>
 
           <div className="bg-muted/30 p-4 rounded-lg border border-border">

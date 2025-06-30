@@ -6,8 +6,9 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
-import { toast } from "../ui/use-toast";
-import { Shield, User, Mail, Search, UserPlus } from "lucide-react";
+import { Badge } from "../ui/badge";
+import { toast } from "sonner";
+import { Shield, User, Mail, Search, UserPlus, AlertTriangle } from "lucide-react";
 
 export function PromoteUser() {
   const { user, session } = useAuth();
@@ -17,37 +18,21 @@ export function PromoteUser() {
   const [email, setEmail] = useState(user?.email || "");
 
   const checkUserExists = async () => {
-    toast({
-      title: "Info",
-      description: "User checking temporarily disabled. Just enter the email and click promote.",
-      variant: "default",
-    });
+    toast.info("User checking temporarily disabled. Just enter the email and click promote.")
   };
 
   const createProfile = async () => {
-    toast({
-      title: "Info",
-      description: "Profile creation is handled automatically during promotion.",
-      variant: "default",
-    });
+    toast.info("Profile creation is handled automatically during promotion.")
   };
 
   const promoteToAdmin = async () => {
     if (!session?.access_token) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to promote a user",
-        variant: "destructive",
-      });
+      toast.error("You must be logged in to promote a user")
       return;
     }
 
     if (!email) {
-      toast({
-        title: "Error", 
-        description: "Please enter an email address",
-        variant: "destructive",
-      });
+      toast.error("Please enter an email address")
       return;
     }
 
@@ -71,11 +56,7 @@ export function PromoteUser() {
       const data = await response.json();
 
       if (response.ok) {
-        toast({
-          title: "Success!",
-          description: `User ${email} has been promoted to admin. Please refresh the page.`,
-          variant: "default",
-        });
+        toast.success(`User ${email} has been promoted to admin. Please refresh the page.`)
         
         // Refresh the page after a short delay to update the admin status
         setTimeout(() => {
@@ -83,19 +64,11 @@ export function PromoteUser() {
         }, 2000);
       } else {
         console.error("❌ Promotion failed:", data);
-        toast({
-          title: "Error",
-          description: data.error || `Failed to promote user (Status: ${response.status})`,
-          variant: "destructive",
-        });
+        toast.error(data.error || `Failed to promote user (Status: ${response.status})`)
       }
     } catch (error) {
       console.error("💥 Error promoting user:", error);
-      toast({
-        title: "Error",
-        description: `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
+      toast.error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false);
     }

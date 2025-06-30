@@ -791,24 +791,25 @@ async def get_client_assets(
                 else:
                     logger.error(f"🔍 Asset NOT found in asset table for asset_id: {asset_id}")
         
-        # Use the RPC function instead of manual JOIN to avoid foreign key issues
-        # This RPC function handles the JOIN properly and returns clean data
-        logger.info(f"🔍 Using get_organization_assets RPC for organization: {organization_id}")
+        # Use the NEW schema (asset + asset_binding) - the clean schema
+        logger.info(f"🔍 Using NEW schema (asset + asset_binding) for organization: {organization_id}")
+        
+        # Get assets from the NEW schema using the RPC function
         response = supabase.rpc("get_organization_assets", {
             "p_organization_id": organization_id,
             "p_asset_type": asset_type
         }).execute()
         
-        if not hasattr(response, 'data'):
-            logger.error(f"🔍 No data in RPC response: {response}")
+        if not hasattr(response, 'data') or not response.data:
+            logger.info(f"🔍 No assets found in NEW schema for organization: {organization_id}")
             return []
         
-        logger.info(f"🔍 RPC returned {len(response.data)} assets")
+        logger.info(f"🔍 NEW schema returned {len(response.data)} assets")
         
         client_assets = []
         
         for asset_data in response.data:
-            # The RPC returns clean data, no need for complex processing
+            # Transform to match expected frontend format
             asset_details = {
                 "binding_id": asset_data["binding_id"],
                 "asset_id": asset_data["id"],
@@ -817,8 +818,8 @@ async def get_client_assets(
                 "status": asset_data["status"],
                 "binding_status": "active",  # RPC only returns active bindings
                 "bound_at": asset_data["bound_at"],
-                "bm_id": None,  # Not used in current implementation
-                "business_name": None,  # Not used in current implementation
+                "bm_id": None,  # Not used in NEW schema
+                "business_name": None,  # Not used in NEW schema
                 "asset_metadata": asset_data.get("metadata"),
                 "dolphin_asset_id": asset_data.get("dolphin_id"),
                 "is_orphaned": False  # RPC only returns valid assets

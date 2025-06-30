@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "../../../lib/stores/supabase-client"
 import { Skeleton } from "../../../components/ui/skeleton"
-import { toast } from "../../../components/ui/use-toast"
+import { toast } from "sonner"
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -18,10 +18,8 @@ export default function AuthCallbackPage() {
         
         if (error) {
           console.error("Auth callback error:", error)
-          toast({
-            title: "Authentication Error",
-            description: error.message,
-            variant: "destructive"
+          toast.error(error.message, {
+            description: "Authentication Error"
           })
           router.push('/login')
           return
@@ -29,27 +27,21 @@ export default function AuthCallbackPage() {
 
         if (data.session) {
           // User is now authenticated
-          toast({
-            title: "Email Confirmed!",
-            description: "Your account has been verified. Welcome to AdHub!",
-            variant: "default"
+          toast.success("Your account has been verified. Welcome to AdHub!", {
+            description: "Email Confirmed!"
           })
           router.push('/dashboard')
         } else {
           // No session found
-          toast({
-            title: "Confirmation Issue",
-            description: "Please try signing in with your credentials.",
-            variant: "destructive"
+          toast.error("Please try signing in with your credentials.", {
+            description: "Confirmation Issue"
           })
           router.push('/login')
         }
       } catch (error) {
         console.error("Unexpected error in auth callback:", error)
-        toast({
-          title: "Authentication Error",
-          description: "Something went wrong. Please try signing in again.",
-          variant: "destructive"
+        toast.error("Something went wrong. Please try signing in again.", {
+          description: "Authentication Error"
         })
         router.push('/login')
       } finally {

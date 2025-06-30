@@ -215,7 +215,7 @@ export function WalletPortfolioCard() {
                   <div
                     className={`w-2 h-2 rounded-full transition-all ${
                       hoveredIndex === i 
-                        ? `${hasRealData ? (isPositive ? 'bg-green-400' : 'bg-red-400') : 'bg-[#b4a0ff]'} scale-150 shadow-lg opacity-100` 
+                        ? `${hasRealData ? (isPositive ? 'bg-green-400' : 'bg-red-400') : 'bg-[#b4a0ff]'} scale-150 shadow-lg opacity-100`
                         : "opacity-0"
                     }`}
                   />

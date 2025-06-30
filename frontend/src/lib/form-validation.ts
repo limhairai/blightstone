@@ -245,6 +245,16 @@ export function validateAdAccountForm(formData: {
   ])
 }
 
+// Business manager application form validation
+export function validateBusinessManagerApplicationForm(formData: {
+  website: string
+}): ValidationResult {
+  return validateForm([
+    () => validators.required(formData.website, 'Website'),
+    () => validators.url(formData.website, 'Website'),
+  ])
+}
+
 // Transaction form validation
 export function validateTransactionForm(formData: {
   // ... existing code ...

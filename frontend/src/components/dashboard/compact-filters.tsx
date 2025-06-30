@@ -69,7 +69,7 @@ export function CompactFilters({
           <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
             All Businesses
           </SelectItem>
-          {businessManagers.map((business: any) => (
+          {Array.isArray(businessManagers) && businessManagers.map((business: any) => (
             <SelectItem 
               key={business.id} 
               value={business.name || business.metadata?.business_manager || `BM ${business.id}`} 

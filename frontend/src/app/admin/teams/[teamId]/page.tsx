@@ -9,7 +9,6 @@ import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
 import { DataTable } from "../../../../components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
 import { Building2, ArrowLeft, Search } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
@@ -153,12 +152,12 @@ export default function TeamDetailPage() {
     })
   }, [teamOrganizations, selectedStatus, selectedPlan, searchTerm])
 
-  const columns: ColumnDef<Organization>[] = [
+  const columns = [
     {
       accessorKey: "name",
       header: "Organization",
       size: 250,
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Organization; getValue: (key: string) => any } }) => (
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
             <Building2 className="h-4 w-4 text-foreground" />
@@ -174,15 +173,15 @@ export default function TeamDetailPage() {
       accessorKey: "status",
       header: "Status",
       size: 100,
-      cell: ({ row }) => <StatusBadge status={row.getValue("status")} size="sm" />,
+      cell: ({ row }: { row: { getValue: (key: string) => any } }) => <StatusBadge status={row.getValue("status")} size="sm" />,
     },
     {
       accessorKey: "plan",
       header: "Plan",
       size: 120,
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { getValue: (key: string) => any } }) => (
         <Badge variant="secondary" className="truncate capitalize">
-          {row.getValue<string>("plan")}
+          {row.getValue("plan")}
         </Badge>
       ),
     },
@@ -190,14 +189,13 @@ export default function TeamDetailPage() {
       accessorKey: "adAccountsCount",
       header: "Accounts",
       size: 80,
-      cell: ({ row }) => <div className="text-center font-medium">{row.original.adAccountsCount}</div>,
+      cell: ({ row }: { row: { original: Organization } }) => <div className="text-center font-medium">{row.original.adAccountsCount}</div>,
     },
     {
-      id: "actions",
+      accessorKey: "actions",
       header: "",
-      enableHiding: false,
       size: 50,
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Organization } }) => (
         <Link href={`/admin/teams/${teamId}/organizations/${row.original.id}`} className="inline-flex">
           <ChevronRight className="h-4 w-4 text-muted-foreground" />
         </Link>
@@ -226,65 +224,78 @@ export default function TeamDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/admin/teams">
-          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            All Teams
+            Back to Teams
           </Button>
         </Link>
-        <div className="h-4 w-px bg-border" />
-        <h1 className="text-lg font-semibold">{currentTeam.name}</h1>
-        <Badge variant="outline" className="text-xs">
-          {teamOrganizations.length} organizations
-        </Badge>
+        <div>
+          <h1 className="text-2xl font-bold">{currentTeam.name}</h1>
+          <p className="text-sm text-muted-foreground">{currentTeam.description}</p>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="text-sm font-medium text-muted-foreground">Organizations</div>
+          <div className="text-2xl font-bold">{currentTeam.organizationsCount}</div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="text-sm font-medium text-muted-foreground">Active Businesses</div>
+          <div className="text-2xl font-bold">{currentTeam.activeBusinesses}</div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="text-sm font-medium text-muted-foreground">Utilization</div>
+          <div className="text-2xl font-bold">{currentTeam.utilizationRate}%</div>
+        </div>
+        <div className="bg-card border border-border rounded-lg p-4">
+          <div className="text-sm font-medium text-muted-foreground">Capacity</div>
+          <div className="text-2xl font-bold">{currentTeam.capacity}</div>
+        </div>
+      </div>
 
-          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="All Plans" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Plans</SelectItem>
-              <SelectItem value="starter">Starter</SelectItem>
-              <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="enterprise">Enterprise</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Organizations</h2>
+          <div className="flex items-center gap-4">
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="suspended">Suspended</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search organizations..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
-            />
+            <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="All Plans" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Plans</SelectItem>
+                <SelectItem value="starter">Starter</SelectItem>
+                <SelectItem value="professional">Professional</SelectItem>
+                <SelectItem value="enterprise">Enterprise</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <div className="text-sm text-muted-foreground">
+              {filteredOrganizations.length} organizations shown
+            </div>
           </div>
         </div>
-        
-        <div className="text-sm text-muted-foreground">
-          {filteredOrganizations.length} organizations shown
-        </div>
-      </div>
 
-      <DataTable
-        columns={columns}
-        data={filteredOrganizations}
-      />
+        <DataTable
+          columns={columns}
+          data={filteredOrganizations}
+          searchKey="name"
+          searchPlaceholder="Search organizations..."
+        />
+      </div>
     </div>
   )
 } 

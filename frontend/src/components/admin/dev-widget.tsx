@@ -1,17 +1,16 @@
-'use client';
+"use client"
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Wrench, X, Database, Trash2, RefreshCw, Sparkles } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Button } from '../ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Settings, Database, RefreshCw, Zap } from 'lucide-react';
+import { toast } from "sonner"
 import { useAuth } from '@/contexts/AuthContext';
 
 export function DevWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
   const { supabase } = useAuth();
 
   const handleCreateTestAssets = async () => {
@@ -36,19 +35,11 @@ export function DevWidget() {
         throw new Error(data.error || 'Failed to create test assets');
       }
 
-      toast({
-        title: "Success",
-        description: data.message,
-        variant: "default",
-      });
+      toast.success(data.message);
 
     } catch (error) {
       console.error('Error creating test assets:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to create test assets',
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to create test assets');
     } finally {
       setIsLoading(false);
     }
@@ -62,17 +53,9 @@ export function DevWidget() {
     setIsLoading(true);
     try {
       // This would need to be implemented as an API endpoint
-      toast({
-        title: "Info",
-        description: "Database reset functionality not implemented yet",
-        variant: "default",
-      });
+      toast.info("Database reset functionality not implemented yet");
     } catch (error) {
-      toast({
-        title: "Error", 
-        description: "Failed to reset database",
-        variant: "destructive",
-      });
+      toast.error("Failed to reset database");
     } finally {
       setIsLoading(false);
     }
@@ -104,19 +87,11 @@ export function DevWidget() {
         throw new Error(data.error || 'Failed to cleanup data');
       }
 
-      toast({
-        title: "Cleanup Complete",
-        description: `Removed ${data.results.orphaned_bindings_removed} orphaned bindings, ${data.results.duplicate_applications_removed} duplicate applications, ${data.results.invalid_assets_removed} invalid assets`,
-        variant: "default",
-      });
+      toast.success(`Removed ${data.results.orphaned_bindings_removed} orphaned bindings, ${data.results.duplicate_applications_removed} duplicate applications, ${data.results.invalid_assets_removed} invalid assets`);
 
     } catch (error) {
       console.error('Error cleaning up data:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to cleanup data',
-        variant: "destructive",
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to cleanup data');
     } finally {
       setIsLoading(false);
     }
@@ -135,7 +110,7 @@ export function DevWidget() {
           variant="outline"
           className="rounded-full w-12 h-12 p-0 bg-purple-600 hover:bg-purple-700 text-white border-purple-600"
         >
-          <Wrench className="h-5 w-5" />
+          <Settings className="h-5 w-5" />
         </Button>
       </div>
     );
@@ -147,7 +122,7 @@ export function DevWidget() {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Wrench className="h-4 w-4 text-purple-400" />
+              <Settings className="h-4 w-4 text-purple-400" />
               <CardTitle className="text-sm">Dev Tools</CardTitle>
               <Badge variant="secondary" className="text-xs bg-purple-600">
                 DEV
@@ -182,7 +157,7 @@ export function DevWidget() {
                 size="sm"
                 className="justify-start h-8 bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Sparkles className="h-3 w-3 mr-2" />
+                <Zap className="h-3 w-3 mr-2" />
                 {isLoading ? 'Cleaning...' : 'Cleanup Data'}
               </Button>
               <Button

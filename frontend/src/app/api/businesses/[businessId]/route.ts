@@ -77,19 +77,19 @@ export async function GET(
       // Don't fail the whole request if ad accounts can't be fetched
     }
 
-    // Enrich ad accounts with business manager names from dolphin_assets
+    // Enrich ad accounts with business manager names from asset table
     let enrichedAdAccounts = [];
     if (adAccounts && adAccounts.length > 0) {
       const bmDolphinIds = [...new Set(adAccounts.map(acc => acc.business_manager?.dolphin_business_manager_id).filter(Boolean))];
       
       if (bmDolphinIds.length > 0) {
         const { data: bmAssets } = await supabase
-          .from('dolphin_assets')
-          .select('dolphin_asset_id, name')
-          .in('dolphin_asset_id', bmDolphinIds)
-          .eq('asset_type', 'business_manager');
+          .from('asset')
+          .select('dolphin_id, name')
+          .in('dolphin_id', bmDolphinIds)
+          .eq('type', 'business_manager');
 
-        const bmNameMap = new Map(bmAssets?.map(asset => [asset.dolphin_asset_id, asset.name]));
+        const bmNameMap = new Map(bmAssets?.map(asset => [asset.dolphin_id, asset.name]));
 
         enrichedAdAccounts = adAccounts.map(acc => ({
           ...acc,

@@ -37,16 +37,26 @@ export const swrConfig: SWRConfiguration = {
 
 // Specialized hooks for common data patterns
 export function useOrganizations() {
-  return useSWR('/api/organizations', fetcher, {
-    ...swrConfig,
-    dedupingInterval: 10 * 60 * 1000, // Organizations change rarely
-  })
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token ? ['/api/organizations', session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 10 * 60 * 1000, // Organizations change rarely
+    }
+  )
 }
 
 export function useCurrentOrganization(organizationId: string | null) {
+  const { session } = useAuth()
+  
   return useSWR(
-    organizationId ? `/api/organizations?id=${organizationId}` : null,
-    fetcher,
+    organizationId && session?.access_token 
+      ? [`/api/organizations?id=${organizationId}`, session.access_token] 
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
       dedupingInterval: 5 * 60 * 1000, // Current org data
@@ -59,7 +69,7 @@ export function useBusinessManagers(organizationId: string | null) {
   
   return useSWR(
     organizationId && session?.access_token 
-      ? ['/api/business-managers', session.access_token] 
+      ? [`/api/business-managers?organization_id=${organizationId}`, session.access_token] 
       : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
@@ -74,7 +84,7 @@ export function useAdAccounts(organizationId: string | null) {
   
   return useSWR(
     organizationId && session?.access_token 
-      ? [`/api/ad-accounts?organization_id=${organizationId}`, session.access_token]
+      ? ['/api/ad-accounts', session.access_token]
       : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
@@ -85,9 +95,13 @@ export function useAdAccounts(organizationId: string | null) {
 }
 
 export function useTransactions(organizationId: string | null) {
+  const { session } = useAuth()
+  
   return useSWR(
-    organizationId ? `/api/transactions?organization_id=${organizationId}` : null,
-    fetcher,
+    organizationId && session?.access_token 
+      ? [`/api/transactions?organization_id=${organizationId}`, session.access_token]
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
       dedupingInterval: 1 * 60 * 1000, // Transactions are most dynamic

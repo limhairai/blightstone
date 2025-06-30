@@ -39,61 +39,81 @@ export function LoginView() {
       return
     }
     
-    const result = await signIn(email, password);
-
-    if (result.error) {
-      let errorMessage = "Failed to sign in. Please try again.";
+    console.log('🔐 Attempting login with email:', email);
+    
+    try {
+      const result = await signIn(email, password);
       
-      // Handle specific Supabase error messages
-      if (result.error.message === 'Invalid login credentials') {
-        errorMessage = "Incorrect email or password. Please check your credentials and try again.";
-      } else if (result.error.message === 'Email not confirmed') {
-        errorMessage = "Please check your email and click the confirmation link before signing in.";
-      } else if (result.error.message.includes('Too many requests')) {
-        errorMessage = "Too many login attempts. Please wait a moment and try again.";
-      } else if (result.error.message.includes('User not found')) {
-        errorMessage = "No account found with this email address.";
-      } else {
-        errorMessage = result.error.message;
+      console.log('🔐 Login result:', result);
+
+      if (result.error) {
+        let errorMessage = "Failed to sign in. Please try again.";
+        
+        console.error('🔐 Login error:', result.error);
+        
+        // Handle specific Supabase error messages
+        if (result.error.message === 'Invalid login credentials') {
+          errorMessage = "Incorrect email or password. Please check your credentials and try again.";
+        } else if (result.error.message === 'Email not confirmed') {
+          errorMessage = "Please check your email and click the confirmation link before signing in.";
+        } else if (result.error.message.includes('Too many requests')) {
+          errorMessage = "Too many login attempts. Please wait a moment and try again.";
+        } else if (result.error.message.includes('User not found')) {
+          errorMessage = "No account found with this email address.";
+        } else {
+          errorMessage = result.error.message;
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
       }
       
+      // On success, show toast and let AuthContext handle the redirect
+      toast.success("Signed in! Welcome back.");
+      
+      // Wait a moment for auth state to update, then redirect
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
+    } catch (err: any) {
+      console.error('🔐 Login exception:', err);
+      const errorMessage = err?.message || "An unexpected error occurred during sign in.";
       setError(errorMessage);
       toast.error(errorMessage);
-      return;
     }
-    
-    // On success, show toast and let AuthContext handle the redirect
-    toast.success("Signed in! Welcome back.");
-    
-    // Wait a moment for auth state to update, then redirect
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 100);
   };
 
   const handleGoogleSignIn = async () => {
     setError("");
-    const result = await signInWithGoogle();
-    if (result.error) {
-      let errorMessage = "Failed to sign in with Google. Please try again.";
-      
-      if (result.error.message.includes('popup_closed_by_user')) {
-        errorMessage = "Google sign-in was cancelled.";
-      } else if (result.error.message.includes('access_denied')) {
-        errorMessage = "Google sign-in access was denied.";
-      } else {
-        errorMessage = result.error.message;
+    
+    try {
+      const result = await signInWithGoogle();
+      if (result.error) {
+        let errorMessage = "Failed to sign in with Google. Please try again.";
+        
+        if (result.error.message.includes('popup_closed_by_user')) {
+          errorMessage = "Google sign-in was cancelled.";
+        } else if (result.error.message.includes('access_denied')) {
+          errorMessage = "Google sign-in access was denied.";
+        } else {
+          errorMessage = result.error.message;
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
       }
       
+      // Success - Google will redirect, so we might not reach this point
+      toast.success("Signed in!", {
+        description: "Welcome back."
+      });
+    } catch (err: any) {
+      const errorMessage = err?.message || "An unexpected error occurred during Google sign in.";
       setError(errorMessage);
       toast.error(errorMessage);
-      return;
     }
-    
-    // Success - Google will redirect, so we might not reach this point
-    toast.success("Signed in!", {
-      description: "Welcome back."
-    });
   };
 
   return (

@@ -21,6 +21,7 @@ import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, S
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { useAuth } from "@/contexts/AuthContext"
+import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -64,12 +65,12 @@ export function OrganizationSettings() {
       }
     }).then(res => res.json());
 
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null, fetcher);
-  const { data: bizData, isLoading: isBizLoading } = useSWR(currentOrganizationId && session ? `/api/business-managers?organization_id=${currentOrganizationId}` : null, authFetcher);
-  const { data: accData, isLoading: isAccLoading } = useSWR(currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null, fetcher);
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
+  const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
   const { data: teamData, isLoading: isTeamLoading } = useSWR(currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null, fetcher);
   
-  const organization = orgData?.organizations?.[0];
+  const organization = orgData;
   const businesses = bizData || [];
   const accounts = accData?.accounts || [];
   const teamMembers = teamData?.members || [];

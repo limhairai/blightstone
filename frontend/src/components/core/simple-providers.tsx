@@ -3,7 +3,6 @@
 import { ThemeProvider } from "../ui/theme-provider"
 import { AuthProvider, useAuth } from "../../contexts/AuthContext"
 import { AppShell } from '../layout/app-shell'
-import { Toaster } from "sonner"
 import { Loader } from "./Loader"
 import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
@@ -103,7 +102,6 @@ export function SimpleProviders({ children }: { children: React.ReactNode }) {
             <PageTitleProvider>
               <AppRouter>{children}</AppRouter>
             </PageTitleProvider>
-            <Toaster />
           </AuthProvider>
         </QueryClientProvider>
       </TooltipProvider>

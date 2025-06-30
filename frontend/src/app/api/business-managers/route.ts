@@ -20,14 +20,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
+    // Get the organization_id from query params (sent by the frontend)
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get('organization_id');
+    
+    if (!organizationId) {
+      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
+    }
+
+    // Verify user has access to this organization
+    const { data: membership, error: membershipError } = await supabase
+      .from('organization_members')
+      .select('role')
+      .eq('organization_id', organizationId)
+      .eq('user_id', user.id)
       .single();
 
-    if (profileError || !profile || !profile.organization_id) {
-        return NextResponse.json({ error: 'User organization not found.' }, { status: 404 });
+    if (membershipError || !membership) {
+      return NextResponse.json({ error: 'Access denied to this organization' }, { status: 403 });
     }
 
     // Query business managers bound to this organization
@@ -46,7 +56,7 @@ export async function GET(request: NextRequest) {
           metadata
         )
       `)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', organizationId)
       .eq('status', 'active')
       .eq('asset.type', 'business_manager');
 
@@ -59,7 +69,7 @@ export async function GET(request: NextRequest) {
     const { data: pendingApps, error: appsError } = await supabase
       .from('application')
       .select('*')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', organizationId)
       .eq('request_type', 'new_business_manager')
       .in('status', ['pending', 'processing']);
 
@@ -89,7 +99,7 @@ export async function GET(request: NextRequest) {
                 metadata
               )
             `)
-            .eq('organization_id', profile.organization_id)
+            .eq('organization_id', organizationId)
             .eq('status', 'active')
             .eq('asset.type', 'ad_account');
 

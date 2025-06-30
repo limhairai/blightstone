@@ -16,10 +16,12 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
-import { Check, Loader2, Building2, Upload, X, Plus } from "lucide-react"
-import type { Business } from "@/types/business"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+import { Upload, X, Loader2, Check, Plus, Building2 } from "lucide-react"
+import type { Business } from "@/types/business"
+import { toast } from "sonner"
 
 interface EditBusinessDialogProps {
   business: Business
@@ -31,7 +33,6 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -108,8 +109,7 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
       }
 
       setShowSuccess(true)
-      toast({
-        title: "Business Updated!",
+      toast.success("Business Updated!", {
         description: "Your business information has been updated successfully.",
       })
 
@@ -124,11 +124,7 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
         setOpen(false)
       }, 2000)
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update business information. Please try again.",
-        variant: "destructive",
-      })
+      toast.error("Failed to update business information. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -292,9 +288,8 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
                   // Add domain functionality
                   const newDomain = prompt("Enter domain name (e.g., example.com):")
                   if (newDomain) {
-                    toast({
-                      title: "Domain Added",
-                      description: `${newDomain} has been added for verification.`,
+                    toast.success(`${newDomain} has been added for verification.`, {
+                      description: "Domain Added"
                     })
                   }
                 }}
@@ -332,9 +327,8 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
                         size="sm"
                         className="h-5 w-5 p-0"
                         onClick={() => {
-                          toast({
-                            title: "Verification initiated",
-                            description: `Verification instructions for ${domain.domain} have been sent.`,
+                          toast.success(`Verification instructions for ${domain.domain} have been sent.`, {
+                            description: "Verification initiated"
                           })
                         }}
                       >
@@ -347,9 +341,8 @@ export function EditBusinessDialog({ business, trigger, onBusinessUpdated }: Edi
                       size="sm"
                       className="h-5 w-5 p-0 text-red-400 hover:text-red-500"
                       onClick={() => {
-                        toast({
-                          title: "Domain removed",
-                          description: `${domain.domain} has been removed.`,
+                        toast.success(`${domain.domain} has been removed.`, {
+                          description: "Domain removed"
                         })
                       }}
                     >

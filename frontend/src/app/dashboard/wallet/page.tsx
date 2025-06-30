@@ -28,7 +28,6 @@ export default function WalletPage() {
       // Wait a moment for webhook to process, then revalidate the organizations API cache
       setTimeout(() => {
         if (currentOrganizationId) {
-      
           mutate(`/api/organizations?id=${currentOrganizationId}`);
         }
       }, 1000)

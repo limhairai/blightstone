@@ -31,11 +31,20 @@ export async function POST(request: NextRequest) {
 
         // Step 2: Get the parameters from the request body
         const body = await request.json();
-        const { application_id, organization_id, dolphin_asset_id } = body;
+        const { application_id, organization_id, dolphin_asset_id, selected_ad_accounts = [] } = body;
 
         if (!application_id || !organization_id || !dolphin_asset_id) {
             return NextResponse.json({ error: 'Missing required parameters.' }, { status: 400 });
         }
+
+        console.log('Fulfilling BM application with selected accounts:', {
+            application_id,
+            organization_id,
+            dolphin_asset_id,
+            selected_ad_accounts: selected_ad_accounts.length
+        });
+
+        console.log('Attempting to update application status for application_id:', application_id);
         
         // Step 3: Update application status to fulfilled
         const { error: updateError } = await supabase
@@ -48,9 +57,17 @@ export async function POST(request: NextRequest) {
             })
             .eq('id', application_id);
 
+        console.log('Update result - error:', updateError);
+
         if (updateError) {
             console.error('Error updating application status:', updateError);
-            return NextResponse.json({ error: 'Failed to update application status' }, { status: 500 });
+            console.error('Update error details:', {
+                message: updateError.message,
+                details: updateError.details,
+                hint: updateError.hint,
+                code: updateError.code
+            });
+            return NextResponse.json({ error: 'Failed to update application status', details: updateError }, { status: 500 });
         }
 
         // Step 4: First get the Business Manager asset to get its dolphin_id
@@ -82,51 +99,65 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Failed to bind Business Manager to organization' }, { status: 500 });
         }
 
-        // Step 6: Auto-bind related ad accounts (optional)
+        // Step 6: Bind selected ad accounts
         let boundAdAccounts = 0;
         try {
-            // Find ad accounts that belong to this Business Manager using the BM's dolphin_id
-            const { data: adAssets, error: assetsError } = await supabase
-                .from('asset')
-                .select('id, name, dolphin_id, metadata')
-                .eq('type', 'ad_account');
-
-            if (!assetsError && adAssets) {
-                const relatedAdAccounts = adAssets.filter(asset => 
-                    asset.metadata?.business_manager_id === bmAsset.dolphin_id
-                );
-
-          
-
-                // Bind related ad accounts (up to 7 total as per provider limit)
-                const adAccountsToBinding = relatedAdAccounts.slice(0, 7);
+            if (selected_ad_accounts.length > 0) {
+                console.log('Binding selected ad accounts:', selected_ad_accounts);
                 
-                if (adAccountsToBinding.length > 0) {
-                    const adAccountBindings = adAccountsToBinding.map(account => ({
-                        asset_id: account.id,
-                        organization_id: organization_id,
-                        status: 'active',
-                        bound_at: new Date().toISOString(),
-                        bound_by: admin_user_id
-                    }));
-                    
+                // Verify that the selected accounts exist and belong to this BM
+                const { data: adAssets, error: assetsError } = await supabase
+                    .from('asset')
+                    .select('id, name, dolphin_id, metadata')
+                    .eq('type', 'ad_account')
+                    .in('id', selected_ad_accounts);
 
+                if (assetsError) {
+                    console.error('Error fetching selected ad accounts:', assetsError);
+                    throw new Error('Failed to fetch selected ad accounts');
+                }
 
-                    const { error: adBindingError } = await supabase
-                        .from('asset_binding')
-                        .insert(adAccountBindings);
+                if (!adAssets || adAssets.length === 0) {
+                    console.warn('No valid ad accounts found for selection');
+                } else {
+                    // Filter to only accounts that belong to this BM (security check)
+                    const validAdAccounts = adAssets.filter(asset => 
+                        asset.metadata?.business_manager_id === bmAsset.dolphin_id
+                    );
 
-                    if (adBindingError) {
-                        console.error('Error binding ad accounts:', adBindingError);
-                    } else {
-                        boundAdAccounts = adAccountsToBinding.length;
+                    console.log(`Found ${validAdAccounts.length} valid accounts out of ${adAssets.length} selected`);
 
+                    if (validAdAccounts.length > 0) {
+                        const adAccountBindings = validAdAccounts.map(account => ({
+                            asset_id: account.id,
+                            organization_id: organization_id,
+                            status: 'active',
+                            bound_at: new Date().toISOString(),
+                            bound_by: admin_user_id
+                        }));
+
+                        const { error: adBindingError } = await supabase
+                            .from('asset_binding')
+                            .insert(adAccountBindings);
+
+                        if (adBindingError) {
+                            console.error('Error binding ad accounts:', adBindingError);
+                            throw new Error('Failed to bind selected ad accounts');
+                        } else {
+                            boundAdAccounts = validAdAccounts.length;
+                            console.log(`Successfully bound ${boundAdAccounts} ad accounts`);
+                        }
                     }
                 }
+            } else {
+                console.log('No ad accounts selected for binding');
             }
         } catch (adAccountError) {
-            console.warn('Warning: Failed to auto-bind ad accounts:', adAccountError);
-            // Don't fail the main operation if ad account binding fails
+            console.error('Error binding selected ad accounts:', adAccountError);
+            // For new BM requests, we should fail if ad account binding fails
+            return NextResponse.json({ 
+                error: `Business Manager assigned but failed to bind ad accounts: ${adAccountError instanceof Error ? adAccountError.message : 'Unknown error'}` 
+            }, { status: 500 });
         }
 
         return NextResponse.json({ 

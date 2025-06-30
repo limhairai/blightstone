@@ -7,99 +7,94 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// GET - Fetch individual business manager with ad accounts
+// GET /api/admin/business-managers/[bmId] - Get business manager details with associated ad accounts
 export async function GET(
   request: NextRequest,
   { params }: { params: { bmId: string } }
 ) {
-  const { bmId } = params
-
-  if (!bmId) {
-    return NextResponse.json({ error: 'Business Manager ID is required' }, { status: 400 })
-  }
-
   try {
-    // First get the business manager details from business_managers table
-    const { data: bmData, error: bmError } = await supabase
-      .from('business_managers')
-      .select('*')
-      .eq('bm_id', bmId)
-      .single()
+    const bmId = params.bmId;
 
-    if (bmError) {
-      if (bmError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Business Manager not found' }, { status: 404 })
-      }
-      throw bmError
+    if (!bmId) {
+      return NextResponse.json({ message: "Business Manager ID is required" }, { status: 400 });
     }
 
-    // Get the dolphin asset name for this business manager
-    const { data: assetData, error: assetError } = await supabase
-      .from('dolphin_assets')
-      .select('name')
-      .eq('dolphin_asset_id', bmData.dolphin_business_manager_id)
-      .eq('asset_type', 'business_manager')
-      .single()
+    // Get business manager asset
+    const { data: bmAsset, error: bmError } = await supabase
+      .from('asset')
+      .select('*')
+      .eq('id', bmId)
+      .eq('type', 'business_manager')
+      .single();
 
-    // Get associated ad accounts for this business manager using the correct binding approach
-    const { data: adAccounts, error: adAccountsError } = await supabase
-      .from('client_asset_bindings')
+    if (bmError || !bmAsset) {
+      return NextResponse.json(
+        { message: "Business Manager not found", error: bmError?.message },
+        { status: 404 }
+      );
+    }
+
+    // Get all ad accounts associated with this business manager
+    const { data: adAccountBindings, error: adAccountsError } = await supabase
+      .from('asset_binding')
       .select(`
         *,
-        dolphin_assets!inner(
-          asset_id,
+        asset!inner(
+          id,
+          type,
+          dolphin_id,
           name,
           status,
-          asset_metadata
-        )
+          metadata
+        ),
+        organizations(name)
       `)
-      .eq('bm_id', bmId)
-      .eq('status', 'active')
-      .eq('dolphin_assets.asset_type', 'ad_account')
+      .eq('asset.type', 'ad_account')
+      .eq('asset.metadata->>business_manager_id', bmAsset.dolphin_id)
+      .eq('status', 'active');
 
     if (adAccountsError) {
-      console.error('Error fetching ad accounts:', adAccountsError)
-      // Don't throw, just log - we can still return BM details without accounts
+      console.error("Error fetching associated ad accounts:", adAccountsError);
+      return NextResponse.json(
+        { message: "Failed to fetch associated ad accounts", error: adAccountsError.message },
+        { status: 500 }
+      );
     }
 
-    // Format business manager data
-    const businessManager = {
-      id: bmData.bm_id,
-      name: assetData?.name || `Business Manager #${bmData.dolphin_business_manager_id.substring(0, 8)}`,
-      dolphin_business_manager_id: bmData.dolphin_business_manager_id,
-      status: bmData.status,
-      organization_id: bmData.organization_id,
-      ad_account_count: adAccounts?.length || 0,
-      created_at: bmData.created_at,
-    }
-
-    // Format ad accounts data from the new structure
-    const formattedAdAccounts = adAccounts ? adAccounts.map(binding => {
-      const asset = binding.dolphin_assets;
-      const metadata = asset.asset_metadata || {};
-      
+    // Transform the data
+    const adAccounts = adAccountBindings?.map(binding => {
+      const asset = binding.asset;
       return {
-        id: asset.asset_id,
+        id: asset.id,
+        type: asset.type,
+        dolphin_id: asset.dolphin_id,
         name: asset.name,
-        ad_account_id: metadata.ad_account_id || asset.asset_id,
         status: asset.status,
-        balance_cents: Math.round(((metadata.spend_cap || 0) - (metadata.amount_spent || 0)) * 100),
-        spend_cents: Math.round((metadata.amount_spent || 0) * 100), // Total lifetime spend
-        timezone: metadata.timezone_id || 'UTC',
-        created_at: binding.bound_at,
-        last_activity: asset.last_sync_at,
+        metadata: asset.metadata,
+        binding_id: binding.id,
+        bound_at: binding.bound_at,
+        organization_name: binding.organizations?.name
       };
-    }) : []
+    }) || [];
 
     return NextResponse.json({
-      businessManager,
-      adAccounts: formattedAdAccounts,
-    })
+      business_manager: {
+        id: bmAsset.id,
+        type: bmAsset.type,
+        dolphin_id: bmAsset.dolphin_id,
+        name: bmAsset.name,
+        status: bmAsset.status,
+        metadata: bmAsset.metadata
+      },
+      ad_accounts: adAccounts,
+      ad_account_count: adAccounts.length
+    });
+
   } catch (error: any) {
-    console.error('Error fetching business manager details:', error)
+    console.error("Failed to fetch business manager details:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch business manager details', details: error.message },
+      { message: "Failed to fetch business manager details", error: error.message },
       { status: 500 }
-    )
+    );
   }
 } 

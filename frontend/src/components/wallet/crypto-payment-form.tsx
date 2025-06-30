@@ -5,9 +5,11 @@ import { Button } from "../ui/button"
 import { Label } from "../ui/label"
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
 import { Card, CardContent } from "../ui/card"
-import { Copy, ExternalLink } from "lucide-react"
+import { Copy, ExternalLink, AlertCircle } from "lucide-react"
 import { Input } from "../ui/input"
-import { useToast } from "../../hooks/use-toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import { Badge } from "../ui/badge"
+import { toast } from "sonner"
 
 interface CryptoPaymentFormProps {
   amount: string;
@@ -16,7 +18,6 @@ interface CryptoPaymentFormProps {
 
 export function CryptoPaymentForm({ amount, orgId: _orgId }: CryptoPaymentFormProps) {
   const [selectedCrypto, setSelectedCrypto] = useState("btc")
-  const { toast } = useToast()
 
   const cryptoOptions = [
     {

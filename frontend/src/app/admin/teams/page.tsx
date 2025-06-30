@@ -11,7 +11,6 @@ import { Users, CheckCircle, AlertTriangle, Clock, Search, Plus } from "lucide-r
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
 import { cn } from "../../../lib/utils"
 import { DataTable } from "../../../components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "../../../components/ui/button"
 import {
   Dialog,
@@ -123,12 +122,12 @@ export default function TeamsPage() {
     )
   }
 
-  const columns: ColumnDef<Team>[] = [
+  const columns = [
     {
       accessorKey: "name",
       header: "Team",
       size: 250,
-      cell: ({ row }) => {
+      cell: ({ row }: { row: { original: Team } }) => {
         const team = row.original
         return (
           <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => handleTeamClick(team)}>
@@ -149,7 +148,7 @@ export default function TeamsPage() {
       accessorKey: "businessManagers", 
       header: "Business Managers", 
       size: 150, 
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Team } }) => (
         <div>
           <div className="font-medium">{row.original.businessManagersCount}/{row.original.bmCapacity}</div>
           <div className="text-sm text-muted-foreground">BM capacity</div>
@@ -160,7 +159,7 @@ export default function TeamsPage() {
       accessorKey: "utilization", 
       header: "Utilization", 
       size: 120, 
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Team } }) => (
         <div className="text-center">
           <div className={`font-medium ${row.original.bmUtilization >= 90 ? "text-red-600" : row.original.bmUtilization >= 70 ? "text-yellow-600" : "text-green-600"}`}>
             {row.original.bmUtilization}%
@@ -173,14 +172,19 @@ export default function TeamsPage() {
       accessorKey: "adAccounts", 
       header: "Ad Accounts", 
       size: 120, 
-      cell: ({ row }) => (
+      cell: ({ row }: { row: { original: Team } }) => (
         <div>
           <div className="font-medium">{row.original.adAccountsCount}</div>
           <div className="text-sm text-muted-foreground">total accounts</div>
         </div>
       ) 
     },
-    { accessorKey: "status", header: "Status", size: 120, cell: ({ row }) => getStatusBadge(row.original.status) },
+    { 
+      accessorKey: "status", 
+      header: "Status", 
+      size: 120, 
+      cell: ({ row }: { row: { original: Team } }) => getStatusBadge(row.original.status) 
+    },
   ]
 
   return (
@@ -197,11 +201,6 @@ export default function TeamsPage() {
               <SelectItem value="suspended">No Active Profiles</SelectItem>
             </SelectContent>
           </Select>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search teams..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10 w-[250px]" />
-          </div>
         </div>
         
         <div className="flex items-center gap-4">
@@ -210,7 +209,12 @@ export default function TeamsPage() {
         </div>
       </div>
 
-      <DataTable columns={columns} data={filteredTeams} />
+      <DataTable 
+        columns={columns} 
+        data={filteredTeams} 
+        searchKey="name"
+        searchPlaceholder="Search teams..."
+      />
       
       {/* Team Details Dialog */}
       {selectedTeam && (
@@ -276,26 +280,23 @@ export default function TeamsPage() {
               </div>
               
               {/* Business Managers */}
-              {selectedTeam.businessManagers.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Business Managers</h4>
-                  <div className="space-y-2">
-                    {selectedTeam.businessManagers.map((bm: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div>
-                          <div className="font-medium">{bm.name}</div>
-                          <div className="text-sm text-gray-500">ID: {bm.dolphin_asset_id}</div>
-                        </div>
+              <div>
+                <h4 className="font-medium mb-2">Business Managers</h4>
+                <div className="space-y-2">
+                  {selectedTeam.businessManagers.map((bm: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                      <div>
+                        <div className="font-medium">{bm.name}</div>
+                        <div className="text-sm text-gray-500 font-mono">{bm.dolphin_id}</div>
                       </div>
-                    ))}
-                  </div>
+                      <Badge variant="outline">
+                        {bm.adAccounts?.length || 0} ad accounts
+                      </Badge>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
-            
-            <DialogFooter>
-              <Button onClick={() => setShowTeamDetails(false)}>Close</Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { AdHubLogo } from "../core/AdHubLogo"
 import { useAuth } from "../../contexts/AuthContext"
-import { toast } from "../ui/use-toast"
+import { toast } from "sonner"
 import { Mail, CheckCircle, RefreshCw } from "lucide-react"
 
 export function EmailConfirmationView() {
@@ -19,11 +19,7 @@ export function EmailConfirmationView() {
 
   const handleResendEmail = async () => {
     if (!email) {
-      toast({
-        title: "Error",
-        description: "No email address found. Please try signing up again.",
-        variant: "destructive"
-      })
+      toast.error("No email address found. Please try signing up again.")
       return
     }
 
@@ -31,18 +27,12 @@ export function EmailConfirmationView() {
     try {
       const { error } = await resendVerification(email)
       if (!error) {
-        toast({
-          title: "Email Sent",
-          description: "We've sent another confirmation email to your inbox.",
-          variant: "default"
+        toast.success("We've sent another confirmation email to your inbox.", {
+          description: "Email Sent"
         })
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to resend confirmation email. Please try again.",
-        variant: "destructive"
-      })
+      toast.error("Failed to resend confirmation email. Please try again.")
     } finally {
       setIsResending(false)
     }

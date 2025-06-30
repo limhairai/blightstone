@@ -10,82 +10,79 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { businessId: string } }
 ) {
-  const { businessId } = params
-
-  if (!businessId) {
-    return NextResponse.json({ error: 'Business ID is required' }, { status: 400 })
-  }
-
   try {
-    // Fetch business manager details using the correct table and column
-    const { data: businessManager, error: bmError } = await supabase
-      .from('business_managers')
-      .select('*')
-      .eq('bm_id', businessId)
-      .single()
+    const businessId = params.businessId;
 
-    if (bmError) {
-      if (bmError.code === 'PGRST116') {
-        return NextResponse.json({ error: 'Business Manager not found' }, { status: 404 })
-      }
-      throw bmError
+    if (!businessId) {
+      return NextResponse.json({ message: "Business ID is required" }, { status: 400 });
     }
 
-    // Fetch associated ad accounts using the new Dolphin assets structure
-    const { data: adAccounts, error: adAccountsError } = await supabase
-      .from('client_asset_bindings')
+    // Get business details
+    const { data: business, error: businessError } = await supabase
+      .from('businesses')
+      .select('*')
+      .eq('id', businessId)
+      .single();
+
+    if (businessError || !business) {
+      return NextResponse.json(
+        { message: "Business not found", error: businessError?.message },
+        { status: 404 }
+      );
+    }
+
+    // Get bound assets for this business
+    const { data: bindings, error: bindingsError } = await supabase
+      .from('asset_binding')
       .select(`
         *,
-        dolphin_assets!inner(
-          asset_id,
+        asset!inner(
+          id,
+          type,
+          dolphin_id,
           name,
           status,
-          asset_metadata
+          metadata
         )
       `)
-      .eq('bm_id', businessId)
+      .eq('organization_id', business.organization_id)
       .eq('status', 'active')
-      .eq('dolphin_assets.asset_type', 'ad_account')
+      .eq('asset.type', 'ad_account');
 
-    if (adAccountsError) {
-      console.error('Error fetching ad accounts:', adAccountsError)
-      // Don't throw, just log - we can still return BM details without accounts
+    if (bindingsError) {
+      console.error("Error fetching business assets:", bindingsError);
+      return NextResponse.json(
+        { message: "Failed to fetch business assets", error: bindingsError.message },
+        { status: 500 }
+      );
     }
 
-    // Format the response to match expected structure
-    const formattedAdAccounts = adAccounts ? adAccounts.map(binding => {
-      const asset = binding.dolphin_assets;
-      const metadata = asset.asset_metadata || {};
-      
+    // Transform the data
+    const assets = bindings?.map(binding => {
+      const asset = binding.asset;
       return {
-        id: asset.asset_id,
+        id: asset.id,
+        type: asset.type,
+        dolphin_id: asset.dolphin_id,
         name: asset.name,
-        ad_account_id: metadata.ad_account_id || asset.asset_id,
         status: asset.status,
-        balance_cents: Math.round(((metadata.spend_cap || 0) - (metadata.amount_spent || 0)) * 100),
-        spend_cents: Math.round((metadata.amount_spent || 0) * 100), // Total lifetime spend
-        timezone: metadata.timezone_id || 'UTC',
-        created_at: binding.bound_at,
-        last_activity: asset.last_sync_at,
+        metadata: asset.metadata,
+        binding_id: binding.id,
+        bound_at: binding.bound_at
       };
-    }) : []
+    }) || [];
 
     return NextResponse.json({
-      business: {
-        id: businessManager.bm_id,
-        name: `Business Manager #${businessManager.dolphin_business_manager_id.substring(0, 8)}`,
-        dolphin_business_manager_id: businessManager.dolphin_business_manager_id,
-        status: businessManager.status,
-        organization_id: businessManager.organization_id,
-        created_at: businessManager.created_at,
-      },
-      adAccounts: formattedAdAccounts,
-    })
+      business,
+      assets,
+      asset_count: assets.length
+    });
+
   } catch (error: any) {
-    console.error('Error fetching business details:', error)
+    console.error("Failed to fetch business details:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch business details', details: error.message },
+      { message: "Failed to fetch business details", error: error.message },
       { status: 500 }
-    )
+    );
   }
 } 

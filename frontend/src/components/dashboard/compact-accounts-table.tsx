@@ -23,6 +23,7 @@ import useSWR from 'swr'
 import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, AlertCircle, Target } from "lucide-react"
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/states"
+import { useOrganizationStore } from "../../lib/stores/organization-store"
 
 const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
 
@@ -40,6 +41,7 @@ export function CompactAccountsTable({
   bmIdFilter,
 }: CompactAccountsTableProps) {
   const { session } = useAuth();
+  const { currentOrganizationId } = useOrganizationStore();
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
@@ -58,9 +60,9 @@ export function CompactAccountsTable({
     ([url, token]) => fetcher(url, token)
   );
 
-  // Fetch business managers for filtering
+  // Fetch business managers for filtering with organization ID
   const { data: businessManagers } = useSWR(
-    session ? ['/api/business-managers', session.access_token] : null,
+    session && currentOrganizationId ? [`/api/business-managers?organization_id=${currentOrganizationId}`, session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   );
 
@@ -206,7 +208,7 @@ export function CompactAccountsTable({
         onStatusChange={setStatusFilter}
         businessFilter={businessFilter}
         onBusinessChange={onBusinessFilterChange}
-        businessManagers={businessManagers || []}
+        businessManagers={Array.isArray(businessManagers) ? businessManagers : []}
       />
 
       {/* Bulk Actions */}

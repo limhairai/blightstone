@@ -231,6 +231,28 @@ export function OrganizationSelector() {
 
   const globalLoading = isOrgLoading || isBizLoading;
 
+  // Show error state if there are errors
+  if (orgError || bizError) {
+    return (
+      <Button
+        variant="outline"
+        className="w-full justify-between bg-background border-border text-red-600"
+        disabled
+      >
+        <div className="flex items-center">
+          <div className="h-6 w-6 mr-2 rounded-full bg-red-100 flex items-center justify-center">
+            <span className="text-red-600 text-xs">!</span>
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-sm font-medium">Error loading organizations</span>
+            <span className="text-xs text-muted-foreground">Please refresh</span>
+          </div>
+        </div>
+        <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
+      </Button>
+    )
+  }
+
   // Show a simple loading state instead of "Loading..."
   if (globalLoading || selectedOrg.id === "loading") {
     return (

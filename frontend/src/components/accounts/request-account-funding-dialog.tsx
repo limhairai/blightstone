@@ -71,6 +71,12 @@ export function RequestAccountFundingDialog({
       return
     }
 
+    // Validate that we have proper account data (not just fallback values)
+    if (accountId.startsWith('unknown-') || accountName.startsWith('Account ')) {
+      toast.error('Account information is incomplete. Please refresh the page and try again.')
+      return
+    }
+
     if (amount < 500) {
       toast.error('Minimum top-up amount is $500')
       return
@@ -88,6 +94,7 @@ export function RequestAccountFundingDialog({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           organization_id: currentOrganizationId,

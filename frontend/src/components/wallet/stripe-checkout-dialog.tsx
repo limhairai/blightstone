@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
 import { Button } from "../ui/button"
+import { Input } from "../ui/input"
 import { useAuth } from "../../contexts/AuthContext"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "../ui/alert"
@@ -11,27 +12,59 @@ import { Loader2, CreditCard, ArrowLeft, ExternalLink } from 'lucide-react'
 interface StripeCheckoutDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  amount: number // Amount user wants to add to wallet
+  amount?: number // Optional - if not provided, user can select amount
   onSuccess?: () => void
 }
 
 export function StripeCheckoutDialog({ 
   open, 
   onOpenChange, 
-  amount,
+  amount: initialAmount,
   onSuccess
 }: StripeCheckoutDialogProps) {
   const { user, session } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedAmount, setSelectedAmount] = useState(initialAmount || 50)
+  const [customAmount, setCustomAmount] = useState("")
+  const [showCustomInput, setShowCustomInput] = useState(false)
+
+  // Use the provided amount or the selected amount
+  const amount = initialAmount || selectedAmount
 
   // Calculate processing fee (3%)
   const processingFee = amount * 0.03
   const totalCharge = amount + processingFee
 
+  // Preset amounts
+  const presetAmounts = [25, 50, 100, 200, 500]
+
+  const handleAmountSelect = (value: number) => {
+    setSelectedAmount(value)
+    setShowCustomInput(false)
+    setCustomAmount("")
+    setError(null)
+  }
+
+  const handleCustomAmountChange = (value: string) => {
+    setCustomAmount(value)
+    const numValue = parseFloat(value)
+    if (!isNaN(numValue) && numValue >= 5 && numValue <= 5000) {
+      setSelectedAmount(numValue)
+      setError(null)
+    } else if (value && (isNaN(numValue) || numValue < 5 || numValue > 5000)) {
+      setError("Amount must be between $5 and $5,000")
+    }
+  }
+
   const handleStripeCheckout = async () => {
     if (!user) {
       setError("Please log in to continue")
+      return
+    }
+
+    if (amount < 5 || amount > 5000) {
+      setError("Amount must be between $5 and $5,000")
       return
     }
 
@@ -88,14 +121,72 @@ export function StripeCheckoutDialog({
       <DialogContent className="sm:max-w-[420px] bg-background border-border shadow-xl p-0">
         <DialogHeader className="px-6 py-4 border-b border-border">
           <DialogTitle className="text-xl font-semibold text-foreground">
-            Complete Payment
+            Add Funds to Wallet
           </DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Add ${amount.toFixed(2)} to your AdHub wallet
+            Choose how much to add to your AdHub wallet
           </p>
         </DialogHeader>
 
         <div className="px-6 py-6 space-y-6">
+          {/* Amount Selection - only show if amount not provided */}
+          {!initialAmount && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-3 block">
+                  Select Amount
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {presetAmounts.map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={selectedAmount === value && !showCustomInput ? "default" : "outline"}
+                      className="h-12 text-lg font-semibold"
+                      onClick={() => handleAmountSelect(value)}
+                    >
+                      ${value}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant={showCustomInput ? "default" : "outline"}
+                  className="w-full h-12"
+                  onClick={() => {
+                    setShowCustomInput(true)
+                    if (customAmount) {
+                      handleCustomAmountChange(customAmount)
+                    }
+                  }}
+                >
+                  Custom Amount
+                </Button>
+                
+                {showCustomInput && (
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      placeholder="Enter amount"
+                      value={customAmount}
+                      onChange={(e) => handleCustomAmountChange(e.target.value)}
+                      className="pl-8 h-12 text-lg"
+                      min="5"
+                      max="5000"
+                      step="0.01"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Payment Summary */}
           <div className="bg-gradient-to-r from-background to-muted/50 p-4 rounded-lg border border-border">
             <div className="flex items-center justify-between mb-2">

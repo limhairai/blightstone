@@ -96,7 +96,7 @@ export function AccountsTable() {
   const handleBulkAction = async (action: 'pause' | 'resume' | 'delete') => {
     // TODO: Bulk actions disabled - backend PATCH/DELETE endpoints removed
     // These operations need to be implemented for Dolphin assets:
-    // 1. Update binding status in 'client_asset_bindings' table, or  
+            // 1. Update binding status in 'asset_binding' table to 'inactive', or  
     // 2. Make API calls to Dolphin Cloud to modify actual Facebook accounts
     toast.error(`${action} operation not yet implemented for Dolphin assets`);
     return;

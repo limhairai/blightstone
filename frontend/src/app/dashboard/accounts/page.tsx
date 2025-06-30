@@ -9,20 +9,22 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import useSWR from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
+import { useOrganizationStore } from '@/lib/stores/organization-store'
 
 const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
 
 export default function AccountsPage() {
   const { session } = useAuth();
+  const { currentOrganizationId } = useOrganizationStore();
   const searchParams = useSearchParams()
   const router = useRouter()
   const bmId = searchParams.get('bm_id')
   const initialBusinessFilter = searchParams.get("business") || "all"
   const [businessFilter, setBusinessFilter] = useState<string>(initialBusinessFilter)
 
-  // Fetch business managers for filter options
+  // Fetch business managers for filter options with organization ID
   const { data: businessManagers } = useSWR(
-    session ? ['/api/business-managers', session.access_token] : null,
+    session && currentOrganizationId ? [`/api/business-managers?organization_id=${currentOrganizationId}`, session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   );
 

@@ -8,11 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Button } from "../ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { StatusBadge } from "../ui/status-badge"
-import { StatusDot } from "../ui/status-dot"
+import { StatusDot } from "./status-dot"
+import { ErrorBoundary } from "../ui/error-boundary"
 import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
 import { WelcomeOnboardingModal } from "../onboarding/welcome-onboarding-modal"
-import { AccountsTable } from "./accounts-table"
+import { CompactAccountsTable } from "./compact-accounts-table"
 import { useSetupWidget } from "../layout/app-shell"
 import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon, RefreshCw } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
@@ -79,7 +80,7 @@ export function DashboardView() {
   const SWR_KEYS_TO_REFRESH = [
     `/api/organizations?id=${currentOrganizationId}`,
     `/api/business-managers`,
-    `/api/ad-accounts?organization_id=${currentOrganizationId}`,
+    `/api/ad-accounts`,
     `/api/transactions?organization_id=${currentOrganizationId}`,
   ]
 
@@ -239,7 +240,7 @@ export function DashboardView() {
 
   // Use real-time transactions and accounts from state
   const transactions = transactionsData.slice(0, 5).map(tx => ({
-    id: tx.id.toString(),
+    id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,
     name: tx.description,
     amount: tx.amount_cents / 100,
     type: tx.type,
@@ -682,7 +683,12 @@ export function DashboardView() {
             </div>
           </div>
 
-          <AccountsTable />
+          <CompactAccountsTable
+            initialBusinessFilter="all"
+            businessFilter="all"
+            onBusinessFilterChange={() => {}} // Dashboard doesn't need business filter changes
+            bmIdFilter={null}
+          />
         </div>
       </div>
       

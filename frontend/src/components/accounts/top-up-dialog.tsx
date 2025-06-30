@@ -14,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+// Removed old useToast - using toast from sonner instead
 import { Check, Loader2, Wallet, DollarSign } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { formatCurrency } from "@/utils/format"

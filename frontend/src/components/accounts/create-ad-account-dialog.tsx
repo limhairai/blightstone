@@ -20,6 +20,7 @@ import { Check, Loader2, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import { EmptyState } from "../ui/states"
 import { timezones } from "../../lib/timezones"
+import { useOrganizationStore } from "../../lib/stores/organization-store"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
@@ -31,18 +32,19 @@ const fetcher = (url: string, token: string) => fetch(url, { headers: { Authoriz
 
 export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: CreateAdAccountDialogProps) {
   const { session } = useAuth();
+  const { currentOrganizationId } = useOrganizationStore();
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { mutate } = useSWRConfig();
 
-  // Fetch business managers
+  // Fetch business managers with organization ID
   const { data: businessManagers, isLoading: areBusinessManagersLoading } = useSWR(
-    session ? ['/api/business-managers', session.access_token] : null,
+    session && currentOrganizationId ? [`/api/business-managers?organization_id=${currentOrganizationId}`, session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   );
 
-  const approvedBusinessManagers = businessManagers || [];
+  const approvedBusinessManagers = Array.isArray(businessManagers) ? businessManagers : [];
 
   // Find the specific BM if bmId is provided
   const selectedBM = bmId ? approvedBusinessManagers.find((bm: any) => bm.id === bmId) : null;

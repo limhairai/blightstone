@@ -163,9 +163,9 @@ export default function AssetsPage() {
   }, [loadAssets])
 
   const stats = useMemo<AssetStats>(() => ({
-    profiles: assets.filter(a => a.asset_type === 'profile').length,
-    business_managers: assets.filter(a => a.asset_type === 'business_manager').length,
-    ad_accounts: assets.filter(a => a.asset_type === 'ad_account').length
+    profiles: assets.filter(a => a.type === 'profile').length,
+    business_managers: assets.filter(a => a.type === 'business_manager').length,
+    ad_accounts: assets.filter(a => a.type === 'ad_account').length
   }), [assets])
 
   const getStatusBadge = useCallback((status: string) => {
@@ -182,8 +182,8 @@ export default function AssetsPage() {
   const getAdAccountCount = useCallback((businessManagerAsset: DolphinAsset) => {
     // Count ad accounts that have this business manager as their parent (stored in metadata)
     const count = assets.filter(asset => 
-      asset.asset_type === 'ad_account' && 
-      asset.asset_metadata?.business_manager_id === businessManagerAsset.dolphin_asset_id
+      asset.type === 'ad_account' && 
+      asset.metadata?.business_manager_id === businessManagerAsset.dolphin_id
     ).length;
     return count;
   }, [assets]);
@@ -217,13 +217,13 @@ export default function AssetsPage() {
 
   // Get team information for an asset
   const getAssetTeam = useCallback((asset: DolphinAsset) => {
-    if (asset.asset_type === 'profile') {
+    if (asset.type === 'profile') {
       const teamInfo = extractTeamFromProfile(asset.name);
       return teamInfo ? getTeamDisplayName(teamInfo.team) : 'Unknown';
     }
     
     // For BMs and Ad Accounts, use the utility function
-    const teamLetter = getTeamFromAssetMetadata(asset.asset_metadata);
+    const teamLetter = getTeamFromAssetMetadata(asset.metadata);
     return getTeamDisplayName(teamLetter);
   }, []);
 
@@ -233,7 +233,7 @@ export default function AssetsPage() {
     const isUnknown = teamText === 'Unknown';
     
     // For profiles, also show role information
-    if (asset.asset_type === 'profile') {
+    if (asset.type === 'profile') {
       const teamInfo = extractTeamFromProfile(asset.name);
       if (teamInfo) {
         return (
@@ -278,11 +278,11 @@ export default function AssetsPage() {
   }, [assets, getAssetTeam]);
 
   const filteredAssets = (assetType: string) => assets
-    .filter(a => a.asset_type === assetType)
+    .filter(a => a.type === assetType)
     .filter(a => {
       const matchesSearch = searchTerm === '' || 
         a.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        a.dolphin_asset_id.toLowerCase().includes(searchTerm.toLowerCase());
+        a.dolphin_id.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
       
@@ -306,22 +306,22 @@ export default function AssetsPage() {
             <TableRow><TableCell colSpan={typeHeaders[type].length} className="text-center py-8 text-gray-500">No {type.replace(/_/g, ' ')}s found</TableCell></TableRow>
           ) : (
             assetList.map((asset) => (
-              <TableRow key={asset.asset_id}>
+              <TableRow key={asset.id}>
                 <TableCell>
                   <div className="font-medium">{asset.name}</div>
-                  <div className="text-sm text-gray-500">{asset.dolphin_asset_id}</div>
+                  <div className="text-sm text-gray-500">{asset.dolphin_id}</div>
                 </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>{getTeamBadge(asset)}</TableCell>
                 {type === 'business_manager' && <TableCell>{getAdAccountCount(asset)}</TableCell>}
-                {type === 'ad_account' && <TableCell>{(asset.asset_metadata as any)?.business_manager || 'N/A'}</TableCell>}
+                {type === 'ad_account' && <TableCell>{(asset.metadata as any)?.business_manager || 'N/A'}</TableCell>}
                 {type !== 'profile' && <TableCell><span className={asset.organization_id ? 'text-blue-600 font-medium' : 'text-gray-500'}>{getBoundTo(asset)}</span></TableCell>}
                 <TableCell className="text-gray-600">{getLastSync(asset.last_sync_at)}</TableCell>
                 {type !== 'profile' && (
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {!asset.organization_id ? <BindAssetDialog asset={asset} onSuccess={loadAssets} /> : <ManageAssetDialog asset={asset} onSuccess={loadAssets} />}
-                      <a href={(asset.asset_metadata as any)?.url} target="_blank" rel="noopener noreferrer">
+                      <a href={(asset.metadata as any)?.url} target="_blank" rel="noopener noreferrer">
                         <Button size="sm" variant="ghost"><ExternalLink className="h-4 w-4" /></Button>
                       </a>
                     </div>

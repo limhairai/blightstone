@@ -14,6 +14,11 @@ export interface TopupRequest {
   processed_at?: string
   created_at: string
   updated_at: string
+  metadata?: {
+    business_manager_name?: string
+    business_manager_id?: string
+    [key: string]: any
+  }
 }
 
 export type TopupRequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'

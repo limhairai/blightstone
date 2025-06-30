@@ -2,14 +2,15 @@
 
 import { useState } from "react"
 import useSWR, { useSWRConfig } from 'swr'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Separator } from "../ui/separator"
-import { useToast } from "../ui/use-toast"
+// Removed old useToast - using toast from sonner instead
 import { formatCurrency } from "../../utils/format"
 import { ArrowUpRight, DollarSign, Check, Loader2, AlertTriangle } from "lucide-react"
+import { toast } from "sonner"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 
 interface AppAccount {
@@ -36,7 +37,6 @@ export function WithdrawBalanceDialog({
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  const { toast } = useToast()
 
   const { data: orgData, isLoading: isOrgLoading } = useSWR(
     currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
@@ -52,19 +52,15 @@ export function WithdrawBalanceDialog({
 
   const handleWithdraw = async (valueToWithdraw: number) => {
     if (valueToWithdraw <= 0) {
-      toast({
-        title: "Invalid Amount",
-        description: "Please enter a valid amount greater than $0",
-        variant: "destructive",
+      toast.error("Please enter a valid amount greater than $0", {
+        description: "Invalid Amount"
       })
       return
     }
 
     if (valueToWithdraw > account.balance) {
-      toast({
-        title: "Insufficient Funds",
-        description: "Amount exceeds the account balance",
-        variant: "destructive",
+      toast.error("Amount exceeds the account balance", {
+        description: "Insufficient Funds"
       })
       return
     }
@@ -91,9 +87,8 @@ export function WithdrawBalanceDialog({
       mutate(`/api/ad-accounts?organization_id=${currentOrganizationId}`);
       
       setShowSuccess(true)
-      toast({
-        title: "Withdrawal Successful!",
-        description: `$${formatCurrency(valueToWithdraw)} has been withdrawn from ${account.name}`,
+      toast.success(`$${formatCurrency(valueToWithdraw)} has been withdrawn from ${account.name}`, {
+        description: "Withdrawal Successful!"
       })
 
       setTimeout(() => {
@@ -103,10 +98,8 @@ export function WithdrawBalanceDialog({
       }, 2000)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-      toast({
-        title: "Withdrawal Failed",
-        description: errorMessage,
-        variant: "destructive",
+      toast.error(errorMessage, {
+        description: "Withdrawal Failed"
       })
     } finally {
       setIsLoading(false)

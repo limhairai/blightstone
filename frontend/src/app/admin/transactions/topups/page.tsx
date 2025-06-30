@@ -36,19 +36,25 @@ export default function TopupRequestsPage() {
   
   // Fetch top-up requests
   useEffect(() => {
-    fetchRequests()
-  }, [])
+    if (session?.access_token) {
+      fetchRequests()
+    }
+  }, [session])
 
   const fetchRequests = async () => {
     try {
-      const response = await fetch('/api/topup-requests')
+      const response = await fetch('/api/topup-requests', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
       
       if (!response.ok) {
         throw new Error('Failed to fetch top-up requests')
       }
       
       const data = await response.json()
-      setRequests(data.requests || [])
+      setRequests(data || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load top-up requests')
       toast.error('Failed to load top-up requests')
@@ -92,6 +98,7 @@ export default function TopupRequestsPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           status,
@@ -173,16 +180,42 @@ export default function TopupRequestsPage() {
     {
       accessorKey: "ad_account_name",
       header: "Account Details",
-      size: 250,
+      size: 200,
       cell: ({ row }) => {
         const request = row.original
         return (
           <div className="space-y-1">
-            <div className="font-medium">{request.ad_account_name}</div>
-            <div className="text-xs text-muted-foreground">ID: {request.ad_account_id}</div>
-            <div className="text-xs text-muted-foreground">
-              {request.organization?.name || 'Unknown Organization'}
-            </div>
+            <div className="font-medium">{request.ad_account_name || 'No Account Name'}</div>
+            <div className="text-xs text-muted-foreground">ID: {request.ad_account_id || 'No Account ID'}</div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "business_manager",
+      header: "Business Manager",
+      size: 180,
+      cell: ({ row }) => {
+        const request = row.original
+        // Parse BM info from metadata if available
+        const bmName = request.metadata?.business_manager_name || 'Not Available'
+        return (
+          <div className="text-sm">
+            {bmName}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "bm_id",
+      header: "BM ID",
+      size: 120,
+      cell: ({ row }) => {
+        const request = row.original
+        const bmId = request.metadata?.business_manager_id || 'Not Available'
+        return (
+          <div className="text-xs text-muted-foreground font-mono">
+            {bmId}
           </div>
         )
       },
@@ -198,20 +231,6 @@ export default function TopupRequestsPage() {
           <div className="font-medium text-green-600">
             {formatCurrency(amountCents / 100)}
           </div>
-        )
-      },
-    },
-    {
-      accessorKey: "priority",
-      header: "Priority",
-      size: 100,
-      cell: ({ row }) => {
-        const priority = row.original.priority
-        const config = getPriorityConfig(priority)
-        return (
-          <Badge variant="outline" className={`capitalize ${config.color}`}>
-            {priority}
-          </Badge>
         )
       },
     },
@@ -250,9 +269,11 @@ export default function TopupRequestsPage() {
       size: 150,
       cell: ({ row }) => {
         const user = row.original.requested_by_user
+        const orgName = row.original.organization?.name || 'Unknown Organization'
         return (
-          <div className="text-sm">
-            {user?.email || 'Unknown User'}
+          <div className="space-y-1">
+            <div className="text-sm">{user?.email || 'Unknown User'}</div>
+            <div className="text-xs text-muted-foreground">{orgName}</div>
           </div>
         )
       },
@@ -329,39 +350,6 @@ export default function TopupRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Top-up Requests</h1>
-        <p className="text-muted-foreground">Manage client requests to top up their ad accounts</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="p-3 bg-card rounded-lg border">
-          <div className="text-sm text-muted-foreground">Total</div>
-          <div className="text-2xl font-bold">{stats.total}</div>
-        </div>
-        <div className="p-3 bg-card rounded-lg border">
-          <div className="text-sm text-muted-foreground">Pending</div>
-          <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-        </div>
-        <div className="p-3 bg-card rounded-lg border">
-          <div className="text-sm text-muted-foreground">Processing</div>
-          <div className="text-2xl font-bold text-blue-600">{stats.processing}</div>
-        </div>
-        <div className="p-3 bg-card rounded-lg border">
-          <div className="text-sm text-muted-foreground">Completed</div>
-          <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
-        </div>
-        <div className="p-3 bg-card rounded-lg border">
-          <div className="text-sm text-muted-foreground">Failed</div>
-          <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
-        </div>
-        <div className="p-3 bg-card rounded-lg border">
-          <div className="text-sm text-muted-foreground">Cancelled</div>
-          <div className="text-2xl font-bold text-gray-600">{stats.cancelled}</div>
-        </div>
-      </div>
-
       {/* Filters */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import useSWR from 'swr'
 import { Button } from "../ui/button"
 
 import { CompactHeaderMetrics } from "./compact-header-metrics"
@@ -9,6 +8,7 @@ import { OrganizationSelector } from "../organization/organization-selector"
 import { TopUpDialog } from "./top-up-dialog"
 import { useAuth } from "../../contexts/AuthContext"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "@/lib/swr-config"
 import { formatCurrency } from "@/lib/utils"
 import { Bell, Plus, User, Settings, LogOut, Wallet, Loader2 } from "lucide-react"
 import {
@@ -19,28 +19,17 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function Topbar() {
   const { user } = useAuth()
   const { currentOrganizationId } = useOrganizationStore();
   const [topUpDialogOpen, setTopUpDialogOpen] = useState(false)
 
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
-  const { data: bizData, isLoading: isBizLoading } = useSWR(
-    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null,
-    fetcher
-  );
-  const { data: accData, isLoading: isAccLoading } = useSWR(
-    currentOrganizationId ? `/api/ad-accounts?organization_id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
+  const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
 
-  const walletBalance = orgData?.organizations?.[0]?.balance_cents / 100 ?? 0;
-  const businessesCount = bizData?.businesses?.length ?? 0;
+  const walletBalance = orgData?.balance_cents ? orgData.balance_cents / 100 : 0;
+  const businessesCount = bizData?.length ?? 0;
   const accountsCount = accData?.accounts?.length ?? 0;
   const isLoading = isOrgLoading || isBizLoading || isAccLoading;
 

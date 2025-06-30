@@ -42,7 +42,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("activity")
-  const [view, setView] = useState<"grid" | "list">("grid")
+  const [view, setView] = useState<"grid" | "list">("list")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [managerToDelete, setManagerToDelete] = useState<BusinessManager | null>(null)
   const [actionLoading, setActionLoading] = useState(false)

@@ -215,6 +215,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsHydrated(true);
   }, []);
 
+  // Organization initialization effect - runs when profile changes
+  useEffect(() => {
+    const initializeOrganization = async () => {
+      // Skip if already initialized or no session
+      if (orgInitialized.current || !session?.access_token) return;
+
+      // Try to set organization from profile first
+      if (profile?.organization_id && !currentOrganizationId) {
+        setOrganization(profile.organization_id, 'Organization'); // We'll get the name later
+        orgInitialized.current = true;
+        return;
+      }
+
+      // If no organization in profile or no organization selected, fetch user's organizations
+      if (!currentOrganizationId) {
+        try {
+          const response = await fetch('/api/organizations', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const organizations = data.organizations || [];
+            
+            if (organizations.length > 0) {
+              // Set the first organization as current
+              const firstOrg = organizations[0];
+              setOrganization(firstOrg.id, firstOrg.name);
+              orgInitialized.current = true;
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching organizations for initialization:', error);
+        }
+      }
+    };
+
+    initializeOrganization();
+  }, [profile, currentOrganizationId, setOrganization, session]);
+
   useEffect(() => {
     // Don't run auth logic until hydrated
     if (!isHydrated) return;
@@ -287,6 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);
+        orgInitialized.current = false; // Reset organization initialization flag
       }
     });
 

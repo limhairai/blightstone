@@ -37,15 +37,32 @@ export function RegisterView() {
     }
 
     setLoading(true);
+    
+    console.log('📝 Attempting registration with email:', email);
 
     try {
       const { data, error } = await signUp(email, password, {
         data: { full_name: name },
       });
+      
+      console.log('📝 Registration result:', { data, error });
 
       if (error) {
-        setError(error.message);
-        toast.error(error.message);
+        let errorMessage = error.message;
+        
+        console.error('📝 Registration error:', error);
+        
+        // Handle specific Supabase error messages
+        if (error.message.includes('User already registered')) {
+          errorMessage = "An account with this email already exists. Please sign in instead.";
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = "Password must be at least 6 characters long.";
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = "Please enter a valid email address.";
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
         setLoading(false);
         return;
       }
@@ -53,6 +70,7 @@ export function RegisterView() {
       if (data.user && !data.session) {
         // This means email confirmation is required.
         setRegistrationComplete(true);
+        toast.success("Registration successful! Please check your email to confirm your account.");
       } else if (data.user && data.session) {
         // User is immediately logged in.
         toast.success("Registration successful! Redirecting to dashboard...");
@@ -63,8 +81,10 @@ export function RegisterView() {
         toast.error("An unexpected error occurred. Please try again.");
       }
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
-      toast.error(err.message || "An unexpected error occurred.");
+      console.error('📝 Registration exception:', err);
+      const errorMessage = err?.message || "An unexpected error occurred during registration.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

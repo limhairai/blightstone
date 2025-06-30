@@ -3,20 +3,15 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { formatCurrency } from "@/utils/format"
 import { DollarSign, CreditCard, TrendingUp, AlertCircle } from "lucide-react"
-import useSWR from 'swr'
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useAuth } from "@/contexts/AuthContext"
-
-const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
+import { useAdAccounts } from "@/lib/swr-config"
 
 export function CompactHeaderMetrics() {
   const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
   
-  const { data: accData, isLoading } = useSWR(
-    session ? ['/api/ad-accounts', session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-  );
+  const { data: accData, isLoading } = useAdAccounts(currentOrganizationId);
 
   const accounts = accData?.accounts || [];
   const totalAccounts = accounts.length;

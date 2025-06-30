@@ -8,6 +8,7 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    // SECURE: Always require authentication
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -28,94 +29,69 @@ export async function GET(request: NextRequest) {
     if (profileError || !profile || !profile.organization_id) {
         return NextResponse.json({ error: 'User organization not found.' }, { status: 404 });
     }
-
+    
+    const organizationId = profile.organization_id;
+    
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
     const bmId = searchParams.get('bm_id');
 
-    // Query ad accounts bound to this organization
-    const { data: boundAssets, error: assetsError } = await supabase
-      .from('asset_binding')
-      .select(`
-        id,
-        asset_id,
-        bound_at,
-        asset:asset_id (
-          id,
-          name,
-          type,
-          dolphin_id,
-          status,
-          metadata,
-          last_synced_at
-        )
-      `)
-      .eq('organization_id', profile.organization_id)
-      .eq('status', 'active')
-      .eq('asset.type', 'ad_account');
+    // Use the NEW schema (asset + asset_binding) via RPC function
+    console.log('🔍 Using NEW schema RPC for ad accounts, organization:', organizationId);
 
-    if (assetsError) {
-      console.error('Error fetching ad accounts:', assetsError);
-      return NextResponse.json({ error: assetsError.message }, { status: 500 });
+    const { data: assets, error } = await supabase.rpc('get_organization_assets', {
+      p_organization_id: organizationId,
+      p_asset_type: 'ad_account'
+    });
+
+    if (error) {
+      console.error('Error fetching ad accounts from NEW schema:', error);
+      return NextResponse.json({ error: 'Failed to fetch ad accounts' }, { status: 500 });
     }
 
-    // Filter by business manager if specified
-    let filteredAssets = boundAssets || [];
-    if (bmId) {
-      console.log('Filtering by BM ID:', bmId);
-      console.log('Available assets:', boundAssets?.map(b => ({
-        id: b.asset?.id,
-        name: b.asset?.name,
-        bm_id_in_metadata: b.asset?.metadata?.business_manager_id,
-        dolphin_id: b.asset?.dolphin_id
-      })));
-      
-      filteredAssets = filteredAssets.filter((binding: any) => 
-        binding.asset?.metadata?.business_manager_id === bmId
-      );
-      
-      console.log('Filtered assets:', filteredAssets.length);
-    }
+    console.log('🔍 NEW schema returned:', assets?.length || 0, 'ad accounts');
 
-    // Filter out bindings with null/undefined assets
-    const validAssets = filteredAssets.filter((binding: any) => binding.asset && binding.asset.id);
-
-    // Transform the data to match the expected format for backward compatibility
-    const enrichedData = validAssets.map((binding: any) => {
-      const asset = binding.asset;
-      const metadata = asset?.metadata || {};
+    // Transform to match expected frontend format
+    const enrichedData = (assets || []).map((asset: any) => {
+      const metadata = asset.metadata || {};
       
-      // Debug: Log asset processing
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Processing asset:', {
-          id: asset?.id,
-          name: asset?.name,
-          metadata: metadata,
-          business_manager_name: metadata.business_manager_name
-        });
-      }
+      console.log('🔍 Processing asset:', {
+        name: asset.name,
+        dolphin_id: asset.dolphin_id,
+        metadata: metadata
+      });
       
       return {
-        id: asset?.id,
-        name: asset?.name,
-        ad_account_id: metadata.ad_account_id || asset?.dolphin_id,
-        dolphin_account_id: asset?.dolphin_id,
+        id: asset.id,
+        name: asset.name || `Account ${asset.id?.substring(0, 8) || 'Unknown'}`,
+        ad_account_id: metadata.ad_account_id || asset.dolphin_id || 'unknown',
+        dolphin_account_id: asset.dolphin_id || 'unknown',
         business_manager_name: metadata.business_manager || metadata.business_manager_name || 'N/A',
-        business_manager_id: metadata.business_manager_id,
-        status: asset?.status,
+        business_manager_id: metadata.business_manager_id || 'unknown',
+        status: asset.status || 'unknown',
         balance_cents: Math.round(((metadata.spend_cap || 0) - (metadata.amount_spent || 0)) * 100),
-        spend_cents: Math.round((metadata.amount_spent || 0) * 100), // Total lifetime spend
-        binding_status: 'active', // Since we only get active bindings
-        last_sync_at: asset?.last_synced_at,
+        spend_cents: Math.round((metadata.amount_spent || 0) * 100),
+        binding_status: 'active',
+        last_sync_at: asset.last_synced_at,
         
         // Additional useful metrics
         timezone: metadata.timezone_id || 'UTC',
-        bound_at: binding.bound_at,
-        binding_id: binding.id
+        bound_at: asset.bound_at,
+        binding_id: asset.binding_id
       };
     });
 
-    return NextResponse.json({ accounts: enrichedData });
+    // Filter by business manager if specified (additional client-side filtering)
+    let filteredData = enrichedData;
+    if (bmId) {
+      console.log('🔍 Filtering by BM ID:', bmId);
+      filteredData = enrichedData.filter((account: any) => 
+        account.business_manager_id === bmId
+      );
+      console.log('🔍 Filtered to:', filteredData.length, 'accounts');
+    }
+
+    return NextResponse.json({ accounts: filteredData });
 
   } catch (error) {
     console.error('Error in ad-accounts API:', error);
@@ -129,8 +105,8 @@ export async function GET(request: NextRequest) {
 // which causes runtime errors since GET returns Dolphin assets with different IDs.
 // 
 // These operations should either:
-// 1. Update the binding status in 'client_asset_bindings' table, or  
-// 2. Make API calls to Dolphin Cloud to modify the actual Facebook accounts
+      // 1. Update the binding status in 'asset_binding' table to 'inactive', or  
+      // 2. Make API calls to Dolphin Cloud to modify the actual Facebook accounts
 //
 // For now, these endpoints are removed to prevent data corruption.
 // Implement proper Dolphin asset management in a future update.

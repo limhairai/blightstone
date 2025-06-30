@@ -98,6 +98,9 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         
         {/* Performance Monitor - only in development */}
         <PerformanceMonitor />
+        
+        {/* Toaster for admin pages */}
+        <Toaster />
       </div>
     </AdminContext.Provider>
   );

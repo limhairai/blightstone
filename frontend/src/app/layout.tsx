@@ -7,7 +7,7 @@ import "../styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
-import { Toaster } from "sonner";
+import { DynamicToaster } from "../components/ui/dynamic-toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 // Add or edit your "generateMetadata" to include the Sentry trace data:
@@ -45,17 +45,7 @@ export default function RootLayout({
         <SimpleProviders>
           {children}
           <EnvIndicator />
-                  <Toaster 
-          theme="dark"
-          position="bottom-right"
-          toastOptions={{
-            style: {
-              background: 'hsl(var(--background))',
-              color: 'hsl(var(--foreground))',
-              border: '1px solid hsl(var(--border))',
-            },
-          }}
-        />
+          <DynamicToaster />
         </SimpleProviders>
       </body>
     </html>

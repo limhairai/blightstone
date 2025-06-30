@@ -6,7 +6,7 @@ import { Button } from "../ui/button"
 import { ProfessionalFeaturesSection } from "./professional-features-section"
 import { FAQSection } from "./faq-section"
 import { AccountManagementSection } from "../accounts/account-management-section"
-import { InstantFundingSection } from "../wallet/instant-funding-section"
+
 import { AdHubLogo } from "../core/AdHubLogo"
 import { useInView } from 'react-intersection-observer'
 import { useEffect, useState } from 'react'
@@ -266,7 +266,32 @@ export function LandingView() {
           </div>
           <div className="relative z-10">
             <AccountManagementSection />
-            <InstantFundingSection />
+            
+            {/* Simple Funding Section */}
+            <div className="py-16 px-4 sm:px-6 lg:px-8">
+              <div className="max-w-4xl mx-auto text-center">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6">
+                  Instant <span className="text-gradient">funding</span>
+                </h2>
+                <p className="text-lg sm:text-xl text-white/70 mb-8 max-w-2xl mx-auto">
+                  Add funds to your accounts instantly with secure payment processing. No delays, no complications.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-2">Instant Processing</h3>
+                    <p className="text-white/60 text-sm">Funds available immediately after payment confirmation</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-2">Secure Payments</h3>
+                    <p className="text-white/60 text-sm">Bank-grade security with Stripe payment processing</p>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold mb-2">Multiple Methods</h3>
+                    <p className="text-white/60 text-sm">Credit cards, bank transfers, and more payment options</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

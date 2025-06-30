@@ -6,25 +6,24 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// GET /api/admin/get-associated-ad-accounts?bm_dolphin_id=<id>
+// GET /api/admin/get-associated-ad-accounts?bm_dolphin_id=<dolphin_id>
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const bmDolphinId = searchParams.get('bm_dolphin_id');
 
   if (!bmDolphinId) {
-    return NextResponse.json({ error: 'Business Manager Dolphin ID is required' }, { status: 400 });
+    return NextResponse.json({ message: "Missing bm_dolphin_id parameter" }, { status: 400 });
   }
 
   try {
-    // We need to find all ad_account assets that are:
-    // 1. Associated with the given Business Manager's dolphin ID.
-    // 2. Not already bound to any organization.
+    // Get ad accounts that belong to the specified business manager
+    // and are not yet bound to any organization
     const { data, error } = await supabase
-      .from('dolphin_assets')
-      .select('*, client_asset_bindings!left(asset_id)')
-      .eq('asset_type', 'ad_account')
-      .eq('asset_metadata->>business_manager_id', bmDolphinId)
-      .is('client_asset_bindings.asset_id', null);
+      .from('asset')
+      .select('*, asset_binding!left(asset_id)')
+      .eq('type', 'ad_account')
+      .eq('metadata->>business_manager_id', bmDolphinId)
+      .is('asset_binding.asset_id', null);
 
     if (error) {
       console.error("Error fetching associated ad accounts:", error);

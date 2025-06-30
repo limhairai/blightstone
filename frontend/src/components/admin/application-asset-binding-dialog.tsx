@@ -67,19 +67,67 @@ export function ApplicationAssetBindingDialog({
     setLoadingAssets(true)
     setError(null)
     try {
-      const response = await fetch("/api/admin/dolphin-assets/all-assets?unbound_only=true")
-      if (!response.ok) {
-        throw new Error("Failed to fetch available assets")
+      // For new BM requests, get unbound business managers
+      if (mode === 'new-bm') {
+        const response = await fetch("/api/admin/unbound-assets?type=business_manager")
+        if (!response.ok) {
+          throw new Error("Failed to fetch available business managers")
+        }
+        const bmData = await response.json()
+        
+        // Also get unbound ad accounts for each BM
+        const adResponse = await fetch("/api/admin/unbound-assets?type=ad_account")
+        if (!adResponse.ok) {
+          throw new Error("Failed to fetch available ad accounts")
+        }
+        const adData = await adResponse.json()
+        
+        // Transform the data to match expected format
+        const transformedBMs = bmData.map((asset: any) => ({
+          id: asset.id,
+          asset_id: asset.id,
+          dolphin_id: asset.dolphin_id,
+          name: asset.name,
+          type: asset.type,
+          status: asset.status,
+          metadata: asset.metadata
+        }))
+        
+        const transformedAds = adData.map((asset: any) => ({
+          id: asset.id,
+          asset_id: asset.id,
+          dolphin_id: asset.dolphin_id,
+          name: asset.name,
+          type: asset.type,
+          status: asset.status,
+          metadata: asset.metadata
+        }))
+        
+        setAssets([...transformedBMs, ...transformedAds])
+      } else {
+        // For additional accounts, just get unbound ad accounts
+        const response = await fetch("/api/admin/unbound-assets?type=ad_account")
+        if (!response.ok) {
+          throw new Error("Failed to fetch available ad accounts")
+        }
+        const data = await response.json()
+        
+        // Transform the data to match expected structure
+        const transformedAssets = Array.isArray(data) ? data.map(asset => ({
+          ...asset,
+          type: asset.type,
+          asset_id: asset.dolphin_id,
+          metadata: asset.metadata
+        })) : []
+        setAssets(transformedAssets)
       }
-      const data = await response.json()
-      setAssets(data.assets || [])
     } catch (error) {
       console.error("Failed to load assets:", error)
       setError("Could not load available assets. Please try again.")
     } finally {
       setLoadingAssets(false)
     }
-  }, []);
+  }, [mode]);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -109,7 +157,7 @@ export function ApplicationAssetBindingDialog({
       return
     }
 
-    if (mode !== 'new-bm' && selectedAdAccounts.length === 0) {
+    if (selectedAdAccounts.length === 0) {
       setError("Please select at least one ad account to assign.")
       return
     }
@@ -126,7 +174,8 @@ export function ApplicationAssetBindingDialog({
       }
 
       if (mode === 'new-bm') {
-        payload.dolphin_asset_id = selectedBusinessManager
+        payload.dolphin_id = selectedBusinessManager
+        payload.selected_ad_accounts = selectedAdAccounts
       } else {
         // Additional accounts request
         payload.target_bm_id = selectedBusinessManager
@@ -183,19 +232,19 @@ export function ApplicationAssetBindingDialog({
       return existingBMs.map(bm => ({
         id: bm.id,
         name: bm.name,
-        asset_id: bm.asset_id,
+        asset_id: bm.id,
         status: 'active',
-        asset_type: 'business_manager'
+        type: 'business_manager'
       }))
     }
 
     // For new BM requests, show unbound BMs
     return assets
-      .filter(asset => asset.asset_type === 'business_manager')
+      .filter(asset => asset.type === 'business_manager')
       .filter(asset => 
         searchTerm === "" || 
         asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.asset_id.toLowerCase().includes(searchTerm.toLowerCase())
+        asset.dolphin_id?.toLowerCase().includes(searchTerm.toLowerCase())
       )
   }, [assets, searchTerm, mode, targetBmId, existingBMs])
 
@@ -213,18 +262,18 @@ export function ApplicationAssetBindingDialog({
     if (!selectedBM) return []
 
     const filteredAccounts = assets
-      .filter(asset => asset.asset_type === 'ad_account')
+      .filter(asset => asset.type === 'ad_account')
       .filter(asset => {
         if (mode === 'new-bm') {
           // For new BM, show accounts that belong to this BM
-          // Use dolphin_asset_id for comparison
-          const bmDolphinId = selectedBM.dolphin_asset_id || selectedBM.asset_id;
-          return asset.asset_metadata?.business_manager_id === bmDolphinId
+          // Use dolphin_id for comparison
+          const bmDolphinId = selectedBM.dolphin_id || selectedBM.id;
+          return asset.metadata?.business_manager_id === bmDolphinId
         } else {
           // For additional accounts, show unbound accounts that can be assigned
-          const bmDolphinId = selectedBM.dolphin_asset_id || selectedBM.asset_id;
-          return !asset.asset_metadata?.business_manager_id || 
-                 asset.asset_metadata?.business_manager_id === bmDolphinId
+          const bmDolphinId = selectedBM.dolphin_id || selectedBM.id;
+          return !asset.metadata?.business_manager_id || 
+                 asset.metadata?.business_manager_id === bmDolphinId
         }
       })
 
@@ -234,7 +283,7 @@ export function ApplicationAssetBindingDialog({
       selectedBusinessManager,
       selectedBM,
       totalAssets: assets.length,
-      adAccountAssets: assets.filter(a => a.asset_type === 'ad_account').length,
+      adAccountAssets: assets.filter(a => a.type === 'ad_account').length,
       filteredAccounts: filteredAccounts.length,
       filteredAccountNames: filteredAccounts.map(a => a.name)
     });
@@ -377,7 +426,7 @@ export function ApplicationAssetBindingDialog({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{bm.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              {bm.dolphin_asset_id || bm.asset_id}
+                              {bm.dolphin_id || bm.id}
                               {mode === 'additional-accounts-general' && (
                                 <span className="ml-2 text-blue-600">
                                   {getCurrentAccountCount}/7 accounts
@@ -397,7 +446,7 @@ export function ApplicationAssetBindingDialog({
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <div className="text-sm">
                     <div className="font-medium text-blue-900">{selectedBM.name}</div>
-                    <div className="text-xs text-blue-600">{selectedBM.dolphin_asset_id || selectedBM.asset_id}</div>
+                    <div className="text-xs text-blue-600">{selectedBM.dolphin_id || selectedBM.id}</div>
                   </div>
                 </div>
               )}
@@ -471,7 +520,7 @@ export function ApplicationAssetBindingDialog({
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{account.name}</div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {account.asset_id} • {account.status}
+                              {account.id} • {account.status}
                             </div>
                           </div>
                         </div>
@@ -502,7 +551,7 @@ export function ApplicationAssetBindingDialog({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || loadingAssets || !selectedBusinessManager || (mode !== 'new-bm' && selectedAdAccounts.length === 0)}
+            disabled={loading || loadingAssets || !selectedBusinessManager || selectedAdAccounts.length === 0}
             className="bg-green-600 hover:bg-green-700"
             size="sm"
           >

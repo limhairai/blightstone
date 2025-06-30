@@ -8,52 +8,66 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { orgId: string } }
 ) {
   try {
-    const organizationId = params.id
+    const organizationId = params.orgId
 
-    // Get business managers assigned to this organization via asset bindings
+    if (!organizationId) {
+      return NextResponse.json({ message: "Organization ID is required" }, { status: 400 })
+    }
+
+    // Get all business manager bindings for this organization
     const { data: bindings, error: bindingsError } = await supabase
-      .from('client_asset_bindings')
+      .from('asset_binding')
       .select(`
-        asset_id,
-        dolphin_assets!inner (
+        *,
+        asset!inner(
           id,
+          type,
+          dolphin_id,
           name,
-          dolphin_asset_id,
-          asset_type,
-          status
+          status,
+          metadata
         )
       `)
       .eq('organization_id', organizationId)
+      .eq('asset.type', 'business_manager')
       .eq('status', 'active')
-      .eq('dolphin_assets.asset_type', 'business_manager')
+      .order('bound_at', { ascending: false })
 
     if (bindingsError) {
-      console.error('Error fetching business managers:', bindingsError)
+      console.error("Error fetching organization business managers:", bindingsError)
       return NextResponse.json(
-        { error: 'Failed to fetch business managers' },
+        { message: "Failed to fetch organization business managers", error: bindingsError.message },
         { status: 500 }
       )
     }
 
-    // Transform the data to match the expected interface
-    const businessManagers = bindings?.map(binding => ({
-      id: binding.dolphin_assets.id,
-      name: binding.dolphin_assets.name,
-      dolphin_asset_id: binding.dolphin_assets.dolphin_asset_id,
-      status: binding.dolphin_assets.status
-    })) || []
+    // Transform the data
+    const businessManagers = bindings?.map(binding => {
+      const asset = binding.asset
+      return {
+        id: asset.id,
+        type: asset.type,
+        dolphin_id: asset.dolphin_id,
+        name: asset.name,
+        status: asset.status,
+        metadata: asset.metadata,
+        binding_id: binding.id,
+        bound_at: binding.bound_at
+      }
+    }) || []
 
     return NextResponse.json({
-      business_managers: businessManagers
+      business_managers: businessManagers,
+      count: businessManagers.length
     })
 
-  } catch (error) {
-    console.error('Error in business managers API:', error)
+  } catch (error: any) {
+    console.error("Failed to fetch organization business managers:", error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: "Failed to fetch organization business managers", error: error.message },
       { status: 500 }
     )
   }

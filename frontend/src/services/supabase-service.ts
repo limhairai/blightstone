@@ -480,13 +480,12 @@ export const OnboardingService = {
 
 export interface DolphinAsset {
   id: string
-  asset_type: 'profile' | 'business_manager' | 'ad_account'
-  asset_id: string
-  dolphin_asset_id: string
+  type: 'profile' | 'business_manager' | 'ad_account'
+  dolphin_id: string
   name: string
   status: string
   health_status: string
-  asset_metadata: any
+  metadata: any
   discovered_at: string
   last_sync_at?: string
   is_bound: boolean
@@ -498,32 +497,29 @@ export interface DolphinAsset {
 }
 
 export const DolphinAssetsService = {
-  // Get all dolphin assets with binding status
+  // Get all assets with binding status
   async getAllAssets(assetType?: string): Promise<DolphinAsset[]> {
     let query = supabase
-      .from('dolphin_assets')
+      .from('asset')
       .select(`
         *,
-        client_asset_bindings!left(
+        asset_binding!left(
           id,
-          spend_limit_cents,
-          fee_percentage,
           bound_at,
-          organizations!inner(name),
-          businesses(name)
+          organizations!inner(name)
         )
       `)
-      .order('discovered_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (assetType) {
-      query = query.eq('asset_type', assetType)
+      query = query.eq('type', assetType)
     }
 
     const { data, error } = await query
 
     if (error) {
-      console.error('Error fetching dolphin assets:', error)
-      throw new Error(`Failed to fetch dolphin assets: ${error.message}`)
+      console.error('Error fetching assets:', error)
+      throw new Error(`Failed to fetch assets: ${error.message}`)
     }
 
     return data.map(convertSupabaseDolphinAsset)
@@ -566,18 +562,17 @@ export const DolphinAssetsService = {
   // Get assets for a specific organization (client view)
   async getClientAssets(organizationId: string, assetType?: string): Promise<DolphinAsset[]> {
     let query = supabase
-      .from('client_asset_bindings')
+      .from('asset_binding')
       .select(`
         *,
-        dolphin_assets!inner(*),
-        organizations!inner(name),
-        businesses(name)
+        asset!inner(*),
+        organizations!inner(name)
       `)
       .eq('organization_id', organizationId)
       .eq('status', 'active')
 
     if (assetType) {
-      query = query.eq('dolphin_assets.asset_type', assetType)
+      query = query.eq('asset.type', assetType)
     }
 
     const { data, error } = await query
@@ -588,12 +583,11 @@ export const DolphinAssetsService = {
     }
 
     return data.map((binding: any) => ({
-      ...convertSupabaseDolphinAsset(binding.dolphin_assets),
+      ...convertSupabaseDolphinAsset(binding.asset),
       is_bound: true,
       binding_info: {
         organization_name: binding.organizations.name,
-        business_name: binding.businesses?.name,
-        business_id: binding.businesses?.id,
+        binding_id: binding.id,
       }
     }))
   }
@@ -684,19 +678,18 @@ function convertSupabaseProfileToUserProfile(supabaseProfile: any): UserProfile 
 }
 
 function convertSupabaseDolphinAsset(supabaseAsset: any): DolphinAsset {
-  const bindings = supabaseAsset.client_asset_bindings || []
+  const bindings = supabaseAsset.asset_binding || []
   const activeBinding = bindings.find((b: any) => b.status === 'active')
 
   return {
-    id: supabaseAsset.asset_id, // Use asset_id as the main ID
-    asset_type: supabaseAsset.asset_type,
-    asset_id: supabaseAsset.asset_id, // Primary key from database
-    dolphin_asset_id: supabaseAsset.dolphin_asset_id, // External identifier from Dolphin API
+    id: supabaseAsset.id,
+    type: supabaseAsset.type,
+    dolphin_id: supabaseAsset.dolphin_id,
     name: supabaseAsset.name,
     status: supabaseAsset.status,
-    health_status: supabaseAsset.health_status,
-    asset_metadata: supabaseAsset.asset_metadata,
-    discovered_at: supabaseAsset.discovered_at,
+    health_status: supabaseAsset.health_status || 'healthy',
+    metadata: supabaseAsset.metadata,
+    discovered_at: supabaseAsset.created_at,
     last_sync_at: supabaseAsset.last_sync_at,
     is_bound: !!activeBinding,
     binding_info: activeBinding ? {
