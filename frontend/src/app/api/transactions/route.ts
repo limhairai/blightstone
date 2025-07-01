@@ -29,18 +29,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Get organization from authenticated user's profile
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('profiles')
+    .select('organization_id')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError || !profile || !profile.organization_id) {
+    console.log('🔍 User profile missing organization_id:', { profileError, profile });
+    return NextResponse.json({ 
+      transactions: [], 
+      totalCount: 0,
+      totalPages: 0,
+      currentPage: 1,
+      message: 'No organization assigned to user.' 
+    });
+  }
+  
+  const organizationId = profile.organization_id;
+
+  // Get query parameters for filtering
   const { searchParams } = new URL(request.url);
-  const organizationId = searchParams.get('organization_id');
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '10', 10);
   const status = searchParams.get('status');
   const type = searchParams.get('type');
   const businessId = searchParams.get('business_id');
   const searchQuery = searchParams.get('search');
-
-  if (!organizationId) {
-    return NextResponse.json({ error: 'organization_id is required' }, { status: 400 });
-  }
 
   try {
     let query = supabaseAdmin

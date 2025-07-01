@@ -26,15 +26,16 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
 
   // Fetch transactions if not provided as props
   const { data: fetchedTransactions, isLoading } = useSWR(
-    !propTransactions && session && currentOrganizationId ? `/api/transactions?organization_id=${currentOrganizationId}` : null,
-    async (url) => {
+    !propTransactions && session && currentOrganizationId ? ['/api/transactions', session.access_token] : null,
+    async ([url, token]) => {
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
+          'Authorization': `Bearer ${token}`,
         },
       })
       if (!response.ok) throw new Error('Failed to fetch transactions')
-      const data = await response.json()
+      const result = await response.json()
+      const data = result.transactions || []
       
       // Transform API data to match our interface
       return data.map((t: any) => ({

@@ -9,12 +9,33 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organization_id');
-
-    if (!organizationId) {
-      return NextResponse.json({ error: 'organization_id is required' }, { status: 400 });
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Get organization from authenticated user's profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile || !profile.organization_id) {
+      console.log('🔍 User profile missing organization_id:', { profileError, profile });
+      return NextResponse.json({ 
+        members: [],
+        message: 'No organization assigned to user.' 
+      });
+    }
+    
+    const organizationId = profile.organization_id;
 
     // First get organization members
     const { data: members, error: membersError } = await supabase

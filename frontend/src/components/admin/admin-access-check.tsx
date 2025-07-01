@@ -20,21 +20,12 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      console.log('🔄 AdminAccessCheck: Starting admin check...', { 
-        authLoading, 
-        hasSession: !!session, 
-        hasUser: !!user,
-        userId: user?.id 
-      });
-      
       // Wait for auth to complete, but don't wait forever
       if (authLoading && !user) {
-        console.log('⏳ AdminAccessCheck: Waiting for auth to complete...');
         return;
       }
       
       if (!user) {
-        console.log('❌ AdminAccessCheck: No user found, denying access');
         setIsAdmin(false);
         setLoading(false);
         return;
@@ -43,7 +34,6 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
       try {
         setLoading(true);
         setError(null);
-        console.log('🔍 AdminAccessCheck: Checking admin status for user:', user.id);
 
         // Simple admin check - just call the API directly
         const response = await fetch('/api/auth/admin-check', {
@@ -55,14 +45,12 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ AdminAccessCheck: Admin check successful:', data);
           setIsAdmin(data.isAdmin || false);
         } else {
-          console.log('❌ AdminAccessCheck: Admin check failed:', response.status);
           setIsAdmin(false);
         }
       } catch (error) {
-        console.error('❌ AdminAccessCheck: Error checking admin status:', error);
+        console.error('AdminAccessCheck: Error checking admin status:', error);
         setError('Failed to verify admin access');
         setIsAdmin(false);
       } finally {
@@ -72,7 +60,6 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
 
     // Add a timeout to prevent infinite loading
     const timeout = setTimeout(() => {
-      console.log('⚠️ AdminAccessCheck: Timeout reached, assuming not admin');
       setIsAdmin(false);
       setLoading(false);
     }, 3000);

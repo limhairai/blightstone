@@ -24,7 +24,7 @@ export default function AccountsPage() {
 
   // Fetch business managers for filter options with organization ID
   const { data: businessManagers } = useSWR(
-    session && currentOrganizationId ? [`/api/business-managers?organization_id=${currentOrganizationId}`, session.access_token] : null,
+    session && currentOrganizationId ? ['/api/business-managers', session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   );
 

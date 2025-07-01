@@ -94,10 +94,11 @@ export async function POST(req: NextRequest) {
                 type: 'deposit',
                 amount_cents: walletCreditCents,
                 status: 'completed',
-                description: `Stripe checkout: ${session.id}`,
+                description: `Wallet Top-up - $${(walletCreditCents / 100).toFixed(2)}`,
                 metadata: {
                   stripe_checkout_session_id: session.id,
-                  stripe_payment_intent_id: session.payment_intent
+                  stripe_payment_intent_id: session.payment_intent,
+                  payment_method: 'stripe_checkout'
                 }
               })
 

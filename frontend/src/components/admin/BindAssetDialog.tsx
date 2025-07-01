@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { useAuth } from "@/contexts/AuthContext"
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,7 @@ interface BusinessManager {
   id: string;
   name: string;
   status: string;
-  dolphin_asset_id: string;
+  dolphin_id: string;
 }
 
 interface BindAssetDialogProps {
@@ -38,7 +39,16 @@ interface BindAssetDialogProps {
   onSuccess: () => void
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+// Authenticated fetcher for API calls
+const fetcher = async (url: string, token: string) => {
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+  }
+  return response.json()
+}
 
 export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
   const [open, setOpen] = useState(false)
@@ -47,15 +57,26 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [autoBindRelated, setAutoBindRelated] = useState(true)
 
-  const isBusinessManager = asset.asset_type === 'business_manager'
-  const isAdAccount = asset.asset_type === 'ad_account'
+  const isBusinessManager = asset.type === 'business_manager'
+  const isAdAccount = asset.type === 'ad_account'
 
-  // Fetch organizations
-  const { data: orgData, error: orgError } = useSWR<any>('/api/organizations', fetcher, { revalidateOnFocus: false });
+  // Get authentication token
+  const { session } = useAuth()
+
+  // Fetch organizations with authentication
+  const { data: orgData, error: orgError } = useSWR<any>(
+    session?.access_token ? ['/api/organizations', session.access_token] : null,
+    ([url, token]) => fetcher(url, token),
+    { revalidateOnFocus: false }
+  );
   const organizations = orgData?.organizations;
 
   // Fetch all assets to determine relationships
-  const { data: allAssetsData } = useSWR<any>('/api/admin/dolphin-assets/all-assets', fetcher, { revalidateOnFocus: false });
+  const { data: allAssetsData } = useSWR<any>(
+    session?.access_token ? ['/api/admin/dolphin-assets/all-assets', session.access_token] : null,
+    ([url, token]) => fetcher(url, token),
+    { revalidateOnFocus: false }
+  );
   const allAssets = allAssetsData?.assets || [];
 
   // For ad accounts, find which BMs they can be assigned to
@@ -63,13 +84,13 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
     if (!isAdAccount || !allAssets.length) return [];
     
     // Find the BM that this ad account belongs to based on metadata
-    const adAccountBmId = asset.asset_metadata?.business_manager_id;
+    const adAccountBmId = asset.metadata?.business_manager_id;
     if (!adAccountBmId) return [];
 
-    // Find the BM asset with this dolphin_asset_id
+    // Find the BM asset with this dolphin_id
     const compatibleBM = allAssets.find((a: DolphinAsset) => 
-      a.asset_type === 'business_manager' && 
-      a.dolphin_asset_id === adAccountBmId
+      a.type === 'business_manager' && 
+      a.dolphin_id === adAccountBmId
     );
 
     return compatibleBM ? [compatibleBM] : [];
@@ -80,16 +101,17 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
     if (!isBusinessManager || !allAssets.length) return [];
     
     return allAssets.filter((a: DolphinAsset) => 
-      a.asset_type === 'ad_account' && 
-      a.asset_metadata?.business_manager_id === asset.dolphin_asset_id &&
-      !a.organization_id // Only show unbound ad accounts
+      a.type === 'ad_account' && 
+      a.metadata?.business_manager_id === asset.dolphin_id &&
+      !a.is_bound // Only show unbound ad accounts
     );
   }, [isBusinessManager, allAssets, asset]);
 
   // Fetch business managers for the selected organization (for ad account binding)
   const { data: bmData, error: bmError, isLoading: isBmLoading } = useSWR<any>(
-    selectedOrgId && isAdAccount ? `/api/admin/organizations/${selectedOrgId}/business-managers` : null,
-    fetcher,
+    selectedOrgId && isAdAccount && session?.access_token ? 
+      [`/api/admin/organizations/${selectedOrgId}/business-managers`, session.access_token] : null,
+    ([url, token]) => fetcher(url, token),
     { revalidateOnFocus: false }
   );
 
@@ -102,7 +124,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
     // Only show BMs that this ad account can be assigned to
     return orgBMs.filter((bm: BusinessManager) => 
       compatibleBusinessManagers.some(compatibleBM => 
-        compatibleBM.dolphin_asset_id === bm.dolphin_asset_id
+        compatibleBM.dolphin_id === bm.dolphin_id
       )
     );
   }, [isAdAccount, bmData, compatibleBusinessManagers]);
@@ -127,7 +149,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
     
     try {
       const payload = {
-        asset_id: asset.asset_id,
+        asset_id: asset.id,
         organization_id: selectedOrgId,
         bm_id: selectedBusinessManagerId || null,
         notes: `Manually bound ${isBusinessManager ? 'Business Manager' : 'Ad Account'} via admin panel`
@@ -142,6 +164,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify(payload),
       })
@@ -202,7 +225,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
           Bind
         </Button>
       </DialogTrigger>
-      <DialogContent className="dark max-w-2xl">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isBusinessManager ? <Building2 className="h-5 w-5" /> : <CreditCard className="h-5 w-5" />}
@@ -277,7 +300,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
 
           {/* Auto-bind option for Business Managers */}
           {isBusinessManager && relatedAdAccounts.length > 0 && (
-            <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="auto-bind" 
@@ -289,19 +312,19 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
                 </Label>
               </div>
               
-              <div className="text-sm text-blue-700">
+              <div className="text-sm text-blue-700 dark:text-blue-300">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4" />
                   <span className="font-medium">Related Ad Accounts:</span>
                 </div>
                 <div className="grid gap-1 ml-6">
                   {relatedAdAccounts.slice(0, 5).map((account: DolphinAsset) => (
-                    <div key={account.asset_id} className="text-xs">
-                      • {account.name} ({account.dolphin_asset_id})
+                    <div key={account.id} className="text-xs">
+                      • {account.name} ({account.dolphin_id})
                     </div>
                   ))}
                   {relatedAdAccounts.length > 5 && (
-                    <div className="text-xs text-blue-600">
+                    <div className="text-xs text-blue-600 dark:text-blue-400">
                       ... and {relatedAdAccounts.length - 5} more
                     </div>
                   )}
@@ -314,10 +337,10 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
           <div className="p-3 bg-muted/50 rounded-lg border">
             <div className="text-sm space-y-1">
               <p><strong>Asset Type:</strong> {isBusinessManager ? 'Business Manager' : 'Ad Account'}</p>
-              <p><strong>Asset ID:</strong> {asset.dolphin_asset_id}</p>
+              <p><strong>Asset ID:</strong> {asset.dolphin_id}</p>
               <p><strong>Status:</strong> {asset.status}</p>
-              {isAdAccount && asset.asset_metadata?.business_manager_id && (
-                <p><strong>Parent BM:</strong> {asset.asset_metadata.business_manager_id}</p>
+              {isAdAccount && asset.metadata?.business_manager_id && (
+                <p><strong>Parent BM:</strong> {asset.metadata.business_manager_id}</p>
               )}
               {isBusinessManager && relatedAdAccounts.length > 0 && (
                 <p><strong>Related Ad Accounts:</strong> {relatedAdAccounts.length} unbound accounts</p>

@@ -433,18 +433,18 @@ export default function AssetsPage() {
 
       {/* Diagnostic Results Modal */}
       {showDiagnostic && diagnosticResults && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border border-border rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Dolphin BM Association Diagnostic</h2>
+              <h2 className="text-xl font-bold text-foreground">Dolphin BM Association Diagnostic</h2>
               <Button variant="ghost" onClick={() => setShowDiagnostic(false)}>✕</Button>
             </div>
             
             <div className="space-y-4">
               {/* Summary */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Summary</h3>
-                <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="bg-muted p-4 rounded-lg">
+                <h3 className="font-semibold mb-2 text-foreground">Summary</h3>
+                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
                   <div>Profiles: {diagnosticResults.summary?.profiles_count || 0}</div>
                   <div>CABs: {diagnosticResults.summary?.cabs_count || 0}</div>
                   <div>Issues: {diagnosticResults.association_issues?.length || 0}</div>
@@ -453,15 +453,15 @@ export default function AssetsPage() {
 
               {/* Issues */}
               {diagnosticResults.association_issues && diagnosticResults.association_issues.length > 0 && (
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-red-800">Association Issues ({diagnosticResults.association_issues.length})</h3>
+                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2 text-destructive">Association Issues ({diagnosticResults.association_issues.length})</h3>
                   <div className="space-y-2">
                     {diagnosticResults.association_issues.map((issue: any, idx: number) => (
-                      <div key={idx} className="bg-white p-3 rounded border">
-                        <div className="font-medium">{issue.cab_name}</div>
-                        <div className="text-sm text-gray-600">ID: {issue.cab_id}</div>
-                        <div className="text-sm text-gray-600">Managing: {issue.managing_profiles?.join(', ') || 'None'}</div>
-                        <div className="text-sm text-red-600">{issue.issue}</div>
+                      <div key={idx} className="bg-background p-3 rounded border border-border">
+                        <div className="font-medium text-foreground">{issue.cab_name}</div>
+                        <div className="text-sm text-muted-foreground">ID: {issue.cab_id}</div>
+                        <div className="text-sm text-muted-foreground">Managing: {issue.managing_profiles?.join(', ') || 'None'}</div>
+                        <div className="text-sm text-destructive">{issue.issue}</div>
                       </div>
                     ))}
                   </div>
@@ -470,20 +470,20 @@ export default function AssetsPage() {
 
               {/* Cross Reference Analysis */}
               {diagnosticResults.cross_reference && (
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-yellow-800">Cross-Reference Analysis</h3>
-                  <div className="space-y-2 text-sm">
+                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2 text-orange-600 dark:text-orange-400">Cross-Reference Analysis</h3>
+                  <div className="space-y-2 text-sm text-muted-foreground">
                     <div>
-                      <span className="font-medium">BMs only in profiles:</span> {diagnosticResults.cross_reference.bm_ids_only_in_profiles?.length || 0}
+                      <span className="font-medium text-foreground">BMs only in profiles:</span> {diagnosticResults.cross_reference.bm_ids_only_in_profiles?.length || 0}
                       {diagnosticResults.cross_reference.bm_ids_only_in_profiles?.length > 0 && (
-                        <div className="text-yellow-700 ml-4">⚠️ These BMs may have permission issues</div>
+                        <div className="text-orange-600 dark:text-orange-400 ml-4">⚠️ These BMs may have permission issues</div>
                       )}
                     </div>
                     <div>
-                      <span className="font-medium">BMs only in CABs:</span> {diagnosticResults.cross_reference.bm_ids_only_in_cabs?.length || 0}
+                      <span className="font-medium text-foreground">BMs only in CABs:</span> {diagnosticResults.cross_reference.bm_ids_only_in_cabs?.length || 0}
                     </div>
                     <div>
-                      <span className="font-medium">Common BMs:</span> {diagnosticResults.cross_reference.common_bm_ids?.length || 0}
+                      <span className="font-medium text-foreground">Common BMs:</span> {diagnosticResults.cross_reference.common_bm_ids?.length || 0}
                     </div>
                   </div>
                 </div>
@@ -491,9 +491,9 @@ export default function AssetsPage() {
 
               {/* Recommendations */}
               {diagnosticResults.recommendations && diagnosticResults.recommendations.length > 0 && (
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-green-800">Recommendations</h3>
-                  <ul className="list-disc list-inside space-y-1 text-sm">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2 text-emerald-600 dark:text-emerald-400">Recommendations</h3>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
                     {diagnosticResults.recommendations.map((rec: string, idx: number) => (
                       <li key={idx}>{rec}</li>
                     ))}
@@ -503,13 +503,13 @@ export default function AssetsPage() {
 
               {/* Profile Analysis Summary */}
               {diagnosticResults.profiles_analysis && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2">Profile Analysis</h3>
+                <div className="bg-muted p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2 text-foreground">Profile Analysis</h3>
                   <div className="space-y-2">
                     {diagnosticResults.profiles_analysis.map((profile: any, idx: number) => (
                       <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="font-medium">{profile.name}</span>
-                        <span>{profile.bm_count} BMs</span>
+                        <span className="font-medium text-foreground">{profile.name}</span>
+                        <span className="text-muted-foreground">{profile.bm_count} BMs</span>
                       </div>
                     ))}
                   </div>

@@ -31,9 +31,18 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/bind`;
+        
+        // Extract query parameters from the request URL
+        const { searchParams } = new URL(request.url);
+        const auto_bind_related = searchParams.get('auto_bind_related');
+        
+        // Build backend URL with query parameters
+        const backendUrl = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/bind`);
+        if (auto_bind_related) {
+            backendUrl.searchParams.set('auto_bind_related', auto_bind_related);
+        }
 
-        const response = await fetch(backendUrl, {
+        const response = await fetch(backendUrl.toString(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('organization_id');
     const businessId = searchParams.get('business_id');
-    const assetType = searchParams.get('asset_type');
+    const assetType = searchParams.get('type');
     const includeSpendData = searchParams.get('include_spend_data') !== 'false';
 
     if (!organizationId) {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
       params.append('business_id', businessId);
     }
     if (assetType) {
-      params.append('asset_type', assetType);
+      params.append('type', assetType);
     }
     if (includeSpendData) {
       params.append('include_spend_data', 'true');

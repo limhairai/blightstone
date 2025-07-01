@@ -13,6 +13,7 @@ import { Card } from "../ui/card"
 import { useAuth } from "../../contexts/AuthContext"
 import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useCurrentOrganization } from "@/lib/swr-config"
 import { toast } from "sonner"
 
 interface OnboardingStep {
@@ -28,20 +29,16 @@ interface WelcomeOnboardingModalProps {
   onClose: () => void
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function WelcomeOnboardingModal({ isOpen, onClose }: WelcomeOnboardingModalProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [loading, setLoading] = useState(false)
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   const router = useRouter()
   const { mutate } = useSWRConfig()
   const { currentOrganizationId } = useOrganizationStore()
 
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  // Use the proper authenticated hook
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   const currentOrganization = orgData?.organizations?.[0];
   
   // Use advanced onboarding hook
@@ -117,7 +114,7 @@ export function WelcomeOnboardingModal({ isOpen, onClose }: WelcomeOnboardingMod
         
         // Mark business setup step as completed
         await markStepCompleted('business-setup')
-        mutate(`/api/businesses?organization_id=${currentOrganizationId}`);
+        mutate(['/api/businesses', session?.access_token]);
         
         setCurrentStep(currentStep + 1)
         toast.success("Business created successfully and is under review.")

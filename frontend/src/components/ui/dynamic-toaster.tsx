@@ -10,7 +10,11 @@ export function DynamicToaster() {
     <Toaster 
       theme={theme as "light" | "dark" | "system" | undefined}
       position="bottom-right"
+      expand={true}
+      richColors={true}
+      closeButton={true}
       toastOptions={{
+        duration: 5000,
         style: {
           background: 'hsl(var(--background))',
           color: 'hsl(var(--foreground))',

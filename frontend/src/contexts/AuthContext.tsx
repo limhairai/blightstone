@@ -23,6 +23,8 @@ import { useOrganizationStore } from '@/lib/stores/organization-store';
 
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner"
+import { authMessages } from '../lib/toast-messages'
+import { clearStaleOrganizationData } from '../lib/localStorage-cleanup'
 import { Loader } from "../components/core/Loader";
 
 interface UserProfile {
@@ -58,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isHydrated, setIsHydrated] = useState(false);
-  const { setOrganization, currentOrganizationId } = useOrganizationStore();
+  const { setOrganization, clearOrganization, currentOrganizationId } = useOrganizationStore();
   const orgInitialized = useRef(false);
 
   // ALL HOOKS AND FUNCTIONS MUST BE AT THE TOP - NEVER CONDITIONALLY
@@ -115,38 +117,111 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error("Error signing up:", error);
-      toast.error(`Sign up error: ${error.message}`);
+      
+      // Handle specific Supabase error messages with better UX
+      if (error.message.includes('User already registered')) {
+        toast.error(authMessages.signUp.accountExists.description);
+      } else if (error.message.includes('Password should be at least')) {
+        toast.error(authMessages.signUp.weakPassword.description);
+      } else if (error.message.includes('Invalid email')) {
+        toast.error(authMessages.signUp.invalidEmail.description);
+      } else {
+        toast.error(error.message || authMessages.signUp.unknown.description);
+      }
+      
       setLoading(false);
       return { data: null, error };
     }
 
     if (data.user && !data.session) {
+      // Email confirmation required
+      toast.success(authMessages.signUp.success.description, {
+        duration: authMessages.signUp.success.duration
+      });
       setLoading(false);
       return { data: { user: data.user, session: data.session }, error: null };
     }
     
+    // User is immediately logged in
+    toast.success("Registration successful! Redirecting to dashboard...");
     setLoading(false);
     return { data: { user: data.user, session: data.session }, error: null };
   };
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
+      if (error) {
+        console.error("🔐 AuthContext signIn error:", error);
+        console.log("🔐 About to show toast error for:", error.message);
+        
+        // Handle specific Supabase error messages with better UX
+        if (error.message === 'Invalid login credentials') {
+          console.log("🔐 Showing invalid credentials toast");
+          // Ensure we're on client side for toast with small delay for hydration
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signIn.invalidCredentials.description);
+            }, 100);
+          }
+        } else if (error.message === 'Email not confirmed') {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signIn.emailNotConfirmed.description);
+            }, 100);
+          }
+        } else if (error.message.includes('Too many requests')) {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signIn.tooManyRequests.description);
+            }, 100);
+          }
+        } else if (error.message.includes('User not found')) {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signIn.userNotFound.description);
+            }, 100);
+          }
+        } else {
+          console.log("🔐 Showing generic error toast:", error.message);
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(error.message || authMessages.signIn.unknown.description);
+            }, 100);
+          }
+        }
+        
+        setLoading(false);
+        return { data: null, error };
+      }
+
+      // Set the user and session state upon successful sign-in
+      setUser(data.user);
+      setSession(data.session);
+      
+      // Show success toast
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          toast.success(authMessages.signIn.success.description);
+        }, 100);
+      }
+
       setLoading(false);
-      return { data: null, error };
+      return { data: { user: data.user, session: data.session }, error: null };
+    } catch (err: any) {
+      console.error("🔐 AuthContext signIn exception:", err);
+      if (typeof window !== 'undefined') {
+        toast.error("An unexpected error occurred during sign in.");
+      }
+      setLoading(false);
+      return { data: null, error: err };
     }
-
-    // Set the user and session state upon successful sign-in
-    setUser(data.user);
-    setSession(data.session);
-
-    setLoading(false);
-    return { data: { user: data.user, session: data.session }, error: null };
   };
 
   const resetPassword = async (email: string, options?: { redirectTo?: string }) => {
@@ -219,38 +294,139 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initializeOrganization = async () => {
       // Skip if already initialized or no session
-      if (orgInitialized.current || !session?.access_token) return;
-
-      // Try to set organization from profile first
-      if (profile?.organization_id && !currentOrganizationId) {
-        setOrganization(profile.organization_id, 'Organization'); // We'll get the name later
-        orgInitialized.current = true;
+      if (orgInitialized.current || !session?.access_token) {
         return;
       }
 
-      // If no organization in profile or no organization selected, fetch user's organizations
-      if (!currentOrganizationId) {
-        try {
-          const response = await fetch('/api/organizations', {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const organizations = data.organizations || [];
-            
-            if (organizations.length > 0) {
-              // Set the first organization as current
-              const firstOrg = organizations[0];
-              setOrganization(firstOrg.id, firstOrg.name);
-              orgInitialized.current = true;
-            }
+      // Only initialize organizations when on protected routes that need them
+      // Skip on public routes like landing page, login, register, etc.
+      const currentPath = window.location.pathname;
+      const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email'];
+      const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/auth/');
+      
+      if (isPublicRoute) {
+        console.log('🏢 Skipping organization initialization on public route:', currentPath);
+        return;
+      }
+
+      // Always fetch user's organizations to ensure we have access
+      try {
+        const response = await fetch('/api/organizations', {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
           }
-        } catch (error) {
-          console.error('Error fetching organizations for initialization:', error);
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const organizations = data.organizations || [];
+          
+          // console.log('🏢 User has access to organizations:', organizations.map(o => ({id: o.id, name: o.name})));
+          
+          if (organizations.length > 0) {
+            // If we already have a current org ID and it's in the list, keep it
+            if (currentOrganizationId && organizations.find(o => o.id === currentOrganizationId)) {
+                              // console.log('🏢 Keeping current organization:', currentOrganizationId);
+              orgInitialized.current = true;
+              return;
+            }
+            
+            // If the profile organization is in the list, use it
+            // Note: profile.organization_id matches the database organization_id field
+            // but API returns organizations with id field (mapped from organization_id)
+            if (profile?.organization_id && organizations.find(o => o.id === profile.organization_id)) {
+              console.log('🏢 Using profile organization:', profile.organization_id);
+              const profileOrg = organizations.find(o => o.id === profile.organization_id);
+              setOrganization(profileOrg!.id, profileOrg!.name);
+              orgInitialized.current = true;
+              return;
+            }
+            
+            // Otherwise, use the first available organization
+            const firstOrg = organizations[0];
+            console.log('🏢 Using first available organization:', firstOrg.id, firstOrg.name);
+            setOrganization(firstOrg.id, firstOrg.name);
+            orgInitialized.current = true;
+          } else {
+            console.log('🏢 No organizations found for user - clearing invalid org data');
+            
+            // Check for database inconsistency: profile has org_id but user has no accessible orgs
+            if (profile?.organization_id) {
+              console.error('🚨 Database inconsistency detected:');
+              console.error('   - Profile organization_id:', profile.organization_id);
+              console.error('   - Accessible organizations: 0');
+              console.error('   - This suggests missing organization_members entry');
+              console.error('   - Attempting automatic repair...');
+              
+                             // Attempt automatic repair by adding the user to their organization
+               try {
+                 console.log('🔧 Attempting to fix organization membership automatically...');
+                 
+                 const fixResponse = await fetch('/api/debug/fix-membership', {
+                   method: 'POST',
+                   headers: { 
+                     'Authorization': `Bearer ${session.access_token}`,
+                     'Content-Type': 'application/json'
+                   }
+                 });
+                 
+                 if (fixResponse.ok) {
+                   const fixResult = await fixResponse.json();
+                   console.log('🔧 Fix result:', fixResult);
+                   
+                   if (fixResult.details.fixed_memberships > 0) {
+                     console.log(`✅ Successfully fixed ${fixResult.details.fixed_memberships} organization memberships!`);
+                     toast.success(
+                       `Fixed ${fixResult.details.fixed_memberships} organization memberships. Refreshing...`,
+                       { duration: 3000 }
+                     );
+                     
+                     // Clear organization data and reload after a short delay
+                     setTimeout(() => {
+                       localStorage.removeItem('organization-store');
+                       window.location.reload();
+                     }, 2000);
+                   } else {
+                     console.log('🔧 No memberships were fixed, showing manual instructions');
+                     toast.error(
+                       'Unable to automatically fix account. Please contact support.',
+                       { duration: 10000 }
+                     );
+                   }
+                 } else {
+                   console.error('🔧 Fix endpoint failed:', fixResponse.status);
+                   toast.error(
+                     'Account setup incomplete. Please contact support or try logging out and back in.',
+                     { duration: 8000 }
+                   );
+                 }
+               } catch (repairError) {
+                 console.error('🔧 Failed to automatically repair organization membership:', repairError);
+                 
+                 // Show user-friendly toast about the issue
+                 toast.error(
+                   'Account setup incomplete. Please contact support or try logging out and back in.',
+                   { duration: 8000 }
+                 );
+               }
+            }
+            
+            // Clear any stale organization data when user has no access to any orgs
+            if (currentOrganizationId) {
+              console.log('🏢 Clearing stale organization ID:', currentOrganizationId);
+              clearOrganization();
+              // Force clear localStorage directly as well
+              localStorage.removeItem('currentOrganizationId');
+              localStorage.removeItem('currentOrganizationName');
+              console.log('🏢 Force cleared localStorage organization data');
+            }
+            orgInitialized.current = true;
+          }
+        } else {
+          console.error('🏢 Failed to fetch organizations:', response.status, response.statusText);
         }
+      } catch (error) {
+        console.error('🏢 Error fetching organizations for initialization:', error);
       }
     };
 

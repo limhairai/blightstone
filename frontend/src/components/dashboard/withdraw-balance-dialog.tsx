@@ -84,7 +84,7 @@ export function WithdrawBalanceDialog({
       }
 
       mutate(`/api/organizations?id=${currentOrganizationId}`);
-      mutate(`/api/ad-accounts?organization_id=${currentOrganizationId}`);
+      mutate(['/api/ad-accounts', session?.access_token]);
       
       setShowSuccess(true)
       toast.success(`$${formatCurrency(valueToWithdraw)} has been withdrawn from ${account.name}`, {

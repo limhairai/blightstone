@@ -24,16 +24,17 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const isBusinessManager = asset.asset_type === 'business_manager'
+  const isBusinessManager = asset.type === 'business_manager'
 
   const handleUnbind = async () => {
     setIsSubmitting(true)
     try {
       console.log('🔗 Starting unbind process for asset:', {
         name: asset.name,
-        asset_id: asset.asset_id || asset.id,
+        asset_id: asset.id,
         organization_id: asset.organization_id,
-        dolphin_id: asset.dolphin_asset_id || asset.dolphin_id
+        organization_name: asset.binding_info?.organization_name,
+        dolphin_id: asset.dolphin_id
       })
 
       // Instead of trying to find the binding through the client endpoint,
@@ -42,7 +43,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          asset_id: asset.asset_id || asset.id,
+          asset_id: asset.id,
           organization_id: asset.organization_id,
           cascade: isBusinessManager
         })
@@ -89,7 +90,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
           <DialogDescription>
             This {isBusinessManager ? 'business manager' : 'ad account'} is currently bound to{" "}
             <span className="font-semibold text-primary">
-              {asset.organization_name}
+              {asset.binding_info?.organization_name}
             </span>.
           </DialogDescription>
         </DialogHeader>

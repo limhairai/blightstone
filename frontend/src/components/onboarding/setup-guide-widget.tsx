@@ -76,7 +76,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
           // Revalidate onboarding progress to reflect the new business
           mutateOnboarding();
           // Also revalidate businesses list if it's displayed elsewhere
-          mutate(`/api/businesses?organization_id=${currentOrganizationId}`);
+          mutate(['/api/businesses', session?.access_token]);
           break
           
         case 'ad-account-setup':

@@ -66,9 +66,13 @@ export default function AdminDashboard() {
           console.error('Failed to fetch applications:', applicationsResponse.statusText)
         }
 
-        // Fetch funding requests
+        // Fetch funding requests - only if user has admin access
         try {
-          const fundingResponse = await fetch('/api/funding-requests')
+          const fundingResponse = await fetch('/api/funding-requests', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          })
           if (fundingResponse.ok) {
             const fundingData = await fundingResponse.json()
             const fundingRequests = fundingData.requests || []
@@ -85,6 +89,11 @@ export default function AdminDashboard() {
                   status: request.status || "pending"
                 })
               })
+          } else if (fundingResponse.status === 401 || fundingResponse.status === 403) {
+            // User doesn't have admin access - silently skip funding requests
+            // console.log('Skipping funding requests - insufficient permissions')
+          } else {
+            console.error('Failed to fetch funding requests:', fundingResponse.statusText)
           }
         } catch (err) {
           console.error('Failed to fetch funding requests:', err)

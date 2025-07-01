@@ -47,31 +47,12 @@ export function LoginView() {
       console.log('🔐 Login result:', result);
 
       if (result.error) {
-        let errorMessage = "Failed to sign in. Please try again.";
-        
         console.error('🔐 Login error:', result.error);
-        
-        // Handle specific Supabase error messages
-        if (result.error.message === 'Invalid login credentials') {
-          errorMessage = "Incorrect email or password. Please check your credentials and try again.";
-        } else if (result.error.message === 'Email not confirmed') {
-          errorMessage = "Please check your email and click the confirmation link before signing in.";
-        } else if (result.error.message.includes('Too many requests')) {
-          errorMessage = "Too many login attempts. Please wait a moment and try again.";
-        } else if (result.error.message.includes('User not found')) {
-          errorMessage = "No account found with this email address.";
-        } else {
-          errorMessage = result.error.message;
-        }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
+        // Error toast is handled by AuthContext
         return;
       }
       
-      // On success, show toast and let AuthContext handle the redirect
-      toast.success("Signed in! Welcome back.");
-      
+      // Success toast is now handled by AuthContext
       // Wait a moment for auth state to update, then redirect
       setTimeout(() => {
         router.push('/dashboard');

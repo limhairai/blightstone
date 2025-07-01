@@ -3,6 +3,7 @@
 import { useState } from "react"
 import useSWR, { useSWRConfig } from 'swr'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useCurrentOrganization } from '@/lib/swr-config'
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -12,19 +13,15 @@ import { toast } from "sonner"
 import { StripeCheckoutDialog } from "./stripe-checkout-dialog"
 import { formatCurrency } from "../../utils/format"
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function WalletFundingPanel() {
   const { mutate } = useSWRConfig();
   const { currentOrganizationId } = useOrganizationStore();
   
-  const { data, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  // Use the proper authenticated hook
+  const { data, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   
   const organization = data?.organizations?.[0];
-  const totalBalance = organization?.balance ?? 0;
+  const totalBalance = (organization?.balance_cents ?? 0) / 100;
   
   const [mode, setMode] = useState<"add" | "withdraw">("add")
   const [amount, setAmount] = useState("")

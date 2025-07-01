@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
       onboardingStateRes
     ] = await Promise.all([
       supabaseAdmin.from('wallets').select('balance_cents').eq('organization_id', profile.organization_id).limit(1).single(),
-      supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'business_manager' }),
-      supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'ad_account' }),
+              supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'business_manager' }),
+        supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'ad_account' }),
       supabaseAdmin.from('onboarding_states').select('*').eq('user_id', userId).single()
     ]);
     

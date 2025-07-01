@@ -48,7 +48,6 @@ export function AccountsTable() {
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
-    if (currentOrganizationId) params.set('organization_id', currentOrganizationId);
     if (debouncedSearch) params.set('search', debouncedSearch);
     if (filters.status !== 'all') params.set('status', filters.status);
     if (filters.business !== 'all') params.set('business_id', filters.business);
@@ -61,13 +60,13 @@ export function AccountsTable() {
     // params.set('page', currentPage.toString());
     // params.set('limit', itemsPerPage.toString());
     return params.toString();
-  }, [currentOrganizationId, debouncedSearch, filters.status, filters.business, searchParams]);
+  }, [debouncedSearch, filters.status, filters.business, searchParams]);
 
   const accountsSWRKey = session && currentOrganizationId ? [`/api/ad-accounts?${queryString}`, session.access_token] : null;
   const { data: accountsData, error, isLoading } = useSWR(accountsSWRKey, ([url, token]) => fetcher(url, token), { keepPreviousData: true });
 
   const { data: businessesData } = useSWR(
-    session && currentOrganizationId ? [`/api/businesses?organization_id=${currentOrganizationId}`, session.access_token] : null,
+    session && currentOrganizationId ? ['/api/businesses', session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   );
 

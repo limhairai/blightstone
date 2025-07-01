@@ -40,7 +40,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
 
   // Fetch business managers with organization ID
   const { data: businessManagers, isLoading: areBusinessManagersLoading } = useSWR(
-    session && currentOrganizationId ? [`/api/business-managers?organization_id=${currentOrganizationId}`, session.access_token] : null,
+    session && currentOrganizationId ? ['/api/business-managers', session.access_token] : null,
     ([url, token]) => fetcher(url, token)
   );
 

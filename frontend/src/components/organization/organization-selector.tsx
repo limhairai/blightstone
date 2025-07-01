@@ -13,7 +13,7 @@ import { ChevronDown, Search, Building2, Users, Loader2, CreditCard, Check } fro
 import { cn } from "../../lib/utils"
 import { useOrganizationStore } from "../../lib/stores/organization-store"
 import { useAuth } from "../../contexts/AuthContext"
-import { useOrganizations, useBusinessManagers } from "../../lib/swr-config"
+import { useOrganizations, useCurrentOrganization, useBusinessManagers } from "../../lib/swr-config"
 import { getInitials } from "../../utils/format"
 import { getAvatarClasses } from "../../lib/design-tokens"
 
@@ -42,21 +42,25 @@ export function OrganizationSelector() {
   
   const [componentIsLoading, setComponentIsLoading] = useState(false)
 
-  // 🚀 PERFORMANCE: Use optimized hooks instead of multiple SWR calls
-  const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations()
+  // 🚀 PERFORMANCE: Use separate hooks for different purposes
+  const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations() // For dropdown list
+  const { data: currentOrgData, isLoading: isCurrentOrgLoading, error: currentOrgError } = useCurrentOrganization(currentOrganizationId) // For current org display
   const { data: bizData, isLoading: isBizLoading, error: bizError } = useBusinessManagers(currentOrganizationId)
   
   const allOrganizations = orgData?.organizations || [];
   const allBusinessManagers = Array.isArray(bizData) ? bizData : [];
+  
+  // Handle auth errors gracefully - don't show errors for 401/403, just show loading state
+  const hasAuthError = orgError && (orgError.message.includes('401') || orgError.message.includes('403'))
+  const hasCurrentOrgAuthError = currentOrgError && (currentOrgError.message.includes('401') || currentOrgError.message.includes('403'))
+  const shouldShowLoading = isOrgLoading || isCurrentOrgLoading || hasAuthError || hasCurrentOrgAuthError || componentIsLoading
 
-  const currentOrganization = useMemo(() => 
-    allOrganizations.find(o => o.id === currentOrganizationId), 
-    [allOrganizations, currentOrganizationId]
-  );
+  // Get current organization directly from the dedicated hook instead of filtering all orgs
+  const currentOrganization = currentOrgData?.organizations?.[0] || null;
 
   // Use real organization data from context
   const selectedOrg = useMemo<Organization>(() => {
-    if (!currentOrganization) {
+    if (shouldShowLoading || !currentOrganization) {
       return {
         id: "loading",
         name: "Loading...",
@@ -78,7 +82,7 @@ export function OrganizationSelector() {
       role: "Owner",
       businessCount: businessCount,
     };
-  }, [currentOrganization, allBusinessManagers, currentOrganizationId]);
+  }, [currentOrganization, allBusinessManagers, currentOrganizationId, shouldShowLoading]);
 
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
@@ -231,8 +235,11 @@ export function OrganizationSelector() {
 
   const globalLoading = isOrgLoading || isBizLoading;
 
-  // Show error state if there are errors
-  if (orgError || bizError) {
+  // Show error state only for non-auth errors
+  const hasNonAuthError = (orgError && !orgError.message.includes('401') && !orgError.message.includes('403')) || 
+                          (bizError && !bizError.message.includes('401') && !bizError.message.includes('403'))
+  
+  if (hasNonAuthError) {
     return (
       <Button
         variant="outline"

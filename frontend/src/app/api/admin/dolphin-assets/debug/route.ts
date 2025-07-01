@@ -57,11 +57,11 @@ export async function GET(request: NextRequest) {
     
     if (data.assets) {
       console.log('🔍 Debug: Assets array length:', data.assets.length)
-      console.log('🔍 Debug: Asset types:', data.assets.map((a: any) => a.asset_type))
-      console.log('🔍 Debug: Business managers:', data.assets.filter((a: any) => a.asset_type === 'business_manager').length)
+      console.log('🔍 Debug: Asset types:', data.assets.map((a: any) => a.type))
+      console.log('🔍 Debug: Business managers:', data.assets.filter((a: any) => a.type === 'business_manager').length)
       
       // Show first few assets for debugging
-      const bmAssets = data.assets.filter((a: any) => a.asset_type === 'business_manager').slice(0, 3)
+      const bmAssets = data.assets.filter((a: any) => a.type === 'business_manager').slice(0, 3)
       console.log('🔍 Debug: Sample BM assets:', bmAssets)
     }
 
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       data_type: typeof data,
       data_keys: Object.keys(data),
       assets_count: data.assets ? data.assets.length : 0,
-      business_managers_count: data.assets ? data.assets.filter((a: any) => a.asset_type === 'business_manager').length : 0,
+      business_managers_count: data.assets ? data.assets.filter((a: any) => a.type === 'business_manager').length : 0,
       sample_data: data.assets ? data.assets.slice(0, 2) : null,
       raw_data: data
     })

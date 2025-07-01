@@ -8,27 +8,28 @@ import { Button } from "../ui/button"
 import { formatCurrency } from "../../utils/format"
 import { TrendingDown, TrendingUp, Wallet } from "lucide-react"
 import { Skeleton } from "../ui/skeleton"
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { useAuth } from '@/contexts/AuthContext'
+import { authenticatedFetcher } from '@/lib/swr-config'
 
 export function WalletPortfolioCard() {
+  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [timeFilter, setTimeFilter] = useState("1M")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   const { data, error, isLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
+    session && currentOrganizationId ? [`/api/organizations?id=${currentOrganizationId}`, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token)
   );
 
   // Also fetch transactions to check if user has real activity
   const { data: transactionsData } = useSWR(
-    currentOrganizationId ? `/api/transactions?organization_id=${currentOrganizationId}` : null,
-    fetcher
+    session && currentOrganizationId ? ['/api/transactions', session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token)
   );
 
   const organization = data?.organizations?.[0];
-  const totalBalance = organization?.balance ?? 0;
+  const totalBalance = (organization?.balance_cents ?? 0) / 100;
   const transactions = transactionsData?.transactions || [];
   
   // Check if user has real data to show (honest assessment)

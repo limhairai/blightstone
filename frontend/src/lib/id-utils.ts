@@ -13,9 +13,9 @@ export interface BusinessManagerIds {
 }
 
 export interface AdAccountIds {
-  /** Internal database UUID (asset_id) */
+  /** Internal database UUID (id) */
   internalId: string;
-  /** Dolphin API ID (dolphin_asset_id) */
+  /** Dolphin API ID (dolphin_id) */
   dolphinId: string;
   /** Facebook Ad Account ID from metadata */
   facebookId?: string;
@@ -29,7 +29,7 @@ export interface AdAccountIds {
 export function mapBusinessManagerIds(bmData: any): BusinessManagerIds {
   return {
     internalId: bmData.bm_id || bmData.id,
-    dolphinId: bmData.dolphin_business_manager_id || bmData.dolphin_asset_id,
+    dolphinId: bmData.dolphin_business_manager_id || bmData.dolphin_id,
     displayName: bmData.name || `BM #${(bmData.dolphin_business_manager_id || '').substring(0, 8)}`,
   };
 }
@@ -38,11 +38,11 @@ export function mapBusinessManagerIds(bmData: any): BusinessManagerIds {
  * Maps ad account data from API to standardized format
  */
 export function mapAdAccountIds(adData: any): AdAccountIds {
-  const metadata = adData.asset_metadata || adData.metadata || {};
+  const metadata = adData.metadata || {};
   
   return {
-    internalId: adData.asset_id || adData.id,
-    dolphinId: adData.dolphin_asset_id || adData.dolphin_account_id,
+    internalId: adData.id,
+    dolphinId: adData.dolphin_id || adData.dolphin_account_id,
     facebookId: metadata.ad_account_id || metadata.account_id,
     displayName: adData.name || `Account #${(metadata.ad_account_id || '').substring(0, 8)}`,
   };

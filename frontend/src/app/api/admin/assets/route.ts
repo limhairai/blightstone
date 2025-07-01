@@ -9,14 +9,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const asset_type = searchParams.get('asset_type')
+    const type = searchParams.get('type')
     const unbound_only = searchParams.get('unbound_only') === 'true'
 
     // Get all assets
     let query = supabase.from('asset').select('*').order('created_at', { ascending: false })
     
-    if (asset_type) {
-      query = query.eq('type', asset_type)
+    if (type) {
+      query = query.eq('type', type)
     }
 
     const { data: assets, error: assetsError } = await query
@@ -68,12 +68,9 @@ export async function GET(request: NextRequest) {
         id: asset.id,
         name: asset.name,
         type: asset.type,
-        asset_type: asset.type, // Frontend compatibility
         dolphin_id: asset.dolphin_id,
-        dolphin_asset_id: asset.dolphin_id, // Frontend compatibility
         status: asset.status,
         metadata: asset.metadata,
-        asset_metadata: asset.metadata, // Frontend compatibility
         last_synced_at: asset.last_synced_at,
         created_at: asset.created_at,
         updated_at: asset.updated_at,

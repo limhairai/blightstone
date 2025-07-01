@@ -94,7 +94,10 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     try {
       const requests = targetAccounts.map(acc => ({
         ad_account_id: acc.adAccount,
-        amount: parseFloat(formData.amount),
+        ad_account_name: acc.name,
+        amount: parseFloat(formData.amount), // Send amount in dollars, not cents
+        priority: 'normal',
+        notes: formData.notes || ''
       }))
 
       for (const request of requests) {

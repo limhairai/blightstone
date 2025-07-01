@@ -23,6 +23,7 @@ import { gradientTokens } from "../../lib/design-tokens"
 import { useRouter } from "next/navigation"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import useSWR from 'swr'
+import { useCurrentOrganization } from '@/lib/swr-config'
 
 interface TopbarProps {
   isAdmin?: boolean
@@ -37,8 +38,6 @@ interface TopbarProps {
     adAccountSetup: { completed: boolean }
   }
 }
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function Topbar({ 
   isAdmin = false, 
@@ -55,10 +54,8 @@ export function Topbar({
   const router = useRouter()
 
   const { currentOrganizationId } = useOrganizationStore();
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  // Use the proper authenticated hook
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   const organization = orgData?.organizations?.[0];
   const totalBalance = organization?.balance_cents ? organization.balance_cents / 100 : 0;
   const plan = organization?.plan || 'Free';

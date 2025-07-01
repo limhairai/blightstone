@@ -32,10 +32,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { ad_account_id, amount, notes } = body;
+    const { ad_account_id, ad_account_name, amount, notes } = body;
 
     console.log('Top-up request received:', {
       ad_account_id,
+      ad_account_name,
       amount,
       organization_id: profile.organization_id,
       user_id: user.id
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
         organization_id: profile.organization_id,
         user_id: user.id,
         requested_amount_cents: amount * 100, // Convert to cents
-        notes: `Top-up request for ad account: ${adAccount.asset?.name} (${ad_account_id})\nAmount: $${amount}\n${notes ? `Notes: ${notes}` : ''}`,
+        notes: `Top-up request for ad account: ${ad_account_name || adAccount.asset?.name || 'Unknown Account'} (${ad_account_id})\nAmount: $${amount}\n${notes ? `Notes: ${notes}` : ''}`,
         status: 'pending'
       })
       .select()

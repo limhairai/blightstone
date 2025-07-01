@@ -38,6 +38,8 @@ import { toast } from "sonner"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/contexts/AuthContext"
+import { authenticatedFetcher } from "@/lib/swr-config"
 
 type TeamMember = {
   id: string
@@ -49,9 +51,8 @@ type TeamMember = {
   avatar_url?: string
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function TeamSettings() {
+  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const { mutate } = useSWRConfig()
   const [inviteEmail, setInviteEmail] = useState("")
@@ -62,8 +63,11 @@ export function TeamSettings() {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const teamSWRKey = currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null
-  const { data: teamData, isLoading: isTeamLoading, error: teamError } = useSWR(teamSWRKey, fetcher);
+  const teamSWRKey = session && currentOrganizationId ? ['/api/teams/members', session.access_token] : null
+  const { data: teamData, isLoading: isTeamLoading, error: teamError } = useSWR(
+    teamSWRKey, 
+    ([url, token]) => authenticatedFetcher(url, token)
+  );
   const teamMembers = teamData?.members || [];
   
   const filteredMembers = searchQuery

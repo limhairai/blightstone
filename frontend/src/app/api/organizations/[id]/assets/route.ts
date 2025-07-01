@@ -13,13 +13,13 @@ export async function GET(
   try {
     const { id: organizationId } = params
     const { searchParams } = new URL(request.url)
-    const asset_type = searchParams.get('asset_type')
+    const type = searchParams.get('type')
 
     // Use the clean database function
     const { data: assets, error } = await supabase
       .rpc('get_organization_assets', {
         p_organization_id: organizationId,
-        p_asset_type: asset_type
+        p_asset_type: type
       })
 
     if (error) {

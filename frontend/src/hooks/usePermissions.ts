@@ -1,21 +1,18 @@
 import { useAuth } from "../contexts/AuthContext"
 import useSWR from 'swr';
 import { useOrganizationStore } from "../lib/stores/organization-store";
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { authenticatedFetcher, useCurrentOrganization } from "../lib/swr-config";
 
 export function usePermissions() {
-  const { user, isLoading: isUserLoading } = useAuth();
+  const { user, session, isLoading: isUserLoading } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
 
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  // Use the proper useCurrentOrganization hook which has access checking built-in
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   
   const { data: teamData, isLoading: areMembersLoading } = useSWR(
-    currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null,
-    fetcher
+    session?.access_token && currentOrganizationId ? ['/api/teams/members', session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token)
   );
 
   const isLoading = isUserLoading || isOrgLoading || areMembersLoading;

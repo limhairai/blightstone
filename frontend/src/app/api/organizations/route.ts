@@ -1,63 +1,119 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
-async function getAuth(req: NextRequest) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options });
-        },
-      },
-    }
-  );
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: { session } } = await supabase.auth.getSession();
-  return { user, session, supabase };
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function GET(request: NextRequest) {
-  const { user, supabase } = await getAuth(request);
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
-
-    let query = supabase
-      .from('organizations')
-      .select(`
-        organization_id,
-        name,
-        created_at,
-        organization_members!inner(user_id),
-        wallets(wallet_id, balance_cents)
-      `)
-      .eq('organization_members.user_id', user.id);
-
-    // If specific organization ID is requested, filter by it
-    if (orgId) {
-      query = query.eq('organization_id', orgId);
+    
+    // console.log(`🔍 Organizations API called: ${orgId ? `specific org ${orgId}` : 'all orgs'}`);
+    
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError) {
+      return NextResponse.json({ error: 'Authentication failed', details: authError.message }, { status: 401 });
+    }
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { data: orgs, error } = await query;
+    // Build query differently for specific org vs all orgs to handle membership issues
+    let orgs, error;
+    
+    if (orgId) {
+      // For specific organization, check if user owns it OR is a member
+      // First try to get the organization if they own it
+      const { data: ownedOrg, error: ownedError } = await supabase
+        .from('organizations')
+        .select(`
+          organization_id,
+          name,
+          created_at,
+          owner_id,
+          wallets(wallet_id, balance_cents, reserved_balance_cents)
+        `)
+        .eq('organization_id', orgId)
+        .eq('owner_id', user.id)
+        .maybeSingle();
+        
+      if (ownedOrg && !ownedError) {
+        // User owns this organization, return it even if they're not in organization_members
+        orgs = [ownedOrg];
+        error = null;
+      } else {
+        // Check if they're a member of this organization
+        const { data: memberOrg, error: memberError } = await supabase
+          .from('organizations')
+          .select(`
+            organization_id,
+            name,
+            created_at,
+            organization_members!inner(user_id),
+            wallets(wallet_id, balance_cents, reserved_balance_cents)
+          `)
+          .eq('organization_members.user_id', user.id)
+          .eq('organization_id', orgId)
+          .maybeSingle();
+          
+        orgs = memberOrg ? [memberOrg] : [];
+        error = memberError;
+      }
+    } else {
+      // For all organizations, get both owned and member organizations
+      const [ownedResult, memberResult] = await Promise.all([
+        // Organizations the user owns
+        supabase
+          .from('organizations')
+          .select(`
+            organization_id,
+            name,
+            created_at,
+            owner_id,
+            wallets(wallet_id, balance_cents, reserved_balance_cents)
+          `)
+          .eq('owner_id', user.id),
+        
+        // Organizations the user is a member of (but doesn't own)
+        supabase
+          .from('organizations')
+          .select(`
+            organization_id,
+            name,
+            created_at,
+            organization_members!inner(user_id),
+            wallets(wallet_id, balance_cents, reserved_balance_cents)
+          `)
+          .eq('organization_members.user_id', user.id)
+          .neq('owner_id', user.id) // Exclude owned orgs to avoid duplicates
+      ]);
+      
+      // Combine results
+      const ownedOrgs = ownedResult.data || [];
+      const memberOrgs = memberResult.data || [];
+      orgs = [...ownedOrgs, ...memberOrgs];
+      error = ownedResult.error || memberResult.error;
+    }
 
     if (error) {
       console.error("Error fetching organizations:", error);
       throw error;
+    }
+
+    // If no organizations found, return empty array instead of error
+    if (!orgs || orgs.length === 0) {
+      return NextResponse.json({ organizations: [] });
     }
 
     // Get business manager count for each organization using our new asset system
@@ -77,12 +133,19 @@ export async function GET(request: NextRequest) {
         console.error('Error fetching BM count for org:', org.organization_id, error);
       }
 
+      // Calculate available balance (total - reserved)
+      const totalBalance = org.wallets?.balance_cents || 0;
+      const reservedBalance = org.wallets?.reserved_balance_cents || 0;
+      const availableBalance = totalBalance - reservedBalance;
+
       return {
         ...org,
         id: org.organization_id, // Map organization_id to id for frontend compatibility
         business_count: bmCount, // Keep field name for backward compatibility
-        balance_cents: org.wallets?.balance_cents || 0,
-        balance: (org.wallets?.balance_cents || 0) / 100 // Convert cents to dollars for backward compatibility
+        balance_cents: availableBalance, // Return available balance instead of total
+        balance: availableBalance / 100, // Convert cents to dollars for backward compatibility
+        total_balance_cents: totalBalance, // Include total balance for reference
+        reserved_balance_cents: reservedBalance // Include reserved balance for transparency
       };
     }));
 
@@ -95,19 +158,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { user, supabase } = await getAuth(request);
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const { name } = await request.json();
-
-  if (!name) {
-    return NextResponse.json({ error: 'Organization name is required' }, { status: 400 });
-  }
-
   try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    const { name } = await request.json();
+
+    if (!name) {
+      return NextResponse.json({ error: 'Organization name is required' }, { status: 400 });
+    }
     // Create the organization
     const { data: newOrg, error: orgError } = await supabase
       .from('organizations')
@@ -137,13 +204,17 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const { user, supabase } = await getAuth(request);
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
     const { name } = await request.json();
@@ -186,13 +257,17 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const { user, supabase } = await getAuth(request);
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
 

@@ -105,21 +105,53 @@ export function ApplicationAssetBindingDialog({
         
         setAssets([...transformedBMs, ...transformedAds])
       } else {
-        // For additional accounts, just get unbound ad accounts
-        const response = await fetch("/api/admin/unbound-assets?type=ad_account")
-        if (!response.ok) {
+        // For additional accounts, get unbound ad accounts for the specific BM
+        let adResponse;
+        if (mode === 'additional-accounts-specific' && targetBmId) {
+          // Fetch only unbound ad accounts for the specific BM
+          adResponse = await fetch(`/api/admin/unbound-assets?type=ad_account&business_manager_id=${targetBmId}`)
+        } else {
+          // Fetch all unbound ad accounts for general mode
+          adResponse = await fetch("/api/admin/unbound-assets?type=ad_account")
+        }
+        
+        if (!adResponse.ok) {
           throw new Error("Failed to fetch available ad accounts")
         }
-        const data = await response.json()
+        const adData = await adResponse.json()
         
-        // Transform the data to match expected structure
-        const transformedAssets = Array.isArray(data) ? data.map(asset => ({
+        let allAssets = Array.isArray(adData) ? adData.map(asset => ({
           ...asset,
           type: asset.type,
           asset_id: asset.dolphin_id,
           metadata: asset.metadata
         })) : []
-        setAssets(transformedAssets)
+        
+        // For specific BM requests, we also need to fetch the target BM
+        if (mode === 'additional-accounts-specific' && targetBmId) {
+          try {
+            const bmResponse = await fetch(`/api/admin/assets?type=business_manager`)
+            if (bmResponse.ok) {
+              const bmData = await bmResponse.json()
+              const targetBM = bmData.assets?.find((asset: any) => 
+                asset.dolphin_id === targetBmId || asset.id === targetBmId
+              )
+              
+              if (targetBM) {
+                allAssets.push({
+                  ...targetBM,
+                  type: 'business_manager',
+                  asset_id: targetBM.dolphin_id,
+                  metadata: targetBM.metadata
+                });
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching target BM:', error);
+          }
+        }
+        
+        setAssets(allAssets)
       }
     } catch (error) {
       console.error("Failed to load assets:", error)
@@ -139,6 +171,8 @@ export function ApplicationAssetBindingDialog({
 
       // Set initial BM selection based on mode
       if (mode === 'additional-accounts-specific' && targetBmId) {
+        // For specific mode, the targetBmId should automatically select the target BM
+        // We'll use the targetBmId directly since our lookup logic now handles multiple ID formats
         setSelectedBusinessManager(targetBmId)
       } else {
         setSelectedBusinessManager(null)
@@ -224,7 +258,8 @@ export function ApplicationAssetBindingDialog({
   const businessManagers = useMemo(() => {
     if (mode === 'additional-accounts-specific') {
       // For specific BM requests, find the target BM in assets
-      return assets.filter(asset => asset.id === targetBmId)
+      const targetBMs = assets.filter(asset => asset.id === targetBmId || asset.dolphin_id === targetBmId);
+      return targetBMs;
     }
     
     if (mode === 'additional-accounts-general') {
@@ -255,38 +290,32 @@ export function ApplicationAssetBindingDialog({
     if (mode === 'new-bm') {
       selectedBM = assets.find(asset => asset.id === selectedBusinessManager)
     } else {
-      // For additional accounts, we need to find unbound accounts that can be assigned to this BM
-      selectedBM = businessManagers.find(bm => bm.id === selectedBusinessManager)
+      selectedBM = businessManagers.find(bm => 
+        bm.id === selectedBusinessManager || 
+        bm.dolphin_id === selectedBusinessManager ||
+        bm.asset_id === selectedBusinessManager
+      )
     }
     
     if (!selectedBM) return []
 
+    // For additional-accounts-specific mode, the API already filtered by BM
+    // So we just need to return all ad accounts (they're already filtered)
+    if (mode === 'additional-accounts-specific') {
+      const accounts = assets.filter(asset => asset.type === 'ad_account');
+      return accounts;
+    }
+    
+    // For other modes, apply the original filtering logic
     const filteredAccounts = assets
       .filter(asset => asset.type === 'ad_account')
       .filter(asset => {
         if (mode === 'new-bm') {
-          // For new BM, show accounts that belong to this BM
-          // Use dolphin_id for comparison
           const bmDolphinId = selectedBM.dolphin_id || selectedBM.id;
-          return asset.metadata?.business_manager_id === bmDolphinId
-        } else {
-          // For additional accounts, show unbound accounts that can be assigned
-          const bmDolphinId = selectedBM.dolphin_id || selectedBM.id;
-          return !asset.metadata?.business_manager_id || 
-                 asset.metadata?.business_manager_id === bmDolphinId
+          return asset.metadata?.business_manager_id === bmDolphinId;
         }
+        return true;
       })
-
-    // Debug logging
-    console.log('Ad Accounts Debug:', {
-      mode,
-      selectedBusinessManager,
-      selectedBM,
-      totalAssets: assets.length,
-      adAccountAssets: assets.filter(a => a.type === 'ad_account').length,
-      filteredAccounts: filteredAccounts.length,
-      filteredAccountNames: filteredAccounts.map(a => a.name)
-    });
 
     return filteredAccounts;
   }, [assets, selectedBusinessManager, mode, businessManagers])

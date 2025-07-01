@@ -155,11 +155,12 @@ async function handleSuccessfulPayment(session: Stripe.Checkout.Session) {
         type: 'deposit',
         amount_cents: Math.round(walletCreditAmount * 100),
         status: 'completed',
-        description: `Wallet top-up via Stripe`,
+        description: `Wallet Top-up - $${walletCreditAmount.toFixed(2)}`,
         metadata: {
           stripe_session_id: session.id,
           stripe_payment_intent_id: session.payment_intent,
-          processing_fee_cents: Math.round(processingFeeAmount * 100)
+          processing_fee_cents: Math.round(processingFeeAmount * 100),
+          payment_method: 'stripe_checkout'
         }
       })
 

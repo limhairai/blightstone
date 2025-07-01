@@ -32,14 +32,14 @@ export async function GET(
     try {
         const { searchParams } = new URL(request.url)
         const bmId = searchParams.get('bm_id')
-        const assetType = searchParams.get('asset_type')
+        const assetType = searchParams.get('type')
         
         const backendUrl = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/client/${params.organization_id}`)
         if (bmId) {
             backendUrl.searchParams.set('bm_id', bmId)
         }
         if (assetType) {
-            backendUrl.searchParams.set('asset_type', assetType)
+            backendUrl.searchParams.set('type', assetType)
         }
 
         console.log('🔍 Frontend API: Calling backend URL:', backendUrl.toString())

@@ -65,7 +65,13 @@ export function DashboardView() {
     isLoadingBusinessManagers: isBizLoading,
     isLoadingAdAccounts: isAccLoading,
     isLoadingTransactions: isTransLoading,
-    error: dashboardError
+    error: dashboardError,
+    // Debug errors
+    orgError,
+    currentOrgError,
+    businessManagersError,
+    adAccountsError,
+    transactionsError,
   } = useDashboardData(currentOrganizationId)
 
   // Use setup widget hook (MUST be called before any conditional logic)
@@ -81,7 +87,7 @@ export function DashboardView() {
     `/api/organizations?id=${currentOrganizationId}`,
     `/api/business-managers`,
     `/api/ad-accounts`,
-    `/api/transactions?organization_id=${currentOrganizationId}`,
+    '/api/transactions',
   ]
 
   const { manualRefresh, isRefreshing } = useAutoRefresh({
@@ -341,6 +347,39 @@ export function DashboardView() {
   ]
 
   const globalLoading = authLoading || isOrgLoading || isBizLoading || isAccLoading || isTransLoading;
+
+  // Show debug info if there are API errors (temporary)
+  if ((adAccountsError || businessManagersError) && !globalLoading) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-yellow-800 mb-2">🔧 Debug Information</h3>
+          <div className="text-sm text-yellow-700 space-y-1">
+            <p><strong>User ID:</strong> {user?.id}</p>
+            <p><strong>Current Org ID:</strong> {currentOrganizationId || 'None'}</p>
+            <p><strong>Organizations Count:</strong> {userOrgsData?.length || 0}</p>
+            <p><strong>Ad Accounts Error:</strong> {adAccountsError?.message || 'None'}</p>
+            <p><strong>Business Managers Error:</strong> {businessManagersError?.message || 'None'}</p>
+            <p><strong>Current Org Error:</strong> {currentOrgError?.message || 'None'}</p>
+          </div>
+          <div className="mt-4">
+            <Button 
+              onClick={() => router.push('/register')}
+              className="mr-2"
+            >
+              Re-run Setup
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // NOW we can have early returns - all hooks have been called
   // Early return for loading states

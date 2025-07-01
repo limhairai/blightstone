@@ -19,28 +19,27 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organization_id');
-
-    if (!organizationId) {
-      return NextResponse.json({ error: 'organization_id is required' }, { status: 400 });
-    }
-
-    // Verify user has access to this organization
+    // Get organization from authenticated user's profile
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('organization_id')
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile || profile.organization_id !== organizationId) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    if (profileError || !profile || !profile.organization_id) {
+      console.log('🔍 User profile missing organization_id:', { profileError, profile });
+      return NextResponse.json({ 
+        businesses: [],
+        message: 'No organization assigned to user.' 
+      });
     }
+    
+    const organizationId = profile.organization_id;
 
     // Get business managers (now stored as assets) for this organization
     const { data: assets, error: assetsError } = await supabase.rpc('get_organization_assets', {
       p_organization_id: organizationId,
-      p_asset_type: 'business_manager'
+              p_asset_type: 'business_manager'
     });
 
     if (assetsError) {

@@ -5,24 +5,24 @@ import { formatCurrency } from "../../utils/format"
 import { typographyTokens } from "../../lib/design-tokens"
 import useSWR from 'swr'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useCurrentOrganization } from '@/lib/swr-config'
 
 interface BalanceCardProps {
   balance?: number
   growth?: number
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function BalanceCard({ balance, growth }: BalanceCardProps) {
   const { currentOrganizationId } = useOrganizationStore();
-  const { data: orgData } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  // Use the proper authenticated hook
+  const { data: orgData } = useCurrentOrganization(currentOrganizationId);
 
-  const walletBalance = orgData?.organizations?.[0]?.balance ?? 0;
+  const organization = orgData?.organizations?.[0];
+  const availableBalance = (organization?.balance_cents ?? 0) / 100; // Use balance_cents which is available balance
+  const totalBalance = (organization?.total_balance_cents ?? 0) / 100;
+  const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
   
-  const actualBalance = balance ?? walletBalance
+  const actualBalance = balance ?? availableBalance
   const actualGrowth = growth ?? 0 // TODO: Calculate from transaction history
   
   return (
@@ -37,7 +37,14 @@ export function BalanceCard({ balance, growth }: BalanceCardProps) {
               </span>
             )}
           </div>
-          <p className={typographyTokens.patterns.mutedMedium}>Available for ad campaigns and funding</p>
+          <div className="space-y-1">
+            <p className={typographyTokens.patterns.mutedMedium}>Available for ad campaigns and funding</p>
+            {reservedBalance > 0 && (
+              <p className={`${typographyTokens.patterns.bodySmall} text-orange-600`}>
+                ${formatCurrency(reservedBalance)} reserved for pending requests
+              </p>
+            )}
+          </div>
         </div>
         <div className="h-12 w-12 rounded-lg bg-muted/50 flex items-center justify-center border">
           <Wallet className="h-6 w-6 text-[#b4a0ff]" />

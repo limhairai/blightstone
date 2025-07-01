@@ -59,10 +59,7 @@ export async function GET(request: NextRequest) {
           .eq('organization_id', request.organization_id)
           .single();
 
-        // Parse ad account info from notes with better regex and debug logging
-        console.log('Parsing notes:', request.notes);
-        
-        // Try multiple regex patterns to catch different formats
+        // Parse ad account info from notes
         let adAccountName = 'Account Name Not Available';
         let adAccountId = 'Account ID Not Available';
         
@@ -73,26 +70,21 @@ export async function GET(request: NextRequest) {
             const parsedName = notesMatch[1].trim();
             const parsedId = notesMatch[2].trim();
             
-            console.log('Regex match found:', { parsedName, parsedId });
-            
             // Handle cases where the name or ID is literally 'undefined'
-            adAccountName = (parsedName && parsedName !== 'undefined') ? parsedName : 'Account Name Not Available';
-            adAccountId = (parsedId && parsedId !== 'undefined') ? parsedId : 'Account ID Not Available';
+            adAccountName = (parsedName && parsedName !== 'undefined' && parsedName.toLowerCase() !== 'undefined') ? parsedName : 'Account Name Not Available';
+            adAccountId = (parsedId && parsedId !== 'undefined' && parsedId.toLowerCase() !== 'undefined') ? parsedId : 'Account ID Not Available';
             
             // If we got a valid ID but invalid name, use the ID for lookup
             if (parsedId && parsedId !== 'undefined' && parsedId.length > 5) {
               adAccountId = parsedId;
             }
           } else {
-            console.log('Primary regex did not match, trying fallback patterns');
-            
             // Pattern 2: Look for any account ID in parentheses (more reliable)
             const idMatch = request.notes.match(/\(([^)]+)\)/);
             if (idMatch) {
               const parsedId = idMatch[1].trim();
               if (parsedId && parsedId !== 'undefined' && parsedId.length > 5) {
                 adAccountId = parsedId;
-                console.log('Found ID from parentheses:', parsedId);
               }
             }
             
@@ -102,24 +94,19 @@ export async function GET(request: NextRequest) {
               const parsedName = nameMatch[1].trim();
               if (parsedName && parsedName !== 'undefined') {
                 adAccountName = parsedName;
-                console.log('Found name from fallback pattern:', parsedName);
               }
             }
           }
         }
-        
-        console.log('Parsed account info:', { adAccountName, adAccountId });
 
         // If we couldn't get proper account info from notes, try to look it up from backend assets
-        if (adAccountName === 'Account Name Not Available' || adAccountName === 'u' || adAccountId === 'Account ID Not Available') {
-          console.log('Attempting to lookup account info from backend assets API');
-          
+        if (adAccountName === 'Account Name Not Available' || adAccountName === 'undefined' || adAccountName === 'u' || adAccountId === 'Account ID Not Available') {
           try {
             // Get user's access token for backend API call
             const { data: { session } } = await supabase.auth.getSession();
             
             if (session?.access_token) {
-              const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/client/${request.organization_id}?asset_type=ad_account`;
+              const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/client/${request.organization_id}?type=ad_account`;
               
               const assetsResponse = await fetch(backendUrl, {
                 method: 'GET',
@@ -131,51 +118,22 @@ export async function GET(request: NextRequest) {
               
               if (assetsResponse.ok) {
                 const assetsData = await assetsResponse.json();
-                console.log('Found', assetsData.length, 'ad accounts from backend API');
                 
                 // If we have a valid account ID, try to match it
                 if (adAccountId && adAccountId !== 'Account ID Not Available' && adAccountId.length > 5) {
-                  console.log('Looking for account with ID:', adAccountId);
-                  
                   // Try to match by dolphin_id or ad_account_id
                   const matchingAsset = assetsData.find((asset: any) => {
-                    const metadata = asset.asset_metadata || {};
-                    const matches = asset.dolphin_asset_id === adAccountId || 
+                    const metadata = asset.metadata || {};
+                    return asset.dolphin_id === adAccountId || 
                            metadata.ad_account_id === adAccountId ||
-                           asset.asset_id === adAccountId;
-                    
-                    if (matches) {
-                      console.log('Found matching asset:', {
-                        name: asset.name,
-                        dolphin_id: asset.dolphin_asset_id,
-                        metadata_ad_account_id: metadata.ad_account_id,
-                        asset_id: asset.asset_id
-                      });
-                    }
-                    
-                    return matches;
+                           asset.id === adAccountId;
                   });
                   
                   if (matchingAsset) {
-                    console.log('Successfully found matching asset:', matchingAsset.name);
                     adAccountName = matchingAsset.name || 'Account Name Not Available';
-                    // Keep the original ID we found
-                  } else {
-                    console.log('No matching asset found for ID:', adAccountId);
-                    console.log('Available assets:', assetsData.map((a: any) => ({
-                      name: a.name,
-                      dolphin_id: a.dolphin_asset_id,
-                      metadata_id: a.asset_metadata?.ad_account_id
-                    })));
                   }
-                } else {
-                  console.log('No valid account ID to lookup, ID was:', adAccountId);
                 }
-              } else {
-                console.log('Backend API call failed:', assetsResponse.status);
               }
-            } else {
-              console.log('No session access token available');
             }
           } catch (lookupError) {
             console.error('Error looking up account from backend:', lookupError);
@@ -186,13 +144,9 @@ export async function GET(request: NextRequest) {
         let businessManagerName = 'BM Not Available';
         let businessManagerId = 'BM ID Not Available';
         
-        console.log('Looking for BM info for organization:', request.organization_id);
-        
         // First, try to find the specific ad account asset by dolphin_id
         if (adAccountId && adAccountId !== 'Account ID Not Available') {
-          console.log('Searching for specific ad account asset with dolphin_id:', adAccountId);
-          
-          const { data: specificAsset, error: specificError } = await supabase
+          const { data: specificAssets } = await supabase
             .from('asset_binding')
             .select(`
               asset!inner (
@@ -205,15 +159,15 @@ export async function GET(request: NextRequest) {
             .eq('organization_id', request.organization_id)
             .eq('asset.dolphin_id', adAccountId)
             .eq('asset.type', 'ad_account')
-            .single();
-            
-          console.log('Specific asset search result:', { data: specificAsset, error: specificError });
+            .eq('status', 'active')
+            .limit(1);
+          
+          const specificAsset = specificAssets?.[0];
           
           if (specificAsset?.asset) {
             // If we found the asset and don't have a proper account name yet, use the asset name
             if (adAccountName === 'Account Name Not Available' && specificAsset.asset.name) {
               adAccountName = specificAsset.asset.name;
-              console.log('Using account name from database asset:', adAccountName);
             }
             
             // Get business manager info from metadata
@@ -221,16 +175,13 @@ export async function GET(request: NextRequest) {
             if (metadata) {
               businessManagerName = metadata.business_manager_name || metadata.business_manager || 'BM Not Available';
               businessManagerId = metadata.business_manager_id || 'BM ID Not Available';
-              console.log('Found BM info from specific asset:', { businessManagerName, businessManagerId });
             }
           }
         }
         
         // If we couldn't find specific BM info, try to get any BM from the organization
         if (businessManagerName === 'BM Not Available') {
-          console.log('Falling back to any BM from organization');
-          
-          const { data: anyBM, error: bmError } = await supabase
+          const { data: bmAssets } = await supabase
             .from('asset_binding')
             .select(`
               asset!inner (
@@ -242,17 +193,16 @@ export async function GET(request: NextRequest) {
             `)
             .eq('organization_id', request.organization_id)
             .eq('asset.type', 'business_manager')
-            .limit(1)
-            .single();
+            .eq('status', 'active')
+            .limit(1);
+          
+          const anyBM = bmAssets?.[0];
             
           if (anyBM?.asset) {
             businessManagerName = anyBM.asset.name || 'BM Not Available';
             businessManagerId = anyBM.asset.dolphin_id || 'BM ID Not Available';
-            console.log('Found fallback BM info:', { businessManagerName, businessManagerId });
           }
         }
-
-        console.log('Final account info being returned:', { adAccountName, adAccountId, businessManagerName, businessManagerId });
 
         return {
           id: request.request_id,
@@ -401,6 +351,14 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('Error creating topup request:', insertError);
+      
+      // Check if the error is due to insufficient balance
+      if (insertError.message?.includes('Insufficient available balance')) {
+        return NextResponse.json({ 
+          error: 'Insufficient available balance for this topup request. Please check your wallet balance and any pending requests.' 
+        }, { status: 400 });
+      }
+      
       return NextResponse.json({ error: 'Failed to create topup request' }, { status: 500 });
     }
 

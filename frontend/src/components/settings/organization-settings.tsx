@@ -21,7 +21,7 @@ import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, S
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { useAuth } from "@/contexts/AuthContext"
-import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
+import { useCurrentOrganization, useBusinessManagers, useAdAccounts, authenticatedFetcher } from "../../lib/swr-config"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -65,12 +65,26 @@ export function OrganizationSettings() {
       }
     }).then(res => res.json());
 
-  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data: orgData, isLoading: isOrgLoading, error: orgError } = useCurrentOrganization(currentOrganizationId);
   const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
   const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
-  const { data: teamData, isLoading: isTeamLoading } = useSWR(currentOrganizationId ? `/api/teams/members?organization_id=${currentOrganizationId}` : null, fetcher);
+  const { data: teamData, isLoading: isTeamLoading } = useSWR(
+    session && currentOrganizationId ? ['/api/teams/members', session.access_token] : null, 
+    ([url, token]) => authenticatedFetcher(url, token)
+  );
   
-  const organization = orgData;
+  const organization = orgData?.organizations?.[0];
+  
+  // Debug logging (can be removed in production)
+  // console.log('🔍 OrganizationSettings Debug:', {
+  //   currentOrganizationId,
+  //   orgData,
+  //   organization,
+  //   isOrgLoading,
+  //   orgError: orgError?.message,
+  //   hasSession: !!session,
+  //   hasAccessToken: !!session?.access_token
+  // });
   const businesses = bizData || [];
   const accounts = accData?.accounts || [];
   const teamMembers = teamData?.members || [];
@@ -195,8 +209,28 @@ export function OrganizationSettings() {
     return <div>Loading organization...</div>
   }
   
+  // If we have an organization ID but no organization data (and not loading), 
+  // this means the organization doesn't exist or user doesn't have access
   if (!organization && !globalLoading) {
-    return <div>No organization found.</div>
+    return (
+      <div className="text-center py-8">
+        <div className="text-muted-foreground mb-4">No organization found.</div>
+        <div className="text-sm text-muted-foreground mb-4">
+          Organization ID: {currentOrganizationId}
+        </div>
+        <Button 
+          onClick={() => {
+            // Clear the invalid organization ID and reload
+            setCurrentOrganizationId('');
+            localStorage.removeItem('organization-storage');
+            window.location.reload();
+          }}
+          variant="outline"
+        >
+          Reset Organization
+        </Button>
+      </div>
+    )
   }
 
   return (

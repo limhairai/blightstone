@@ -59,9 +59,9 @@ export async function GET(request: NextRequest) {
     const assets = Array.isArray(data) ? data : (data.assets || [])
     
     // Get profiles and extract team information
-    const profiles = assets.filter(asset => asset.asset_type === 'profile')
-    const businessManagers = assets.filter(asset => asset.asset_type === 'business_manager')
-    const adAccounts = assets.filter(asset => asset.asset_type === 'ad_account')
+    const profiles = assets.filter(asset => asset.type === 'profile')
+    const businessManagers = assets.filter(asset => asset.type === 'business_manager')
+    const adAccounts = assets.filter(asset => asset.type === 'ad_account')
     
     // Group profiles by team
     const teamMap = new Map()
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     
     // Associate Business Managers and Ad Accounts with teams
     businessManagers.forEach(bm => {
-      const managingProfile = bm.asset_metadata?.managing_profile
+      const managingProfile = bm.metadata?.managing_profile
       if (managingProfile) {
         const teamInfo = extractTeamFromProfile(managingProfile)
         if (teamInfo && teamMap.has(teamInfo.team)) {
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     })
     
     adAccounts.forEach(account => {
-      const managingProfile = account.asset_metadata?.managing_profile
+      const managingProfile = account.metadata?.managing_profile
       if (managingProfile) {
         const teamInfo = extractTeamFromProfile(managingProfile)
         if (teamInfo && teamMap.has(teamInfo.team)) {

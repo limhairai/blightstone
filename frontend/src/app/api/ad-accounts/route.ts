@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError || !profile || !profile.organization_id) {
-        return NextResponse.json({ error: 'User organization not found.' }, { status: 404 });
+        console.log('🔍 User profile missing organization_id:', { profileError, profile });
+        return NextResponse.json({ 
+          accounts: [], 
+          message: 'No organization assigned to user. Please contact support.' 
+        });
     }
     
     const organizationId = profile.organization_id;
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
     const bmId = searchParams.get('bm_id');
 
     // Use the NEW schema (asset + asset_binding) via RPC function
-    console.log('🔍 Using NEW schema RPC for ad accounts, organization:', organizationId);
+    // console.log('🔍 Using NEW schema RPC for ad accounts, organization:', organizationId);
 
     const { data: assets, error } = await supabase.rpc('get_organization_assets', {
       p_organization_id: organizationId,
@@ -49,17 +53,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch ad accounts' }, { status: 500 });
     }
 
-    console.log('🔍 NEW schema returned:', assets?.length || 0, 'ad accounts');
+          // console.log('🔍 NEW schema returned:', assets?.length || 0, 'ad accounts');
 
     // Transform to match expected frontend format
     const enrichedData = (assets || []).map((asset: any) => {
       const metadata = asset.metadata || {};
       
-      console.log('🔍 Processing asset:', {
-        name: asset.name,
-        dolphin_id: asset.dolphin_id,
-        metadata: metadata
-      });
+      // console.log('🔍 Processing asset:', {
+      //   name: asset.name,
+      //   dolphin_id: asset.dolphin_id,
+      //   metadata: metadata
+      // });
       
       return {
         id: asset.id,

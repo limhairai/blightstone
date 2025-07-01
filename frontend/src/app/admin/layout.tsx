@@ -5,8 +5,7 @@ import { AdminAccessCheck } from "../../components/admin/admin-access-check"
 import { Toaster } from "sonner";
 import { AdminSidebar } from "../../components/admin/admin-sidebar";
 import { AdminTopbar } from "../../components/admin/admin-topbar";
-import { DevWidget } from "../../components/admin/dev-widget";
-import { PerformanceMonitor } from "../../components/debug/performance-monitor";
+// Removed dev tools for production
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -93,11 +92,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
         
-        {/* Dev Widget - only show for superusers */}
-        {profile?.is_superuser && <DevWidget />}
-        
-        {/* Performance Monitor - only in development */}
-        <PerformanceMonitor />
+        {/* Dev tools removed for cleaner production UI */}
         
         {/* Toaster for admin pages */}
         <Toaster />

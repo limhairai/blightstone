@@ -20,25 +20,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get the organization_id from query params (sent by the frontend)
-    const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organization_id');
-    
-    if (!organizationId) {
-      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
-    }
-
-    // Verify user has access to this organization
-    const { data: membership, error: membershipError } = await supabase
-      .from('organization_members')
-      .select('role')
-      .eq('organization_id', organizationId)
-      .eq('user_id', user.id)
+    // Get organization from authenticated user's profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', user.id)
       .single();
 
-    if (membershipError || !membership) {
-      return NextResponse.json({ error: 'Access denied to this organization' }, { status: 403 });
+    if (profileError || !profile || !profile.organization_id) {
+      console.log('🔍 User profile missing organization_id:', { profileError, profile });
+      return NextResponse.json([]);  // Return empty array instead of error
     }
+    
+    const organizationId = profile.organization_id;
 
     // Query business managers bound to this organization
     const { data: boundAssets, error: assetsError } = await supabase

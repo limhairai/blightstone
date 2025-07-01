@@ -12,6 +12,7 @@ import { Button } from "../../../components/ui/button"
 import { useEffect } from "react"
 import useSWR from 'swr'
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useCurrentOrganization } from "@/lib/swr-config"
 import { getInitials } from "../../../lib/utils"
 import { getAvatarClasses, gradientTokens } from "../../../lib/design-tokens"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -20,18 +21,17 @@ interface SettingsLayoutProps {
   children: React.ReactNode
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
   const { currentOrganizationId } = useOrganizationStore();
   
-  const { data, error, isLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
-  );
+  // Use the proper authenticated hook
+  const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
   const currentOrganization = data?.organizations?.[0];
+  
+  // Temporary debug
+  console.log('🔍 Settings Debug:', { currentOrganizationId, data, currentOrganization, isLoading, error });
 
   useEffect(() => {
     setPageTitle("Settings")

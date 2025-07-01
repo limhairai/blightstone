@@ -20,6 +20,8 @@ import { cn } from "../../lib/utils"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useAuth } from '@/contexts/AuthContext'
+import { authenticatedFetcher } from '@/lib/swr-config'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +52,7 @@ type AppBusiness = {
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function BusinessesTable() {
+  const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
   const { theme } = useTheme()
   const { mutate } = useSWRConfig()
@@ -64,17 +67,16 @@ export function BusinessesTable() {
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
-    if (currentOrganizationId) params.set('organization_id', currentOrganizationId);
     if (searchQuery) params.set('search', searchQuery);
     if (statusFilter !== 'all') params.set('status', statusFilter);
     if (industryFilter !== 'all') params.set('industry', industryFilter);
     params.set('sort_by', sortBy);
     return params.toString();
-  }, [currentOrganizationId, searchQuery, statusFilter, industryFilter, sortBy]);
+  }, [searchQuery, statusFilter, industryFilter, sortBy]);
 
   const { data: businessesData, error, isLoading } = useSWR(
-    `/api/businesses?${queryString}`,
-    fetcher
+    session && currentOrganizationId ? [`/api/businesses?${queryString}`, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token)
   );
   
   const businesses = businessesData?.businesses || [];

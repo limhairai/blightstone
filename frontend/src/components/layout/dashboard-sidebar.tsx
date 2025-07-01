@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { AdHubLogo } from "../core/AdHubLogo"
 import { cn } from "../../lib/utils"
-import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard } from "lucide-react"
+import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, TrendingUp, Users } from "lucide-react"
 
 interface SidebarItem {
   name: string
@@ -19,14 +19,13 @@ interface SidebarItem {
 
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Businesses"]) // Default expanded
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Assets"]) // Only expand Assets by default
   const pathname = usePathname()
 
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     {
-      name: "Businesses",
-      href: "/dashboard/business-managers",
+      name: "Assets",
       icon: Building2,
       subItems: [
         { name: "Business Managers", href: "/dashboard/business-managers", icon: Building2 },
@@ -34,12 +33,9 @@ export function DashboardSidebar() {
       ],
     },
     { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
+    { name: "Top-up Requests", href: "/dashboard/topup-requests", icon: TrendingUp },
     { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
-    {
-      name: "Settings",
-      href: "/dashboard/settings",
-      icon: Settings,
-    },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 
   const toggleExpanded = (itemName: string) => {
@@ -55,28 +51,20 @@ export function DashboardSidebar() {
       return pathname === "/dashboard"
     }
     
-    // Special handling for wallet vs transactions to prevent both from being highlighted
-    if (href === "/dashboard/wallet") {
-      return pathname === "/dashboard/wallet" // Only exact match for wallet
-    }
-    if (href === "/dashboard/transactions") {
-      return pathname === "/dashboard/transactions" // Only exact match for transactions
-    }
-    
     // For exact matches
     if (pathname === href) {
       return true
     }
     
-    // For sections that have sub-routes (businesses, settings), use startsWith
-    if (href === "/dashboard/businesses" || href === "/dashboard/business-managers" || href === "/dashboard/settings") {
+    // For sections that have sub-routes (settings), use startsWith
+    if (href === "/dashboard/settings") {
       return pathname && pathname.startsWith(href)
     }
     
     return false
   }
 
-  const isSubItemActive = (parentHref: string, subItems?: { name: string; href: string; icon?: any }[]) => {
+  const isSubItemActive = (parentName: string, subItems?: { name: string; href: string; icon?: any }[]) => {
     if (!subItems) return false
     return subItems.some((subItem) => pathname === subItem.href)
   }
@@ -112,40 +100,13 @@ export function DashboardSidebar() {
             const Icon = item.icon
             const hasSubItems = item.subItems && item.subItems.length > 0
             const isItemExpanded = hasSubItems && isExpanded(item.name)
-            const hasActiveSubItem = hasSubItems && isSubItemActive(item.href || "", item.subItems)
+            const hasActiveSubItem = hasSubItems && isSubItemActive(item.name, item.subItems)
 
             return (
               <div key={item.name}>
                 {/* Main Item */}
                 <div className="flex items-center">
-                  {item.action ? (
-                    <div
-                      className="flex-1 cursor-pointer"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        item.action?.()
-                      }}
-                    >
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start rounded-md text-sm",
-                          (item.href && isActive(item.href)) || hasActiveSubItem
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                          collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
-                        )}
-                      >
-                        <Icon
-                          className={cn(
-                            (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
-                            collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
-                          )}
-                        />
-                        {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
-                      </Button>
-                    </div>
-                  ) : hasSubItems ? (
+                  {hasSubItems ? (
                     <div
                       className="flex-1 cursor-pointer"
                       onClick={(e) => {
@@ -159,7 +120,7 @@ export function DashboardSidebar() {
                         variant="ghost"
                         className={cn(
                           "w-full justify-start rounded-md text-sm",
-                          (item.href && isActive(item.href)) || hasActiveSubItem
+                          hasActiveSubItem
                             ? "bg-accent text-accent-foreground"
                             : "text-muted-foreground hover:text-foreground hover:bg-accent",
                           collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
@@ -167,18 +128,16 @@ export function DashboardSidebar() {
                       >
                         <Icon
                           className={cn(
-                            (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                            hasActiveSubItem ? "text-[#c4b5fd]" : "",
                             collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
                           )}
                         />
                         {!collapsed && (
                           <>
                             <span className="flex-1 text-left">{item.name}</span>
-                            {hasSubItems && (
-                              <ChevronDown
-                                className={cn("h-4 w-4 transition-transform", isItemExpanded ? "rotate-180" : "")}
-                              />
-                            )}
+                            <ChevronDown
+                              className={cn("h-4 w-4 transition-transform", isItemExpanded ? "rotate-180" : "")}
+                            />
                           </>
                         )}
                       </Button>
@@ -188,7 +147,7 @@ export function DashboardSidebar() {
                       href={item.href!} 
                       className={cn(
                         "flex-1 rounded-md text-sm transition-colors flex items-center",
-                        (item.href && isActive(item.href)) || hasActiveSubItem
+                        (item.href && isActive(item.href))
                           ? "bg-accent text-accent-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-accent",
                         collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
@@ -197,7 +156,7 @@ export function DashboardSidebar() {
                     >
                       <Icon
                         className={cn(
-                          (item.href && isActive(item.href)) || hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                          (item.href && isActive(item.href)) ? "text-[#c4b5fd]" : "",
                           collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
                         )}
                       />

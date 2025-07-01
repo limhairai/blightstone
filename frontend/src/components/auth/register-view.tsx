@@ -48,32 +48,20 @@ export function RegisterView() {
       console.log('📝 Registration result:', { data, error });
 
       if (error) {
-        let errorMessage = error.message;
-        
         console.error('📝 Registration error:', error);
-        
-        // Handle specific Supabase error messages
-        if (error.message.includes('User already registered')) {
-          errorMessage = "An account with this email already exists. Please sign in instead.";
-        } else if (error.message.includes('Password should be at least')) {
-          errorMessage = "Password must be at least 6 characters long.";
-        } else if (error.message.includes('Invalid email')) {
-          errorMessage = "Please enter a valid email address.";
-        }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
+        // Error toast is now handled by AuthContext
+        setError(error.message);
         setLoading(false);
         return;
       }
 
       if (data.user && !data.session) {
         // This means email confirmation is required.
+        // Success toast is now handled by AuthContext
         setRegistrationComplete(true);
-        toast.success("Registration successful! Please check your email to confirm your account.");
       } else if (data.user && data.session) {
         // User is immediately logged in.
-        toast.success("Registration successful! Redirecting to dashboard...");
+        // Success toast is now handled by AuthContext
         router.push("/dashboard");
       } else {
         // Handle unexpected cases
@@ -203,6 +191,8 @@ export function RegisterView() {
             {error && (
               <div className="text-red-500 text-sm text-center py-2">{error}</div>
             )}
+
+
 
             <div>
               <Button

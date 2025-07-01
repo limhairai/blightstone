@@ -11,6 +11,8 @@ import { useRouter } from "next/navigation"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useTheme } from "next-themes"
 import { Skeleton } from "../ui/skeleton"
+import { useAuth } from '@/contexts/AuthContext'
+import { authenticatedFetcher } from '@/lib/swr-config'
 
 interface BusinessBalance {
   id: string
@@ -23,33 +25,33 @@ interface BusinessBalance {
   isUnallocated?: boolean
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
-
 export function BusinessBalancesTable() {
   const router = useRouter()
   const { theme } = useTheme()
+  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [isExpanded, setIsExpanded] = useState(true)
 
   const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,
-    fetcher
+    session && currentOrganizationId ? [`/api/organizations?id=${currentOrganizationId}`, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token)
   );
-  const { data: businessesData, isLoading: areBusinessesLoading } = useSWR(
-    currentOrganizationId ? `/api/businesses?organization_id=${currentOrganizationId}` : null,
-    fetcher
+  const { data: businessManagersData, isLoading: areBMsLoading } = useSWR(
+    session && currentOrganizationId ? [`/api/admin/dolphin-assets?organization_id=${currentOrganizationId}&type=business_manager`, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token)
   );
 
   const organization = orgData?.organizations?.[0];
-  const businesses = businessesData?.businesses || [];
-  const isLoading = isOrgLoading || areBusinessesLoading;
+  const businessManagers = businessManagersData?.assets || [];
+  const isLoading = isOrgLoading || areBMsLoading;
 
-  // Calculate total balance from all businesses to determine percentages
-  const totalAllocated = businesses.reduce((sum, business) => sum + (business.balance || 0), 0)
-  const totalBalance = organization?.balance ?? 0;
+  // Calculate total balance from all business managers to determine percentages
+  // For now, since we don't have individual BM balances, we'll show the total balance as unallocated
+  const totalBalance = (organization?.balance_cents ?? 0) / 100;
+  const totalAllocated = 0; // TODO: Implement individual BM balance tracking
   const unallocatedAmount = Math.max(0, totalBalance - totalAllocated)
 
-  // Convert businesses to BusinessBalance format
+  // Convert business managers to BusinessBalance format
   const businessBalances: BusinessBalance[] = [
     {
       id: "unallocated",
@@ -60,22 +62,23 @@ export function BusinessBalancesTable() {
       accounts: 0,
       isUnallocated: true,
     },
-    ...businesses
-      .filter(business => business.status === "approved" || business.status === "active")
-      .map(business => ({
-        id: business.id.toString(),
-        name: business.name,
-        logo: getInitials(business.name),
-        balance: business.balance || 0,
-        allocationPercent: totalBalance > 0 ? ((business.balance || 0) / totalBalance) * 100 : 0,
-        accounts: 0, // TODO: Get real account count
-        bmId: business.id.toString(),
+    ...businessManagers
+      .filter(bm => bm.status === "active")
+      .map(bm => ({
+        id: bm.id.toString(),
+        name: bm.name,
+        logo: getInitials(bm.name),
+        balance: 0, // TODO: Implement individual BM balance tracking
+        allocationPercent: 0, // TODO: Calculate based on actual allocation
+        accounts: bm.metadata?.ad_accounts_count || 0,
+        bmId: bm.dolphin_id,
       }))
   ]
 
-  const handleBusinessClick = (business: BusinessBalance) => {
-    if (!business.isUnallocated) {
-      router.push(`/dashboard/businesses/${business.id}`)
+  const handleBusinessManagerClick = (businessManager: BusinessBalance) => {
+    if (!businessManager.isUnallocated) {
+      // For now, redirect to business managers page or show details
+      router.push(`/dashboard/business-managers`)
     }
   }
 
@@ -101,7 +104,7 @@ export function BusinessBalancesTable() {
     <Card className="bg-card border-border">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold text-foreground">Business balances</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Business Manager balances</CardTitle>
           <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 p-0">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
@@ -118,38 +121,38 @@ export function BusinessBalancesTable() {
             <div className="col-span-1"></div>
           </div>
 
-          {/* Business Rows */}
+          {/* Business Manager Rows */}
           <div className="divide-y divide-border">
-            {businessBalances.map((business) => (
+            {businessBalances.map((businessManager) => (
               <div
-                key={business.id}
+                key={businessManager.id}
                 className={`grid grid-cols-12 gap-4 px-6 py-4 transition-colors ${
-                  business.isUnallocated ? "hover:bg-muted/20" : "hover:bg-muted/30 cursor-pointer"
+                  businessManager.isUnallocated ? "hover:bg-muted/20" : "hover:bg-muted/30 cursor-pointer"
                 }`}
-                onClick={() => handleBusinessClick(business)}
+                onClick={() => handleBusinessManagerClick(businessManager)}
               >
                 {/* Asset Info */}
                 <div className="col-span-6 flex items-center gap-3">
                   <div className="relative">
-                    {business.isUnallocated ? (
+                    {businessManager.isUnallocated ? (
                       <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                        {business.logo}
+                        {businessManager.logo}
                       </div>
                     ) : (
                       <div className={getBusinessAvatarClasses('md', currentMode)}>
-                        {business.logo}
+                        {businessManager.logo}
                       </div>
                     )}
                   </div>
                   <div>
-                    <div className="font-medium text-foreground">{business.name}</div>
+                    <div className="font-medium text-foreground">{businessManager.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {business.isUnallocated ? (
+                      {businessManager.isUnallocated ? (
                         "Ready for distribution"
                       ) : (
                         <>
-                          {business.accounts} account{business.accounts !== 1 ? "s" : ""} 
-                          {business.bmId && ` • ${business.bmId}`}
+                          {businessManager.accounts} account{businessManager.accounts !== 1 ? "s" : ""} 
+                          {businessManager.bmId && ` • ${businessManager.bmId}`}
                         </>
                       )}
                     </div>
@@ -158,13 +161,13 @@ export function BusinessBalancesTable() {
 
                 {/* Balance */}
                 <div className="col-span-3 flex flex-col items-end justify-center">
-                  <div className="font-medium text-foreground">${formatCurrency(business.balance)}</div>
-                  <div className="text-xs text-muted-foreground">${formatCurrency(business.balance)} USD</div>
+                  <div className="font-medium text-foreground">${formatCurrency(businessManager.balance)}</div>
+                  <div className="text-xs text-muted-foreground">${formatCurrency(businessManager.balance)} USD</div>
                 </div>
 
                 {/* Allocation % */}
                 <div className="col-span-2 flex items-center justify-end">
-                  <div className="font-medium text-foreground">{business.allocationPercent.toFixed(2)}%</div>
+                  <div className="font-medium text-foreground">{businessManager.allocationPercent.toFixed(2)}%</div>
                 </div>
 
                 {/* Actions */}

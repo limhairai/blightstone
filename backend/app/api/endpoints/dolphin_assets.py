@@ -115,7 +115,7 @@ async def discover_dolphin_assets(
                     "type": "profile",
                     "dolphin_id": profile["id"],
                     "name": profile["name"],
-                    "status": "active" if profile["status"] == "ACTIVE" else "restricted",
+                    "status": "active" if profile["status"] == "ACTIVE" else "inactive",
                     "metadata": profile,
                     "last_synced_at": datetime.now(timezone.utc).isoformat()
                 }
@@ -172,19 +172,20 @@ async def discover_dolphin_assets(
                 balance = cab.get("balance", 0)
                 currency = cab.get("currency", "USD")
                 
-                # Map Dolphin status to our database status - BE ACCURATE!
+                # Map Dolphin status to our database status - ONLY USE VALID VALUES!
+                # Database constraint allows: 'active', 'inactive', 'suspended'
                 # Dolphin statuses: ACTIVE, TOKEN_ERROR, SUSPENDED, RESTRICTED
                 if cab_status == "ACTIVE":
                     status = "active"
                 elif cab_status == "SUSPENDED":
                     status = "suspended"  # Facebook suspended the account
                 elif cab_status == "RESTRICTED":
-                    status = "restricted"  # Facebook restricted the account
+                    status = "inactive"  # Facebook restricted the account - map to inactive
                 elif cab_status == "TOKEN_ERROR":
-                    status = "connection_error"  # Dolphin can't connect (auth issue)
+                    status = "inactive"  # Dolphin can't connect (auth issue) - map to inactive
                 else:
-                    # Unknown status - default to connection error to be safe
-                    status = "connection_error"
+                    # Unknown status - default to inactive to be safe
+                    status = "inactive"
                 
                 # Get managing profile info
                 managing_profiles = cab.get("accounts", [])
@@ -1019,7 +1020,7 @@ async def handle_profile_switch(
         assets_updated = 0
         
         for asset in assets_response.data:
-            asset_metadata = asset.get("asset_metadata", {})
+            asset_metadata = asset.get("metadata", {})
             needs_update = False
             
             # Check if this asset is managed by the old profile
@@ -1049,7 +1050,7 @@ async def handle_profile_switch(
                 })
                 
                 supabase.table("asset").update({
-                    "asset_metadata": asset_metadata,
+                    "metadata": asset_metadata,
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }).eq("id", asset["id"]).execute()
                 

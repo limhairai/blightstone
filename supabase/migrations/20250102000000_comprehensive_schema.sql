@@ -480,13 +480,40 @@ $$ LANGUAGE plpgsql;
 -- Function to handle new user registration
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  new_org_id UUID;
+  user_name TEXT;
 BEGIN
-  INSERT INTO public.profiles (id, name, email)
+  -- Extract user name from metadata or email
+  user_name := COALESCE(
+    NEW.raw_user_meta_data->>'name',
+    NEW.raw_user_meta_data->>'full_name',
+    split_part(NEW.email, '@', 1)
+  );
+
+  -- Create organization for the new user
+  INSERT INTO public.organizations (name, owner_id)
+  VALUES (user_name || '''s Organization', NEW.id)
+  RETURNING organization_id INTO new_org_id;
+
+  -- Create wallet for the organization
+  INSERT INTO public.wallets (organization_id, balance_cents)
+  VALUES (new_org_id, 0);
+
+  -- Add user as owner in organization_members
+  INSERT INTO public.organization_members (user_id, organization_id, role)
+  VALUES (NEW.id, new_org_id, 'owner');
+
+  -- Create profile with organization_id set
+  INSERT INTO public.profiles (id, name, email, organization_id, role)
   VALUES (
     NEW.id,
-    NEW.raw_user_meta_data->>'name',
-    NEW.email
+    user_name,
+    NEW.email,
+    new_org_id,
+    'client'
   );
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
