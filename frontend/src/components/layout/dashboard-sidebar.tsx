@@ -35,6 +35,7 @@ export function DashboardSidebar() {
     { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
     { name: "Top-up Requests", href: "/dashboard/topup-requests", icon: TrendingUp },
     { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
+
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 

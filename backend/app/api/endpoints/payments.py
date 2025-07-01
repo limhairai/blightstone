@@ -514,8 +514,43 @@ async def handle_subscription_created(supabase, subscription):
 
 async def handle_subscription_updated(supabase, subscription):
     """Handle subscription updates"""
-    # TODO: Implement subscription handling
-    pass
+    try:
+        organization_id = subscription.metadata.get('organization_id')
+        if not organization_id:
+            logger.error("No organization_id in subscription metadata")
+            return
+        
+        # Update subscription in database
+        subscription_data = {
+            "status": subscription.status,
+            "current_period_start": datetime.fromtimestamp(subscription.current_period_start, timezone.utc),
+            "current_period_end": datetime.fromtimestamp(subscription.current_period_end, timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        if subscription.cancel_at_period_end:
+            subscription_data["cancel_at_period_end"] = True
+        
+        if subscription.canceled_at:
+            subscription_data["canceled_at"] = datetime.fromtimestamp(subscription.canceled_at, timezone.utc)
+        
+        supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
+        
+        # Handle status changes
+        if subscription.status == "past_due":
+            from backend.app.services.subscription_service import subscription_service
+            await subscription_service.handle_payment_failure(organization_id, days_overdue=1)
+        elif subscription.status == "unpaid":
+            from backend.app.services.subscription_service import subscription_service
+            await subscription_service.handle_payment_failure(organization_id, days_overdue=7)
+        elif subscription.status == "active":
+            from backend.app.services.subscription_service import subscription_service
+            await subscription_service.reactivate_account(organization_id)
+        
+        logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
+        
+    except Exception as e:
+        logger.error(f"Error handling subscription update: {e}", exc_info=True)
 
 async def handle_invoice_paid(supabase, invoice):
     """Handle successful invoice payment"""

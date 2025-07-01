@@ -13,7 +13,7 @@ import { gradients } from "../../lib/design-system"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { Badge } from "../ui/badge"
-import { BulkFundOperations } from "../wallet/bulk-fund-operations"
+
 import { CreateAdAccountDialog } from "./create-ad-account-dialog"
 import { TopUpDialog } from "./top-up-dialog"
 import { AccountsTable } from "./accounts-table"

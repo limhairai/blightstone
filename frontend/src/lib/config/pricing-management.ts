@@ -7,10 +7,10 @@ import { DISPLAY_CONFIG } from './financial'
 
 // Default fee rates since they're not in the secure financial config
 const DEFAULT_FEE_RATES = {
-  FREE: 0.05,
-  BASIC: 0.04,
-  PRO: 0.03,
-  ENTERPRISE: 0.02
+  STARTER: 0.06,
+  GROWTH: 0.03,
+  SCALE: 0.015,
+  ENTERPRISE: 0.01
 }
 
 // Pricing Plan Interface
@@ -39,102 +39,89 @@ export interface PricingPlan {
 // Dynamic Pricing Configuration
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    id: 'free',
-    name: 'Free',
-    description: 'Perfect for testing and small projects',
-    basePrice: 0,
+    id: 'starter',
+    name: 'Starter',
+    description: 'Perfect for small businesses getting started',
+    basePrice: 29,
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      'Up to 2 ad accounts',
-      'Basic dashboard',
-      'Email support',
-      '$1,000 monthly spend limit'
+      '1 Business Manager',
+      '5 Ad Accounts',
+      '2 Team Members',
+      '6% ad spend fee'
     ],
     limits: {
-      dailySpend: 100,
-      monthlySpend: 1000,
-      accountsLimit: 2,
-      usersLimit: 1
+      accountsLimit: 5,
+      usersLimit: 2
     },
-    feeRate: DEFAULT_FEE_RATES.FREE,
+    feeRate: 0.06, // 6%
     isActive: true,
     trialDays: 0
   },
   {
-    id: 'basic',
-    name: 'Basic',
+    id: 'growth',
+    name: 'Growth',
     description: 'For growing businesses',
-    basePrice: 299,
+    basePrice: 149,
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      'Up to 10 ad accounts',
-      'Advanced analytics',
-      'Priority email support',
-      '$30,000 monthly spend limit',
-      'Team collaboration'
+      '3 Business Managers',
+      '21 Ad Accounts',
+      '5 Team Members',
+      '3% ad spend fee'
     ],
     limits: {
-      dailySpend: 3000,
-      monthlySpend: 30000,
-      accountsLimit: 10,
+      accountsLimit: 21,
       usersLimit: 5
     },
-    feeRate: DEFAULT_FEE_RATES.BASIC,
+    feeRate: 0.03, // 3%
     isActive: true,
     isPopular: true,
-    trialDays: 14
+    trialDays: 0
   },
   {
-    id: 'pro',
-    name: 'Pro',
+    id: 'scale',
+    name: 'Scale',
     description: 'For scaling teams',
-    basePrice: 799,
+    basePrice: 499,
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      'Unlimited ad accounts',
-      'Advanced automation',
-      'Phone + chat support',
-      '$100,000 monthly spend limit',
-      'Advanced team features',
-      'Custom integrations'
+      '10 Business Managers',
+      '70 Ad Accounts',
+      '15 Team Members',
+      '1.5% ad spend fee'
     ],
     limits: {
-      dailySpend: 10000,
-      monthlySpend: 100000,
-      accountsLimit: -1, // unlimited
-      usersLimit: 25
+      accountsLimit: 70,
+      usersLimit: 15
     },
-    feeRate: DEFAULT_FEE_RATES.PRO,
+    feeRate: 0.015, // 1.5%
     isActive: true,
-    trialDays: 14
+    trialDays: 0
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
     description: 'For large organizations',
-    basePrice: 2499,
+    basePrice: 1499,
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      'Everything in Pro',
-      'Dedicated account manager',
-      'Custom spend limits',
-      'SLA guarantees',
-      'Advanced security',
-      'Custom contracts'
+      'Unlimited Business Managers',
+      'Unlimited Ad Accounts',
+      'Unlimited Team Members',
+      '1% ad spend fee'
     ],
     limits: {
-      dailySpend: 50000,
-      monthlySpend: 300000,
-      accountsLimit: -1,
+      accountsLimit: -1, // unlimited
       usersLimit: -1 // unlimited
     },
-    feeRate: DEFAULT_FEE_RATES.ENTERPRISE,
+    feeRate: 0.01, // 1%
     isActive: true,
-    trialDays: 30
+    trialDays: 0
   }
 ]
 

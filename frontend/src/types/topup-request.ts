@@ -14,6 +14,10 @@ export interface TopupRequest {
   processed_at?: string
   created_at: string
   updated_at: string
+  // Fee tracking fields
+  fee_amount_cents?: number
+  total_deducted_cents?: number
+  plan_fee_percentage?: number
   metadata?: {
     business_manager_name?: string
     business_manager_id?: string

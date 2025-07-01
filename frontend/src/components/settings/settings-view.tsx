@@ -2,18 +2,12 @@
 
 import { useState } from "react"
 import {
-  AlertTriangle,
-  Check,
   Copy,
   Edit,
   Save,
   X,
-  Shield,
-  Users,
   CreditCard,
   Building,
-  Mail,
-  Clock,
 } from "lucide-react"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
@@ -22,24 +16,15 @@ import { Label } from "../ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { Badge } from "../ui/badge"
-import { Avatar, AvatarFallback } from "../ui/avatar"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "../ui/dialog"
 // Note: APP_ORGANIZATIONS import removed - using real organization data instead
 import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
+import { useSubscription } from "../../hooks/useSubscription"
+import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 
 export function SettingsView() {
   const [isEditing, setIsEditing] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState("")
-  const [inviteRole, setInviteRole] = useState("member")
-  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
+  const { currentPlan, usage, billingHistory, isLoading } = useSubscription()
   const [formData, setFormData] = useState({
     businessName: "Test Org",
     businessType: "LLC",
@@ -92,36 +77,13 @@ export function SettingsView() {
     }
   }
 
-  const handleInvite = () => {
-    // Comprehensive form validation
-    const validation = validateForm([
-      () => validators.required(inviteEmail, 'Email'),
-      () => validators.email(inviteEmail),
-      () => validators.select(inviteRole, 'Role'),
-    ])
-    
-    if (!validation.isValid) {
-      showValidationErrors(validation.errors)
-      return
-    }
 
-    try {
-      // 🚨 SECURITY: Removed dangerous console log - console.log(`Inviting ${inviteEmail} as ${inviteRo...;
-      showSuccessToast("Invitation Sent!", `An invitation has been sent to ${inviteEmail}.`)
-      setInviteDialogOpen(false)
-      setInviteEmail("")
-    } catch (error) {
-      showValidationErrors([{ field: 'general', message: 'Failed to send invitation. Please try again.' }])
-    }
-  }
 
   return (
     <div className="space-y-3">
       <Tabs defaultValue="organization" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="organization" className="flex items-center gap-2 text-xs"><Building className="w-3 h-3" />Organization</TabsTrigger>
-          <TabsTrigger value="team" className="flex items-center gap-2 text-xs"><Users className="w-3 h-3" />Team</TabsTrigger>
-          <TabsTrigger value="security" className="flex items-center gap-2 text-xs"><Shield className="w-3 h-3" />Security</TabsTrigger>
           <TabsTrigger value="billing" className="flex items-center gap-2 text-xs"><CreditCard className="w-3 h-3" />Billing</TabsTrigger>
         </TabsList>
 
@@ -284,186 +246,7 @@ export function SettingsView() {
           </div>
         </TabsContent>
 
-        <TabsContent value="team" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <div>
-                <CardTitle className="text-base">Team Members</CardTitle>
-                <CardDescription className="text-xs">Manage your team members and their access levels.</CardDescription>
-              </div>
-              <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" size="sm">Invite User</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="text-base">Invite Team Member</DialogTitle>
-                    <DialogDescription className="text-xs">Send an invitation to join your organization.</DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 py-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="email" className="text-xs">Email Address <span className="text-red-500">*</span></Label>
-                      <Input id="email" placeholder="colleague@example.com" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} className="h-8 text-xs" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="role" className="text-xs">Role <span className="text-red-500">*</span></Label>
-                      <Select value={inviteRole} onValueChange={setInviteRole}>
-                        <SelectTrigger id="role" className="h-8 text-xs">
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="member">Member</SelectItem>
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setInviteDialogOpen(false)} size="sm">Cancel</Button>
-                    <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" onClick={handleInvite} size="sm">Send Invitation</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <div className="space-y-3">
-                <div className="rounded-md border">
-                  <div className="flex items-center p-3">
-                    <div className="flex items-center gap-3 flex-1">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs">JD</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-xs">John Doe</p>
-                        <p className="text-xs text-muted-foreground">john.doe@example.com</p>
-                      </div>
-                    </div>
-                    <Badge className="mr-3 bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe] text-xs">Admin</Badge>
-                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 h-6 text-xs">Remove</Button>
-                  </div>
-                </div>
-                <div className="rounded-md border border-dashed bg-muted/50">
-                  <div className="flex items-center p-3">
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-xs">alex.johnson@example.com</p>
-                        <div className="flex items-center text-xs text-muted-foreground">
-                          <Clock className="mr-1 h-2 w-2" />
-                          <span>Invited 2 days ago</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant="outline" className="mr-3 bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe] text-xs">Viewer</Badge>
-                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 h-6 text-xs">Cancel</Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Roles & Permissions</CardTitle>
-              <CardDescription className="text-xs">Learn about the different roles and their permissions.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-3 pt-0">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium text-xs">Admin</h4>
-                  <p className="text-xs text-muted-foreground">Full access to all features, including user management, billing, and organization settings.</p>
-                </div>
-                <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium text-xs">Member</h4>
-                  <p className="text-xs text-muted-foreground">Can create and manage businesses and ad accounts. Cannot manage users or billing.</p>
-                </div>
-                <div className="space-y-1 p-3 bg-muted/30 rounded-lg">
-                  <h4 className="font-medium text-xs">Viewer</h4>
-                  <p className="text-xs text-muted-foreground">Read-only access to businesses and ad accounts. Cannot make changes or create resources.</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="security" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-base">
-                  Two-Factor Authentication
-                  <Badge variant="outline" className="text-red-600 border-red-200 text-xs">Not Enabled</Badge>
-                </CardTitle>
-                <CardDescription className="text-xs">Add an extra layer of security to your account.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 p-3 pt-0">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                    <span className="text-xs">SMS Authentication</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                    <span className="text-xs">Authenticator App</span>
-                  </div>
-                </div>
-                <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90" size="sm">Set up 2FA</Button>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Active Sessions</CardTitle>
-                <CardDescription className="text-xs">Monitor and manage your active login sessions.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 p-3 pt-0">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-xs">Current Session</p>
-                      <p className="text-xs text-muted-foreground">Chrome on macOS • San Francisco, CA</p>
-                    </div>
-                    <Badge className="bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe] text-xs">Current</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-xs">Mobile App</p>
-                      <p className="text-xs text-muted-foreground">iPhone • 2 hours ago</p>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-6 text-xs">Revoke</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="md:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Password</CardTitle>
-                <CardDescription className="text-xs">Update your account password for better security.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="currentPassword" className="text-xs">Current Password</Label>
-                    <Input id="currentPassword" type="password" placeholder="Enter current password" className="h-8 text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="newPassword" className="text-xs">New Password</Label>
-                    <Input id="newPassword" type="password" placeholder="Enter new password" className="h-8 text-xs" />
-                    <div className="text-xs text-muted-foreground">Must be at least 8 characters with uppercase, lowercase, and numbers</div>
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="confirmPassword" className="text-xs">Confirm New Password</Label>
-                    <Input id="confirmPassword" type="password" placeholder="Confirm new password" className="h-8 text-xs" />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90" size="sm">Update Password</Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
 
         <TabsContent value="billing" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -477,7 +260,9 @@ export function SettingsView() {
                   <div className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
                     <div>
                       <p className="font-medium text-xs">Current Plan</p>
-                      <p className="text-xs text-muted-foreground">{APP_ORGANIZATIONS[0].plan} Plan</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isLoading ? 'Loading...' : currentPlan ? `${currentPlan.name} Plan` : 'No Plan'}
+                      </p>
                     </div>
                     <Badge className="bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe] text-xs">Active</Badge>
                   </div>
@@ -506,22 +291,24 @@ export function SettingsView() {
                         <div>Amount</div>
                         <div className="text-right">Invoice</div>
                       </div>
-                      <div className="grid grid-cols-4 gap-3 p-3 text-xs">
-                        <div>May 1, 2025</div>
-                        <div>{APP_ORGANIZATIONS[0].plan} Plan</div>
-                        <div>$299.00</div>
-                        <div className="text-right">
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">Download</Button>
+                      {billingHistory && billingHistory.length > 0 ? (
+                        billingHistory.slice(0, 2).map((invoice, index) => (
+                          <div key={index} className="grid grid-cols-4 gap-3 p-3 text-xs border-t">
+                            <div>{new Date(invoice.date).toLocaleDateString()}</div>
+                            <div>{invoice.description || `${currentPlan?.name} Plan`}</div>
+                            <div>${(invoice.amount / 100).toFixed(2)}</div>
+                            <div className="text-right">
+                              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">Download</Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="grid grid-cols-4 gap-3 p-3 text-xs border-t">
+                          <div colSpan={4} className="col-span-4 text-center text-muted-foreground">
+                            No billing history yet
+                          </div>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3 p-3 text-xs border-t">
-                        <div>Apr 1, 2025</div>
-                        <div>{APP_ORGANIZATIONS[0].plan} Plan</div>
-                        <div>$299.00</div>
-                        <div className="text-right">
-                          <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">Download</Button>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -530,44 +317,77 @@ export function SettingsView() {
             <div>
               <Card>
                 <CardHeader className="bg-muted/50 pb-2">
-                  <CardTitle className="text-base">{APP_ORGANIZATIONS[0].plan} Plan</CardTitle>
+                  <CardTitle className="text-base">
+                    {isLoading ? 'Loading...' : currentPlan ? `${currentPlan.name} Plan` : 'No Plan'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="pt-4 p-3">
-                  <div className="text-center mb-3">
-                    <div className="text-3xl font-bold">$299</div>
-                    <div className="text-xs text-muted-foreground">per month</div>
-                  </div>
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center">
-                      <Check className="h-3 w-3 mr-2 text-primary" />
-                      <span className="text-xs">Unlimited ad accounts</span>
+                  {currentPlan ? (
+                    <>
+                      <div className="text-center mb-3">
+                        <div className="text-3xl font-bold">${currentPlan.monthlyPrice}</div>
+                        <div className="text-xs text-muted-foreground">per month</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          + {currentPlan.adSpendFee}% ad spend fee
+                        </div>
+                      </div>
+                      <div className="space-y-3 mb-4">
+                        <div className="flex items-center">
+                          <Check className="h-3 w-3 mr-2 text-primary" />
+                          <span className="text-xs">
+                            {currentPlan.maxTeamMembers === -1 ? 'Unlimited' : currentPlan.maxTeamMembers} team members
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Check className="h-3 w-3 mr-2 text-primary" />
+                          <span className="text-xs">
+                            {currentPlan.maxBusinesses === -1 ? 'Unlimited' : currentPlan.maxBusinesses} business managers
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Check className="h-3 w-3 mr-2 text-primary" />
+                          <span className="text-xs">
+                            {currentPlan.maxAdAccounts === -1 ? 'Unlimited' : currentPlan.maxAdAccounts} ad accounts
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          <Check className="h-3 w-3 mr-2 text-primary" />
+                          <span className="text-xs">Standard support</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" 
+                          size="sm"
+                          onClick={() => setUpgradeDialogOpen(true)}
+                        >
+                          Upgrade Plan
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-muted-foreground mb-3">No subscription plan</p>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" 
+                        size="sm"
+                        onClick={() => setUpgradeDialogOpen(true)}
+                      >
+                        Choose Plan
+                      </Button>
                     </div>
-                    <div className="flex items-center">
-                      <Check className="h-3 w-3 mr-2 text-primary" />
-                      <span className="text-xs">Priority support</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Check className="h-3 w-3 mr-2 text-primary" />
-                      <span className="text-xs">Advanced analytics</span>
-                    </div>
-                    <div className="flex items-center">
-                      <Check className="h-3 w-3 mr-2 text-primary" />
-                      <span className="text-xs">Team collaboration</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center text-xs">
-                      <AlertTriangle className="h-3 w-3 mr-2 text-amber-500" />
-                      <span>Trial ends May 29, 2025</span>
-                    </div>
-                    <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" size="sm">Manage Subscription</Button>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
           </div>
         </TabsContent>
       </Tabs>
+
+      <PlanUpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+      />
     </div>
   )
 } 

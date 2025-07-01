@@ -118,7 +118,7 @@ async function createDemoUser() {
             .upsert({
                 name: 'Demo Organization',
                 owner_id: demoUser.id,
-                plan_id: 'silver',
+                plan_id: 'growth',
                 current_businesses_count: 0,
                 current_ad_accounts_count: 0,
                 current_team_members_count: 1,

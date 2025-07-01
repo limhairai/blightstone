@@ -8,7 +8,7 @@ AdHub is a B2B SaaS platform that facilitates Meta (Facebook) agency ad account 
 
 ### Revenue Streams
 1. **Top-up Fees**: Percentage-based fees on client deposits (e.g., 3% on $1,000 = $30 fee)
-2. **Monthly Subscriptions**: Tiered pricing plans (Free, Bronze, Silver, Gold, Platinum)
+2. **Monthly Subscriptions**: Tiered pricing plans (Starter, Growth, Scale, Enterprise)
 3. **Pricing Structure**: Higher-tier plans = Lower top-up fees + Higher subscription costs
 
 ### Service Offering

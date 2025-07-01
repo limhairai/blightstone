@@ -16,7 +16,7 @@ export default function AccountMetrics() {
   const totalAccounts = accData?.accounts?.length ?? 0;
   const totalBalance = orgData?.balance_cents ? orgData.balance_cents / 100 : 0;
   const businesses = bizData?.length ?? 0;
-  const accountLimit = 50; // TODO: This could be fetched from user plan/settings
+  // Remove hardcoded account limit - will be handled by subscription system
   
   const isLoading = isOrgLoading || isBizLoading || isAccLoading;
 
@@ -24,8 +24,6 @@ export default function AccountMetrics() {
     {
       title: "Total accounts",
       value: totalAccounts.toString(),
-      limit: accountLimit.toString(),
-      percentage: (totalAccounts / accountLimit) * 100,
       icon: CreditCard,
       trend: null,
     },

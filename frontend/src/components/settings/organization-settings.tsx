@@ -25,30 +25,43 @@ import { useCurrentOrganization, useBusinessManagers, useAdAccounts, authenticat
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-const pricingPlans = [
+// Default subscription plans (fallback)
+const defaultPlans = [
   {
-    id: "bronze",
-    title: "Bronze",
-    price: 29,
-    features: ["Up to 2 businesses", "20 ad accounts", "3 team members", "Basic support"]
+    id: "starter",
+    name: "Starter",
+    monthlyPrice: 29,
+    adSpendFee: 6.0,
+    maxTeamMembers: 2,
+    maxBusinesses: 1,
+    maxAdAccounts: 5
   },
   {
-    id: "silver", 
-    title: "Silver",
-    price: 99,
-    features: ["Up to 5 businesses", "50 ad accounts", "10 team members", "Priority support"]
+    id: "growth", 
+    name: "Growth",
+    monthlyPrice: 149,
+    adSpendFee: 3.0,
+    maxTeamMembers: 5,
+    maxBusinesses: 3,
+    maxAdAccounts: 21
   },
   {
-    id: "gold",
-    title: "Gold", 
-    price: 199,
-    features: ["Up to 10 businesses", "100 ad accounts", "25 team members", "Premium support"]
+    id: "scale",
+    name: "Scale", 
+    monthlyPrice: 499,
+    adSpendFee: 1.5,
+    maxTeamMembers: 15,
+    maxBusinesses: 10,
+    maxAdAccounts: 70
   },
   {
-    id: "platinum",
-    title: "Platinum",
-    price: 399,
-    features: ["Up to 20 businesses", "200 ad accounts", "50 team members", "24/7 support"]
+    id: "enterprise",
+    name: "Enterprise",
+    monthlyPrice: 1499,
+    adSpendFee: 1.0,
+    maxTeamMembers: -1,
+    maxBusinesses: -1,
+    maxAdAccounts: -1
   }
 ]
 
@@ -102,10 +115,10 @@ export function OrganizationSettings() {
   const totalAccounts = accounts.length
   const totalTeamMembers = teamMembers.length
   
-  // Get current plan with fallback to Silver if plan not found
-  const currentPlan = pricingPlans.find(plan => 
-    plan.id.toLowerCase() === (organization?.plan || 'silver').toLowerCase()
-  ) || pricingPlans[1] // Default to Silver plan
+  // Get current plan with fallback to Growth if plan not found
+  const currentPlan = defaultPlans.find(plan => 
+    plan.id.toLowerCase() === (organization?.plan || 'growth').toLowerCase()
+  ) || defaultPlans[1] // Default to Growth plan
 
   const [formData, setFormData] = useState({
     name: organization?.name || "",
@@ -179,25 +192,6 @@ export function OrganizationSettings() {
   // Use organization-specific billing history
   const billingHistory = organization?.billing?.billingHistory || []
 
-  // Use centralized pricing plans
-  const availablePlans = pricingPlans.map(plan => ({
-    id: plan.id,
-    name: plan.title,
-    price: plan.price,
-    businessesLimit: plan.id === "bronze" ? 2 : plan.id === "silver" ? 5 : plan.id === "gold" ? 10 : 20,
-    adAccountsLimit: plan.id === "bronze" ? 20 : plan.id === "silver" ? 50 : plan.id === "gold" ? 100 : 200,
-    teamMembersLimit: plan.id === "bronze" ? 3 : plan.id === "silver" ? 10 : plan.id === "gold" ? 25 : 50,
-    features: plan.features,
-    current: plan.id.toLowerCase() === (organization?.plan || 'silver').toLowerCase(),
-  }))
-
-  // Calculate plan limits based on current organization's plan
-  const planLimits = {
-    businessesLimit: organization?.limits?.businesses || 5,
-    adAccountsLimit: organization?.limits?.adAccounts || 100,
-    teamMembersLimit: organization?.limits?.teamMembers || 10,
-  }
-
   const globalLoading = isOrgLoading || isBizLoading || isAccLoading || isTeamLoading;
 
   if (globalLoading) {
@@ -237,7 +231,7 @@ export function OrganizationSettings() {
     <>
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Usage & Limits */}
+        {/* Left Column - Organization Details */}
         <div className="lg:col-span-2 space-y-4">
           {/* Usage & Limits */}
           <Card className="bg-card border border-border">
@@ -248,17 +242,22 @@ export function OrganizationSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Businesses Usage */}
+              {/* Business Managers Usage */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-foreground">Businesses</Label>
+                  <Label className="text-sm font-medium text-foreground">Business Managers</Label>
                   <span className="text-sm text-muted-foreground">
-                    {totalBusinesses} / {planLimits.businessesLimit}
+                    {totalBusinesses} / {currentPlan.maxBusinesses === -1 ? '∞' : currentPlan.maxBusinesses}
                   </span>
                 </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(totalBusinesses / planLimits.businessesLimit) * 100}%` }}></div>
-                  </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full" 
+                    style={{ 
+                      width: `${currentPlan.maxBusinesses === -1 ? 0 : Math.min(100, (totalBusinesses / currentPlan.maxBusinesses) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
               </div>
 
               {/* Ad Accounts Usage */}
@@ -266,12 +265,17 @@ export function OrganizationSettings() {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Ad Accounts</Label>
                   <span className="text-sm text-muted-foreground">
-                    {totalAccounts} / {planLimits.adAccountsLimit}
+                    {totalAccounts} / {currentPlan.maxAdAccounts === -1 ? '∞' : currentPlan.maxAdAccounts}
                   </span>
                 </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(totalAccounts / planLimits.adAccountsLimit) * 100}%` }}></div>
-                  </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full" 
+                    style={{ 
+                      width: `${currentPlan.maxAdAccounts === -1 ? 0 : Math.min(100, (totalAccounts / currentPlan.maxAdAccounts) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
               </div>
 
               {/* Team Members Usage */}
@@ -279,12 +283,29 @@ export function OrganizationSettings() {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Team Members</Label>
                   <span className="text-sm text-muted-foreground">
-                    {totalTeamMembers} / {planLimits.teamMembersLimit}
+                    {totalTeamMembers} / {currentPlan.maxTeamMembers === -1 ? '∞' : currentPlan.maxTeamMembers}
                   </span>
                 </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${(totalTeamMembers / planLimits.teamMembersLimit) * 100}%` }}></div>
-                  </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-blue-600 h-2 rounded-full" 
+                    style={{ 
+                      width: `${currentPlan.maxTeamMembers === -1 ? 0 : Math.min(100, (totalTeamMembers / currentPlan.maxTeamMembers) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Current Plan Summary */}
+              <div className="pt-2 border-t border-border">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Current Plan</span>
+                  <span className="text-foreground font-medium">{currentPlan.name}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Ad Spend Fee</span>
+                  <span className="text-foreground font-medium">{currentPlan.adSpendFee}%</span>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -333,7 +354,7 @@ export function OrganizationSettings() {
                   Current Plan
                 </Badge>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-2xl font-bold text-foreground">${currentPlan.price}</span>
+                  <span className="text-2xl font-bold text-foreground">${currentPlan.monthlyPrice}</span>
                   <span className="text-sm text-muted-foreground">/ month</span>
                 </div>
                 <div className="space-y-2">
@@ -346,12 +367,8 @@ export function OrganizationSettings() {
                     <span className="text-foreground font-medium">{organization?.billing?.billingCycle || "monthly"}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Businesses limit</span>
-                    <span className="text-foreground font-medium">{planLimits.businessesLimit} businesses</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Ad accounts limit</span>
-                    <span className="text-foreground font-medium">{planLimits.adAccountsLimit} accounts</span>
+                    <span className="text-muted-foreground">Plan features</span>
+                    <span className="text-foreground font-medium">See upgrade dialog</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Payment method</span>
@@ -535,60 +552,64 @@ export function OrganizationSettings() {
           </DialogHeader>
           <div className="py-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {availablePlans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`relative p-4 border rounded-lg transition-all ${
-                    plan.current 
-                      ? "border-[#c4b5fd] bg-[#c4b5fd]/10 ring-2 ring-[#c4b5fd]/20" 
-                      : "border-border hover:border-[#c4b5fd]/50 hover:shadow-md"
-                  }`}
-                >
-                  {plan.current && (
-                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                      <Badge className={gradientTokens.primary}>
-                        Current Plan
-                      </Badge>
-                    </div>
-                  )}
-                  
-                  <div className="text-center space-y-3">
-                    <div>
-                      <h4 className="text-lg font-semibold text-foreground">{plan.name}</h4>
-                      <div className="mt-2">
-                        <span className="text-2xl font-bold text-foreground">${plan.price}</span>
-                        <span className="text-sm text-muted-foreground">/month</span>
+              {defaultPlans.map((plan) => {
+                const isCurrent = plan.id.toLowerCase() === (organization?.plan || 'growth').toLowerCase()
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative p-4 border rounded-lg transition-all ${
+                      isCurrent 
+                        ? "border-[#c4b5fd] bg-[#c4b5fd]/10 ring-2 ring-[#c4b5fd]/20" 
+                        : "border-border hover:border-[#c4b5fd]/50 hover:shadow-md"
+                    }`}
+                  >
+                    {isCurrent && (
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                        <Badge className={gradientTokens.primary}>
+                          Current Plan
+                        </Badge>
                       </div>
-                    </div>
-                    
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <div>{plan.businessesLimit} businesses</div>
-                      <div>{plan.adAccountsLimit} ad accounts</div>
-                      <div>{plan.teamMembersLimit} team members</div>
-                    </div>
-                    
-                    {!plan.current ? (
-                      <Button
-                        className={`w-full ${gradientTokens.primary}`}
-                        onClick={() => {
-                          toast.success(`Upgrading to ${plan.name} plan...`)
-                          setUpgradeOpen(false)
-                        }}
-                      >
-                        Select Plan
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        className="w-full border-border text-foreground"
-                        disabled
-                      >
-                        Current Plan
-                      </Button>
                     )}
+                    
+                    <div className="text-center space-y-3">
+                      <div>
+                        <h4 className="text-lg font-semibold text-foreground">{plan.name}</h4>
+                        <div className="mt-2">
+                          <span className="text-2xl font-bold text-foreground">${plan.monthlyPrice}</span>
+                          <span className="text-sm text-muted-foreground">/month</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-1 text-xs text-muted-foreground">
+                        <div>{plan.maxBusinesses === -1 ? 'Unlimited' : plan.maxBusinesses} business managers</div>
+                        <div>{plan.maxAdAccounts === -1 ? 'Unlimited' : plan.maxAdAccounts} ad accounts</div>
+                        <div>{plan.maxTeamMembers === -1 ? 'Unlimited' : plan.maxTeamMembers} team members</div>
+                        <div>{plan.adSpendFee}% ad spend fee</div>
+                      </div>
+                      
+                      {!isCurrent ? (
+                        <Button
+                          className={`w-full ${gradientTokens.primary}`}
+                          onClick={() => {
+                            toast.success(`Upgrading to ${plan.name} plan...`)
+                            setUpgradeOpen(false)
+                          }}
+                        >
+                          Select Plan
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full border-border text-foreground"
+                          disabled
+                        >
+                          Current Plan
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
           <DialogFooter>

@@ -36,22 +36,25 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { status, approved_amount, admin_notes } = body;
+    const { status, admin_notes } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'Status is required' }, { status: 400 });
     }
 
-    // Update the funding request
+    // Update the topup request - no approved_amount needed, just use original amount
+    const updateData: any = {
+      status,
+      admin_notes,
+      processed_by: user.id,
+      processed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
     const { data: updatedRequest, error: updateError } = await supabase
-      .from('funding_requests')
-      .update({
-        status,
-        approved_amount_cents: status === 'approved' && approved_amount ? approved_amount * 100 : null,
-        admin_notes,
-        updated_at: new Date().toISOString()
-      })
-      .eq('request_id', id)
+      .from('topup_requests')
+      .update(updateData)
+      .eq('id', id)
       .select()
       .single();
 
@@ -64,7 +67,7 @@ export async function PATCH(
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('name, email')
-      .eq('id', updatedRequest.user_id)
+      .eq('id', updatedRequest.requested_by)
       .single();
 
     const { data: organization } = await supabase
@@ -73,40 +76,27 @@ export async function PATCH(
       .eq('organization_id', updatedRequest.organization_id)
       .single();
 
-    // Parse ad account info from notes
-    let adAccountName = 'Account Name Not Available';
-    let adAccountId = 'Account ID Not Available';
-    let businessManagerName = 'Unknown BM';
-    let businessManagerId = 'Unknown BM ID';
-
-    if (updatedRequest.notes) {
-      const accountNameMatch = updatedRequest.notes.match(/Top-up request for ad account:\s*([^(]+)/);
-      const accountIdMatch = updatedRequest.notes.match(/\(([^)]+)\)/);
-      
-      if (accountNameMatch) {
-        adAccountName = accountNameMatch[1].trim();
-      }
-      if (accountIdMatch) {
-        adAccountId = accountIdMatch[1].trim();
-      }
-    }
-
     const transformedRequest = {
-      id: updatedRequest.request_id,
+      id: updatedRequest.id,
       organization_id: updatedRequest.organization_id,
-      requested_by: updatedRequest.user_id,
-      ad_account_id: adAccountId,
-      ad_account_name: adAccountName,
-      amount_cents: updatedRequest.requested_amount_cents || 0,
-      currency: 'USD',
+      requested_by: updatedRequest.requested_by,
+      ad_account_id: updatedRequest.ad_account_id,
+      ad_account_name: updatedRequest.ad_account_name,
+      amount_cents: updatedRequest.amount_cents,
+      currency: updatedRequest.currency,
       status: updatedRequest.status,
-      priority: 'normal',
+      priority: updatedRequest.priority,
       notes: updatedRequest.notes,
       admin_notes: updatedRequest.admin_notes,
-      processed_by: null,
-      processed_at: null,
+      processed_by: updatedRequest.processed_by,
+      processed_at: updatedRequest.processed_at,
       created_at: updatedRequest.created_at,
       updated_at: updatedRequest.updated_at,
+      
+      // Fee tracking fields
+      fee_amount_cents: updatedRequest.fee_amount_cents || 0,
+      total_deducted_cents: updatedRequest.total_deducted_cents || 0,
+      plan_fee_percentage: updatedRequest.plan_fee_percentage || 0,
       
       // Additional fields for UI
       requested_by_user: {
@@ -115,10 +105,6 @@ export async function PATCH(
       },
       organization: {
         name: organization?.name || 'Unknown Organization'
-      },
-      metadata: {
-        business_manager_name: businessManagerName,
-        business_manager_id: businessManagerId
       }
     };
 

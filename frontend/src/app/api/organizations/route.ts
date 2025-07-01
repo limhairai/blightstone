@@ -141,6 +141,7 @@ export async function GET(request: NextRequest) {
       return {
         ...org,
         id: org.organization_id, // Map organization_id to id for frontend compatibility
+        organization_id: org.organization_id, // Keep original field for subscription API
         business_count: bmCount, // Keep field name for backward compatibility
         balance_cents: availableBalance, // Return available balance instead of total
         balance: availableBalance / 100, // Convert cents to dollars for backward compatibility

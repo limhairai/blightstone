@@ -115,12 +115,12 @@ test.describe('Complete AdHub Workflow', () => {
     await test.step('7. Subscription Plan Selection', async () => {
       await page.goto('http://localhost:3000/dashboard/settings/billing')
       
-      // Upgrade to Silver plan
+      // Upgrade to Growth plan
       await page.click('[data-testid="upgrade-plan-button"]')
-      await page.click('[data-testid="select-silver-plan"]')
+      await page.click('[data-testid="select-growth-plan"]')
       
       // Verify plan selection
-      await expect(page.locator('text=$299/month')).toBeVisible()
+      await expect(page.locator('text=$149/month')).toBeVisible()
     })
     
     // ========================================

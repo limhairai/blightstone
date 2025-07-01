@@ -14,6 +14,7 @@ import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
 import { WelcomeOnboardingModal } from "../onboarding/welcome-onboarding-modal"
 import { CompactAccountsTable } from "./compact-accounts-table"
+
 import { useSetupWidget } from "../layout/app-shell"
 import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon, RefreshCw } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
@@ -671,6 +672,8 @@ export function DashboardView() {
             </Card>
           </div>
 
+
+
           {/* Right column - Transactions */}
           <div className="lg:col-span-1">
             <Card className="border-border h-full">
@@ -713,7 +716,7 @@ export function DashboardView() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">Accounts</h2>
-              <span className="text-sm text-muted-foreground">{accounts.length} / 100</span>
+              <span className="text-sm text-muted-foreground">{accounts.length}</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => router.push('/dashboard/accounts')}>

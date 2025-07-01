@@ -35,6 +35,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       "/admin/transactions": { title: "Transactions" },
       "/admin/transactions/topups": { title: "Top-up Requests" },
       "/admin/transactions/history": { title: "Transaction History" },
+      "/admin/analytics": { title: "Business Analytics" },
       "/admin/applications/history": { title: "Application History" },
       "/admin/access-codes": { title: "Access Codes" },
       "/admin/analytics": { title: "Analytics" },

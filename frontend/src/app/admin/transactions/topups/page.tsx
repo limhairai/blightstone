@@ -222,14 +222,30 @@ export default function TopupRequestsPage() {
     },
     {
       accessorKey: "amount_cents",
-      header: "Amount",
-      size: 120,
+      header: "Amount & Fees",
+      size: 150,
       cell: ({ row }) => {
-        const amountCents = row.getValue<number>("amount_cents")
-        const currency = row.original.currency
+        const request = row.original
+        const amountCents = request.amount_cents
+        const feeAmountCents = request.fee_amount_cents || 0
+        const totalDeductedCents = request.total_deducted_cents || amountCents
+        const feePercentage = request.plan_fee_percentage || 0
+        
         return (
-          <div className="font-medium text-green-600">
-            {formatCurrency(amountCents / 100)}
+          <div className="space-y-1">
+            <div className="font-medium text-green-600">
+              {formatCurrency(amountCents / 100)}
+            </div>
+            {feeAmountCents > 0 && (
+              <>
+                <div className="text-xs text-orange-600">
+                  +{formatCurrency(feeAmountCents / 100)} ({feePercentage}% fee)
+                </div>
+                <div className="text-xs text-blue-600 font-medium">
+                  Total: {formatCurrency(totalDeductedCents / 100)}
+                </div>
+              </>
+            )}
           </div>
         )
       },
@@ -409,9 +425,21 @@ export default function TopupRequestsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Amount</Label>
-                  <div className="mt-1 text-lg font-semibold text-green-600">
-                    {formatCurrency(selectedRequest.amount_cents / 100)}
+                  <Label className="text-sm font-medium text-muted-foreground">Amount Details</Label>
+                  <div className="mt-1 space-y-1">
+                    <div className="text-lg font-semibold text-green-600">
+                      {formatCurrency(selectedRequest.amount_cents / 100)}
+                    </div>
+                    {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
+                      <>
+                        <div className="text-sm text-orange-600">
+                          Platform Fee ({selectedRequest.plan_fee_percentage}%): +{formatCurrency(selectedRequest.fee_amount_cents / 100)}
+                        </div>
+                        <div className="text-sm font-medium text-blue-600 border-t border-gray-200 pt-1">
+                          Total Deducted: {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -498,8 +526,20 @@ export default function TopupRequestsPage() {
             <div className="space-y-4">
               <div className="p-3 bg-muted rounded-md">
                 <div className="font-medium">{selectedRequest.ad_account_name}</div>
-                <div className="text-sm text-muted-foreground">
-                  Amount: {formatCurrency(selectedRequest.amount_cents / 100)}
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground">
+                    Top-up Amount: {formatCurrency(selectedRequest.amount_cents / 100)}
+                  </div>
+                  {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
+                    <>
+                      <div className="text-sm text-orange-600">
+                        Platform Fee ({selectedRequest.plan_fee_percentage}%): +{formatCurrency(selectedRequest.fee_amount_cents / 100)}
+                      </div>
+                      <div className="text-sm font-medium text-blue-600">
+                        Total Deducted: {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -527,7 +567,12 @@ export default function TopupRequestsPage() {
                     <span className="text-sm font-medium">Important</span>
                   </div>
                   <p className="text-sm text-green-600 mt-1">
-                    Completing this request will deduct {formatCurrency(selectedRequest.amount_cents / 100)} from the organization's wallet balance.
+                    Completing this request will deduct {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)} from the organization's wallet balance.
+                    {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
+                      <span className="block text-xs text-green-500 mt-1">
+                        (Includes {formatCurrency(selectedRequest.fee_amount_cents / 100)} platform fee)
+                      </span>
+                    )}
                   </p>
                 </div>
               )}

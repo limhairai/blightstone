@@ -1,16 +1,15 @@
 "use client"
 
-import { useState } from "react"
 import { Button } from "../ui/button"
 
 import { CompactHeaderMetrics } from "./compact-header-metrics"
 import { OrganizationSelector } from "../organization/organization-selector"
-import { TopUpDialog } from "./top-up-dialog"
+
 import { useAuth } from "../../contexts/AuthContext"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "@/lib/swr-config"
 import { formatCurrency } from "@/lib/utils"
-import { Bell, Plus, User, Settings, LogOut, Wallet, Loader2 } from "lucide-react"
+import { Bell, User, Settings, LogOut, Wallet, Loader2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +21,7 @@ import {
 export function Topbar() {
   const { user } = useAuth()
   const { currentOrganizationId } = useOrganizationStore();
-  const [topUpDialogOpen, setTopUpDialogOpen] = useState(false)
+
 
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
@@ -73,14 +72,7 @@ export function Topbar() {
             )}
           </div>
 
-          {/* Top Up Button */}
-          <Button
-            onClick={() => setTopUpDialogOpen(true)}
-            className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Top Up
-          </Button>
+
 
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative hover:bg-accent">
@@ -123,13 +115,7 @@ export function Topbar() {
         </div>
       </div>
 
-      {/* Top Up Dialog */}
-      <TopUpDialog
-        account={null} // For main wallet top-up
-        open={topUpDialogOpen}
-        onOpenChange={setTopUpDialogOpen}
-        mainBalance={walletBalance}
-      />
+
     </div>
   )
 }

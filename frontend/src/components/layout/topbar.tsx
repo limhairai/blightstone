@@ -25,6 +25,8 @@ import { useOrganizationStore } from '@/lib/stores/organization-store'
 import useSWR from 'swr'
 import { useCurrentOrganization } from '@/lib/swr-config'
 
+import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
+
 interface TopbarProps {
   isAdmin?: boolean
   hasNotifications?: boolean
@@ -51,6 +53,7 @@ export function Topbar({
   const { user, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+  const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const router = useRouter()
 
   const { currentOrganizationId } = useOrganizationStore();
@@ -206,14 +209,20 @@ export function Topbar({
               <Button
                 className={gradientTokens.primary}
                 size="sm"
+                onClick={() => setUpgradeDialogOpen(true)}
               >
                 <Zap className="h-4 w-4 mr-2" />
-                Upgrade to Pro
+                {plan !== 'Free' ? 'Upgrade Plan' : 'Choose Plan'}
               </Button>
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+                          <PlanUpgradeDialog
+        open={upgradeDialogOpen}
+        onOpenChange={setUpgradeDialogOpen}
+      />
     </div>
   )
 }

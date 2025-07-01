@@ -6,22 +6,16 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-import { Badge } from "../ui/badge"
-import { Switch } from "../ui/switch"
-import { Separator } from "../ui/separator"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog"
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { toast } from "sonner"
-import { Copy, Upload, Trash2, Mail, Phone, Globe, Bell, Shield, Link as LinkIcon } from "lucide-react"
+import { Upload, Trash2 } from "lucide-react"
 import { UserProfile } from "../../types/user"
 import { getInitials } from "../../lib/utils"
 
 export function AccountSettings() {
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [updateEmailOpen, setUpdateEmailOpen] = useState(false)
-  const [newEmail, setNewEmail] = useState("")
-  const [currentPassword, setCurrentPassword] = useState("")
   
   // Mock user data - in real app this would come from SWR or similar
   const [formData, setFormData] = useState({
@@ -33,18 +27,9 @@ export function AccountSettings() {
     language: "en",
   })
   
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: true, 
-    sms: false,
-    marketing: false,
-    security: true
-  })
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success("Email copied to clipboard.")
-  }
+
+
 
   const handleSave = async () => {
     setLoading(true)
@@ -61,43 +46,7 @@ export function AccountSettings() {
     }
   }
 
-  const handleUpdateEmail = async () => {
-    if (!newEmail || !currentPassword) {
-      toast.error("Please fill in all required fields.")
-      return
-    }
 
-    setLoading(true)
-    try {
-      // In real app, this would make API call to update email
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
-      
-      setFormData({ ...formData, email: newEmail })
-      toast.success("A verification link has been sent to your new email address.")
-      setUpdateEmailOpen(false)
-      setNewEmail("")
-      setCurrentPassword("")
-    } catch (error) {
-      toast.error("Failed to update email. Please try again.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleNotificationChange = async (key: string, value: boolean) => {
-    setLoading(true)
-    try {
-      // In real app, this would make API call to update notification preferences
-      await new Promise(resolve => setTimeout(resolve, 500)) // Simulate API call
-      
-      setNotifications({ ...notifications, [key]: value })
-      toast.success("Notification preferences updated.")
-    } catch (error) {
-      toast.error("Failed to update notification preferences.")
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getInitials = (name: string) => {
     return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)
@@ -205,119 +154,7 @@ export function AccountSettings() {
         </CardContent>
       </Card>
 
-      {/* Email Settings */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Email Settings
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Manage your email address and email preferences.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">Email Address</p>
-              <div className="flex items-center gap-2">
-                <code className="text-sm bg-muted px-2 py-1 rounded border font-mono text-foreground">
-                  {formData.email}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => copyToClipboard(formData.email)}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-            <Dialog open={updateEmailOpen} onOpenChange={setUpdateEmailOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent">
-                  Update Email
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border">
-                <DialogHeader>
-                  <DialogTitle className="text-foreground">Update Email Address</DialogTitle>
-                  <DialogDescription className="text-muted-foreground">
-                    Enter your new email address and current password to update your email.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="newEmail" className="text-foreground">New Email Address</Label>
-                    <Input
-                      id="newEmail"
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      className="bg-background border-border text-foreground"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword" className="text-foreground">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="bg-background border-border text-foreground"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setUpdateEmailOpen(false)} className="border-border text-foreground hover:bg-accent">
-                    Cancel
-                  </Button>
-                  <Button onClick={handleUpdateEmail} disabled={loading} className="bg-[#c4b5fd] hover:bg-[#b4a0ff] text-white">
-                    {loading ? "Updating..." : "Update Email"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Notification Preferences */}
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Notification Preferences
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Choose how you want to be notified about account activity.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(notifications).map(([key, value]) => (
-            <div key={key} className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground capitalize">
-                  {key === 'sms' ? 'SMS' : key} Notifications
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {key === 'email' && 'Receive notifications via email'}
-                  {key === 'push' && 'Receive push notifications in your browser'}
-                  {key === 'sms' && 'Receive SMS notifications on your phone'}
-                  {key === 'marketing' && 'Receive marketing and promotional emails'}
-                  {key === 'security' && 'Receive security alerts and updates'}
-                </p>
-              </div>
-              <Switch
-                checked={value}
-                onCheckedChange={(checked) => handleNotificationChange(key, checked)}
-                disabled={loading}
-              />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   )
 }

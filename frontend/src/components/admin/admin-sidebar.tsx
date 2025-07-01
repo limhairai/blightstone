@@ -18,6 +18,7 @@ import {
   DollarSign,
   Building2,
   Package,
+  History,
   type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
@@ -66,7 +67,8 @@ export function AdminSidebar({ className }: { className?: string }) {
       icon: CreditCard,
       subItems: [
         { name: "Top-up Requests", href: "/admin/transactions/topups", icon: TrendingUp },
-        { name: "Transaction History", href: "/admin/transactions/history", icon: DollarSign },
+        { name: "Transaction History", href: "/admin/transactions/history", icon: History },
+        { name: "Business Analytics", href: "/admin/analytics", icon: TrendingUp },
       ],
     },
     {
