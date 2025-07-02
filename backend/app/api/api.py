@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.app.api.endpoints import auth, organizations, invites, admin, twofa, wallet, users, health, payments, access_codes, dolphin_assets
+from app.api.endpoints import auth, organizations, invites, admin, twofa, wallet, users, health, payments, access_codes, dolphin_assets
 
 api_router = APIRouter()
 

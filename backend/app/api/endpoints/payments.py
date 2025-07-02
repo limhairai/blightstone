@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, status
-from backend.app.core.security import get_current_user
-from backend.app.core.supabase_client import get_supabase_client
-from backend.app.schemas.user import UserRead as User
+from app.core.security import get_current_user
+from app.core.supabase_client import get_supabase_client
+from app.schemas.user import UserRead as User
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from pydantic import BaseModel
@@ -538,13 +538,13 @@ async def handle_subscription_updated(supabase, subscription):
         
         # Handle status changes
         if subscription.status == "past_due":
-            from backend.app.services.subscription_service import subscription_service
+            from app.services.subscription_service import subscription_service
             await subscription_service.handle_payment_failure(organization_id, days_overdue=1)
         elif subscription.status == "unpaid":
-            from backend.app.services.subscription_service import subscription_service
+            from app.services.subscription_service import subscription_service
             await subscription_service.handle_payment_failure(organization_id, days_overdue=7)
         elif subscription.status == "active":
-            from backend.app.services.subscription_service import subscription_service
+            from app.services.subscription_service import subscription_service
             await subscription_service.reactivate_account(organization_id)
         
         logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")

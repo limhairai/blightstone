@@ -7,8 +7,8 @@ import stripe
 import logging
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
-from backend.app.core.supabase_client import get_supabase_client
-from backend.app.core.config import settings
+from app.core.supabase_client import get_supabase_client
+from app.core.config import settings
 
 logger = logging.getLogger("adhub_app")
 stripe.api_key = settings.STRIPE_SECRET_KEY

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from backend.app.core.config import settings
+from app.core.config import settings
 import time
 from typing import Dict, Tuple
 from datetime import datetime, timedelta

@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Body, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from backend.app.core.security import create_access_token, get_current_user, get_password_hash
-from backend.app.core.config import settings
-from backend.app.core.supabase_client import get_supabase_client
-from backend.app.schemas.user import Token
-from backend.app.schemas.user import UserCreate, UserRead
+from app.core.security import create_access_token, get_current_user, get_password_hash
+from app.core.config import settings
+from app.core.supabase_client import get_supabase_client
+from app.schemas.user import Token
+from app.schemas.user import UserCreate, UserRead
 from datetime import timedelta
 import pyotp
 import logging

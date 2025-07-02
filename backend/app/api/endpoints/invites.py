@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Request, Body
 from pydantic import BaseModel, EmailStr
-from backend.app.core.supabase_client import get_supabase_client
-from backend.app.core.security import get_current_user
-from backend.app.schemas.user import UserRead as User
+from app.core.supabase_client import get_supabase_client
+from app.core.security import get_current_user
+from app.schemas.user import UserRead as User
 from datetime import datetime, timedelta, timezone
 import uuid
 import logging

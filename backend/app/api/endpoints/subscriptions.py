@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, status
-from backend.app.core.security import get_current_user
-from backend.app.services.subscription_service import subscription_service
-from backend.app.schemas.user import UserRead as User
+from app.core.security import get_current_user
+from app.services.subscription_service import subscription_service
+from app.schemas.user import UserRead as User
 from typing import Dict, Any
 from pydantic import BaseModel
 import logging
@@ -25,7 +25,7 @@ class AdSpendFeeRequest(BaseModel):
 async def get_available_plans():
     """Get all available subscription plans"""
     try:
-        from backend.app.core.supabase_client import get_supabase_client
+        from app.core.supabase_client import get_supabase_client
         supabase = get_supabase_client()
         
         result = (
@@ -105,7 +105,7 @@ async def create_subscription(
     """Create a new subscription for organization"""
     try:
         # Get or create Stripe customer
-        from backend.app.core.supabase_client import get_supabase_client
+        from app.core.supabase_client import get_supabase_client
         supabase = get_supabase_client()
         
         org_result = (

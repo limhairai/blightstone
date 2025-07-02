@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
-from backend.app.core.security import get_current_user
-from backend.app.core.supabase_client import get_supabase_client
-from backend.app.schemas.user import UserRead as User
+from app.core.security import get_current_user
+from app.core.supabase_client import get_supabase_client
+from app.schemas.user import UserRead as User
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 from pydantic import BaseModel

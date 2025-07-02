@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 # from app.core.firebase import get_firestore  # TODO: Migrate to Supabase
-from backend.app.core.security import get_current_user, require_superuser
-from backend.app.schemas.user import UserRead as User
-from backend.app.core.supabase_client import get_supabase_client
+from app.core.security import get_current_user, require_superuser
+from app.schemas.user import UserRead as User
+from app.core.supabase_client import get_supabase_client
 import logging
 from datetime import datetime
 
