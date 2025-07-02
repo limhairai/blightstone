@@ -66,15 +66,15 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   const isMultipleAccounts = accounts && accounts.length > 0
   const targetAccounts = isMultipleAccounts ? accounts : account ? [account] : []
 
-  // Check if organization is frozen due to no subscription
-  const isSubscriptionFrozen = subscriptionData?.frozen || subscriptionData?.subscriptionStatus === 'no_subscription'
+  // Check if organization is on free plan
+  const isOnFreePlan = subscriptionData?.free || subscriptionData?.subscriptionStatus === 'free'
   const subscriptionMessage = subscriptionData?.message
 
   // Calculate fee when amount changes
   useEffect(() => {
     const calculateTopupFee = async () => {
       const amount = parseFloat(formData.amount)
-      if (amount > 0 && currentOrganizationId && !isSubscriptionFrozen) {
+      if (amount > 0 && currentOrganizationId && !isOnFreePlan) {
         setIsCalculatingFee(true)
         try {
           const calculation = await calculateFee(amount)
@@ -92,7 +92,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
 
     const debounceTimer = setTimeout(calculateTopupFee, 500)
     return () => clearTimeout(debounceTimer)
-  }, [formData.amount, currentOrganizationId, calculateFee, isSubscriptionFrozen])
+  }, [formData.amount, currentOrganizationId, calculateFee, isOnFreePlan])
 
   const resetForm = () => {
     setFormData({
@@ -129,9 +129,9 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     e.preventDefault()
     
     // Check subscription status before allowing submission
-    if (isSubscriptionFrozen) {
-      toast.error("Account Frozen", {
-        description: subscriptionMessage || "Your account is frozen. Please contact support.",
+    if (isOnFreePlan) {
+      toast.error("Upgrade Required", {
+        description: subscriptionMessage || "Please upgrade your plan to submit topup requests.",
       });
       return;
     }
@@ -246,15 +246,15 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
           </DialogDescription>
         </DialogHeader>
 
-        {/* Subscription Frozen Warning */}
-        {isSubscriptionFrozen && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
-            <div className="flex items-center gap-2 text-red-700">
+        {/* Free Plan Upgrade Warning */}
+        {isOnFreePlan && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+            <div className="flex items-center gap-2 text-blue-700">
               <AlertTriangle className="h-4 w-4" />
-              <span className="text-sm font-medium">Account Frozen</span>
+              <span className="text-sm font-medium">Upgrade Required</span>
             </div>
-            <p className="text-sm text-red-600 mt-1">
-              {subscriptionMessage || "Your account is frozen. Please contact support to reactivate your subscription."}
+            <p className="text-sm text-blue-600 mt-1">
+              {subscriptionMessage || "You're on the free plan. Upgrade to access topup functionality and all features."}
             </p>
           </div>
         )}
@@ -323,10 +323,10 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder={`${MINIMUM_TOP_UP_AMOUNT}.00`}
                 required
-                disabled={isSubscriptionFrozen}
+                disabled={isOnFreePlan}
                 className={`pl-10 bg-background border-border text-foreground ${
                   amountError ? 'border-red-500' : ''
-                } ${isSubscriptionFrozen ? 'opacity-50 cursor-not-allowed' : ''}`}
+                } ${isOnFreePlan ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
             {amountError && (
@@ -341,7 +341,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
           </div>
 
           {/* Fee Calculation Display */}
-          {formData.amount && parseFloat(formData.amount) > 0 && !isSubscriptionFrozen && (
+          {formData.amount && parseFloat(formData.amount) > 0 && !isOnFreePlan && (
             <div className="p-4 bg-muted/50 border border-border rounded-md space-y-2">
               <div className="flex items-center gap-2 text-foreground font-medium">
                 <Calculator className="h-4 w-4" />
@@ -395,7 +395,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                 !!amountError || 
                 !formData.amount || 
                 isCalculatingFee ||
-                isSubscriptionFrozen ||
+                isOnFreePlan ||
                 (feeCalculation && feeCalculation.total_amount > walletBalance)
               }
               className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
@@ -408,7 +408,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
               ) : (
                 <>
                   <Wallet className="mr-2 h-4 w-4" />
-                  {isSubscriptionFrozen ? "Account Frozen" : "Submit Request"}
+                  {isOnFreePlan ? "Upgrade Required" : "Submit Request"}
                 </>
               )}
             </Button>

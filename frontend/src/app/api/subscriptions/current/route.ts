@@ -29,23 +29,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Handle no subscription scenario
+    // Handle no subscription scenario - auto-assign free plan
     if (!orgData.plan_id) {
-      console.log('No plan_id found - organization has no subscription, treating as frozen')
+      console.log('No plan_id found - assigning free plan')
       
-      return NextResponse.json({
-        currentPlan: null,
-        usage: {
-          teamMembers: 1,
-          businessManagers: 0,
-          adAccounts: 0
-        },
-        subscriptionStatus: 'no_subscription',
-        frozen: true,
-        message: 'No active subscription. Please subscribe to a plan to continue using the service.',
-        canTopup: false,
-        canRequestAssets: false
-      })
+      // Update organization with free plan
+      const { error: updateError } = await supabase
+        .from('organizations')
+        .update({ 
+          plan_id: 'free'
+        })
+        .eq('organization_id', organizationId)
+        
+      if (updateError) {
+        console.error('Error assigning free plan:', updateError)
+      } else {
+        // Update local data
+        orgData.plan_id = 'free'
+      }
     }
 
     // Get plan data for existing subscription
@@ -88,6 +89,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Check if on free plan
+    const isOnFreePlan = orgData.plan_id === 'free'
+
     // Get usage data - simplified for now
     const usage = {
       teamMembers: 1, // TODO: Count from organization_members
@@ -95,10 +99,26 @@ export async function GET(request: NextRequest) {
       adAccounts: 0 // TODO: Count from ad_accounts
     }
 
+    // Determine capabilities based on plan
+    let canTopup = true
+    let canRequestAssets = true
+    let message = null
+
+    if (isOnFreePlan) {
+      canTopup = false // No topups on free plan
+      canRequestAssets = false // No asset requests on free plan
+      message = 'You\'re on the free plan. Upgrade to access topups and request business managers & ad accounts.'
+    }
+
     return NextResponse.json({
       currentPlan,
       usage,
-      subscriptionStatus: orgData.subscription_status
+      subscriptionStatus: isOnFreePlan ? 'free' : orgData.subscription_status,
+      frozen: false, // Free plan users aren't frozen, just limited
+      free: isOnFreePlan,
+      message,
+      canTopup,
+      canRequestAssets
     })
 
   } catch (error) {
