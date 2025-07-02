@@ -1,4 +1,4 @@
-import { Business } from "./business";
+// Business type removed - using string for business field
 
 export type AdAccountStatus = 'active' | 'pending' | 'suspended' | 'restricted' | 'inactive' | 'banned' | 'under-review' | 'archived';
 

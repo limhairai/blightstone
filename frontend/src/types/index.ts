@@ -1,7 +1,7 @@
 // Central export for all types - updated to match actual database schema
 
 // Business types
-export type { Business } from './business';
+// Business type export removed
 
 // Account types - use AdAccount as the primary interface
 export type { AdAccount, AppAccount, Account } from './account';

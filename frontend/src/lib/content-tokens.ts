@@ -166,6 +166,7 @@ export const contentTokens = {
   // Status labels
   status: {
     active: "Active",
+    inactive: "Inactive",
     pending: "Pending",
     completed: "Completed",
     failed: "Failed",

@@ -73,7 +73,7 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
         throw new Error(errorData.error || 'Failed to submit business application')
       }
 
-      toast.success("Application Submitted!", "Your business application has been submitted for review.")
+      toast.success("Application Submitted!", { description: "Your business application has been submitted for review." })
       
       setOpen(false)
       onBusinessCreated?.()

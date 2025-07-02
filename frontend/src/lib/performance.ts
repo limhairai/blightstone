@@ -1,6 +1,6 @@
 // Performance optimization utilities
 
-import { useCallback, useMemo, useRef } from 'react'
+import React, { useCallback, useMemo, useRef } from 'react'
 
 // Debounce hook for search inputs
 export function useDebounce<T extends any[]>(
@@ -42,7 +42,7 @@ export function useMemoizedComponent<T>(
   deps: React.DependencyList
 ) {
   return useMemo(() => {
-    return React.createElement(component, props)
+    return React.createElement(component as any, props)
   }, deps)
 }
 

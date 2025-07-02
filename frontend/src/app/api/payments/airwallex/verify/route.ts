@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { WalletService } from '@/lib/wallet-service'
 
 export async function POST(request: NextRequest) {
@@ -10,8 +10,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Payment intent ID is required' }, { status: 400 })
     }
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Missing auth token' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user } } = await supabase.auth.getUser(token)
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -25,18 +25,12 @@ export function ViewDetailsDialog({ account, open, onOpenChange }: ViewDetailsDi
   const mapAccountStatusToBadgeStatus = (status: AppAccount['status']): "active" | "pending" | "inactive" | "suspended" | "error" => {
     switch (status) {
       case 'active':
-      case 'approved':
         return 'active'
       case 'pending':
-      case 'under_review':
         return 'pending'
-      case 'paused':
-      case 'disabled':
-      case 'idle':
-      case 'archived':
+      case 'inactive':
         return 'inactive'
       case 'suspended':
-      case 'rejected':
         return 'suspended'
       default:
         return 'error'
@@ -82,7 +76,7 @@ export function ViewDetailsDialog({ account, open, onOpenChange }: ViewDetailsDi
               </div>
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Business</label>
-                <p className="text-sm text-foreground">{account.businessId || 'Unknown'}</p>
+                <p className="text-sm text-foreground">{account.business || 'Unknown'}</p>
               </div>
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Date Added</label>
@@ -113,7 +107,7 @@ export function ViewDetailsDialog({ account, open, onOpenChange }: ViewDetailsDi
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Spent This Month</label>
                 <div className="flex items-center gap-2">
-                  <div className="text-sm text-foreground">${formatCurrency(account.spend || 0)}</div>
+                  <div className="text-sm text-foreground">${formatCurrency(account.spent || 0)}</div>
                   <TrendingUp className="h-3 w-3 text-emerald-500" />
                 </div>
               </div>
@@ -123,12 +117,12 @@ export function ViewDetailsDialog({ account, open, onOpenChange }: ViewDetailsDi
             <div className="space-y-2">
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Quota Usage</span>
-                <span>{Math.round(((account.spend || 0) / 10000) * 100)}%</span>
+                <span>{Math.round(((account.spent || 0) / 10000) * 100)}%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] transition-all duration-500"
-                  style={{ width: `${Math.min(((account.spend || 0) / 10000) * 100, 100)}%` }}
+                  style={{ width: `${Math.min(((account.spent || 0) / 10000) * 100, 100)}%` }}
                 />
               </div>
             </div>

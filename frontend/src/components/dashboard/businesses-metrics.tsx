@@ -3,8 +3,8 @@ import { Building2, CreditCard, Wallet, TrendingUp } from "lucide-react"
 import { useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 
 export function BusinessesMetrics() {
-  const { data: businesses = [], isLoading: businessesLoading } = useBusinessManagers()
-  const { data: accounts = [], isLoading: accountsLoading } = useAdAccounts()
+  const { data: businesses = [], isLoading: businessesLoading } = useBusinessManagers(null)
+  const { data: accounts = [], isLoading: accountsLoading } = useAdAccounts(null)
   
   if (businessesLoading || accountsLoading) {
     return (

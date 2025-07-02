@@ -8,6 +8,7 @@ import {
   X,
   CreditCard,
   Building,
+  Check,
 } from "lucide-react"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card"
@@ -310,7 +311,7 @@ export function SettingsView() {
                         ))
                       ) : (
                         <div className="grid grid-cols-4 gap-3 p-3 text-xs border-t">
-                          <div colSpan={4} className="col-span-4 text-center text-muted-foreground">
+                          <div className="col-span-4 text-center text-muted-foreground">
                             No billing history yet
                           </div>
                         </div>
