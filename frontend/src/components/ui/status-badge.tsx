@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 interface StatusBadgeProps {
-  status: "active" | "pending" | "inactive" | "suspended" | "error" | "paused"
+  status: "active" | "pending" | "inactive" | "suspended" | "restricted" | "error" | "paused"
   size?: "sm" | "md"
 }
 
@@ -37,6 +37,11 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
         return {
           label: "Suspended",
           className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
+        }
+      case "restricted":
+        return {
+          label: "Restricted",
+          className: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800",
         }
       default:
         return {

@@ -180,7 +180,9 @@ export function useTransactions(organizationId: string | null) {
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
-      dedupingInterval: 1 * 60 * 1000, // Transactions are most dynamic
+      dedupingInterval: 30 * 1000, // Reduced from 1 minute to 30 seconds for faster loading
+      revalidateOnMount: true, // Always revalidate on mount for fresh data
+      revalidateOnFocus: true, // Revalidate when user focuses the tab
       onError: (error) => {
         console.error('useTransactions error:', error);
       },

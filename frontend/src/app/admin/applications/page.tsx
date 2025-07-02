@@ -234,13 +234,13 @@ export default function AdminApplicationsPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-[#FFC857]" />;
       case 'processing':
         return <AlertCircle className="h-4 w-4 text-blue-500" />;
       case 'approved':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-[#34D197]" />;
       case 'rejected':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-[#F56565]" />;
       default:
         return <Clock className="h-4 w-4 text-gray-500" />;
     }

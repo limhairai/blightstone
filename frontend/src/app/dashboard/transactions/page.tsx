@@ -301,33 +301,33 @@ export default function TransactionsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/50 dark:bg-muted/50">
-                    <th className="text-left p-2 text-xs font-medium text-muted-foreground"></th>
-                    <th className="text-left p-2 text-xs font-medium text-muted-foreground">Transaction</th>
-                    <th className="text-left p-2 text-xs font-medium text-muted-foreground">Business</th>
-                    <th className="text-left p-2 text-xs font-medium text-muted-foreground">Account</th>
-                    <th className="text-left p-2 text-xs font-medium text-muted-foreground">Reference</th>
-                    <th className="text-right p-2 text-xs font-medium text-muted-foreground">Amount</th>
-                    <th className="text-right p-2 text-xs font-medium text-muted-foreground">Status</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground"></th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Transaction</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Business</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Account</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Reference</th>
+                    <th className="h-10 px-4 text-right align-middle font-medium text-xs text-muted-foreground">Amount</th>
+                    <th className="h-10 px-4 text-right align-middle font-medium text-xs text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
                   {paginatedTransactions.map((tx: Transaction) => (
-                    <tr key={tx.id} className="border-t border-border hover:bg-muted/20 dark:hover:bg-muted/20">
-                      <td className="pl-2 py-2 w-8">{getTypeIcon(tx.type, tx.amount_cents)}</td>
-                      <td className="py-2 text-xs">
+                    <tr key={tx.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                      <td className="p-4 align-middle w-8">{getTypeIcon(tx.type, tx.amount_cents)}</td>
+                      <td className="p-4 align-middle text-sm">
                         <div className="font-medium">{tx.description}</div>
                         <div className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM dd, yyyy")}</div>
                       </td>
-                      <td className="p-2 text-xs">{getBusinessOrAccountName(tx)}</td>
-                      <td className="p-2 text-xs">{getAccountField(tx)}</td>
-                      <td className="p-2 text-xs font-mono">{getReferenceField(tx)}</td>
-                      <td className="p-2 text-xs text-right">
+                      <td className="p-4 align-middle text-sm">{getBusinessOrAccountName(tx)}</td>
+                      <td className="p-4 align-middle text-sm">{getAccountField(tx)}</td>
+                      <td className="p-4 align-middle text-sm font-mono">{getReferenceField(tx)}</td>
+                      <td className="p-4 align-middle text-sm text-right">
                         <span className={getAmountColor(tx.amount_cents)}>
                           {tx.amount_cents > 0 ? "+" : ""}
                           {formatCurrency(Math.abs(tx.amount_cents) / 100)}
                       </span>
                     </td>
-                      <td className="p-2 text-xs text-right text-muted-foreground">
+                      <td className="p-4 align-middle text-sm text-right text-muted-foreground">
                         <div className="flex items-center justify-end gap-1">
                           <span>{tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}</span>
                           <div className={`w-1.5 h-1.5 rounded-full ${getStatusDotColor(tx.status)}`}></div>

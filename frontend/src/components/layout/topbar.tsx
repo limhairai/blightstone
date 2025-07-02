@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import useSWR from 'swr'
 import { useCurrentOrganization } from '@/lib/swr-config'
+import { useSubscription } from '@/hooks/useSubscription'
 
 import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
 
@@ -61,7 +62,10 @@ export function Topbar({
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   const organization = orgData?.organizations?.[0];
   const totalBalance = organization?.balance_cents ? organization.balance_cents / 100 : 0;
-  const plan = organization?.plan || 'Free';
+  
+  // Use subscription hook for plan data
+  const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
+  const planName = currentPlan?.name || 'Free';
 
   // Avoid hydration mismatch
   useEffect(() => {
@@ -142,7 +146,7 @@ export function Topbar({
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium text-popover-foreground">{userName}</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
-                <p className="text-xs text-muted-foreground">{isOrgLoading ? "..." : plan} Plan</p>
+                <p className="text-xs text-muted-foreground">{isSubscriptionLoading ? "..." : planName} Plan</p>
               </div>
             </div>
 
@@ -207,12 +211,12 @@ export function Topbar({
 
             <div className="p-2 border-t border-border">
               <Button
-                className={gradientTokens.primary}
+                className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
                 size="sm"
                 onClick={() => setUpgradeDialogOpen(true)}
               >
                 <Zap className="h-4 w-4 mr-2" />
-                {plan !== 'Free' ? 'Upgrade Plan' : 'Choose Plan'}
+                {currentPlan?.id !== 'free' ? 'Upgrade Plan' : 'Choose Plan'}
               </Button>
             </div>
           </DropdownMenuContent>

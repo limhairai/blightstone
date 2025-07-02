@@ -1,235 +1,188 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import useSWR, { useSWRConfig } from 'swr'
-import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Loader2, CreditCard, Building2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useCurrentOrganization } from '@/lib/swr-config'
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { Button } from "../ui/button"
-import { Input } from "../ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
-import { Building2, ArrowUpDown, Shuffle, CreditCard, Wallet } from 'lucide-react'
-import { toast } from "sonner"
-import { StripeCheckoutDialog } from "./stripe-checkout-dialog"
-import { formatCurrency } from "../../utils/format"
+import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useAuth } from '@/contexts/AuthContext'
+import { useSWRConfig } from 'swr'
+import { formatCurrency } from '@/utils/format'
 
-export function WalletFundingPanel() {
-  const { mutate } = useSWRConfig();
-  const { currentOrganizationId } = useOrganizationStore();
+interface WalletFundingPanelProps {
+  onSuccess?: () => void
+}
+
+export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
+  const { session } = useAuth()
+  const { mutate } = useSWRConfig()
+  const { currentOrganizationId } = useOrganizationStore()
+  const { data, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId)
   
-  // Use the proper authenticated hook
-  const { data, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
-  
-  const organization = data?.organizations?.[0];
-  const totalBalance = (organization?.balance_cents ?? 0) / 100;
-  
-  const [mode, setMode] = useState<"add" | "withdraw">("add")
-  const [amount, setAmount] = useState("")
-  const [paymentMethod, setPaymentMethod] = useState("card")
-  const [showStripeDialog, setShowStripeDialog] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const organization = data?.organizations?.[0]
+  const totalBalance = (organization?.balance_cents ?? 0) / 100
 
-  const handlePresetAmount = (value: number) => setAmount(value.toString());
+  const [amount, setAmount] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('stripe')
+  const [loading, setLoading] = useState(false)
 
-  const handleMaxAmount = () => {
-    if (mode === "withdraw") setAmount(totalBalance.toString());
-    else setAmount("10000"); // Max add amount
-  }
+  const handlePresetAmount = (value: number) => setAmount(value.toString())
 
-  const handleMainAction = async () => {
-    const numAmount = Number.parseFloat(amount);
-    if (!amount || numAmount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    const amountNum = parseFloat(amount)
+    if (!amountNum || amountNum < 10) {
+      toast.error('Minimum amount is $10')
+      return
     }
-    if (mode === 'withdraw' && numAmount > totalBalance) {
-      toast.error("Amount exceeds available balance");
-      return;
+    
+    if (amountNum > 10000) {
+      toast.error('Maximum amount is $10,000')
+      return
     }
 
-    if (mode === "add" && paymentMethod === "card") {
-      setShowStripeDialog(true);
-      return;
-    }
+    setLoading(true)
 
-    setIsSubmitting(true);
     try {
-      const res = await fetch('/api/wallet/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: numAmount,
-          type: mode === 'add' ? 'topup' : 'withdrawal',
-          description: `Wallet ${mode} via ${getPaymentMethodLabel()}`,
-          organization_id: currentOrganizationId,
-        }),
-      });
+      if (paymentMethod === 'stripe') {
+        // Handle Stripe Checkout
+        const response = await fetch('/api/payments/create-checkout-session', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({ 
+            amount: amountNum,
+            wallet_credit: amountNum,
+            success_url: `${window.location.origin}/dashboard/wallet?payment=success`,
+            cancel_url: `${window.location.origin}/dashboard/wallet?payment=cancelled`
+          })
+        })
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Something went wrong');
-      
-      toast.success(`Successfully ${mode === 'add' ? 'added' : 'withdrew'} ${formatCurrency(numAmount)}`);
-      
-      // Revalidate organization data to update balance everywhere
-      mutate(`/api/organizations?id=${currentOrganizationId}`);
-      // Potentially revalidate a transactions endpoint as well if we have one
-      // mutate('/api/transactions');
+        if (!response.ok) {
+          throw new Error('Failed to create Stripe session')
+        }
 
-      setAmount("");
+        const { checkout_url } = await response.json()
+        window.location.href = checkout_url
+      } else {
+        // Handle Airwallex Hosted Payment Page
+        const response = await fetch('/api/payments/airwallex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            amount: amountNum,
+            description: `Wallet top-up - $${amountNum}`
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to create Airwallex payment')
+        }
+
+        const { hosted_payment_url } = await response.json()
+        
+        // Redirect to Airwallex hosted payment page
+        window.location.href = hosted_payment_url
+      }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      toast.error(`Failed to ${mode} funds: ${errorMessage}`);
-    } finally {
-      setIsSubmitting(false);
+      console.error('Payment error:', error)
+      toast.error('Failed to initiate payment. Please try again.')
+      setLoading(false)
     }
   }
 
-  const getPaymentMethodLabel = () => {
-    switch (paymentMethod) {
-      case "bank": return "Bank Transfer";
-      case "card": return "Credit Card";
-      case "crypto": return "Cryptocurrency";
-      default: return "Credit Card";
-    }
-  }
-
-  const PaymentIcon = paymentMethod === 'bank' ? Building2 : paymentMethod === 'crypto' ? Wallet : CreditCard;
-  const isLoading = isOrgLoading || isSubmitting;
+  const isLoading = isOrgLoading || loading
 
   return (
-    <>
-      <Card className="bg-card border-border flex-1 flex flex-col">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-foreground">Fund Wallet</CardTitle>
-          <div className="text-sm text-muted-foreground">
-            Available: {formatCurrency(totalBalance)}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4 flex-1 flex flex-col justify-between">
-          {/* Top Section */}
-          <div className="space-y-4">
-            {/* Mode Toggle */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className={mode === "add" ? "bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-black font-medium border-0 flex-1" : "bg-transparent text-foreground border-border flex-1"}
-                onClick={() => setMode("add")}
-                disabled={isLoading}
-              >
-                <span className="mr-2">↗</span>
-                Add Funds
-              </Button>
-              <Button
-                variant="outline"
-                className={mode === "withdraw" ? "bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-black font-medium border-0 flex-1" : "bg-transparent text-foreground border-border flex-1"}
-                onClick={() => setMode("withdraw")}
-                disabled={isLoading}
-              >
-                <span className="mr-2">↘</span>
-                Withdraw
-              </Button>
-            </div>
-
-            {/* Amount Section */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-muted-foreground">Amount</label>
-              <div className="relative">
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="text-xl font-semibold h-12 pl-8 bg-background border-border text-foreground"
-                  disabled={isLoading}
-                />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 px-3 text-sm text-muted-foreground hover:text-foreground"
-                  onClick={handleMaxAmount}
-                  disabled={isLoading}
-                >
-                  Max
-                </Button>
-              </div>
-
-              {/* Preset Amounts */}
-              <div className="grid grid-cols-4 gap-2">
-                {[100, 500, 1000, 5000].map((value) => (
-                  <Button
-                    key={value}
-                    variant="outline"
-                    size="sm"
-                    className="bg-background border-border text-foreground hover:bg-muted"
-                    onClick={() => handlePresetAmount(value)}
-                    disabled={isLoading}
-                  >
-                    ${value}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            {/* Payment Method */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-muted-foreground">Payment method</label>
-              <Select value={paymentMethod} onValueChange={setPaymentMethod} disabled={isLoading}>
-                <SelectTrigger className="bg-background border-border text-foreground">
-                  <div className="flex items-center gap-2">
-                    <PaymentIcon className="h-4 w-4" />
-                    <SelectValue />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="card">Credit Card</SelectItem>
-                  <SelectItem value="bank">Bank Transfer</SelectItem>
-                  <SelectItem value="crypto">Cryptocurrency</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {/* Bottom Section */}
-          <div className="space-y-3">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Current Balance</span>
-              <span>{formatCurrency(totalBalance)}</span>
-            </div>
-            <div className="flex justify-between text-sm font-medium text-foreground">
-              <span>{mode === 'add' ? 'You will add' : 'You will receive'}</span>
-              <span>{formatCurrency(Number.parseFloat(amount) || 0)}</span>
-            </div>
-
-            {/* Main Action Button */}
-            <Button 
-              size="lg" 
-              className="w-full font-bold text-base" 
-              onClick={handleMainAction}
+    <Card>
+      <CardHeader>
+        <CardTitle>Add Funds</CardTitle>
+        <CardDescription>
+          Top up your wallet balance to fund your advertising campaigns
+        </CardDescription>
+        <div className="text-sm text-muted-foreground">
+          Current Balance: {formatCurrency(totalBalance)}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="amount">Amount (USD)</Label>
+            <Input
+              id="amount"
+              type="number"
+              placeholder="100.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              min="10"
+              max="10000"
+              step="0.01"
+              required
               disabled={isLoading}
-            >
-              {isSubmitting ? 'Processing...' : `${mode === 'add' ? 'Add' : 'Withdraw'} Funds`}
-            </Button>
+            />
+            <p className="text-sm text-gray-500">
+              Minimum: $10 • Maximum: $10,000
+            </p>
           </div>
-        </CardContent>
-      </Card>
-      
-      {showStripeDialog && (
-        <StripeCheckoutDialog 
-          open={showStripeDialog}
-          onOpenChange={(open) => {
-            setShowStripeDialog(open);
-            if (!open) {
-              setAmount("");
-            }
-          }}
-          amount={Number.parseFloat(amount)}
-          onSuccess={() => {
-            mutate(`/api/organizations?id=${currentOrganizationId}`);
-            setAmount("");
-          }}
-        />
-      )}
-    </>
+
+          {/* Preset Amounts */}
+          <div className="grid grid-cols-4 gap-2">
+            {[100, 500, 1000, 5000].map((value) => (
+              <Button
+                key={value}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handlePresetAmount(value)}
+                disabled={isLoading}
+              >
+                ${value}
+              </Button>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            <Label>Payment Method</Label>
+            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} disabled={isLoading}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="stripe" id="stripe" />
+                <Label htmlFor="stripe" className="flex items-center space-x-2 cursor-pointer">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Credit Card</span>
+                  <span className="text-xs text-gray-500">(Instant, 2.9% + $0.30)</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="airwallex" id="airwallex" />
+                <Label htmlFor="airwallex" className="flex items-center space-x-2 cursor-pointer">
+                  <Building2 className="h-4 w-4" />
+                  <span>Bank Transfer</span>
+                  <span className="text-xs text-gray-500">(1-3 days, 0.6-2.5%)</span>
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          <Button type="submit" className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0" disabled={isLoading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Add $${amount || '0'} to Wallet`
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   )
 } 

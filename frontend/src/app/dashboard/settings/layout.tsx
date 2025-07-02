@@ -5,16 +5,15 @@ import { cn } from "../../../lib/utils"
 import Link from "next/link"
 import { usePageTitle } from "../../../components/core/simple-providers"
 import { usePathname } from "next/navigation"
-import { Avatar, AvatarFallback, AvatarImage } from "../../../components/ui/avatar"
 import { Badge } from "../../../components/ui/badge"
-import { Copy, Edit } from 'lucide-react'
+import { Copy } from 'lucide-react'
 import { Button } from "../../../components/ui/button"
 import { useEffect } from "react"
 import useSWR from 'swr'
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
-import { getInitials } from "../../../lib/utils"
-import { getAvatarClasses, gradientTokens } from "../../../lib/design-tokens"
+import { useSubscription } from "@/hooks/useSubscription"
+import { gradientTokens } from "../../../lib/design-tokens"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface SettingsLayoutProps {
@@ -30,8 +29,9 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
   const currentOrganization = data?.organizations?.[0];
   
-  // Temporary debug
-  console.log('🔍 Settings Debug:', { currentOrganizationId, data, currentOrganization, isLoading, error });
+  // Use subscription hook for plan data
+  const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
+  const planName = currentPlan?.name || 'Free';
 
   useEffect(() => {
     setPageTitle("Settings")
@@ -46,15 +46,14 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
   if (isLoading) {
     return (
         <div className="max-w-full mx-auto py-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-border">
+            <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
-                    <Skeleton className="h-16 w-16 rounded-lg" />
                     <div className="space-y-2">
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-6 w-48" />
+                        <Skeleton className="h-4 w-32" />
                     </div>
                 </div>
-                <Skeleton className="h-9 w-40" />
+                <Skeleton className="h-6 w-20" />
             </div>
         </div>
     )
@@ -62,30 +61,25 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
 
   return (
     <div className="max-w-full mx-auto py-4">
-      {/* Enhanced Organization Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-6 border-b border-border">
+      {/* Minimal Organization Header */}
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16 rounded-lg border border-border">
-            <AvatarImage src={currentOrganization?.avatar || ""} alt={currentOrganization?.name || "Organization"} />
-            <AvatarFallback className={getAvatarClasses('lg')}>
-              {getInitials(currentOrganization?.name || "My Org")}
-            </AvatarFallback>
-          </Avatar>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">{currentOrganization?.name || "My Organization"}</h1>
+            <h1 className="text-xl font-semibold text-foreground">{currentOrganization?.name || "My Organization"}</h1>
             <div className="flex items-center gap-2 mt-1">
-              <code className="text-xs bg-muted px-2 py-1 rounded border border-border font-mono text-muted-foreground">
-                {currentOrganization?.id || "org_id_placeholder"}
+              <span className="text-xs text-muted-foreground">ID:</span>
+              <code className="text-xs bg-muted px-2 py-1 rounded font-mono text-muted-foreground">
+                {currentOrganization?.organization_id || "org_id_placeholder"}
               </code>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  if (navigator.clipboard && currentOrganization?.id) {
-                    navigator.clipboard.writeText(currentOrganization.id)
+                  if (navigator.clipboard && currentOrganization?.organization_id) {
+                    navigator.clipboard.writeText(currentOrganization.organization_id)
                   }
                 }}
-                className="h-6 w-6 p-0"
+                className="h-5 w-5 p-0"
               >
                 <Copy className="h-3 w-3 text-muted-foreground" />
               </Button>
@@ -94,12 +88,8 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
         </div>
         <div className="flex items-center gap-3">
           <Badge className={gradientTokens.primary}>
-            {currentOrganization?.plan || "Free"} Plan
+            {isSubscriptionLoading ? "..." : planName} Plan
           </Badge>
-          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent">
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Organization
-          </Button>
         </div>
       </div>
 

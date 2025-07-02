@@ -219,9 +219,9 @@ export function OrganizationSettings() {
                     {totalBusinesses} / {currentPlan.maxBusinesses === -1 ? '∞' : currentPlan.maxBusinesses}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
                       width: `${currentPlan.maxBusinesses === -1 ? 0 : Math.min(100, (totalBusinesses / currentPlan.maxBusinesses) * 100)}%` 
                     }}
@@ -237,9 +237,9 @@ export function OrganizationSettings() {
                     {totalAccounts} / {currentPlan.maxAdAccounts === -1 ? '∞' : currentPlan.maxAdAccounts}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
                       width: `${currentPlan.maxAdAccounts === -1 ? 0 : Math.min(100, (totalAccounts / currentPlan.maxAdAccounts) * 100)}%` 
                     }}
@@ -255,9 +255,9 @@ export function OrganizationSettings() {
                     {totalTeamMembers} / {currentPlan.maxTeamMembers === -1 ? '∞' : currentPlan.maxTeamMembers}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-blue-600 h-2 rounded-full" 
+                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
                       width: `${currentPlan.maxTeamMembers === -1 ? 0 : Math.min(100, (totalTeamMembers / currentPlan.maxTeamMembers) * 100)}%` 
                     }}

@@ -103,10 +103,10 @@ export default function TeamsPage() {
 
   const getStatusConfig = (status: Team["status"]) => {
     const configs = {
-      active: { label: "Active", className: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle, color: "text-green-600" },
-      at_capacity: { label: "At BM Capacity", className: "bg-red-100 text-red-800 border-red-200", icon: AlertTriangle, color: "text-red-600" },
-      needs_backup: { label: "Needs Admin", className: "bg-purple-100 text-purple-800 border-purple-200", icon: Clock, color: "text-purple-600" },
-      suspended: { label: "No Active Profiles", className: "bg-gray-100 text-gray-800 border-gray-200", icon: AlertTriangle, color: "text-gray-600" },
+      active: { label: "Active", className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", icon: CheckCircle, color: "text-[#34D197]" },
+      at_capacity: { label: "At BM Capacity", className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", icon: AlertTriangle, color: "text-[#F56565]" },
+      needs_backup: { label: "Needs Admin", className: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800", icon: Clock, color: "text-[#FFC857]" },
+      suspended: { label: "No Active Profiles", className: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: AlertTriangle, color: "text-gray-600" },
     }
     return configs[status] || configs.active
   }
@@ -161,7 +161,7 @@ export default function TeamsPage() {
       size: 120, 
       cell: ({ row }: { row: { original: Team } }) => (
         <div className="text-center">
-          <div className={`font-medium ${row.original.bmUtilization >= 90 ? "text-red-600" : row.original.bmUtilization >= 70 ? "text-yellow-600" : "text-green-600"}`}>
+          <div className={`font-medium ${row.original.bmUtilization >= 90 ? "text-[#F56565]" : row.original.bmUtilization >= 70 ? "text-[#FFC857]" : "text-[#34D197]"}`}>
             {row.original.bmUtilization}%
           </div>
           <div className="text-xs text-muted-foreground">BM utilization</div>
@@ -235,27 +235,27 @@ export default function TeamsPage() {
             <div className="space-y-6">
               {/* Team Overview */}
               <div className="grid grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <div className="text-sm font-medium text-blue-600">Profiles</div>
+                <div className="bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 border border-[#b4a0ff]/20 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-[#b4a0ff]">Profiles</div>
                   <div className="text-2xl font-bold">{selectedTeam.profilesCount}</div>
-                  <div className="text-xs text-blue-500">{selectedTeam.activeProfiles} active</div>
+                  <div className="text-xs text-muted-foreground">{selectedTeam.activeProfiles} active</div>
                 </div>
-                <div className="bg-green-50 p-3 rounded-lg">
-                  <div className="text-sm font-medium text-green-600">Business Managers</div>
+                <div className="bg-green-50 border border-green-200 p-3 rounded-lg dark:bg-green-900/20 dark:border-green-800">
+                  <div className="text-sm font-medium text-[#34D197]">Business Managers</div>
                   <div className="text-2xl font-bold">{selectedTeam.businessManagersCount}</div>
-                  <div className="text-xs text-green-500">of {selectedTeam.bmCapacity} capacity</div>
+                  <div className="text-xs text-muted-foreground">of {selectedTeam.bmCapacity} capacity</div>
                 </div>
-                <div className="bg-purple-50 p-3 rounded-lg">
-                  <div className="text-sm font-medium text-purple-600">BM Utilization</div>
-                  <div className={`text-2xl font-bold ${selectedTeam.bmUtilization >= 90 ? "text-red-600" : selectedTeam.bmUtilization >= 70 ? "text-yellow-600" : "text-purple-600"}`}>
+                <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg dark:bg-yellow-900/20 dark:border-yellow-800">
+                  <div className="text-sm font-medium text-[#FFC857]">BM Utilization</div>
+                  <div className={`text-2xl font-bold ${selectedTeam.bmUtilization >= 90 ? "text-[#F56565]" : selectedTeam.bmUtilization >= 70 ? "text-[#FFC857]" : "text-[#34D197]"}`}>
                     {selectedTeam.bmUtilization}%
                   </div>
-                  <div className="text-xs text-purple-500">capacity used</div>
+                  <div className="text-xs text-muted-foreground">capacity used</div>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-lg">
-                  <div className="text-sm font-medium text-orange-600">Ad Accounts</div>
+                <div className="bg-gradient-to-r from-[#ffb4a0]/10 to-[#b4a0ff]/10 border border-[#ffb4a0]/20 p-3 rounded-lg">
+                  <div className="text-sm font-medium text-[#ffb4a0]">Ad Accounts</div>
                   <div className="text-2xl font-bold">{selectedTeam.adAccountsCount}</div>
-                  <div className="text-xs text-orange-500">total managed</div>
+                  <div className="text-xs text-muted-foreground">total managed</div>
                 </div>
               </div>
               

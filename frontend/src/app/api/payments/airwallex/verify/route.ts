@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/utils/supabase/server'
+import { WalletService } from '@/lib/wallet-service'
+
+export async function POST(request: NextRequest) {
+  try {
+    const { payment_intent_id, client_secret } = await request.json()
+
+    if (!payment_intent_id) {
+      return NextResponse.json({ error: 'Payment intent ID is required' }, { status: 400 })
+    }
+
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Retrieve payment intent from Airwallex to verify status
+    const airwallexResponse = await fetch(`https://api.airwallex.com/api/v1/pa/payment_intents/${payment_intent_id}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.AIRWALLEX_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!airwallexResponse.ok) {
+      console.error('Failed to fetch payment intent from Airwallex')
+      return NextResponse.json({ error: 'Failed to verify payment' }, { status: 500 })
+    }
+
+    const paymentIntent = await airwallexResponse.json()
+
+    // Check if payment was successful
+    if (paymentIntent.status !== 'SUCCEEDED') {
+      return NextResponse.json({ 
+        success: false, 
+        error: `Payment status: ${paymentIntent.status}` 
+      })
+    }
+
+    // Check if we already processed this payment
+    const { data: existingPayment } = await supabase
+      .from('payment_intents')
+      .select('status')
+      .eq('id', payment_intent_id)
+      .single()
+
+    if (existingPayment?.status === 'completed') {
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Payment already processed' 
+      })
+    }
+
+    // Get user's organization for wallet update
+    const { data: orgMember } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!orgMember) {
+      return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+    }
+
+    // Update wallet balance using WalletService
+    const walletService = new WalletService()
+    await walletService.addFunds(
+      orgMember.organization_id,
+      paymentIntent.amount,
+      paymentIntent.currency,
+      'airwallex',
+      payment_intent_id,
+      'Wallet top-up via Airwallex'
+    )
+
+    // Update payment intent status in our database
+    await supabase
+      .from('payment_intents')
+      .update({ 
+        status: 'completed',
+        completed_at: new Date().toISOString()
+      })
+      .eq('id', payment_intent_id)
+
+    return NextResponse.json({ 
+      success: true,
+      amount: paymentIntent.amount,
+      currency: paymentIntent.currency
+    })
+
+  } catch (error) {
+    console.error('Payment verification error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+} 

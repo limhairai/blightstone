@@ -8,8 +8,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET(request: NextRequest) {
   try {
-    // Direct database query instead of RPC function since we're using service role key
-    const { data: applications, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const statusParam = searchParams.get('status')
+    
+    // Build the query
+    let query = supabase
       .from('application')
       .select(`
         id,
@@ -30,7 +33,15 @@ export async function GET(request: NextRequest) {
         updated_at,
         organizations!inner(name)
       `)
-      .order('created_at', { ascending: false })
+    
+    // Add status filter if provided
+    if (statusParam) {
+      const statuses = statusParam.split(',').map(s => s.trim())
+      query = query.in('status', statuses)
+    }
+    
+    // Execute query
+    const { data: applications, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching applications:', error)

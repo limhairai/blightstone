@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
         *,
         organizations(name)
       `)
-      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1000) // Limit to last 1000 transactions
     
     if (error) {
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       status: txn.status,
       organizationName: txn.organizations?.name || 'Unknown Organization',
       description: txn.description || `${txn.type} transaction`,
-      createdAt: txn.transaction_date || txn.created_at
+      createdAt: txn.created_at
     }))
     
     return NextResponse.json({

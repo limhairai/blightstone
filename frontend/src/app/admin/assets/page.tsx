@@ -170,10 +170,10 @@ export default function AssetsPage() {
 
   const getStatusBadge = useCallback((status: string) => {
     const statusMap: { [key: string]: { className: string; label: string } } = {
-      active: { className: "bg-green-100 text-green-800 border-green-200", label: "Active" },
-      connection_error: { className: "bg-yellow-100 text-yellow-800 border-yellow-200", label: "Connection Issue" },
-      restricted: { className: "bg-orange-100 text-orange-800 border-orange-200", label: "FB Restricted" },
-      suspended: { className: "bg-red-100 text-red-800 border-red-200", label: "FB Suspended" },
+      active: { className: "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20", label: "Active" },
+      connection_error: { className: "bg-[#FFC857]/10 text-[#FFC857] border-[#FFC857]/20", label: "Connection Issue" },
+      restricted: { className: "bg-[#FFC857]/10 text-[#FFC857] border-[#FFC857]/20", label: "FB Restricted" },
+      suspended: { className: "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20", label: "FB Suspended" },
     };
     const config = statusMap[status] || { className: "", label: status };
     return <Badge className={config.className}>{config.label}</Badge>;
@@ -240,13 +240,13 @@ export default function AssetsPage() {
           <div className="flex items-center gap-2">
             <Badge 
               variant="outline"
-              className="text-blue-700 border-blue-200 bg-blue-50"
+              className="text-foreground border-border bg-background"
             >
               {teamText}
             </Badge>
             <Badge 
               variant={teamInfo.isBackup ? "secondary" : "default"}
-              className={teamInfo.isBackup ? "text-orange-700 bg-orange-50" : "text-green-700 bg-green-50"}
+              className={teamInfo.isBackup ? "bg-[#FFC857]/10 text-[#FFC857] border-[#FFC857]/20" : "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20"}
             >
               {teamInfo.role}-{teamInfo.instance}
             </Badge>
@@ -258,7 +258,7 @@ export default function AssetsPage() {
     return (
       <Badge 
         variant={isUnknown ? "secondary" : "outline"}
-        className={isUnknown ? "text-gray-500" : "text-blue-700 border-blue-200 bg-blue-50"}
+        className={isUnknown ? "text-muted-foreground" : "text-foreground border-border bg-background"}
       >
         {teamText}
       </Badge>
@@ -303,20 +303,20 @@ export default function AssetsPage() {
         <TableHeader><TableRow>{typeHeaders[type].map(h => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
         <TableBody>
           {assetList.length === 0 ? (
-            <TableRow><TableCell colSpan={typeHeaders[type].length} className="text-center py-8 text-gray-500">No {type.replace(/_/g, ' ')}s found</TableCell></TableRow>
+            <TableRow><TableCell colSpan={typeHeaders[type].length} className="text-center py-8 text-muted-foreground">No {type.replace(/_/g, ' ')}s found</TableCell></TableRow>
           ) : (
             assetList.map((asset) => (
               <TableRow key={asset.id}>
                 <TableCell>
                   <div className="font-medium">{asset.name}</div>
-                  <div className="text-sm text-gray-500">{asset.dolphin_id}</div>
+                  <div className="text-sm text-muted-foreground">{asset.dolphin_id}</div>
                 </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>{getTeamBadge(asset)}</TableCell>
                 {type === 'business_manager' && <TableCell>{getAdAccountCount(asset)}</TableCell>}
                 {type === 'ad_account' && <TableCell>{(asset.metadata as any)?.business_manager || 'N/A'}</TableCell>}
-                {type !== 'profile' && <TableCell><span className={asset.organization_id ? 'text-blue-600 font-medium' : 'text-gray-500'}>{getBoundTo(asset)}</span></TableCell>}
-                <TableCell className="text-gray-600">{getLastSync(asset.last_sync_at)}</TableCell>
+                {type !== 'profile' && <TableCell><span className={asset.organization_id ? 'text-foreground font-medium' : 'text-muted-foreground'}>{getBoundTo(asset)}</span></TableCell>}
+                <TableCell className="text-muted-foreground">{getLastSync(asset.last_sync_at)}</TableCell>
                 {type !== 'profile' && (
                   <TableCell>
                     <div className="flex items-center gap-2">

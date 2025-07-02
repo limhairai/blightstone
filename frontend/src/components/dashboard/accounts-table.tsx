@@ -183,8 +183,9 @@ export function AccountsTable() {
                     <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="restricted">Restricted</SelectItem>
                     <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="paused">Paused</SelectItem>
                 </SelectContent>
             </Select>
             <Select value={filters.business} onValueChange={(v) => handleFilterChange('business', v)}>
@@ -221,11 +222,13 @@ export function AccountsTable() {
           <thead>
             <tr className="border-b">
               <th className="p-2 w-10 text-center"><Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} /></th>
-              <th className="p-2 text-left">Account Name</th>
+              <th className="p-2 text-left">Ad Account Name</th>
+              <th className="p-2 text-left">Ad Account ID</th>
               <th className="p-2 text-left">Business Manager</th>
+              <th className="p-2 text-left">BM ID</th>
               <th className="p-2 text-left">Status</th>
               <th className="p-2 text-right">Balance</th>
-              <th className="p-2 text-right">Total Spend</th>
+              <th className="p-2 text-right">Spend</th>
               <th className="p-2 text-left">Timezone</th>
               <th className="p-2 w-10"></th>
             </tr>
@@ -236,22 +239,25 @@ export function AccountsTable() {
                 <td className="p-2 text-center"><Checkbox checked={selectedAccounts.includes(account.id)} onCheckedChange={() => handleSelectAccount(account.id)} /></td>
                 <td className="p-2">
                     <div className="font-medium">{account.name}</div>
-                    <div className="text-xs text-muted-foreground">{account.ad_account_id}</div>
+                </td>
+                <td className="p-2">
+                    <div className="font-mono text-sm">{account.ad_account_id}</div>
                 </td>
                 <td className="p-2">
                   <div>{account.metadata?.business_manager || account.business_manager_name || 'N/A'}</div>
-                  <div className="text-xs text-muted-foreground">{account.metadata?.business_manager_id ? `ID: ${account.metadata.business_manager_id.substring(0, 8)}...` : ''}</div>
+                </td>
+                <td className="p-2">
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {account.metadata?.business_manager_id ? account.metadata.business_manager_id.substring(0, 12) : 'N/A'}
+                  </div>
                 </td>
                 <td className="p-2"><StatusBadge status={account.status} /></td>
                 <td className="p-2 text-right font-mono">
-                  {(() => {
-                    const spendCap = account.metadata?.spend_cap || 0;
-                    const amountSpent = account.metadata?.amount_spent || 0;
-                    const calculatedBalance = spendCap - amountSpent;
-                    return formatCurrency(calculatedBalance);
-                  })()}
+                  {formatCurrency((account.balance_cents || 0) / 100)}
                 </td>
-                <td className="p-2 text-right font-mono">{formatCurrency(account.metadata?.amount_spent || 0)}</td>
+                <td className="p-2 text-right font-mono">
+                  {formatCurrency((account.spend_cents || 0) / 100)}
+                </td>
                 <td className="p-2 text-sm text-muted-foreground">{account.timezone || 'UTC'}</td>
                 <td className="p-2">
                   <DropdownMenu>

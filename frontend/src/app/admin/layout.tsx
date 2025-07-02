@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext } from "react";
 import { AdminAccessCheck } from "../../components/admin/admin-access-check"
-import { Toaster } from "sonner";
 import { AdminSidebar } from "../../components/admin/admin-sidebar";
 import { AdminTopbar } from "../../components/admin/admin-topbar";
 // Removed dev tools for production
@@ -17,51 +16,49 @@ export const useAdminContext = () => useContext(AdminContext);
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [pageTitle, setPageTitle] = useState("");
-  const { profile } = useAuth();
+  const [pageTitle, setPageTitle] = useState("Dashboard");
 
-  // Dynamic page title extraction for admin pages
   const getPageInfo = useCallback(() => {
-    if (!pathname) return { title: "Admin Dashboard" };
-
-    // Map of admin paths to their display titles
-    const pathInfo: Record<string, { title: string }> = {
-      "/admin": { title: "Dashboard" },
-      "/admin/teams": { title: "Teams" },
-      "/admin/applications": { title: "Applications" }, 
-      "/admin/assets": { title: "Assets" },
-      "/admin/organizations": { title: "Organizations" },
-      "/admin/businesses": { title: "Businesses" },
-      "/admin/transactions": { title: "Transactions" },
-      "/admin/transactions/topups": { title: "Top-up Requests" },
-      "/admin/transactions/history": { title: "Transaction History" },
-      "/admin/analytics": { title: "Business Analytics" },
-      "/admin/applications/history": { title: "Application History" },
-      "/admin/access-codes": { title: "Access Codes" },
-      "/admin/analytics": { title: "Analytics" },
-      "/admin/stats": { title: "Statistics" },
-      "/admin/infrastructure": { title: "Infrastructure" },
-      "/admin/finances": { title: "Finances" },
-      "/admin/files": { title: "Files" },
-      "/admin/workflow": { title: "Workflow" },
-      "/admin/workflow-guide": { title: "Workflow Guide" },
-      "/admin/notes": { title: "Notes" },
-      "/admin/activity": { title: "Activity" },
-      "/admin/tasks": { title: "Tasks" },
-    };
-
-    // Check for exact match first
-    if (pathInfo[pathname]) {
-      return pathInfo[pathname];
+    const segments = pathname.split("/").filter(Boolean);
+    
+    // Remove 'admin' from the beginning if present
+    const relevantSegments = segments[0] === "admin" ? segments.slice(1) : segments;
+    
+    if (relevantSegments.length === 0) {
+      return { title: "Dashboard" };
     }
 
-    // Handle dynamic routes (e.g., /admin/teams/123)
-    const segments = pathname.split("/").filter(Boolean);
-    if (segments.length >= 2) {
-      const baseRoute = `/${segments[0]}/${segments[1]}`;
-      if (pathInfo[baseRoute]) {
-        return pathInfo[baseRoute];
-      }
+    // Handle specific admin routes
+    const routeMap: Record<string, string> = {
+      "organizations": "Organizations",
+      "applications": "Applications",
+      "teams": "Teams",
+      "assets": "Assets",
+      "businesses": "Businesses",
+      "analytics": "Analytics",
+      "stats": "Statistics",
+      "activity": "Activity Log",
+      "files": "Files",
+      "notes": "Notes",
+      "infrastructure": "Infrastructure",
+      "funding-requests": "Funding Requests",
+      "access-codes": "Access Codes",
+      "finances": "Finances",
+      "revenue": "Revenue"
+    };
+
+    const firstSegment = relevantSegments[0];
+    if (routeMap[firstSegment]) {
+      return { title: routeMap[firstSegment] };
+    }
+
+    // Handle nested routes
+    if (relevantSegments.length > 1) {
+      const parentRoute = routeMap[firstSegment];
+      const childRoute = relevantSegments[1].charAt(0).toUpperCase() + relevantSegments[1].slice(1).replace(/-/g, " ");
+      return { 
+        title: parentRoute ? `${parentRoute} - ${childRoute}` : childRoute
+      };
     }
 
     // Fallback: capitalize the last segment
@@ -95,8 +92,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         
         {/* Dev tools removed for cleaner production UI */}
         
-        {/* Toaster for admin pages */}
-        <Toaster />
+        {/* Removed duplicate Toaster - using root layout's DynamicToaster */}
       </div>
     </AdminContext.Provider>
   );

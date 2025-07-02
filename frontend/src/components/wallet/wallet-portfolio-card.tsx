@@ -6,12 +6,17 @@ import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { formatCurrency } from "../../utils/format"
-import { TrendingDown, TrendingUp, Wallet } from "lucide-react"
+import { TrendingDown, TrendingUp, Wallet, RefreshCw } from "lucide-react"
 import { Skeleton } from "../ui/skeleton"
 import { useAuth } from '@/contexts/AuthContext'
 import { authenticatedFetcher } from '@/lib/swr-config'
 
-export function WalletPortfolioCard() {
+interface WalletPortfolioCardProps {
+  onRefresh?: () => void
+  isRefreshing?: boolean
+}
+
+export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletPortfolioCardProps) {
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [timeFilter, setTimeFilter] = useState("1M")
@@ -147,8 +152,19 @@ export function WalletPortfolioCard() {
               )}
             </div>
           </div>
-          <div className="text-right text-sm text-muted-foreground">
-             <Wallet className="h-8 w-8 text-muted-foreground" />
+          <div className="flex items-center gap-2">
+            {onRefresh && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+            <Wallet className="h-8 w-8 text-muted-foreground" />
           </div>
         </div>
 

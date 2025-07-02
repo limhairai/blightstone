@@ -29,7 +29,8 @@ export async function GET() {
       maxTeamMembers: plan.max_team_members,
       maxBusinesses: plan.max_businesses,
       maxAdAccounts: plan.max_ad_accounts,
-      features: plan.features || []
+      features: plan.features || [],
+      stripe_price_id: plan.stripe_price_id
     }))
 
     return NextResponse.json({ plans: transformedPlans })

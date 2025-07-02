@@ -31,9 +31,7 @@ export async function PATCH(
       .eq('id', user.id)
       .single();
 
-    if (profileError || !profile?.is_superuser) {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
-    }
+    const isAdmin = profile?.is_superuser === true;
 
     const body = await request.json();
     const { status, admin_notes } = body;
@@ -42,14 +40,42 @@ export async function PATCH(
       return NextResponse.json({ error: 'Status is required' }, { status: 400 });
     }
 
-    // Update the topup request - no approved_amount needed, just use original amount
+    // Get the request first to check ownership
+    const { data: existingRequest, error: fetchError } = await supabase
+      .from('topup_requests')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existingRequest) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+    }
+
+    // Allow users to cancel their own pending requests, or admins to do anything
+    const canCancel = (
+      status === 'cancelled' && 
+      existingRequest.status === 'pending' && 
+      existingRequest.requested_by === user.id
+    );
+
+    if (!isAdmin && !canCancel) {
+      return NextResponse.json({ 
+        error: 'You can only cancel your own pending requests' 
+      }, { status: 403 });
+    }
+
+    // Update the topup request
     const updateData: any = {
       status,
-      admin_notes,
-      processed_by: user.id,
-      processed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+
+    // Only admins can set admin notes and processed_by
+    if (isAdmin) {
+      updateData.admin_notes = admin_notes;
+      updateData.processed_by = user.id;
+      updateData.processed_at = new Date().toISOString();
+    }
 
     const { data: updatedRequest, error: updateError } = await supabase
       .from('topup_requests')
@@ -92,6 +118,7 @@ export async function PATCH(
       processed_at: updatedRequest.processed_at,
       created_at: updatedRequest.created_at,
       updated_at: updatedRequest.updated_at,
+      metadata: updatedRequest.metadata,
       
       // Fee tracking fields
       fee_amount_cents: updatedRequest.fee_amount_cents || 0,

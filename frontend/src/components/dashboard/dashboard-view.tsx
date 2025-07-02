@@ -39,7 +39,7 @@ import { useDashboardData } from "../../lib/swr-config"
 
 export function DashboardView() {
   // ALL HOOKS MUST BE CALLED FIRST - NEVER AFTER CONDITIONAL LOGIC
-  const { user, loading: authLoading } = useAuth()
+  const { user, session, loading: authLoading } = useAuth()
   const { theme } = useTheme()
   const router = useRouter()
   const pathname = usePathname()
@@ -246,15 +246,22 @@ export function DashboardView() {
   const chartKey = `${realBalance}-${timeFilter}-${transactionsData.length}`
 
   // Use real-time transactions and accounts from state
-  const transactions = transactionsData.slice(0, 5).map(tx => ({
-    id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,
-    name: tx.description,
-    amount: tx.amount_cents / 100,
-    type: tx.type,
-    date: tx.created_at,
-    account: tx.metadata?.to_account_name || tx.metadata?.from_account_name || 'Unknown',
-    timestamp: tx.created_at
-  }))
+  const transactions = useMemo(() => {
+    // Ensure transactionsData is an array and has data
+    if (!Array.isArray(transactionsData) || transactionsData.length === 0) {
+      return []
+    }
+    
+    return transactionsData.slice(0, 5).map(tx => ({
+      id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,
+      name: tx.description || 'Transaction',
+      amount: (tx.amount_cents || 0) / 100,
+      type: tx.type || 'transfer',
+      date: tx.created_at ? new Date(tx.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+      account: tx.metadata?.to_account_name || tx.metadata?.from_account_name || tx.metadata?.account_name || 'Unknown',
+      timestamp: tx.created_at || new Date().toISOString()
+    }))
+  }, [transactionsData])
 
   const processedAccounts = accounts.map(account => ({
     ...account,
@@ -407,9 +414,36 @@ export function DashboardView() {
 
   // Always show filled dashboard for demo - no empty state
   const getTransactionIcon = (type: string, amount: number) => {
-    if (type === 'topup' || type === 'credit') return <ArrowUpIcon className="w-4 h-4 text-green-500" />
-    if (type === 'spend' || type === 'withdrawal' || type === 'debit') return <ArrowDownIcon className="w-4 h-4 text-red-500" />
-    return <ArrowRight className="w-4 h-4 text-gray-500" />
+    switch (type) {
+      case 'topup':
+      case 'credit':
+      case 'deposit':
+        return (
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-950/30 text-[#34D197]">
+            <ArrowUpIcon className="h-3 w-3" />
+          </div>
+        )
+      case 'spend':
+      case 'withdrawal':
+      case 'debit':
+        return (
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-rose-950/30 text-rose-400">
+            <ArrowDownIcon className="h-3 w-3" />
+          </div>
+        )
+      case 'transfer':
+        return (
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-950/30 text-blue-400">
+            <ArrowRight className="h-3 w-3" />
+          </div>
+        )
+      default:
+        return (
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-950/30 text-gray-400">
+            <ArrowRight className="h-3 w-3" />
+          </div>
+        )
+    }
   }
 
   return (
@@ -680,31 +714,71 @@ export function DashboardView() {
               <CardContent className="p-0">
                 <div className="flex items-center justify-between px-4 py-3 border-b">
                   <h3 className="font-semibold text-base">Transactions</h3>
-                  <Button variant="ghost" size="sm" className="h-8 px-2 text-sm" onClick={() => router.push('/dashboard/transactions')}>
-                    See all <ArrowRight className="ml-1 h-3 w-3" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0"
+                      onClick={() => mutate(['/api/transactions', session?.access_token])}
+                      disabled={isTransLoading}
+                      title="Refresh transactions"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isTransLoading ? 'animate-spin' : ''}`} />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-8 px-2 text-sm" onClick={() => router.push('/dashboard/transactions')}>
+                      See all <ArrowRight className="ml-1 h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="px-2 py-2">
-                  {transactions.map((transaction) => (
-                    <div
-                      key={transaction.id}
-                      className="flex items-center justify-between px-3 py-2 hover:bg-muted/50 rounded-md"
-                    >
-                      <div className="flex items-center gap-2">
-                        {getTransactionIcon(transaction.type, transaction.amount)}
-                        <div>
-                          <div className="font-medium text-sm">{transaction.name}</div>
-                          <div className="text-xs text-muted-foreground">{transaction.date}</div>
+                  {isTransLoading ? (
+                    // Loading state
+                    <div className="space-y-2">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex items-center justify-between px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-muted animate-pulse"></div>
+                            <div className="space-y-1">
+                              <div className="w-24 h-3 bg-muted rounded animate-pulse"></div>
+                              <div className="w-16 h-2 bg-muted rounded animate-pulse"></div>
+                            </div>
+                          </div>
+                          <div className="text-right space-y-1">
+                            <div className="w-16 h-3 bg-muted rounded animate-pulse"></div>
+                            <div className="w-12 h-2 bg-muted rounded animate-pulse"></div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`font-medium text-sm ${transaction.amount > 0 ? "text-green-600" : "text-foreground"}`}>
-                          {transaction.amount > 0 ? "+$" : "$"}{formatCurrency(Math.abs(transaction.amount))}
-                        </div>
-                        <div className="text-xs text-muted-foreground">{transaction.account}</div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
+                  ) : transactions.length === 0 ? (
+                    // Empty state
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="text-sm text-muted-foreground">No transactions yet</div>
+                      <div className="text-xs text-muted-foreground mt-1">Transactions will appear here once you start using your account</div>
+                    </div>
+                  ) : (
+                    // Transactions list
+                    transactions.map((transaction) => (
+                      <div
+                        key={transaction.id}
+                        className="flex items-center justify-between px-3 py-2 hover:bg-muted/50 rounded-md"
+                      >
+                        <div className="flex items-center gap-2">
+                          {getTransactionIcon(transaction.type, transaction.amount)}
+                          <div>
+                            <div className="font-medium text-sm">{transaction.name}</div>
+                            <div className="text-xs text-muted-foreground">{transaction.date}</div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className={`font-medium text-sm ${transaction.amount > 0 ? "text-[#34D197]" : "text-foreground"}`}>
+                            {transaction.amount > 0 ? "+$" : "$"}{formatCurrency(Math.abs(transaction.amount))}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{transaction.account}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

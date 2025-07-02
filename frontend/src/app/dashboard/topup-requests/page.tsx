@@ -16,9 +16,11 @@ import { Search, Clock, CheckCircle, X, Eye, LayoutGrid, DollarSign } from "luci
 import { formatCurrency } from "../../../utils/format"
 import { toast } from "sonner"
 import type { TopupRequest, TopupRequestStatus } from "../../../types/topup-request"
+import { useSWRConfig } from 'swr'
 
 export default function ClientTopupRequestsPage() {
   const { session } = useAuth()
+  const { mutate } = useSWRConfig()
   const { currentOrganizationId } = useOrganizationStore()
   const [requests, setRequests] = useState<TopupRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,23 +78,60 @@ export default function ClientTopupRequestsPage() {
   const getStatusConfig = (status: TopupRequestStatus) => {
     switch (status) {
       case 'pending':
-        return { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Clock }
+        return { color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800", icon: Clock }
       case 'processing':
-        return { color: "bg-blue-100 text-blue-800 border-blue-200", icon: Clock }
+        return { color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800", icon: Clock }
       case 'completed':
-        return { color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle }
+        return { color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", icon: CheckCircle }
       case 'failed':
-        return { color: "bg-red-100 text-red-800 border-red-200", icon: X }
+        return { color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", icon: X }
       case 'cancelled':
-        return { color: "bg-gray-100 text-gray-800 border-gray-200", icon: X }
+        return { color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: X }
       default:
-        return { color: "bg-gray-100 text-gray-800 border-gray-200", icon: Clock }
+        return { color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: Clock }
     }
   }
 
   const handleViewDetails = (request: TopupRequest) => {
     setSelectedRequest(request)
     setShowDetailsDialog(true)
+  }
+
+  const handleCancelRequest = async (request: TopupRequest) => {
+    try {
+      const response = await fetch(`/api/topup-requests/${request.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          status: 'cancelled'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to cancel request');
+      }
+
+      // Refresh the requests list
+      await fetchRequests();
+      
+      // Refresh wallet balance and organization data
+      if (currentOrganizationId) {
+        await Promise.all([
+          mutate(`/api/organizations?id=${currentOrganizationId}`),
+          mutate('/api/organizations'),
+          mutate(`org-${currentOrganizationId}`)
+        ]);
+      }
+      
+      toast.success("Request cancelled successfully");
+    } catch (error) {
+      console.error('Error cancelling request:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel request');
+    }
   }
 
   const columns: ColumnDef<TopupRequest>[] = [
@@ -153,7 +192,7 @@ export default function ClientTopupRequestsPage() {
       cell: ({ row }) => {
         const amountCents = row.getValue<number>("amount_cents")
         return (
-          <div className="font-medium text-green-600">
+          <div className="font-medium text-[#34D197]">
             {formatCurrency(amountCents / 100)}
           </div>
         )
@@ -195,14 +234,25 @@ export default function ClientTopupRequestsPage() {
       cell: ({ row }) => {
         const request = row.original
         return (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleViewDetails(request)}
-          >
-            <Eye className="h-4 w-4 mr-1" />
-            View
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleViewDetails(request)}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
+            {request.status === 'pending' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleCancelRequest(request)}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
         )
       },
     },

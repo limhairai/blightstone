@@ -22,6 +22,7 @@ import { toast } from "sonner"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
+import { useSWRConfig } from 'swr'
 
 const MINIMUM_TOP_UP_AMOUNT = 500;
 
@@ -33,6 +34,8 @@ interface TopUpDialogProps {
     adAccount: string
     balance: number
     currency: string
+    business?: string
+    bmId?: string
   }
   accounts?: Array<{
     id: string
@@ -40,6 +43,8 @@ interface TopUpDialogProps {
     adAccount: string
     balance: number
     currency: string
+    business?: string
+    bmId?: string
   }>
   onSuccess?: () => void
 }
@@ -49,6 +54,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { session } = useAuth()
+  const { mutate } = useSWRConfig()
   const { currentOrganizationId } = useOrganizationStore()
   const { calculateFee, currentPlan, subscriptionData } = useSubscription()
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId)
@@ -147,18 +153,39 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     setIsLoading(true)
 
     try {
-      const requests = targetAccounts.map(acc => ({
-        organization_id: currentOrganizationId,
-        ad_account_id: acc.adAccount,
-        ad_account_name: acc.name,
-        amount_cents: Math.round(parseFloat(formData.amount) * 100),
-        priority: 'normal',
-        notes: '',
-        // Include fee calculation data
-        fee_amount_cents: feeCalculation ? Math.round(feeCalculation.fee_amount * 100) : 0,
-        total_deducted_cents: feeCalculation ? Math.round(feeCalculation.total_amount * 100) : Math.round(parseFloat(formData.amount) * 100),
-        plan_fee_percentage: feeCalculation?.fee_percentage || 0,
-      }))
+      const requests = targetAccounts.map(acc => {
+        // Ensure we have proper business manager metadata
+        let businessManagerName = (acc as any).business || 'Unknown';
+        let businessManagerId = (acc as any).bmId || 'Unknown';
+        
+        // If the business manager info is still unknown/missing, 
+        // it will be enhanced by the API using the asset system
+        if (businessManagerName === 'Unknown' || businessManagerName === 'N/A') {
+          businessManagerName = 'BM Not Available';
+        }
+        
+        if (businessManagerId === 'Unknown' || !businessManagerId) {
+          businessManagerId = 'BM ID Not Available';
+        }
+
+        return {
+          organization_id: currentOrganizationId,
+          ad_account_id: acc.adAccount,
+          ad_account_name: acc.name,
+          amount_cents: Math.round(parseFloat(formData.amount) * 100),
+          priority: 'normal',
+          notes: '',
+          // Include fee calculation data
+          fee_amount_cents: feeCalculation ? Math.round(feeCalculation.fee_amount * 100) : 0,
+          total_deducted_cents: feeCalculation ? Math.round(feeCalculation.total_amount * 100) : Math.round(parseFloat(formData.amount) * 100),
+          plan_fee_percentage: feeCalculation?.fee_percentage || 0,
+          // Include business manager metadata with better fallbacks
+          metadata: {
+            business_manager_name: businessManagerName,
+            business_manager_id: businessManagerId
+          }
+        }
+      })
 
       for (const request of requests) {
         const response = await fetch('/api/topup-requests', {
@@ -186,6 +213,15 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
       // Call the callback
       if (onSuccess) {
         onSuccess()
+      }
+
+      // Refresh wallet balance and organization data
+      if (currentOrganizationId) {
+        await Promise.all([
+          mutate(`/api/organizations?id=${currentOrganizationId}`),
+          mutate('/api/organizations'),
+          mutate(`org-${currentOrganizationId}`)
+        ]);
       }
 
       // Close dialog after success

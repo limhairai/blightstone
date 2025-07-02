@@ -17,13 +17,13 @@ interface Plan {
   id: string
   name: string
   description: string
-  monthly_subscription_fee_cents: number
-  ad_spend_fee_percentage: number
-  max_team_members: number
-  max_businesses: number
-  max_ad_accounts: number
+  monthlyPrice: number // Already in dollars
+  adSpendFee: number
+  maxTeamMembers: number
+  maxBusinesses: number
+  maxAdAccounts: number
   features: string[]
-  stripe_price_id: string | null
+  stripe_price_id?: string | null
 }
 
 export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps) {
@@ -113,22 +113,22 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
   const formatFeatures = (plan: Plan): string[] => {
     const features = []
     
-    if (plan.max_businesses === -1) {
+    if (plan.maxBusinesses === -1) {
       features.push('Unlimited Business Managers')
     } else {
-      features.push(`${plan.max_businesses} Business Manager${plan.max_businesses > 1 ? 's' : ''}`)
+      features.push(`${plan.maxBusinesses} Business Manager${plan.maxBusinesses > 1 ? 's' : ''}`)
     }
     
-    if (plan.max_ad_accounts === -1) {
+    if (plan.maxAdAccounts === -1) {
       features.push('Unlimited Ad Accounts')
     } else {
-      features.push(`${plan.max_ad_accounts} Ad Accounts`)
+      features.push(`${plan.maxAdAccounts} Ad Accounts`)
     }
     
-    if (plan.max_team_members === -1) {
+    if (plan.maxTeamMembers === -1) {
       features.push('Unlimited Team Members')
     } else {
-      features.push(`${plan.max_team_members} Team Members`)
+      features.push(`${plan.maxTeamMembers} Team Members`)
     }
     
     // Add parsed features from database
@@ -139,11 +139,11 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
     return features
   }
 
-  const formatPrice = (cents: number): string => {
-    if (typeof cents !== 'number' || isNaN(cents)) {
+  const formatPrice = (dollars: number): string => {
+    if (typeof dollars !== 'number' || isNaN(dollars)) {
       return '0'
     }
-    return Math.round(cents / 100).toString()
+    return dollars.toString()
   }
 
   if (isLoading) {
@@ -184,13 +184,13 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                 key={plan.id}
                 className={`relative rounded-lg border p-6 ${
                   isCurrent 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/50'
-                } ${isPopular ? 'ring-2 ring-primary' : ''}`}
+                    ? 'border-[#b4a0ff] bg-gradient-to-br from-[#b4a0ff]/5 to-[#ffb4a0]/5' 
+                    : 'border-border hover:border-[#b4a0ff]/50'
+                } ${isPopular ? 'ring-2 ring-[#b4a0ff]' : ''}`}
               >
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">
+                    <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black text-xs px-3 py-1 rounded-full font-medium">
                       Most Popular
                     </span>
                   </div>
@@ -208,26 +208,30 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
                   <div className="mt-2">
                     <span className="text-3xl font-bold">
-                      ${formatPrice(plan.monthly_subscription_fee_cents)}
+                      ${formatPrice(plan.monthlyPrice)}
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    + {plan.ad_spend_fee_percentage}% ad spend fee
+                    + {plan.adSpendFee}% ad spend fee
                   </div>
                 </div>
 
                 <ul className="space-y-3 mb-6">
                   {features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-[#b4a0ff] mt-0.5 flex-shrink-0" />
                       <span>{feature}</span>
                     </li>
                   ))}
                 </ul>
 
                 <Button
-                  className="w-full"
+                  className={`w-full ${
+                    isCurrent 
+                      ? "border-[#b4a0ff] text-[#b4a0ff] hover:bg-[#b4a0ff]/10" 
+                      : "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
+                  }`}
                   variant={isCurrent ? "outline" : "default"}
                   disabled={isCurrent || !canUpgrade || isUpgrading || !plan.stripe_price_id}
                   onClick={() => handleSelectPlan(plan.id)}

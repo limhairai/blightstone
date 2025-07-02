@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
@@ -25,6 +26,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut: authSignOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   
   const hasNotifications = true;
   const userEmail = user?.email || 'admin@adhub.com';
@@ -124,17 +126,32 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
             <DropdownMenuSeparator className="bg-border" />
 
             <div className="py-2">
-              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
+              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={(e) => e.preventDefault()}>
                 <Moon className="h-4 w-4 mr-2" />
                 Theme
                 <div className="ml-auto flex items-center gap-1">
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-sm">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 rounded-sm ${theme === 'system' ? 'bg-accent' : ''}`}
+                    onClick={() => setTheme('system')}
+                  >
                     <Monitor className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-sm">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 rounded-sm ${theme === 'light' ? 'bg-accent' : ''}`}
+                    onClick={() => setTheme('light')}
+                  >
                     <Sun className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded-sm bg-accent">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 rounded-sm ${theme === 'dark' ? 'bg-accent' : ''}`}
+                    onClick={() => setTheme('dark')}
+                  >
                     <Moon className="h-3.5 w-3.5" />
                   </Button>
                 </div>

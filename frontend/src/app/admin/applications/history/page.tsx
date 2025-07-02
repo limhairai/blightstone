@@ -48,17 +48,29 @@ export default function ApplicationHistoryPage() {
         }
         
         const data = await response.json()
+        console.log('Applications API response:', data)
+        // Ensure data is an array before mapping
+        const applications = Array.isArray(data) ? data : (data.applications || [])
+        console.log('Applications array:', applications)
+        
+        // Check if applications is actually an array
+        if (!Array.isArray(applications)) {
+          console.error('Applications is not an array:', applications)
+          setApplications([])
+          return
+        }
+        
         // Transform the data to match the history format
-        const historyData = data.map((app: any) => ({
+        const historyData = applications.map((app: any) => ({
           id: app.id,
           organizationName: app.organization_name,
-          businessName: app.business_name,
-          applicationType: "new_business", // Default for now
+          businessName: app.organization_name, // Use organization_name since business_name isn't available
+          applicationType: app.request_type === "new_business_manager" ? "new_business" : "additional_business",
           accountsRequested: 1, // Default for now
           status: app.status,
           teamName: "Team Alpha", // Default for now
-          processedAt: app.submitted_at,
-          completedAt: app.approved_at || app.rejected_at
+          processedAt: app.created_at, // Use created_at instead of submitted_at
+          completedAt: app.approved_at || app.rejected_at || app.fulfilled_at
         }))
         setApplications(historyData)
       } catch (err) {
@@ -127,11 +139,21 @@ export default function ApplicationHistoryPage() {
       size: 120,
       cell: ({ row }) => {
         const status = row.getValue<string>("status")
+        const getStatusColor = (status: string) => {
+          switch (status) {
+            case "completed":
+            case "approved":
+              return "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20"
+            case "pending":
+              return "bg-[#FFC857]/10 text-[#FFC857] border-[#FFC857]/20"
+            case "rejected":
+              return "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20"
+            default:
+              return "bg-gray-100 text-gray-800 border-gray-200"
+          }
+        }
         return (
-          <Badge 
-            variant={status === "completed" ? "default" : status === "approved" ? "secondary" : "destructive"}
-            className="capitalize"
-          >
+          <Badge className={`capitalize ${getStatusColor(status)}`}>
             {status}
           </Badge>
         )

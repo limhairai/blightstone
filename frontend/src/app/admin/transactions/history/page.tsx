@@ -95,8 +95,8 @@ export default function TransactionHistoryPage() {
 
   const getTypeColor = (type: string) => {
     const colors = {
-      topup: "bg-green-100 text-green-800 border-green-200",
-      spend: "bg-red-100 text-red-800 border-red-200", 
+      topup: "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20",
+      spend: "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20", 
       refund: "bg-blue-100 text-blue-800 border-blue-200",
       fee: "bg-purple-100 text-purple-800 border-purple-200"
     }
@@ -105,9 +105,9 @@ export default function TransactionHistoryPage() {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      completed: "bg-green-100 text-green-800 border-green-200",
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      failed: "bg-red-100 text-red-800 border-red-200"
+      completed: "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20",
+      pending: "bg-[#FFC857]/10 text-[#FFC857] border-[#FFC857]/20",
+      failed: "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20"
     }
     return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800 border-gray-200"
   }
@@ -146,7 +146,7 @@ export default function TransactionHistoryPage() {
         const type = row.original.type
         const isNegative = type === "spend" || type === "fee"
         return (
-          <div className={`font-medium ${isNegative ? "text-red-600" : "text-green-600"}`}>
+          <div className={`font-medium ${isNegative ? "text-[#F56565]" : "text-[#34D197]"}`}>
             {isNegative ? "-" : "+"}{currency} {amount.toLocaleString()}
           </div>
         )

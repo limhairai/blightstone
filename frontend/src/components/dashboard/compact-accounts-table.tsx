@@ -225,7 +225,9 @@ export function CompactAccountsTable({
                 name: account.name,
                 adAccount: account.adAccount,
                 balance: account.balance,
-                currency: account.currency
+                currency: account.currency,
+                business: account.business,
+                bmId: account.bmId
               };
             })}
             onSuccess={() => {
@@ -362,7 +364,9 @@ export function CompactAccountsTable({
                     name: account.name,
                     adAccount: account.adAccount,
                     balance: account.balance,
-                    currency: account.currency
+                    currency: account.currency,
+                    business: account.business,
+                    bmId: account.bmId
                   }}
                   onSuccess={() => mutate()}
                   trigger={

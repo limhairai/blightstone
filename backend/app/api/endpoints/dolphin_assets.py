@@ -172,17 +172,17 @@ async def discover_dolphin_assets(
                 balance = cab.get("balance", 0)
                 currency = cab.get("currency", "USD")
                 
-                # Map Dolphin status to our database status - ONLY USE VALID VALUES!
-                # Database constraint allows: 'active', 'inactive', 'suspended'
+                # Map Dolphin status to our database status - UPDATED TO INCLUDE RESTRICTED
+                # Database constraint needs to be updated to allow: 'active', 'inactive', 'suspended', 'restricted'
                 # Dolphin statuses: ACTIVE, TOKEN_ERROR, SUSPENDED, RESTRICTED
                 if cab_status == "ACTIVE":
                     status = "active"
                 elif cab_status == "SUSPENDED":
                     status = "suspended"  # Facebook suspended the account
                 elif cab_status == "RESTRICTED":
-                    status = "inactive"  # Facebook restricted the account - map to inactive
+                    status = "restricted"  # Facebook restricted the account - show as restricted to client
                 elif cab_status == "TOKEN_ERROR":
-                    status = "inactive"  # Dolphin can't connect (auth issue) - map to inactive
+                    status = "inactive"  # Dolphin can't connect (auth issue) - hide from client
                 else:
                     # Unknown status - default to inactive to be safe
                     status = "inactive"

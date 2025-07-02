@@ -107,7 +107,7 @@ export function OptimizedBillingView({
       
       <div className="flex items-center gap-4 text-xs">
         <div className="text-right">
-          <div className={`font-medium ${tx.type === 'deposit' || tx.type === 'refund' ? 'text-[#34D197]' : 'text-red-600'}`}>
+                          <div className={`font-medium ${tx.type === 'deposit' || tx.type === 'refund' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {tx.type === 'deposit' || tx.type === 'refund' ? '+' : '-'}{formatCurrency(tx.amount)}
           </div>
           <div className="text-muted-foreground text-xs">
@@ -200,7 +200,7 @@ export function OptimizedBillingView({
       <div className="grid grid-cols-6 gap-2 text-xs">
         <Card className="p-2">
           <div className="text-center">
-            <div className="text-sm font-bold text-[#34D197]">$2.4M</div>
+                            <div className="text-sm font-bold text-green-600 dark:text-green-400">$2.4M</div>
             <div className="text-muted-foreground text-xs">Balance</div>
           </div>
         </Card>

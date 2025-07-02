@@ -141,7 +141,7 @@ export function AdminSidebar({ className }: { className?: string }) {
                   )}
                 >
               <Icon
-                className={cn(collapsed ? "h-5 w-5" : "mr-3 h-4 w-4", active || subActive ? "text-[#c4b5fd]" : "")}
+                className={cn(collapsed ? "h-5 w-5" : "mr-3 h-4 w-4", active || subActive ? "text-primary" : "")}
                     />
               {!collapsed && <span className="flex-1 text-left">{item.name}</span>}
               {!collapsed && hasSub && (

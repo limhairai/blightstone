@@ -1,6 +1,6 @@
 import { Business } from "./business";
 
-export type AdAccountStatus = 'active' | 'pending' | 'suspended' | 'banned' | 'under-review' | 'archived';
+export type AdAccountStatus = 'active' | 'pending' | 'suspended' | 'restricted' | 'inactive' | 'banned' | 'under-review' | 'archived';
 
 export interface AdAccount {
   id: string;
@@ -19,6 +19,7 @@ export interface AdAccount {
   // Additional fields from Dolphin API
   balance_cents?: number;
   spend_cents?: number;
+  spend_cap_cents?: number; // New field for spend cap
   ad_account_id?: string;
   dolphin_account_id?: string;
   business_manager_name?: string;

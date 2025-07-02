@@ -147,17 +147,17 @@ export default function TopupRequestsPage() {
   const getStatusConfig = (status: TopupRequestStatus) => {
     switch (status) {
       case 'pending':
-        return { color: "bg-yellow-100 text-yellow-800 border-yellow-200", icon: Clock }
+        return { color: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800", icon: Clock }
       case 'processing':
-        return { color: "bg-blue-100 text-blue-800 border-blue-200", icon: Clock }
+        return { color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800", icon: Clock }
       case 'completed':
-        return { color: "bg-green-100 text-green-800 border-green-200", icon: CheckCircle }
+        return { color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", icon: CheckCircle }
       case 'failed':
-        return { color: "bg-red-100 text-red-800 border-red-200", icon: X }
+        return { color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", icon: X }
       case 'cancelled':
-        return { color: "bg-gray-100 text-gray-800 border-gray-200", icon: X }
+        return { color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: X }
       default:
-        return { color: "bg-gray-100 text-gray-800 border-gray-200", icon: Clock }
+        return { color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: Clock }
     }
   }
 
@@ -222,30 +222,53 @@ export default function TopupRequestsPage() {
     },
     {
       accessorKey: "amount_cents",
-      header: "Amount & Fees",
-      size: 150,
+      header: "Top-up Amount",
+      size: 120,
       cell: ({ row }) => {
         const request = row.original
         const amountCents = request.amount_cents
+        
+        return (
+          <div className="font-medium text-green-600 dark:text-green-400">
+            {formatCurrency(amountCents / 100)}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "fee_amount_cents",
+      header: "Fees",
+      size: 100,
+      cell: ({ row }) => {
+        const request = row.original
         const feeAmountCents = request.fee_amount_cents || 0
-        const totalDeductedCents = request.total_deducted_cents || amountCents
         const feePercentage = request.plan_fee_percentage || 0
         
         return (
-          <div className="space-y-1">
-            <div className="font-medium text-green-600">
-              {formatCurrency(amountCents / 100)}
-            </div>
-            {feeAmountCents > 0 && (
-              <>
-                <div className="text-xs text-orange-600">
-                  +{formatCurrency(feeAmountCents / 100)} ({feePercentage}% fee)
-                </div>
-                <div className="text-xs text-blue-600 font-medium">
-                  Total: {formatCurrency(totalDeductedCents / 100)}
-                </div>
-              </>
+          <div className="text-sm">
+            {feeAmountCents > 0 ? (
+              <div className="text-muted-foreground">
+                {formatCurrency(feeAmountCents / 100)}
+                <div className="text-xs">({feePercentage}%)</div>
+              </div>
+            ) : (
+              <div className="text-xs text-muted-foreground">No fee</div>
             )}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "total_deducted_cents",
+      header: "Total Deducted",
+      size: 120,
+      cell: ({ row }) => {
+        const request = row.original
+        const totalDeductedCents = request.total_deducted_cents || request.amount_cents
+        
+        return (
+          <div className="font-medium text-foreground">
+            {formatCurrency(totalDeductedCents / 100)}
           </div>
         )
       },
@@ -427,15 +450,15 @@ export default function TopupRequestsPage() {
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Amount Details</Label>
                   <div className="mt-1 space-y-1">
-                    <div className="text-lg font-semibold text-green-600">
+                    <div className="text-lg font-semibold text-green-600 dark:text-green-400">
                       {formatCurrency(selectedRequest.amount_cents / 100)}
                     </div>
                     {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
                       <>
-                        <div className="text-sm text-orange-600">
+                        <div className="text-sm text-amber-600 dark:text-amber-400">
                           Platform Fee ({selectedRequest.plan_fee_percentage}%): +{formatCurrency(selectedRequest.fee_amount_cents / 100)}
                         </div>
-                        <div className="text-sm font-medium text-blue-600 border-t border-gray-200 pt-1">
+                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400 border-t border-border pt-1">
                           Total Deducted: {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)}
                         </div>
                       </>
@@ -532,10 +555,10 @@ export default function TopupRequestsPage() {
                   </div>
                   {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
                     <>
-                      <div className="text-sm text-orange-600">
+                      <div className="text-sm text-amber-600 dark:text-amber-400">
                         Platform Fee ({selectedRequest.plan_fee_percentage}%): +{formatCurrency(selectedRequest.fee_amount_cents / 100)}
                       </div>
-                      <div className="text-sm font-medium text-blue-600">
+                      <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
                         Total Deducted: {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)}
                       </div>
                     </>
@@ -561,15 +584,15 @@ export default function TopupRequestsPage() {
               </div>
 
               {processingStatus === 'completed' && (
-                <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-                  <div className="flex items-center gap-2 text-green-700">
+                <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm font-medium">Important</span>
                   </div>
-                  <p className="text-sm text-green-600 mt-1">
+                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
                     Completing this request will deduct {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)} from the organization's wallet balance.
                     {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
-                      <span className="block text-xs text-green-500 mt-1">
+                      <span className="block text-xs text-green-500 dark:text-green-400 mt-1">
                         (Includes {formatCurrency(selectedRequest.fee_amount_cents / 100)} platform fee)
                       </span>
                     )}

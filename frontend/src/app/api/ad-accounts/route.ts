@@ -53,28 +53,65 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch ad accounts' }, { status: 500 });
     }
 
-          // console.log('🔍 NEW schema returned:', assets?.length || 0, 'ad accounts');
+    // Get all business managers for this organization to create a lookup map
+    const { data: businessManagers, error: bmError } = await supabase.rpc('get_organization_assets', {
+      p_organization_id: organizationId,
+      p_asset_type: 'business_manager'
+    });
+
+    if (bmError) {
+      console.error('Error fetching business managers:', bmError);
+    }
+
+    // Create a lookup map for business manager info: dolphin_id -> {name, id}
+    const bmLookup = new Map();
+    if (businessManagers) {
+      businessManagers.forEach(bm => {
+        bmLookup.set(bm.dolphin_id, {
+          name: bm.name,
+          id: bm.dolphin_id
+        });
+      });
+    }
 
     // Transform to match expected frontend format
     const enrichedData = (assets || []).map((asset: any) => {
       const metadata = asset.metadata || {};
       
-      // console.log('🔍 Processing asset:', {
-      //   name: asset.name,
-      //   dolphin_id: asset.dolphin_id,
-      //   metadata: metadata
-      // });
+      // Try to get business manager info from metadata first, then from lookup
+      let businessManagerName = metadata.business_manager || metadata.business_manager_name;
+      let businessManagerId = metadata.business_manager_id;
+      
+      // If metadata doesn't have BM info, try to find it from the lookup
+      if ((!businessManagerName || businessManagerName === 'N/A') && businessManagerId) {
+        const bmInfo = bmLookup.get(businessManagerId);
+        if (bmInfo) {
+          businessManagerName = bmInfo.name;
+        }
+      }
+      
+      // If still no BM info and we have any BM in the organization, use the first one as fallback
+      if (!businessManagerName || businessManagerName === 'N/A') {
+        const firstBM = businessManagers?.[0];
+        if (firstBM) {
+          businessManagerName = firstBM.name;
+          businessManagerId = firstBM.dolphin_id;
+        }
+      }
       
       return {
         id: asset.id,
         name: asset.name || `Account ${asset.id?.substring(0, 8) || 'Unknown'}`,
         ad_account_id: metadata.ad_account_id || asset.dolphin_id || 'unknown',
         dolphin_account_id: asset.dolphin_id || 'unknown',
-        business_manager_name: metadata.business_manager || metadata.business_manager_name || 'N/A',
-        business_manager_id: metadata.business_manager_id || 'unknown',
+        business_manager_name: businessManagerName || 'N/A',
+        business_manager_id: businessManagerId || 'unknown',
         status: asset.status || 'unknown',
-        balance_cents: Math.round(((metadata.spend_cap || 0) - (metadata.amount_spent || 0)) * 100),
+        // Use Dolphin's balance field directly instead of calculated balance
+        balance_cents: Math.round((metadata.balance || 0) * 100),
         spend_cents: Math.round((metadata.amount_spent || 0) * 100),
+        // Also include spend_cap for reference
+        spend_cap_cents: Math.round((metadata.spend_cap || 0) * 100),
         binding_status: 'active',
         last_sync_at: asset.last_synced_at,
         

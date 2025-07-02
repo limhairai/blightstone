@@ -18,17 +18,16 @@ export function CompactHeaderMetrics() {
   const activeAccounts = accounts.filter((account: any) => account.status === "active").length;
   const pendingAccounts = accounts.filter((account: any) => account.status === "pending").length;
   
-  // Calculate total balance using spend_cap - amount_spent
+  // Calculate total balance using Dolphin's balance field directly
   const totalBalance = accounts.reduce((total: number, account: any) => {
-    const spendCap = account.metadata?.spend_cap || 0;
-    const amountSpent = account.metadata?.amount_spent || 0;
-    const calculatedBalance = spendCap - amountSpent;
-    return total + calculatedBalance;
+    // Use balance_cents from API response (already converted from Dolphin's balance field)
+    return total + ((account.balance_cents || 0) / 100);
   }, 0);
 
   // Calculate total spent
   const totalSpent = accounts.reduce((total: number, account: any) => {
-    return total + (account.metadata?.amount_spent || 0);
+    // Use spend_cents from API response
+    return total + ((account.spend_cents || 0) / 100);
   }, 0);
 
   const metrics = [

@@ -54,6 +54,12 @@ export function CompactFilters({
           <SelectItem value="inactive" className="text-popover-foreground hover:bg-accent">
             Inactive
           </SelectItem>
+          <SelectItem value="restricted" className="text-popover-foreground hover:bg-accent">
+            Restricted
+          </SelectItem>
+          <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
+            Suspended
+          </SelectItem>
           <SelectItem value="error" className="text-popover-foreground hover:bg-accent">
             Error
           </SelectItem>

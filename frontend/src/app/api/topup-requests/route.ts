@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Check if user is admin/superuser for admin view
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('is_superuser')
+      .select('is_superuser, organization_id')
       .eq('id', user.id)
       .single();
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch topup requests' }, { status: 500 });
     }
 
-    // Get user details for each request
+    // Get user details for each request and enhance business manager info
     const requestsWithUserData = await Promise.all(
       (requests || []).map(async (request) => {
         // Get user profile data
@@ -86,8 +86,73 @@ export async function GET(request: NextRequest) {
           .eq('id', request.requested_by)
           .single();
 
+        // Enhance business manager information if missing or incomplete
+        let enhancedMetadata = { ...request.metadata };
+        
+        // Check if BM info is missing or incomplete
+        const needsBMInfo = !enhancedMetadata?.business_manager_name || 
+                           enhancedMetadata.business_manager_name === 'Unknown' ||
+                           enhancedMetadata.business_manager_name === 'BM Not Available';
+
+        if (needsBMInfo && request.organization_id) {
+          try {
+            // Try to find the ad account in the asset system to get BM info
+            if (request.ad_account_id && request.ad_account_id !== 'Account ID Not Available') {
+              const { data: adAccountAsset } = await supabase
+                .from('asset_binding')
+                .select(`
+                  asset!inner (
+                    name,
+                    dolphin_id,
+                    metadata,
+                    type
+                  )
+                `)
+                .eq('organization_id', request.organization_id)
+                .eq('asset.dolphin_id', request.ad_account_id)
+                .eq('asset.type', 'ad_account')
+                .single();
+
+              if (adAccountAsset?.asset?.metadata) {
+                const assetMetadata = adAccountAsset.asset.metadata;
+                if (assetMetadata.business_manager_name || assetMetadata.business_manager) {
+                  enhancedMetadata.business_manager_name = assetMetadata.business_manager_name || assetMetadata.business_manager;
+                  enhancedMetadata.business_manager_id = assetMetadata.business_manager_id || enhancedMetadata.business_manager_id;
+                }
+              }
+            }
+
+            // If still no BM info, get any BM from the organization as fallback
+            if (!enhancedMetadata.business_manager_name || enhancedMetadata.business_manager_name === 'Unknown') {
+              const { data: anyBM } = await supabase
+                .from('asset_binding')
+                .select(`
+                  asset!inner (
+                    name,
+                    dolphin_id,
+                    type
+                  )
+                `)
+                .eq('organization_id', request.organization_id)
+                .eq('asset.type', 'business_manager')
+                .eq('status', 'active')
+                .limit(1)
+                .single();
+
+              if (anyBM?.asset) {
+                enhancedMetadata.business_manager_name = anyBM.asset.name || 'BM Not Available';
+                enhancedMetadata.business_manager_id = anyBM.asset.dolphin_id || 'BM ID Not Available';
+              }
+            }
+          } catch (error) {
+            console.error('Error enhancing BM info for request:', request.id, error);
+            // Continue with existing metadata if enhancement fails
+          }
+        }
+
         return {
           ...request,
+          metadata: enhancedMetadata,
           requested_by_user: userProfile ? {
             email: userProfile.email,
             full_name: userProfile.full_name
@@ -196,7 +261,8 @@ export async function POST(request: NextRequest) {
       notes,
       fee_amount_cents,
       total_deducted_cents,
-      plan_fee_percentage
+      plan_fee_percentage,
+      metadata
     } = body;
 
     if (!organization_id || !ad_account_id || !ad_account_name || !amount_cents) {
@@ -259,7 +325,8 @@ export async function POST(request: NextRequest) {
         notes,
         fee_amount_cents: calculatedFeeData.fee_amount_cents,
         total_deducted_cents: calculatedFeeData.total_deducted_cents,
-        plan_fee_percentage: calculatedFeeData.plan_fee_percentage
+        plan_fee_percentage: calculatedFeeData.plan_fee_percentage,
+        metadata: metadata || {}
       })
       .select()
       .single();

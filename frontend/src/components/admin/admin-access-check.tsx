@@ -76,7 +76,7 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
   const loadingComponent = useMemo(() => (
     <div className="flex flex-col items-center justify-center h-screen bg-background text-foreground">
       <div className="p-8 bg-card rounded-lg shadow-xl max-w-md text-center">
-        <Shield className="h-12 w-12 text-[#c4b5fd] mx-auto mb-4" />
+                        <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
         <h2 className="text-xl font-semibold mb-2">Verifying Admin Access</h2>
         <p className="text-muted-foreground mb-6">
           Please wait while we verify your credentials...
