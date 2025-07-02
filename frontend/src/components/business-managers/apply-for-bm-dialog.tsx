@@ -17,6 +17,7 @@ import { Check, Loader2, Building2 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { validateBusinessManagerApplicationForm, showValidationErrors } from "@/lib/form-validation"
+import { useSubscription } from "@/hooks/useSubscription"
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -28,6 +29,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { session } = useAuth()
+  const { subscriptionData } = useSubscription()
 
   const [formData, setFormData] = useState({
     website: "",
@@ -41,6 +43,14 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check subscription status first
+    if (!subscriptionData?.canRequestAssets) {
+      toast.error("Upgrade Required", {
+        description: "Please subscribe to a plan to request business managers."
+      })
+      return
+    }
     
     // Validate form
     const validation = validateBusinessManagerApplicationForm(formData)

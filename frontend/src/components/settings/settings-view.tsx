@@ -264,7 +264,13 @@ export function SettingsView() {
                         {isLoading ? 'Loading...' : currentPlan ? `${currentPlan.name} Plan` : 'No Plan'}
                       </p>
                     </div>
-                    <Badge className="bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe] text-xs">Active</Badge>
+                    <Badge className={`text-xs ${
+                      currentPlan?.id === 'free' 
+                        ? 'bg-blue-100 text-blue-800 border-blue-200' 
+                        : 'bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe]'
+                    }`}>
+                      {currentPlan?.id === 'free' ? 'Free' : 'Active'}
+                    </Badge>
                   </div>
                   <div className="space-y-2">
                     <h4 className="font-medium text-xs">Payment Method</h4>
@@ -325,11 +331,17 @@ export function SettingsView() {
                   {currentPlan ? (
                     <>
                       <div className="text-center mb-3">
-                        <div className="text-3xl font-bold">${currentPlan.monthlyPrice}</div>
-                        <div className="text-xs text-muted-foreground">per month</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          + {currentPlan.adSpendFee}% ad spend fee
+                        <div className="text-3xl font-bold">
+                          {currentPlan.id === 'free' ? 'Free' : `$${currentPlan.monthlyPrice}`}
                         </div>
+                        <div className="text-xs text-muted-foreground">
+                          {currentPlan.id === 'free' ? 'Forever' : 'per month'}
+                        </div>
+                        {currentPlan.id !== 'free' && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            + {currentPlan.adSpendFee}% ad spend fee
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-3 mb-4">
                         <div className="flex items-center">
@@ -361,7 +373,7 @@ export function SettingsView() {
                           size="sm"
                           onClick={() => setUpgradeDialogOpen(true)}
                         >
-                          Upgrade Plan
+                          {currentPlan?.id === 'free' ? 'Choose Plan' : 'Upgrade Plan'}
                         </Button>
                       </div>
                     </>

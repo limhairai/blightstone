@@ -22,53 +22,16 @@ import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { useAuth } from "@/contexts/AuthContext"
 import { useCurrentOrganization, useBusinessManagers, useAdAccounts, authenticatedFetcher } from "../../lib/swr-config"
+import { useSubscription } from "@/hooks/useSubscription"
+import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
-
-// Default subscription plans (fallback)
-const defaultPlans = [
-  {
-    id: "starter",
-    name: "Starter",
-    monthlyPrice: 29,
-    adSpendFee: 6.0,
-    maxTeamMembers: 2,
-    maxBusinesses: 1,
-    maxAdAccounts: 5
-  },
-  {
-    id: "growth", 
-    name: "Growth",
-    monthlyPrice: 149,
-    adSpendFee: 3.0,
-    maxTeamMembers: 5,
-    maxBusinesses: 3,
-    maxAdAccounts: 21
-  },
-  {
-    id: "scale",
-    name: "Scale", 
-    monthlyPrice: 499,
-    adSpendFee: 1.5,
-    maxTeamMembers: 15,
-    maxBusinesses: 10,
-    maxAdAccounts: 70
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    monthlyPrice: 1499,
-    adSpendFee: 1.0,
-    maxTeamMembers: -1,
-    maxBusinesses: -1,
-    maxAdAccounts: -1
-  }
-]
 
 export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
   const { mutate } = useSWRConfig();
   const { session } = useAuth();
+  const { currentPlan: subscriptionPlan, usage, subscriptionData } = useSubscription();
 
   // Authenticated fetcher for business-managers API
   const authFetcher = (url: string) => 
@@ -110,15 +73,21 @@ export function OrganizationSettings() {
   const [confirmDeleteText, setConfirmDeleteText] = useState("")
   const [loading, setLoading] = useState(false)
 
-  // Get actual counts from demo state
-  const totalBusinesses = businesses.length
-  const totalAccounts = accounts.length
-  const totalTeamMembers = teamMembers.length
+  // Use real usage data from subscription hook, fallback to counting from API data
+  const totalBusinesses = usage?.businessManagers ?? businesses.length
+  const totalAccounts = usage?.adAccounts ?? accounts.length
+  const totalTeamMembers = usage?.teamMembers ?? teamMembers.length
   
-  // Get current plan with fallback to Growth if plan not found
-  const currentPlan = defaultPlans.find(plan => 
-    plan.id.toLowerCase() === (organization?.plan || 'growth').toLowerCase()
-  ) || defaultPlans[1] // Default to Growth plan
+  // Use real subscription plan data instead of hardcoded defaultPlans
+  const currentPlan = subscriptionPlan || {
+    id: 'free',
+    name: 'Free',
+    monthlyPrice: 0,
+    adSpendFee: 0,
+    maxTeamMembers: 1,
+    maxBusinesses: 0,
+    maxAdAccounts: 0
+  }
 
   const [formData, setFormData] = useState({
     name: organization?.name || "",
@@ -179,7 +148,7 @@ export function OrganizationSettings() {
 
       toast.success("Organization deleted successfully.");
       // You might want to switch to another organization or a default state
-      setCurrentOrganizationId(null);
+      setCurrentOrganizationId('');
       setDeleteOrgOpen(false);
       setConfirmDeleteText("");
     } catch (error) {
@@ -354,17 +323,25 @@ export function OrganizationSettings() {
                   Current Plan
                 </Badge>
                 <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-2xl font-bold text-foreground">${currentPlan.monthlyPrice}</span>
-                  <span className="text-sm text-muted-foreground">/ month</span>
+                  <span className="text-2xl font-bold text-foreground">
+                    {currentPlan.id === 'free' ? 'Free' : `$${currentPlan.monthlyPrice}`}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {currentPlan.id === 'free' ? 'Forever' : '/ month'}
+                  </span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Next payment</span>
-                    <span className="text-foreground font-medium">{organization?.billing?.nextPayment || "N/A"}</span>
+                    <span className="text-foreground font-medium">
+                      {currentPlan.id === 'free' ? 'N/A' : (organization?.billing?.nextPayment || "N/A")}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Billing cycle</span>
-                    <span className="text-foreground font-medium">{organization?.billing?.billingCycle || "monthly"}</span>
+                    <span className="text-foreground font-medium">
+                      {currentPlan.id === 'free' ? 'N/A' : (organization?.billing?.billingCycle || "monthly")}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Plan features</span>
@@ -373,8 +350,8 @@ export function OrganizationSettings() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Payment method</span>
                     <span className="text-foreground font-medium">
-                      {organization?.billing?.paymentMethod?.type ? 
-                        `**** ${organization.billing.paymentMethod.last4}` : 'Not set'}
+                      {currentPlan.id === 'free' ? 'Not required' : (organization?.billing?.paymentMethod?.type ? 
+                        `**** ${organization.billing.paymentMethod.last4}` : 'Not set')}
                     </span>
                   </div>
                 </div>
@@ -386,29 +363,31 @@ export function OrganizationSettings() {
                   onClick={() => setUpgradeOpen(true)}
                   className={`w-full ${gradientTokens.primary}`}
                 >
-                  Upgrade Plan
+                  {currentPlan.id === 'free' ? 'Choose Plan' : 'Upgrade Plan'}
                 </Button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-border text-foreground hover:bg-accent"
-                    onClick={() => setPaymentMethodOpen(true)}
-                  >
-                    <CreditCard className="h-4 w-4 mr-1" />
-                    Payment
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-border text-foreground hover:bg-accent"
-                    onClick={() => setBillingHistoryOpen(true)}
-                  >
-                    <Calendar className="h-4 w-4 mr-1" />
-                    History
-                  </Button>
-                </div>
+                {currentPlan.id !== 'free' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border text-foreground hover:bg-accent"
+                      onClick={() => setPaymentMethodOpen(true)}
+                    >
+                      <CreditCard className="h-4 w-4 mr-1" />
+                      Payment
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-border text-foreground hover:bg-accent"
+                      onClick={() => setBillingHistoryOpen(true)}
+                    >
+                      <Calendar className="h-4 w-4 mr-1" />
+                      History
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -544,85 +523,10 @@ export function OrganizationSettings() {
       </Dialog>
 
       {/* Upgrade Plan Dialog */}
-      <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
-        <DialogContent className="bg-card border-border max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-semibold text-foreground">Upgrade Plan</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">Choose a plan that fits your needs.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {defaultPlans.map((plan) => {
-                const isCurrent = plan.id.toLowerCase() === (organization?.plan || 'growth').toLowerCase()
-                return (
-                  <div
-                    key={plan.id}
-                    className={`relative p-4 border rounded-lg transition-all ${
-                      isCurrent 
-                        ? "border-[#c4b5fd] bg-[#c4b5fd]/10 ring-2 ring-[#c4b5fd]/20" 
-                        : "border-border hover:border-[#c4b5fd]/50 hover:shadow-md"
-                    }`}
-                  >
-                    {isCurrent && (
-                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                        <Badge className={gradientTokens.primary}>
-                          Current Plan
-                        </Badge>
-                      </div>
-                    )}
-                    
-                    <div className="text-center space-y-3">
-                      <div>
-                        <h4 className="text-lg font-semibold text-foreground">{plan.name}</h4>
-                        <div className="mt-2">
-                          <span className="text-2xl font-bold text-foreground">${plan.monthlyPrice}</span>
-                          <span className="text-sm text-muted-foreground">/month</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        <div>{plan.maxBusinesses === -1 ? 'Unlimited' : plan.maxBusinesses} business managers</div>
-                        <div>{plan.maxAdAccounts === -1 ? 'Unlimited' : plan.maxAdAccounts} ad accounts</div>
-                        <div>{plan.maxTeamMembers === -1 ? 'Unlimited' : plan.maxTeamMembers} team members</div>
-                        <div>{plan.adSpendFee}% ad spend fee</div>
-                      </div>
-                      
-                      {!isCurrent ? (
-                        <Button
-                          className={`w-full ${gradientTokens.primary}`}
-                          onClick={() => {
-                            toast.success(`Upgrading to ${plan.name} plan...`)
-                            setUpgradeOpen(false)
-                          }}
-                        >
-                          Select Plan
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          className="w-full border-border text-foreground"
-                          disabled
-                        >
-                          Current Plan
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setUpgradeOpen(false)}
-              className="border-border text-foreground hover:bg-accent"
-            >
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PlanUpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+      />
 
       {/* Payment Method Dialog */}
       <Dialog open={paymentMethodOpen} onOpenChange={setPaymentMethodOpen}>

@@ -139,6 +139,13 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
     return features
   }
 
+  const formatPrice = (cents: number): string => {
+    if (typeof cents !== 'number' || isNaN(cents)) {
+      return '0'
+    }
+    return Math.round(cents / 100).toString()
+  }
+
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,7 +208,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
                   <div className="mt-2">
                     <span className="text-3xl font-bold">
-                      ${Math.round(plan.monthly_subscription_fee_cents / 100)}
+                      ${formatPrice(plan.monthly_subscription_fee_cents)}
                     </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
