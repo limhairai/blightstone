@@ -4,11 +4,6 @@
 # Include base requirements
 -r base.txt
 
-# Production-specific dependencies
-# Telegram Bot (production)
-python-telegram-bot==20.7
-asyncio
-
 # Payment Processing (production)
 stripe==10.12.0
 
