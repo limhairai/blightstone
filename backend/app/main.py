@@ -5,7 +5,7 @@ import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.api.api import api_router
+from app.api.api import api_router
 
 # Load environment variables from .env file
 env_path = Path(__file__).parent.parent / '.env'
