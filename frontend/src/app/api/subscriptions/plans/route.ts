@@ -11,7 +11,8 @@ export async function GET() {
     const { data: plans, error } = await supabase
       .from('plans')
       .select('*')
-      .order('monthly_subscription_fee_cents')
+      .eq('is_active', true)
+      .order('monthly_subscription_fee_cents', { ascending: true })
 
     if (error) {
       console.error('Error fetching plans:', error)
@@ -33,7 +34,7 @@ export async function GET() {
 
     return NextResponse.json({ plans: transformedPlans })
   } catch (error) {
-    console.error('Error in /api/subscriptions/plans:', error)
+    console.error('Plans API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

@@ -2,87 +2,95 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Check, X } from "lucide-react"
-import { useState } from "react"
+import { Check, Loader2 } from "lucide-react"
+import { useState, useEffect } from "react"
 import { useSubscription } from "@/hooks/useSubscription"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { toast } from "sonner"
 
 interface PlanUpgradeDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-const plans = [
-  {
-    id: 'starter',
-    name: 'Starter',
-    price: 29,
-    adSpendFee: 6,
-    features: [
-      '1 Business Manager',
-      '5 Ad Accounts',
-      '2 Team Members included',
-      'Additional team members: +$10/month each'
-    ],
-    isPopular: false
-  },
-  {
-    id: 'growth',
-    name: 'Growth',
-    price: 149,
-    adSpendFee: 3,
-    features: [
-      '3 Business Managers',
-      '21 Ad Accounts (7 per BM)',
-      '5 Team Members included',
-      'Additional team members: +$15/month each'
-    ],
-    isPopular: true
-  },
-  {
-    id: 'scale',
-    name: 'Scale',
-    price: 499,
-    adSpendFee: 1.5,
-    features: [
-      '10 Business Managers',
-      '70 Ad Accounts (7 per BM)',
-      '15 Team Members included',
-      'Additional team members: +$20/month each'
-    ],
-    isPopular: false
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise',
-    price: 1499,
-    adSpendFee: 1,
-    features: [
-      'Unlimited Business Managers',
-      'Unlimited Ad Accounts',
-      'Unlimited Team Members included',
-      'White-label options',
-      'Account Manager'
-    ],
-    isPopular: false
-  }
-]
+interface Plan {
+  id: string
+  name: string
+  description: string
+  monthly_subscription_fee_cents: number
+  ad_spend_fee_percentage: number
+  max_team_members: number
+  max_businesses: number
+  max_ad_accounts: number
+  features: string[]
+  stripe_price_id: string | null
+}
 
 export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps) {
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isUpgrading, setIsUpgrading] = useState(false)
-  const { currentPlan, upgradePlan } = useSubscription()
+  const { currentPlan } = useSubscription()
+  const { currentOrganizationId } = useOrganizationStore()
+
+  // Fetch plans from API
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch('/api/subscriptions/plans')
+        if (!response.ok) throw new Error('Failed to fetch plans')
+        
+        const data = await response.json()
+        // Filter out the free plan from upgrade options
+        const paidPlans = data.plans.filter((plan: Plan) => plan.id !== 'free')
+        setPlans(paidPlans)
+      } catch (error) {
+        console.error('Error fetching plans:', error)
+        toast.error('Failed to load plans')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (open) {
+      fetchPlans()
+    }
+  }, [open])
 
   const handleSelectPlan = async (planId: string) => {
-    if (isUpgrading) return
+    if (isUpgrading || !currentOrganizationId) return
     
     setIsUpgrading(true)
     try {
-      const success = await upgradePlan(planId)
-      if (success) {
-        onOpenChange(false)
+      // Create Stripe checkout session
+      const response = await fetch('/api/subscriptions/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId,
+          organizationId: currentOrganizationId,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session')
       }
+
+      const data = await response.json()
+      
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No checkout URL returned')
+      }
+      
     } catch (error) {
-      console.error('Error upgrading plan:', error)
+      console.error('Error creating checkout session:', error)
+      toast.error('Failed to start checkout process')
     } finally {
       setIsUpgrading(false)
     }
@@ -93,12 +101,58 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
   }
 
   const canUpgradeTo = (planId: string) => {
-    if (!currentPlan) return true
+    if (!currentPlan || currentPlan.id === 'free') return true
     
-    const currentPlanIndex = plans.findIndex(p => p.id === currentPlan.id)
-    const targetPlanIndex = plans.findIndex(p => p.id === planId)
+    const planOrder = ['starter', 'growth', 'scale', 'enterprise']
+    const currentIndex = planOrder.indexOf(currentPlan.id)
+    const targetIndex = planOrder.indexOf(planId)
     
-    return targetPlanIndex > currentPlanIndex
+    return targetIndex > currentIndex
+  }
+
+  const formatFeatures = (plan: Plan): string[] => {
+    const features = []
+    
+    if (plan.max_businesses === -1) {
+      features.push('Unlimited Business Managers')
+    } else {
+      features.push(`${plan.max_businesses} Business Manager${plan.max_businesses > 1 ? 's' : ''}`)
+    }
+    
+    if (plan.max_ad_accounts === -1) {
+      features.push('Unlimited Ad Accounts')
+    } else {
+      features.push(`${plan.max_ad_accounts} Ad Accounts`)
+    }
+    
+    if (plan.max_team_members === -1) {
+      features.push('Unlimited Team Members')
+    } else {
+      features.push(`${plan.max_team_members} Team Members`)
+    }
+    
+    // Add parsed features from database
+    if (plan.features && Array.isArray(plan.features)) {
+      features.push(...plan.features)
+    }
+    
+    return features
+  }
+
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl">
+          <DialogHeader>
+            <DialogTitle>Upgrade Plan</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading plans...</span>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (
@@ -107,7 +161,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
         <DialogHeader>
           <DialogTitle>Upgrade Plan</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Choose a plan that fits your needs.
+            Choose a plan that fits your needs. You'll be redirected to Stripe for secure payment.
           </p>
         </DialogHeader>
 
@@ -115,6 +169,8 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
           {plans.map((plan) => {
             const isCurrent = isCurrentPlan(plan.id)
             const canUpgrade = canUpgradeTo(plan.id)
+            const isPopular = plan.id === 'growth' // Mark growth as popular
+            const features = formatFeatures(plan)
             
             return (
               <div
@@ -123,9 +179,9 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                   isCurrent 
                     ? 'border-primary bg-primary/5' 
                     : 'border-border hover:border-primary/50'
-                } ${plan.isPopular ? 'ring-2 ring-primary' : ''}`}
+                } ${isPopular ? 'ring-2 ring-primary' : ''}`}
               >
-                {plan.isPopular && (
+                {isPopular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                     <span className="bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full">
                       Most Popular
@@ -144,16 +200,18 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
                   <div className="mt-2">
-                    <span className="text-3xl font-bold">${plan.price}</span>
+                    <span className="text-3xl font-bold">
+                      ${Math.round(plan.monthly_subscription_fee_cents / 100)}
+                    </span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    + {plan.adSpendFee}% ad spend fee
+                    + {plan.ad_spend_fee_percentage}% ad spend fee
                   </div>
                 </div>
 
                 <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature, index) => (
+                  {features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
                       <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                       <span>{feature}</span>
@@ -164,7 +222,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                 <Button
                   className="w-full"
                   variant={isCurrent ? "outline" : "default"}
-                  disabled={isCurrent || !canUpgrade || isUpgrading}
+                  disabled={isCurrent || !canUpgrade || isUpgrading || !plan.stripe_price_id}
                   onClick={() => handleSelectPlan(plan.id)}
                 >
                   {isCurrent 
@@ -172,8 +230,10 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                     : !canUpgrade 
                       ? "Downgrade" 
                       : isUpgrading 
-                        ? "Processing..." 
-                        : "Select Plan"
+                        ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+                        : !plan.stripe_price_id
+                          ? "Not Available"
+                          : "Select Plan"
                   }
                 </Button>
               </div>

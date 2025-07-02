@@ -1,156 +1,158 @@
 #!/usr/bin/env node
 
-const Stripe = require('stripe');
-
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const SUBSCRIPTION_PLANS = [
-  {
-    id: 'starter',
-    name: 'Starter Plan',
-    description: 'Perfect for testing and small projects',
-    price: 2900, // $29.00 in cents
-    features: ['1 Business Manager', '5 Ad Accounts', '2 Team Members', '6% ad spend fee']
-  },
-  {
-    id: 'growth', 
-    name: 'Growth Plan',
-    description: 'For growing businesses',
-    price: 14900, // $149.00 in cents
-    features: ['3 Business Managers', '21 Ad Accounts', '5 Team Members', '3% ad spend fee']
-  },
-  {
-    id: 'scale',
-    name: 'Scale Plan', 
-    description: 'For scaling teams',
-    price: 49900, // $499.00 in cents
-    features: ['10 Business Managers', '70 Ad Accounts', '15 Team Members', '1.5% ad spend fee']
-  },
-  {
-    id: 'enterprise',
-    name: 'Enterprise Plan',
-    description: 'For large organizations', 
-    price: 149900, // $1499.00 in cents
-    features: ['Unlimited Business Managers', 'Unlimited Ad Accounts', 'Unlimited Team Members', '1% ad spend fee']
-  }
-];
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 async function createStripeProducts() {
-  console.log('🚀 Setting up Stripe products and prices...\n');
-  
-  const results = [];
-  
-  for (const plan of SUBSCRIPTION_PLANS) {
-    try {
-      console.log(`Creating product: ${plan.name}...`);
-      
-      // Create product
-      const product = await stripe.products.create({
-        id: `adhub_${plan.id}`,
-        name: plan.name,
-        description: plan.description,
-        metadata: {
-          plan_id: plan.id,
-          features: JSON.stringify(plan.features)
-        }
-      });
-      
-      console.log(`✅ Product created: ${product.id}`);
-      
-      // Create price
-      const price = await stripe.prices.create({
-        product: product.id,
-        unit_amount: plan.price,
-        currency: 'usd',
-        recurring: {
-          interval: 'month'
-        },
-        lookup_key: plan.id,
-        metadata: {
-          plan_id: plan.id
-        }
-      });
-      
-      console.log(`✅ Price created: ${price.id} ($${plan.price / 100}/month)`);
-      
-      results.push({
-        plan_id: plan.id,
-        product_id: product.id,
-        price_id: price.id,
-        amount: plan.price
-      });
-      
-      console.log('');
-      
-    } catch (error) {
-      console.error(`❌ Error creating ${plan.name}:`, error.message);
-      
-      // If product already exists, try to get existing price
-      if (error.code === 'resource_already_exists') {
-        try {
-          const existingProduct = await stripe.products.retrieve(`adhub_${plan.id}`);
-          const prices = await stripe.prices.list({
-            product: existingProduct.id,
-            active: true
-          });
-          
-          if (prices.data.length > 0) {
-            console.log(`✅ Using existing product and price for ${plan.name}`);
-            results.push({
-              plan_id: plan.id,
-              product_id: existingProduct.id,
-              price_id: prices.data[0].id,
-              amount: prices.data[0].unit_amount
-            });
-          }
-        } catch (retrieveError) {
-          console.error(`❌ Error retrieving existing product:`, retrieveError.message);
-        }
-      }
-    }
-  }
-  
-  // Output results for database update
-  console.log('\n🎯 Stripe Setup Complete!');
-  console.log('\n📋 Update your database with these Stripe Price IDs:');
-  console.log('\n```sql');
-  
-  for (const result of results) {
-    console.log(`UPDATE plans SET stripe_price_id = '${result.price_id}' WHERE id = '${result.plan_id}';`);
-  }
-  
-  console.log('```\n');
-  
-  // Output for environment variables
-  console.log('🔧 Add these to your environment variables:');
-  console.log('\n```env');
-  for (const result of results) {
-    console.log(`STRIPE_PRICE_${result.plan_id.toUpperCase()}=${result.price_id}`);
-  }
-  console.log('```\n');
-  
-  return results;
-}
+  console.log('Creating Stripe products for AdHub...');
 
-async function main() {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.error('❌ STRIPE_SECRET_KEY environment variable is required');
-    process.exit(1);
-  }
-  
   try {
-    await createStripeProducts();
-    console.log('✅ All done! Your Stripe products are ready for subscriptions.');
+    // 1. Create Starter Plan
+    const starterProduct = await stripe.products.create({
+      name: 'AdHub Starter',
+      description: 'Perfect for small businesses getting started with Facebook advertising',
+      metadata: {
+        plan_id: 'starter',
+        max_businesses: '1',
+        max_ad_accounts: '5',
+        max_team_members: '2',
+        ad_spend_fee: '6'
+      }
+    });
+
+    const starterPrice = await stripe.prices.create({
+      product: starterProduct.id,
+      unit_amount: 2900, // $29.00
+      currency: 'usd',
+      recurring: {
+        interval: 'month'
+      },
+      metadata: {
+        plan_id: 'starter'
+      }
+    });
+
+    console.log('✅ Starter Plan created:', starterProduct.id, starterPrice.id);
+
+    // 2. Create Growth Plan
+    const growthProduct = await stripe.products.create({
+      name: 'AdHub Growth',
+      description: 'For growing businesses that need more ad accounts and team members',
+      metadata: {
+        plan_id: 'growth',
+        max_businesses: '3',
+        max_ad_accounts: '21',
+        max_team_members: '5',
+        ad_spend_fee: '3'
+      }
+    });
+
+    const growthPrice = await stripe.prices.create({
+      product: growthProduct.id,
+      unit_amount: 14900, // $149.00
+      currency: 'usd',
+      recurring: {
+        interval: 'month'
+      },
+      metadata: {
+        plan_id: 'growth'
+      }
+    });
+
+    console.log('✅ Growth Plan created:', growthProduct.id, growthPrice.id);
+
+    // 3. Create Scale Plan
+    const scaleProduct = await stripe.products.create({
+      name: 'AdHub Scale',
+      description: 'For scaling businesses with multiple teams and high ad spend',
+      metadata: {
+        plan_id: 'scale',
+        max_businesses: '10',
+        max_ad_accounts: '70',
+        max_team_members: '15',
+        ad_spend_fee: '1.5'
+      }
+    });
+
+    const scalePrice = await stripe.prices.create({
+      product: scaleProduct.id,
+      unit_amount: 49900, // $499.00
+      currency: 'usd',
+      recurring: {
+        interval: 'month'
+      },
+      metadata: {
+        plan_id: 'scale'
+      }
+    });
+
+    console.log('✅ Scale Plan created:', scaleProduct.id, scalePrice.id);
+
+    // 4. Create Enterprise Plan
+    const enterpriseProduct = await stripe.products.create({
+      name: 'AdHub Enterprise',
+      description: 'For large organizations with unlimited needs and priority support',
+      metadata: {
+        plan_id: 'enterprise',
+        max_businesses: '-1', // Unlimited
+        max_ad_accounts: '-1', // Unlimited
+        max_team_members: '-1', // Unlimited
+        ad_spend_fee: '1'
+      }
+    });
+
+    const enterprisePrice = await stripe.prices.create({
+      product: enterpriseProduct.id,
+      unit_amount: 149900, // $1,499.00
+      currency: 'usd',
+      recurring: {
+        interval: 'month'
+      },
+      metadata: {
+        plan_id: 'enterprise'
+      }
+    });
+
+    console.log('✅ Enterprise Plan created:', enterpriseProduct.id, enterprisePrice.id);
+
+    // 5. Output SQL to update database
+    console.log('\n📋 Run this SQL to update your database with Stripe price IDs:');
+    console.log(`
+UPDATE public.plans SET stripe_price_id = '${starterPrice.id}' WHERE id = 'starter';
+UPDATE public.plans SET stripe_price_id = '${growthPrice.id}' WHERE id = 'growth';
+UPDATE public.plans SET stripe_price_id = '${scalePrice.id}' WHERE id = 'scale';
+UPDATE public.plans SET stripe_price_id = '${enterprisePrice.id}' WHERE id = 'enterprise';
+    `);
+
+    console.log('\n🎉 All Stripe products created successfully!');
+    console.log('\nNext steps:');
+    console.log('1. Run the SQL commands above to update your database');
+    console.log('2. Test subscription creation in your app');
+    console.log('3. Set up webhooks for subscription status updates');
+
+    return {
+      starter: { product: starterProduct.id, price: starterPrice.id },
+      growth: { product: growthProduct.id, price: growthPrice.id },
+      scale: { product: scaleProduct.id, price: scalePrice.id },
+      enterprise: { product: enterpriseProduct.id, price: enterprisePrice.id }
+    };
+
   } catch (error) {
-    console.error('❌ Setup failed:', error.message);
-    process.exit(1);
+    console.error('❌ Error creating Stripe products:', error);
+    throw error;
   }
 }
 
 // Run the script
 if (require.main === module) {
-  main();
+  createStripeProducts()
+    .then((products) => {
+      console.log('\n✅ Setup complete!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Setup failed:', error);
+      process.exit(1);
+    });
 }
 
-module.exports = { createStripeProducts, SUBSCRIPTION_PLANS }; 
+module.exports = { createStripeProducts }; 
