@@ -106,46 +106,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Auth functions - moved to top
   const signUp = async (email: string, password: string, options?: { data?: Record<string, any> }) => {
+    console.log('🔐 AuthContext signUp called with:', { email, hasPassword: !!password, options });
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        ...(options ? { data: options.data } : {}),
-      },
-    });
-
-    if (error) {
-      console.error("Error signing up:", error);
+    
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          ...(options ? { data: options.data } : {}),
+        },
+      });
       
-      // Handle specific Supabase error messages with better UX
-      if (error.message.includes('User already registered')) {
-        toast.error(authMessages.signUp.accountExists.description);
-      } else if (error.message.includes('Password should be at least')) {
-        toast.error(authMessages.signUp.weakPassword.description);
-      } else if (error.message.includes('Invalid email')) {
-        toast.error(authMessages.signUp.invalidEmail.description);
-      } else {
-        toast.error(error.message || authMessages.signUp.unknown.description);
+      console.log('🔐 Supabase signUp response:', { data, error });
+
+      if (error) {
+        console.error("🔐 AuthContext signUp error:", error);
+        
+        // Handle specific Supabase error messages with better UX
+        if (error.message.includes('User already registered')) {
+          toast.error(authMessages.signUp.accountExists.description);
+        } else if (error.message.includes('Password should be at least')) {
+          toast.error(authMessages.signUp.weakPassword.description);
+        } else if (error.message.includes('Invalid email')) {
+          toast.error(authMessages.signUp.invalidEmail.description);
+        } else {
+          toast.error(error.message || authMessages.signUp.unknown.description);
+        }
+        
+        setLoading(false);
+        return { data: null, error };
+      }
+
+      if (data.user && !data.session) {
+        // Email confirmation required
+        console.log('🔐 Email confirmation required, showing success toast');
+        toast.success(authMessages.signUp.success.description, {
+          duration: authMessages.signUp.success.duration
+        });
+        setLoading(false);
+        return { data: { user: data.user, session: data.session }, error: null };
       }
       
-      setLoading(false);
-      return { data: null, error };
-    }
-
-    if (data.user && !data.session) {
-      // Email confirmation required
-      toast.success(authMessages.signUp.success.description, {
-        duration: authMessages.signUp.success.duration
-      });
+      // User is immediately logged in
+      console.log('🔐 User immediately logged in, showing success toast');
+      toast.success("Registration successful! Redirecting to dashboard...");
       setLoading(false);
       return { data: { user: data.user, session: data.session }, error: null };
+    } catch (err: any) {
+      console.error('🔐 AuthContext signUp exception:', err);
+      toast.error("An unexpected error occurred during registration.");
+      setLoading(false);
+      return { data: null, error: err };
     }
-    
-    // User is immediately logged in
-    toast.success("Registration successful! Redirecting to dashboard...");
-    setLoading(false);
-    return { data: { user: data.user, session: data.session }, error: null };
   };
 
   const signIn = async (email: string, password: string) => {
@@ -174,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(authMessages.signIn.emailNotConfirmed.description);
+              // Redirect to email confirmation page with the email
+              window.location.href = `/confirm-email?email=${encodeURIComponent(email)}`;
             }, 100);
           }
         } else if (error.message.includes('Too many requests')) {

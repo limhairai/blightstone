@@ -71,6 +71,15 @@ export async function middleware(request: NextRequest) {
       data: { session: userSession },
     } = await supabase.auth.getSession()
     session = userSession
+    
+    // Debug logging for registration flow
+    if (pathname === '/register' || pathname === '/confirm-email') {
+      console.log(`🔒 Middleware: ${pathname}, session:`, session ? {
+        user_id: session.user.id,
+        email: session.user.email,
+        email_confirmed_at: session.user.email_confirmed_at
+      } : 'null')
+    }
   } catch (error) {
     console.warn('Error getting session in middleware:', error)
     // Continue without session - will be treated as unauthenticated
@@ -100,8 +109,18 @@ export async function middleware(request: NextRequest) {
   }
   
   // If there is a session and the user is on a public-only page (like login), redirect to dashboard
-  if (session && (pathname === '/login' || pathname === '/register')) {
+  // BUT: Don't redirect if user is on register page and might be in the process of email confirmation
+  if (session && pathname === '/login') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+  
+  // For register page, only redirect if user is fully authenticated (email confirmed)
+  if (session && pathname === '/register') {
+    // Check if user's email is confirmed
+    if (session.user?.email_confirmed_at) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+    // If email not confirmed, allow them to stay on register page or go to confirm-email
   }
 
   return response

@@ -21,7 +21,7 @@ export function RegisterView() {
   const [terms, setTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [registrationComplete, setRegistrationComplete] = useState(false);
+
   const router = useRouter();
   const { signUp } = useAuth();
 
@@ -29,13 +29,17 @@ export function RegisterView() {
     e.preventDefault();
     setError("");
 
+    console.log('📝 Form submitted with data:', { name, email, password: '***', confirmPassword: '***', terms });
+
     const validation = validateRegistrationForm({ name, email, password, confirmPassword, terms });
 
     if (!validation.isValid) {
+      console.log('📝 Form validation failed:', validation.errors);
       showValidationErrors(validation.errors);
       return;
     }
 
+    console.log('📝 Form validation passed, starting registration...');
     setLoading(true);
     
     console.log('📝 Attempting registration with email:', email);
@@ -49,24 +53,29 @@ export function RegisterView() {
 
       if (error) {
         console.error('📝 Registration error:', error);
-        // Error toast is now handled by AuthContext
+        // Error toast is handled by AuthContext, but set local error too
         setError(error.message);
-        setLoading(false);
         return;
       }
 
-      if (data.user && !data.session) {
+      if (data?.user && !data.session) {
         // This means email confirmation is required.
-        // Success toast is now handled by AuthContext
-        setRegistrationComplete(true);
-      } else if (data.user && data.session) {
+        console.log('📝 Email confirmation required, redirecting to confirm-email page');
+        // Add a small delay to ensure toast is shown before redirect
+        setTimeout(() => {
+          router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
+        }, 1000);
+      } else if (data?.user && data.session) {
         // User is immediately logged in.
-        // Success toast is now handled by AuthContext
-        router.push("/dashboard");
+        console.log('📝 User immediately logged in, redirecting to dashboard');
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
       } else {
         // Handle unexpected cases
-        setError("An unexpected error occurred. Please try again.");
-        toast.error("An unexpected error occurred. Please try again.");
+        console.log('📝 Unexpected registration state:', { user: data?.user, session: data?.session });
+        setError("Registration failed. Please try again.");
+        toast.error("Registration failed. Please try again.");
       }
     } catch (err: any) {
       console.error('📝 Registration exception:', err);
@@ -74,31 +83,19 @@ export function RegisterView() {
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
+      // Always reset loading state
       setLoading(false);
     }
   };
 
   if (loading) {
+    console.log('📝 Showing loading state...');
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Skeleton className="w-24 h-24" />
-      </div>
-    );
-  }
-
-  if (registrationComplete) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-center px-4">
-        <AdHubLogo size="lg" />
-        <h1 className="text-4xl font-bold tracking-tight mt-8">
-          Registration Successful!
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          Please check your email at <span className="font-semibold text-foreground">{email}</span> for a confirmation link to complete your sign up.
-        </p>
-        <p className="mt-4 text-sm text-muted-foreground">
-          (You can close this tab)
-        </p>
+        <div className="text-center space-y-4">
+          <Skeleton className="w-24 h-24 mx-auto" />
+          <p className="text-muted-foreground">Creating your account...</p>
+        </div>
       </div>
     );
   }
@@ -202,6 +199,13 @@ export function RegisterView() {
               >
                 {loading ? "Creating account..." : "Create Account"}
               </Button>
+              
+              {/* Debug info */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-muted-foreground text-center mt-2">
+                  Loading: {loading.toString()} | Error: {error || 'none'}
+                </div>
+              )}
             </div>
           </form>
 
