@@ -452,31 +452,34 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
         
         # For wallet top-ups, the full amount goes to the wallet (no fees)
         wallet_credit = payment_intent["amount"] / 100  # Convert from cents to dollars
+        wallet_credit_cents = payment_intent["amount"]  # Amount in cents
 
         if not organization_id or not user_id or wallet_credit <= 0:
             logger.error(f"Missing or invalid metadata for payment {payment_intent['id']}. Org: {organization_id}, User: {user_id}, Credit: {wallet_credit}")
             return
 
-        # Get current organization balance
-        org_response = (
-            supabase.table("organizations")
-            .select("wallet_balance")
+        # Get wallet for organization
+        wallet_response = (
+            supabase.table("wallets")
+            .select("wallet_id, balance_cents")
             .eq("organization_id", organization_id)
             .single()
             .execute()
         )
         
-        if not org_response.data:
-            logger.error(f"Organization {organization_id} not found for payment {payment_intent['id']}")
+        if not wallet_response.data:
+            logger.error(f"Wallet not found for organization {organization_id} for payment {payment_intent['id']}")
             return
         
-        current_balance = org_response.data.get("wallet_balance", 0.0)
-        new_balance = current_balance + wallet_credit
+        wallet_id = wallet_response.data["wallet_id"]
+        current_balance_cents = wallet_response.data.get("balance_cents", 0)
+        new_balance_cents = current_balance_cents + wallet_credit_cents
         
-        # Update organization balance
-        supabase.table("organizations").update({
-            "wallet_balance": new_balance
-        }).eq("organization_id", organization_id).execute()
+        # Update wallet balance
+        supabase.table("wallets").update({
+            "balance_cents": new_balance_cents,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }).eq("wallet_id", wallet_id).execute()
         
         # Update payment record
         supabase.table("payments").update({
@@ -487,16 +490,17 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
         # Create transaction record (no fees for wallet top-up)
         transaction_data = {
             "organization_id": organization_id,
-            "user_id": user_id,
+            "wallet_id": wallet_id,
             "type": "topup",
-            "amount": wallet_credit,
-            "gross_amount": wallet_credit,  # Same as amount since no fees
-            "fee": 0,  # No fees on wallet top-up
-            "from_account": "stripe",
-            "to_account": "org_wallet",
+            "amount_cents": wallet_credit_cents,
             "status": "completed",
-            "stripe_payment_intent_id": payment_intent["id"],
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "description": f"Wallet top-up via Stripe payment {payment_intent['id']}",
+            "metadata": {
+                "stripe_payment_intent_id": payment_intent["id"],
+                "user_id": user_id
+            },
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
         supabase.table("transactions").insert(transaction_data).execute()
