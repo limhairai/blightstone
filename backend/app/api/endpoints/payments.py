@@ -596,16 +596,11 @@ async def handle_subscription_updated(supabase, subscription):
         
         supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
         
-        # Handle status changes
-        if subscription.status == "past_due":
-            from app.services.subscription_service import subscription_service
-            await subscription_service.handle_payment_failure(organization_id, days_overdue=1)
-        elif subscription.status == "unpaid":
-            from app.services.subscription_service import subscription_service
-            await subscription_service.handle_payment_failure(organization_id, days_overdue=7)
-        elif subscription.status == "active":
-            from app.services.subscription_service import subscription_service
-            await subscription_service.reactivate_account(organization_id)
+        # Update organization subscription status
+        supabase.table("organizations").update({
+            "subscription_status": subscription.status,
+            "updated_at": datetime.now(timezone.utc)
+        }).eq("id", organization_id).execute()
         
         logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
         
