@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { buildApiUrl, createAuthHeaders } from '../../../../lib/api-utils';
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies();
@@ -16,11 +17,11 @@ async function getAuth(request: NextRequest) {
         }
     );
     const { data: { session } } = await supabase.auth.getSession();
-    return session;
+    return { session, user: session?.user };
 }
 
 export async function POST(request: NextRequest) {
-    const session = await getAuth(request);
+    const { session } = await getAuth(request);
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -31,22 +32,24 @@ export async function POST(request: NextRequest) {
         const forceRefresh = searchParams.get('force_refresh') === 'true';
         
         // Build backend URL with force_refresh as query parameter (not body)
-        const backendUrl = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/sync/discover`);
+        const backendUrl = buildApiUrl('/api/dolphin-assets/sync/discover');
+        const urlWithParams = new URL(backendUrl);
         if (forceRefresh) {
-            backendUrl.searchParams.set('force_refresh', 'true');
+            urlWithParams.searchParams.set('force_refresh', 'true');
         }
         
-        const response = await fetch(backendUrl.toString(), {
+        console.log('🔍 Sync API: Calling backend URL:', urlWithParams.toString());
+        
+        const response = await fetch(urlWithParams.toString(), {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-            },
+            headers: createAuthHeaders(session.access_token),
         });
+
+        console.log('🔍 Sync API: Backend response status:', response.status);
 
         if (!response.ok) {
             const errorData = await response.json();
-            console.error("Backend sync error:", errorData);
+            console.error("🔍 Sync API: Backend sync error:", errorData);
             return NextResponse.json(errorData, { status: response.status });
         }
 
