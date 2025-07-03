@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/settings?tab=billing&success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/settings?tab=billing&canceled=true`,
       metadata: {
-        organizationId,
-        planId,
+        organization_id: organizationId,
+        plan_id: planId,
       },
     })
 
