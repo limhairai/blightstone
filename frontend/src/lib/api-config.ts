@@ -3,7 +3,8 @@
 
 import { ENV_CONFIG } from './env-config'
 
-const API_BASE_URL = ENV_CONFIG.API_URL + '/api'
+// Fix double slash issue by ensuring proper URL joining
+const API_BASE_URL = ENV_CONFIG.API_URL.replace(/\/+$/, '') + '/api'
 
 // API endpoint paths
 export const API_ENDPOINTS = {
