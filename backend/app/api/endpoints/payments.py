@@ -538,11 +538,16 @@ async def handle_subscription_created(supabase, subscription):
             "stripe_customer_id": subscription.customer,
             "plan_id": plan_id,
             "status": subscription.status,
-            "current_period_start": datetime.fromtimestamp(subscription.current_period_start, timezone.utc),
-            "current_period_end": datetime.fromtimestamp(subscription.current_period_end, timezone.utc),
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
+        
+        # Add period dates if they exist
+        if hasattr(subscription, 'current_period_start') and subscription.current_period_start:
+            subscription_data["current_period_start"] = datetime.fromtimestamp(subscription.current_period_start, timezone.utc).isoformat()
+        
+        if hasattr(subscription, 'current_period_end') and subscription.current_period_end:
+            subscription_data["current_period_end"] = datetime.fromtimestamp(subscription.current_period_end, timezone.utc).isoformat()
         
         # Insert or update subscription
         existing_sub = (
@@ -566,7 +571,7 @@ async def handle_subscription_created(supabase, subscription):
         supabase.table("organizations").update({
             "subscription_status": subscription.status,
             "plan_id": plan_id,
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("organization_id", organization_id).execute()
         
         logger.info(f"Successfully processed subscription creation {subscription.id} for org {organization_id}")
@@ -597,16 +602,21 @@ async def handle_subscription_updated(supabase, subscription):
         # Update subscription in database
         subscription_data = {
             "status": subscription.status,
-            "current_period_start": datetime.fromtimestamp(subscription.current_period_start, timezone.utc),
-            "current_period_end": datetime.fromtimestamp(subscription.current_period_end, timezone.utc),
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
+        
+        # Add period dates if they exist
+        if hasattr(subscription, 'current_period_start') and subscription.current_period_start:
+            subscription_data["current_period_start"] = datetime.fromtimestamp(subscription.current_period_start, timezone.utc).isoformat()
+        
+        if hasattr(subscription, 'current_period_end') and subscription.current_period_end:
+            subscription_data["current_period_end"] = datetime.fromtimestamp(subscription.current_period_end, timezone.utc).isoformat()
         
         if subscription.cancel_at_period_end:
             subscription_data["cancel_at_period_end"] = True
         
-        if subscription.canceled_at:
-            subscription_data["canceled_at"] = datetime.fromtimestamp(subscription.canceled_at, timezone.utc)
+        if hasattr(subscription, 'canceled_at') and subscription.canceled_at:
+            subscription_data["canceled_at"] = datetime.fromtimestamp(subscription.canceled_at, timezone.utc).isoformat()
         
         # Update subscriptions table
         sub_update_result = supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
@@ -616,7 +626,7 @@ async def handle_subscription_updated(supabase, subscription):
         org_update_data = {
             "subscription_status": subscription.status,
             "stripe_subscription_id": subscription.id,
-            "updated_at": datetime.now(timezone.utc)
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
         
         # Update plan_id if it exists in metadata
