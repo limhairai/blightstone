@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { buildApiUrl, createAuthHeaders } from '../../../../lib/api-utils'
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
@@ -40,18 +41,14 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Call backend to get all assets - fix double slash issue
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || ''
-    const backendUrl = `${apiUrl}/api/dolphin-assets/all-assets`
+    // Call backend to get all assets - use utility function
+    const backendUrl = buildApiUrl('/api/dolphin-assets/all-assets')
     
     console.log('🔍 Teams API: Calling backend URL:', backendUrl)
     
     const response = await fetch(backendUrl, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: createAuthHeaders(session.access_token),
     })
 
     console.log('🔍 Teams API: Backend response status:', response.status)
