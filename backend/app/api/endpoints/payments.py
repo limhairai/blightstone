@@ -401,10 +401,22 @@ async def stripe_webhook(request: Request):
         # Handle different event types
         if event["type"] == "checkout.session.completed":
             session = event["data"]["object"]
-            # Retrieve the payment intent from the session
-            payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
-            # Pass the session metadata to the handler
-            await handle_successful_payment(supabase, payment_intent, session.metadata)
+            
+            # Handle subscription checkout vs one-time payment checkout
+            if session.get("mode") == "subscription":
+                # For subscriptions, handle via subscription object
+                if session.get("subscription"):
+                    subscription = stripe.Subscription.retrieve(session["subscription"])
+                    await handle_subscription_created(supabase, subscription)
+                else:
+                    logger.warning(f"Subscription checkout session {session['id']} has no subscription ID")
+            elif session.get("payment_intent"):
+                # For one-time payments, retrieve the payment intent
+                payment_intent = stripe.PaymentIntent.retrieve(session.payment_intent)
+                # Pass the session metadata to the handler
+                await handle_successful_payment(supabase, payment_intent, session.metadata)
+            else:
+                logger.warning(f"Checkout session {session['id']} has no payment_intent or subscription")
             
         elif event["type"] == "payment_intent.payment_failed":
             payment_intent = event["data"]["object"]
@@ -509,8 +521,56 @@ async def handle_failed_payment(supabase, payment_intent):
 
 async def handle_subscription_created(supabase, subscription):
     """Handle new subscription creation"""
-    # TODO: Implement subscription handling
-    pass
+    try:
+        organization_id = subscription.metadata.get('organization_id')
+        plan_id = subscription.metadata.get('plan_id')
+        
+        if not organization_id or not plan_id:
+            logger.error(f"Missing metadata in subscription {subscription.id}: org_id={organization_id}, plan_id={plan_id}")
+            return
+        
+        # Create or update subscription record
+        subscription_data = {
+            "organization_id": organization_id,
+            "stripe_subscription_id": subscription.id,
+            "stripe_customer_id": subscription.customer,
+            "plan_id": plan_id,
+            "status": subscription.status,
+            "current_period_start": datetime.fromtimestamp(subscription.current_period_start, timezone.utc),
+            "current_period_end": datetime.fromtimestamp(subscription.current_period_end, timezone.utc),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        # Insert or update subscription
+        existing_sub = (
+            supabase.table("subscriptions")
+            .select("id")
+            .eq("stripe_subscription_id", subscription.id)
+            .maybe_single()
+            .execute()
+        )
+        
+        if existing_sub.data:
+            # Update existing subscription
+            supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
+            logger.info(f"Updated subscription {subscription.id} for org {organization_id}")
+        else:
+            # Create new subscription
+            supabase.table("subscriptions").insert(subscription_data).execute()
+            logger.info(f"Created subscription {subscription.id} for org {organization_id}")
+        
+        # Update organization subscription status
+        supabase.table("organizations").update({
+            "subscription_status": subscription.status,
+            "plan_id": plan_id,
+            "updated_at": datetime.now(timezone.utc)
+        }).eq("id", organization_id).execute()
+        
+        logger.info(f"Successfully processed subscription creation {subscription.id} for org {organization_id}")
+        
+    except Exception as e:
+        logger.error(f"Error handling subscription creation: {e}", exc_info=True)
 
 async def handle_subscription_updated(supabase, subscription):
     """Handle subscription updates"""
