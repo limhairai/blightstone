@@ -106,7 +106,7 @@ async def create_payment_intent(
         # Calculate amount in cents
         amount_cents = int(request.amount * 100)
         
-        # Create Payment Intent
+        # Create Payment Intent (no fees on wallet top-up)
         intent_params = {
             "amount": amount_cents,
             "currency": "usd",
@@ -326,7 +326,7 @@ async def get_payment_intent(payment_intent_id: str):
         
         return {
             "id": payment_intent_id,
-            "amount": payment["amount_cents"] / 100,
+            "amount": payment["amount"],
             "currency": "usd",
             "organization_id": payment["organization_id"],
             "organization_name": payment["organizations"]["name"],
@@ -361,12 +361,12 @@ async def get_payment_success(payment_intent_id: str):
             raise HTTPException(status_code=404, detail="Payment not found or not completed")
         
         payment = payment_response.data
-        fee = payment["amount_cents"] * 0.03 / 100
-        net_amount = payment["amount_cents"] / 100 - fee
+        fee = payment["amount"] * 0.03
+        net_amount = payment["amount"] - fee
         
         return {
             "id": payment_intent_id,
-            "amount": payment["amount_cents"] / 100,
+            "amount": payment["amount"],
             "organization_name": payment["organizations"]["name"],
             "net_amount": net_amount,
             "created_at": payment["created_at"]
@@ -442,14 +442,16 @@ async def stripe_webhook(request: Request):
         raise HTTPException(status_code=500, detail="Webhook processing failed")
 
 async def handle_successful_payment(supabase, payment_intent, metadata=None):
-    """Handle successful payment - add funds to wallet"""
+    """Handle successful payment - add funds to wallet (no fees on wallet top-up)"""
     try:
         # Use metadata from the checkout session if provided, otherwise from the payment intent
         payment_metadata = metadata if metadata is not None else payment_intent["metadata"]
         
         organization_id = payment_metadata.get("organization_id")
         user_id = payment_metadata.get("user_id")
-        wallet_credit = float(payment_metadata.get("wallet_credit", 0))
+        
+        # For wallet top-ups, the full amount goes to the wallet (no fees)
+        wallet_credit = payment_intent["amount"] / 100  # Convert from cents to dollars
 
         if not organization_id or not user_id or wallet_credit <= 0:
             logger.error(f"Missing or invalid metadata for payment {payment_intent['id']}. Org: {organization_id}, User: {user_id}, Credit: {wallet_credit}")
@@ -482,14 +484,14 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
             "completed_at": datetime.now(timezone.utc).isoformat()
         }).eq("stripe_payment_intent_id", payment_intent["id"]).execute()
         
-        # Create transaction record
+        # Create transaction record (no fees for wallet top-up)
         transaction_data = {
             "organization_id": organization_id,
             "user_id": user_id,
             "type": "topup",
             "amount": wallet_credit,
-            "gross_amount": payment_intent["amount"] / 100,
-            "fee": (payment_intent["amount"] / 100) - wallet_credit,
+            "gross_amount": wallet_credit,  # Same as amount since no fees
+            "fee": 0,  # No fees on wallet top-up
             "from_account": "stripe",
             "to_account": "org_wallet",
             "status": "completed",
@@ -499,7 +501,7 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
         
         supabase.table("transactions").insert(transaction_data).execute()
         
-        logger.info(f"Successfully processed payment {payment_intent['id']} for org {organization_id}: +${wallet_credit}")
+        logger.info(f"Successfully processed wallet top-up {payment_intent['id']} for org {organization_id}: +${wallet_credit} (no fees)")
         
     except Exception as e:
         logger.error(f"Error handling successful payment: {e}", exc_info=True)
@@ -576,6 +578,8 @@ async def handle_subscription_updated(supabase, subscription):
     """Handle subscription updates"""
     try:
         organization_id = subscription.metadata.get('organization_id')
+        plan_id = subscription.metadata.get('plan_id')
+        
         if not organization_id:
             logger.error("No organization_id in subscription metadata")
             return
@@ -596,13 +600,20 @@ async def handle_subscription_updated(supabase, subscription):
         
         supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
         
-        # Update organization subscription status
-        supabase.table("organizations").update({
+        # Update organization subscription status AND plan_id
+        org_update_data = {
             "subscription_status": subscription.status,
+            "stripe_subscription_id": subscription.id,
             "updated_at": datetime.now(timezone.utc)
-        }).eq("organization_id", organization_id).execute()
+        }
         
-        logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
+        # Update plan_id if it exists in metadata
+        if plan_id:
+            org_update_data["plan_id"] = plan_id
+        
+        supabase.table("organizations").update(org_update_data).eq("organization_id", organization_id).execute()
+        
+        logger.info(f"Updated subscription {subscription.id} status to {subscription.status} with plan_id {plan_id} for org {organization_id}")
         
     except Exception as e:
         logger.error(f"Error handling subscription update: {e}", exc_info=True)
