@@ -40,8 +40,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Call backend to get all assets
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/all-assets`
+    // Call backend to get all assets - fix double slash issue
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || ''
+    const backendUrl = `${apiUrl}/api/dolphin-assets/all-assets`
+    
+    console.log('🔍 Teams API: Calling backend URL:', backendUrl)
     
     const response = await fetch(backendUrl, {
       method: 'GET',
@@ -51,8 +54,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    console.log('🔍 Teams API: Backend response status:', response.status)
+
     if (!response.ok) {
-      throw new Error(`Backend error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('🔍 Teams API: Backend error:', errorText)
+      throw new Error(`Backend error: ${response.status} - ${errorText}`)
     }
 
     const data = await response.json()
