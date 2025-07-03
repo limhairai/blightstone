@@ -580,9 +580,19 @@ async def handle_subscription_updated(supabase, subscription):
         organization_id = subscription.metadata.get('organization_id')
         plan_id = subscription.metadata.get('plan_id')
         
+        logger.info(f"Processing subscription update for {subscription.id}: org_id={organization_id}, plan_id={plan_id}, status={subscription.status}")
+        
         if not organization_id:
             logger.error("No organization_id in subscription metadata")
             return
+        
+        # Check if organization exists
+        org_check = supabase.table("organizations").select("organization_id, plan_id").eq("organization_id", organization_id).maybe_single().execute()
+        if not org_check.data:
+            logger.error(f"Organization {organization_id} not found in database")
+            return
+        
+        logger.info(f"Found organization {organization_id}, current plan: {org_check.data.get('plan_id')}")
         
         # Update subscription in database
         subscription_data = {
@@ -598,7 +608,9 @@ async def handle_subscription_updated(supabase, subscription):
         if subscription.canceled_at:
             subscription_data["canceled_at"] = datetime.fromtimestamp(subscription.canceled_at, timezone.utc)
         
-        supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
+        # Update subscriptions table
+        sub_update_result = supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
+        logger.info(f"Updated subscriptions table: {len(sub_update_result.data)} rows affected")
         
         # Update organization subscription status AND plan_id
         org_update_data = {
@@ -611,9 +623,15 @@ async def handle_subscription_updated(supabase, subscription):
         if plan_id:
             org_update_data["plan_id"] = plan_id
         
-        supabase.table("organizations").update(org_update_data).eq("organization_id", organization_id).execute()
+        org_update_result = supabase.table("organizations").update(org_update_data).eq("organization_id", organization_id).execute()
+        logger.info(f"Updated organizations table: {len(org_update_result.data)} rows affected")
         
-        logger.info(f"Updated subscription {subscription.id} status to {subscription.status} with plan_id {plan_id} for org {organization_id}")
+        if org_update_result.data:
+            logger.info(f"Successfully updated organization {organization_id}: plan_id={plan_id}, status={subscription.status}")
+        else:
+            logger.error(f"Failed to update organization {organization_id} - no rows affected")
+        
+        logger.info(f"Completed subscription update for {subscription.id}")
         
     except Exception as e:
         logger.error(f"Error handling subscription update: {e}", exc_info=True)
