@@ -23,7 +23,7 @@ class SubscriptionService:
             result = (
                 self.supabase.table("organizations")
                 .select("*, plans(*)")
-                .eq("id", organization_id)
+                .eq("organization_id", organization_id)
                 .single()
                 .execute()
             )
@@ -176,7 +176,7 @@ class SubscriptionService:
                     "stripe_subscription_id": subscription.id,
                     "subscription_status": subscription.status
                 })
-                .eq("id", organization_id)
+                .eq("organization_id", organization_id)
                 .execute()
             )
             
@@ -194,7 +194,7 @@ class SubscriptionService:
             org_result = (
                 self.supabase.table("organizations")
                 .select("stripe_subscription_id, plan_id")
-                .eq("id", organization_id)
+                .eq("organization_id", organization_id)
                 .single()
                 .execute()
             )
@@ -249,7 +249,7 @@ class SubscriptionService:
             (
                 self.supabase.table("organizations")
                 .update({"plan_id": new_plan_id})
-                .eq("id", organization_id)
+                .eq("organization_id", organization_id)
                 .execute()
             )
             
@@ -273,7 +273,7 @@ class SubscriptionService:
                         "can_topup": False,
                         "can_request_assets": False
                     })
-                    .eq("id", organization_id)
+                    .eq("organization_id", organization_id)
                     .execute()
                 )
                 
@@ -310,7 +310,7 @@ class SubscriptionService:
                     "can_topup": True,
                     "can_request_assets": True
                 })
-                .eq("id", organization_id)
+                .eq("organization_id", organization_id)
                 .execute()
             )
             

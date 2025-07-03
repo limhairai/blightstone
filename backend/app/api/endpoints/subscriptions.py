@@ -111,7 +111,7 @@ async def create_subscription(
         org_result = (
             supabase.table("organizations")
             .select("stripe_customer_id, name")
-            .eq("id", request.organization_id)
+            .eq("organization_id", request.organization_id)
             .single()
             .execute()
         )
@@ -137,7 +137,7 @@ async def create_subscription(
             # Save customer ID
             supabase.table("organizations").update({
                 "stripe_customer_id": stripe_customer_id
-            }).eq("id", request.organization_id).execute()
+            }).eq("organization_id", request.organization_id).execute()
         
         # Create subscription
         subscription = await subscription_service.create_subscription(

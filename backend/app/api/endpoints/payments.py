@@ -75,7 +75,7 @@ async def create_payment_intent(
         customer_response = (
             supabase.table("organizations")
             .select("stripe_customer_id, name")
-            .eq("id", request.organization_id)
+            .eq("organization_id", request.organization_id)
             .single()
             .execute()
         )
@@ -101,7 +101,7 @@ async def create_payment_intent(
             # Save customer ID to database
             supabase.table("organizations").update({
                 "stripe_customer_id": stripe_customer_id
-            }).eq("id", request.organization_id).execute()
+            }).eq("organization_id", request.organization_id).execute()
         
         # Calculate amount in cents
         amount_cents = int(request.amount * 100)
@@ -181,7 +181,7 @@ async def list_payment_methods(
         org_response = (
             supabase.table("organizations")
             .select("stripe_customer_id")
-            .eq("id", organization_id)
+            .eq("organization_id", organization_id)
             .single()
             .execute()
         )
@@ -241,7 +241,7 @@ async def set_default_payment_method(
         org_response = (
             supabase.table("organizations")
             .select("stripe_customer_id")
-            .eq("id", organization_id)
+            .eq("organization_id", organization_id)
             .single()
             .execute()
         )
@@ -459,7 +459,7 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
         org_response = (
             supabase.table("organizations")
             .select("wallet_balance")
-            .eq("id", organization_id)
+            .eq("organization_id", organization_id)
             .single()
             .execute()
         )
@@ -474,7 +474,7 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
         # Update organization balance
         supabase.table("organizations").update({
             "wallet_balance": new_balance
-        }).eq("id", organization_id).execute()
+        }).eq("organization_id", organization_id).execute()
         
         # Update payment record
         supabase.table("payments").update({
@@ -565,7 +565,7 @@ async def handle_subscription_created(supabase, subscription):
             "subscription_status": subscription.status,
             "plan_id": plan_id,
             "updated_at": datetime.now(timezone.utc)
-        }).eq("id", organization_id).execute()
+        }).eq("organization_id", organization_id).execute()
         
         logger.info(f"Successfully processed subscription creation {subscription.id} for org {organization_id}")
         
@@ -600,7 +600,7 @@ async def handle_subscription_updated(supabase, subscription):
         supabase.table("organizations").update({
             "subscription_status": subscription.status,
             "updated_at": datetime.now(timezone.utc)
-        }).eq("id", organization_id).execute()
+        }).eq("organization_id", organization_id).execute()
         
         logger.info(f"Updated subscription {subscription.id} status to {subscription.status}")
         

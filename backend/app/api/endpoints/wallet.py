@@ -87,7 +87,7 @@ async def topup_org_wallet(
         org_response = (
             supabase.table("organizations")
             .select("wallet_balance")
-            .eq("id", request.organization_id)
+            .eq("organization_id", request.organization_id)
             .single()
             .execute()
         )
@@ -107,7 +107,7 @@ async def topup_org_wallet(
         update_response = (
             supabase.table("organizations")
             .update({"wallet_balance": new_balance})
-            .eq("id", request.organization_id)
+            .eq("organization_id", request.organization_id)
             .execute()
         )
         
@@ -218,7 +218,7 @@ async def get_wallet_balance(
         org_response = (
             supabase.table("organizations")
             .select("wallet_balance")
-            .eq("id", organization_id)
+            .eq("organization_id", organization_id)
             .single()
             .execute()
         )
