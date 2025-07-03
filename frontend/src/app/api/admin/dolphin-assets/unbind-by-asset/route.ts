@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { buildApiUrl, createAuthHeaders } from '../../../../../lib/api-utils'
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
                 get(name: string) {
@@ -16,83 +17,88 @@ async function getAuth(request: NextRequest) {
         }
     )
     const { data: { session } } = await supabase.auth.getSession()
-    const { data: { user } } = await supabase.auth.getUser()
-    return { session, user, supabase }
+    return { session, user: session?.user }
 }
 
 export async function POST(request: NextRequest) {
-    const { session, user, supabase } = await getAuth(request)
-    if (!session || !user) {
+    const { session } = await getAuth(request)
+    if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {
         const body = await request.json()
-        const { asset_id, organization_id, cascade = true } = body
+        const { asset_id, cascade = true, reason } = body
 
-        if (!asset_id || !organization_id) {
-            return NextResponse.json(
-                { error: 'Asset ID and Organization ID are required' },
-                { status: 400 }
-            )
+        if (!asset_id) {
+            return NextResponse.json({ error: 'asset_id is required' }, { status: 400 })
         }
 
-        console.log('🔗 Unbind by asset request:', { asset_id, organization_id, cascade })
+        // Get the asset binding first
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+                cookies: {
+                    get() { return undefined },
+                },
+            }
+        )
 
-        // Find the active binding for this asset and organization
-        const { data: bindings, error: bindingError } = await supabase
+        const { data: bindings, error } = await supabase
             .from('asset_binding')
-            .select('id, asset_id, organization_id, status')
+            .select('id, asset_id, organization_id')
             .eq('asset_id', asset_id)
-            .eq('organization_id', organization_id)
             .eq('status', 'active')
 
-        if (bindingError) {
-            console.error('🔗 Error finding binding:', bindingError)
-            return NextResponse.json(
-                { error: 'Failed to find asset binding' },
-                { status: 500 }
-            )
+        if (error) {
+            console.error('Error fetching asset bindings:', error)
+            return NextResponse.json({ error: 'Failed to fetch asset bindings' }, { status: 500 })
         }
 
         if (!bindings || bindings.length === 0) {
-            console.error('🔗 No active binding found for asset:', { asset_id, organization_id })
-            return NextResponse.json(
-                { error: 'No active binding found for this asset' },
-                { status: 404 }
-            )
+            return NextResponse.json({ error: 'No active binding found for this asset' }, { status: 404 })
         }
 
-        const binding = bindings[0]
-        console.log('🔗 Found binding:', binding)
+        // Unbind each binding (there should typically be only one)
+        const results = []
+        for (const binding of bindings) {
+            try {
+                const backendUrl = buildApiUrl(`/api/dolphin-assets/unbind/${binding.id}`)
+                const urlWithParams = new URL(backendUrl)
+                urlWithParams.searchParams.set('cascade', cascade.toString())
+                if (reason) {
+                    urlWithParams.searchParams.set('reason', reason)
+                }
 
-        // Now call the backend unbind endpoint using the binding ID
-        const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/unbind/${binding.id}?cascade=${cascade}`
+                console.log('🔍 Unbind by Asset API: Calling backend URL:', urlWithParams.toString())
 
-        const response = await fetch(backendUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-            },
-        })
+                const response = await fetch(urlWithParams.toString(), {
+                    method: 'POST',
+                    headers: createAuthHeaders(session.access_token),
+                })
 
-        console.log('🔗 Backend response status:', response.status)
+                console.log('🔍 Unbind by Asset API: Backend response status:', response.status)
 
-        if (!response.ok) {
-            const errorData = await response.json()
-            console.log('🔗 Backend error:', errorData)
-            return NextResponse.json(errorData, { status: response.status })
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    console.error('🔍 Unbind by Asset API: Backend error:', errorData)
+                    results.push({ binding_id: binding.id, success: false, error: errorData })
+                } else {
+                    const data = await response.json()
+                    results.push({ binding_id: binding.id, success: true, data })
+                }
+            } catch (error) {
+                console.error(`Error unbinding ${binding.id}:`, error)
+                results.push({ 
+                    binding_id: binding.id, 
+                    success: false, 
+                    error: error instanceof Error ? error.message : 'Unknown error' 
+                })
+            }
         }
 
-        const data = await response.json()
-        console.log('🔗 Backend success:', data)
-        
-        // Add unbind_count to the response for better UI feedback
-        return NextResponse.json({
-            ...data,
-            unbind_count: data.assets_unbound || 1
-        })
+        return NextResponse.json({ results })
 
     } catch (error) {
         console.error('Unbind by asset API error:', error)

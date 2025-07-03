@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { buildApiUrl, createAuthHeaders } from '../../../../../../lib/api-utils'
+import { buildApiUrl, createAuthHeaders } from '../../../../../lib/api-utils'
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
@@ -20,27 +20,33 @@ async function getAuth(request: NextRequest) {
     return { session, user: session?.user }
 }
 
-export async function GET(request: NextRequest) {
+export async function POST(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+) {
     const { session } = await getAuth(request)
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {
-        const backendUrl = buildApiUrl('/api/dolphin-assets/debug/dolphin-associations')
+        const body = await request.json()
         
-        console.log('🔍 Debug Dolphin Associations API: Calling backend URL:', backendUrl)
+        const backendUrl = buildApiUrl(`/api/ad-accounts/${params.id}/topup`)
+        
+        console.log('🔍 Ad Account Topup API: Calling backend URL:', backendUrl)
 
         const response = await fetch(backendUrl, {
-            method: 'GET',
+            method: 'POST',
             headers: createAuthHeaders(session.access_token),
+            body: JSON.stringify(body),
         })
 
-        console.log('🔍 Debug Dolphin Associations API: Backend response status:', response.status)
+        console.log('🔍 Ad Account Topup API: Backend response status:', response.status)
 
         if (!response.ok) {
             const errorData = await response.json()
-            console.error('🔍 Debug Dolphin Associations API: Backend error:', errorData)
+            console.error('🔍 Ad Account Topup API: Backend error:', errorData)
             return NextResponse.json(errorData, { status: response.status })
         }
 
@@ -48,7 +54,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(data)
 
     } catch (error) {
-        console.error('Debug dolphin associations API error:', error)
+        console.error('Ad account topup API error:', error)
         return NextResponse.json(
             { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }

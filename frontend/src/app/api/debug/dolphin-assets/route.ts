@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { buildApiUrl, createAuthHeaders } from '../../../../../../lib/api-utils'
+import { buildApiUrl, createAuthHeaders } from '../../../../lib/api-utils'
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
@@ -27,20 +27,27 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const backendUrl = buildApiUrl('/api/dolphin-assets/debug/dolphin-associations')
+        const { searchParams } = new URL(request.url)
+        const organization_id = searchParams.get('organization_id')
         
-        console.log('🔍 Debug Dolphin Associations API: Calling backend URL:', backendUrl)
+        const backendUrl = buildApiUrl('/api/debug/dolphin-assets')
+        const urlWithParams = new URL(backendUrl)
+        if (organization_id) {
+            urlWithParams.searchParams.set('organization_id', organization_id)
+        }
 
-        const response = await fetch(backendUrl, {
+        console.log('🔍 Debug Dolphin Assets API: Calling backend URL:', urlWithParams.toString())
+
+        const response = await fetch(urlWithParams.toString(), {
             method: 'GET',
             headers: createAuthHeaders(session.access_token),
         })
 
-        console.log('🔍 Debug Dolphin Associations API: Backend response status:', response.status)
+        console.log('🔍 Debug Dolphin Assets API: Backend response status:', response.status)
 
         if (!response.ok) {
             const errorData = await response.json()
-            console.error('🔍 Debug Dolphin Associations API: Backend error:', errorData)
+            console.error('🔍 Debug Dolphin Assets API: Backend error:', errorData)
             return NextResponse.json(errorData, { status: response.status })
         }
 
@@ -48,7 +55,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(data)
 
     } catch (error) {
-        console.error('Debug dolphin associations API error:', error)
+        console.error('Debug dolphin assets API error:', error)
         return NextResponse.json(
             { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }

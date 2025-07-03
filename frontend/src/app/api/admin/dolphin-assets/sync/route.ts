@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { buildApiUrl, createAuthHeaders } from '../../../../lib/api-utils';
+import { buildApiUrl, createAuthHeaders } from '../../../../../lib/api-utils';
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies();

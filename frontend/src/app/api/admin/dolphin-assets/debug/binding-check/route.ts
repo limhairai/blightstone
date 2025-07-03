@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { buildApiUrl, createAuthHeaders } from '../../../../../../lib/api-utils'
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
@@ -16,40 +17,48 @@ async function getAuth(request: NextRequest) {
         }
     )
     const { data: { session } } = await supabase.auth.getSession()
-    const { data: { user } } = await supabase.auth.getUser()
-    return { session, user }
+    return { session, user: session?.user }
 }
 
 export async function GET(request: NextRequest) {
-  const { session, user } = await getAuth(request)
-  if (!session || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  try {
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/debug/binding-check`
-
-    const response = await fetch(backendUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      return NextResponse.json(errorData, { status: response.status })
+    const { session } = await getAuth(request)
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    try {
+        const { searchParams } = new URL(request.url)
+        const organization_id = searchParams.get('organization_id')
+        
+        const backendUrl = buildApiUrl('/api/dolphin-assets/debug/binding-check')
+        const urlWithParams = new URL(backendUrl)
+        if (organization_id) {
+            urlWithParams.searchParams.set('organization_id', organization_id)
+        }
+        
+        console.log('🔍 Debug Binding Check API: Calling backend URL:', urlWithParams.toString())
 
-  } catch (error) {
-    console.error('Admin debug binding check API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    )
-  }
+        const response = await fetch(urlWithParams.toString(), {
+            method: 'GET',
+            headers: createAuthHeaders(session.access_token),
+        })
+
+        console.log('🔍 Debug Binding Check API: Backend response status:', response.status)
+
+        if (!response.ok) {
+            const errorData = await response.json()
+            console.error('🔍 Debug Binding Check API: Backend error:', errorData)
+            return NextResponse.json(errorData, { status: response.status })
+        }
+
+        const data = await response.json()
+        return NextResponse.json(data)
+
+    } catch (error) {
+        console.error('Debug binding check API error:', error)
+        return NextResponse.json(
+            { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+            { status: 500 }
+        )
+    }
 } 

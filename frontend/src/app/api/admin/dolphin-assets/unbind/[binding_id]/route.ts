@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { buildApiUrl, createAuthHeaders } from '../../../../../../lib/api-utils'
 
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
@@ -16,53 +17,54 @@ async function getAuth(request: NextRequest) {
         }
     )
     const { data: { session } } = await supabase.auth.getSession()
-    const { data: { user } } = await supabase.auth.getUser()
-    return { session, user }
+    return { session, user: session?.user }
 }
 
 export async function POST(
     request: NextRequest,
     { params }: { params: { binding_id: string } }
 ) {
-    const { session, user } = await getAuth(request)
-    if (!session || !user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { session } = await getAuth(request);
+    if (!session) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     try {
-        const { searchParams } = new URL(request.url)
-        const cascade = searchParams.get('cascade')
-        const reason = searchParams.get('reason')
+        const { searchParams } = new URL(request.url);
+        const cascade = searchParams.get('cascade') !== 'false'; // Default to true
+        const reason = searchParams.get('reason');
         
-        const backendUrl = new URL(`${process.env.NEXT_PUBLIC_API_URL}/api/dolphin-assets/unbind/${params.binding_id}`)
-        if (cascade) {
-            backendUrl.searchParams.set('cascade', cascade)
-        }
+        // Build backend URL
+        const backendUrl = buildApiUrl(`/api/dolphin-assets/unbind/${params.binding_id}`);
+        const urlWithParams = new URL(backendUrl);
+        urlWithParams.searchParams.set('cascade', cascade.toString());
         if (reason) {
-            backendUrl.searchParams.set('reason', reason)
+            urlWithParams.searchParams.set('reason', reason);
         }
-
-        const response = await fetch(backendUrl.toString(), {
+        
+        console.log('🔍 Unbind API: Calling backend URL:', urlWithParams.toString());
+        
+        const response = await fetch(urlWithParams.toString(), {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${session.access_token}`,
-                'Content-Type': 'application/json',
-            },
-        })
+            headers: createAuthHeaders(session.access_token),
+        });
+
+        console.log('🔍 Unbind API: Backend response status:', response.status);
 
         if (!response.ok) {
-            const errorData = await response.json()
-            return NextResponse.json(errorData, { status: response.status })
+            const errorData = await response.json();
+            console.error("🔍 Unbind API: Backend error:", errorData);
+            return NextResponse.json(errorData, { status: response.status });
         }
 
-        const data = await response.json()
-        return NextResponse.json(data)
+        const data = await response.json();
+        return NextResponse.json(data);
 
     } catch (error) {
-        console.error('Unbind API error:', error)
+        console.error('Admin unbind API proxy error:', error);
         return NextResponse.json(
             { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }
-        )
+        );
     }
 } 
