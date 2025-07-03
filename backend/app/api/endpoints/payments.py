@@ -551,7 +551,7 @@ async def handle_subscription_created(supabase, subscription):
             .execute()
         )
         
-        if existing_sub.data:
+        if existing_sub and existing_sub.data:
             # Update existing subscription
             supabase.table("subscriptions").update(subscription_data).eq("stripe_subscription_id", subscription.id).execute()
             logger.info(f"Updated subscription {subscription.id} for org {organization_id}")
