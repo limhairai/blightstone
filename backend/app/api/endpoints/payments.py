@@ -481,12 +481,6 @@ async def handle_successful_payment(supabase, payment_intent, metadata=None):
             "updated_at": datetime.now(timezone.utc).isoformat()
         }).eq("wallet_id", wallet_id).execute()
         
-        # Update payment record
-        supabase.table("payments").update({
-            "status": "succeeded",
-            "completed_at": datetime.now(timezone.utc).isoformat()
-        }).eq("stripe_payment_intent_id", payment_intent["id"]).execute()
-        
         # Create transaction record (no fees for wallet top-up)
         transaction_data = {
             "organization_id": organization_id,
