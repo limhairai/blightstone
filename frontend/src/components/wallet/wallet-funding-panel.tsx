@@ -76,7 +76,10 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
         // Handle Airwallex Hosted Payment Page
         const response = await fetch('/api/payments/airwallex', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
           body: JSON.stringify({ 
             amount: amountNum,
             description: `Wallet top-up - $${amountNum}`

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { createClient } from '@/lib/supabase-client'
+import { createSupabaseBrowserClient } from '@/lib/stores/supabase-client'
 import { useRouter } from 'next/navigation'
 
 export default function AuthResetPage() {
@@ -9,7 +9,7 @@ export default function AuthResetPage() {
 
   useEffect(() => {
     const resetAuth = async () => {
-      const supabase = createClient()
+      const supabase = createSupabaseBrowserClient()
       
       // Sign out to clear all tokens
       await supabase.auth.signOut()

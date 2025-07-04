@@ -18,7 +18,7 @@ interface BindAssetsRequest {
 // Field mapping utility for transforming between database and frontend formats
 const transformBindingToFrontend = (binding: any) => ({
   bindingId: binding.binding_id,
-  assetId: binding.asset_ref_id,
+  assetId: binding.asset_id, // Fixed: Use asset_id not asset_ref_id
   organizationId: binding.organization_id,
   boundBy: binding.bound_by,
   status: binding.status,
@@ -108,8 +108,8 @@ export async function POST(request: NextRequest) {
     // Check if any assets are already bound using semantic IDs
     const { data: existingBindings, error: bindingsError } = await supabase
       .from('asset_binding')
-      .select('asset_ref_id')
-      .in('asset_ref_id', assetIds)
+      .select('asset_id')
+      .in('asset_id', assetIds)
       .eq('status', 'active');
 
     if (bindingsError) {
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingBindings && existingBindings.length > 0) {
-      const boundAssetIds = existingBindings.map(b => b.asset_ref_id);
+      const boundAssetIds = existingBindings.map(b => b.asset_id);
       return NextResponse.json(
         { message: `Some assets are already bound: ${boundAssetIds.join(', ')}` },
         { status: 400 }
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
     // Create bindings for all assets using semantic IDs
     const bindings = assetIds.map(assetId => ({
-      asset_ref_id: assetId,
+      asset_id: assetId,
       organization_id: organizationId,
       bound_by: adminUserId,
       status: 'active'
@@ -235,7 +235,7 @@ export async function DELETE(request: NextRequest) {
         const { error: deleteError } = await supabase
             .from('asset_binding')
             .update({ status: 'inactive' })  // Soft delete
-            .eq('asset_ref_id', assetId)
+            .eq('asset_id', assetId)
             .eq('status', 'active');
 
         if (deleteError) {

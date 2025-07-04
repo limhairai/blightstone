@@ -27,11 +27,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // First, get an access token using client credentials
+    const AIRWALLEX_API_URL = process.env.AIRWALLEX_API_URL || 'https://api.airwallex.com'
+    const authResponse = await fetch(`${AIRWALLEX_API_URL}/api/v1/authentication/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-client-id': process.env.AIRWALLEX_CLIENT_ID,
+        'x-api-key': process.env.AIRWALLEX_API_KEY,
+      },
+    })
+
+    if (!authResponse.ok) {
+      const authError = await authResponse.text()
+      console.error('Airwallex authentication error:', authError)
+      return NextResponse.json({ error: 'Failed to authenticate with Airwallex' }, { status: 500 })
+    }
+
+    const authData = await authResponse.json()
+    const accessToken = authData.token || authData.access_token
+
     // Retrieve payment intent from Airwallex to verify status
-    const airwallexResponse = await fetch(`https://api.airwallex.com/api/v1/pa/payment_intents/${payment_intent_id}`, {
+    const airwallexResponse = await fetch(`${AIRWALLEX_API_URL}/api/v1/pa/payment_intents/${payment_intent_id}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${process.env.AIRWALLEX_API_KEY}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     })

@@ -31,37 +31,55 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Create payment intent with Airwallex
-    const airwallexResponse = await fetch('https://api.airwallex.com/api/v1/pa/payment_intents', {
+    // First, get an access token using client credentials
+    const authResponse = await fetch(`${AIRWALLEX_API_URL}/api/v1/authentication/login`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.AIRWALLEX_API_KEY}`,
+        'Content-Type': 'application/json',
+        'x-client-id': AIRWALLEX_CLIENT_ID,
+        'x-api-key': AIRWALLEX_API_KEY,
+      },
+    })
+
+    if (!authResponse.ok) {
+      const authError = await authResponse.text()
+      console.error('Airwallex authentication error:', authError)
+      return NextResponse.json(
+        { error: 'Failed to authenticate with Airwallex' },
+        { status: 500 }
+      )
+    }
+
+    const authData = await authResponse.json()
+    const accessToken = authData.token || authData.access_token
+
+    // Create payment link with Airwallex using the JWT access token
+    const airwallexResponse = await fetch(`${AIRWALLEX_API_URL}/api/v1/pa/payment_links/create`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         amount: amount,
         currency: currency,
-        merchant_order_id: `wallet_topup_${user.id}_${Date.now()}`,
-        order: {
-          type: 'physical_goods',
-          products: [
-            {
-              name: description || 'Wallet Top-up',
-              desc: 'Add funds to wallet balance',
-              sku: 'wallet_topup',
-              type: 'digital',
-              unit_price: amount,
-              quantity: 1,
-            }
-          ]
+        title: `Wallet Top-up - $${amount}`,
+        description: description || `Add $${amount} to wallet balance`,
+        reference: `wallet_topup_${user.id}_${Date.now()}`,
+        reusable: false,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+        collectable_shopper_info: {
+          billing_address: false,
+          message: false,
+          phone_number: false,
+          reference: false,
+          shipping_address: false
         },
-        // Use Hosted Payment Page with redirect URLs
-        return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet/payment/success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet/payment/cancel`,
-        descriptor: 'AdHub Wallet Topup',
         metadata: {
           user_id: user.id,
-          purpose: 'wallet_topup'
+          purpose: 'wallet_topup',
+          return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet/payment/success`,
+          cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/wallet/payment/cancel`
         }
       }),
     })
@@ -69,19 +87,29 @@ export async function POST(request: NextRequest) {
     if (!airwallexResponse.ok) {
       const errorData = await airwallexResponse.text()
       console.error('Airwallex API error:', errorData)
+      console.error('Request URL:', `${AIRWALLEX_API_URL}/api/v1/pa/payment_links/create`)
+      console.error('Request headers:', {
+        'Authorization': `Bearer ${accessToken ? '[REDACTED]' : 'MISSING'}`,
+        'Content-Type': 'application/json'
+      })
+      console.error('Environment variables:', {
+        AIRWALLEX_API_URL: AIRWALLEX_API_URL,
+        AIRWALLEX_CLIENT_ID: AIRWALLEX_CLIENT_ID ? '[REDACTED]' : 'MISSING',
+        AIRWALLEX_API_KEY: AIRWALLEX_API_KEY ? '[REDACTED]' : 'MISSING'
+      })
       return NextResponse.json(
-        { error: 'Failed to create payment intent' },
+        { error: 'Failed to create payment link' },
         { status: 500 }
       )
     }
 
-    const paymentIntent = await airwallexResponse.json()
+    const paymentLink = await airwallexResponse.json()
 
-    // Store payment intent in our database for tracking
+    // Store payment link in our database for tracking
     const { error: dbError } = await supabase
       .from('payment_intents')
       .insert({
-        id: paymentIntent.id,
+        id: paymentLink.id,
         user_id: user.id,
         amount: amount,
         currency: currency,
@@ -89,22 +117,22 @@ export async function POST(request: NextRequest) {
         provider: 'airwallex',
         purpose: 'wallet_topup',
         metadata: {
-          airwallex_payment_intent_id: paymentIntent.id,
+          airwallex_payment_link_id: paymentLink.id,
+          payment_link_url: paymentLink.url,
           description: description || 'Wallet Top-up'
         }
       })
 
     if (dbError) {
       console.error('Database error:', dbError)
-      // Continue anyway, as the payment intent was created successfully
+      // Continue anyway, as the payment link was created successfully
     }
 
     // Return the hosted payment page URL
     return NextResponse.json({
-      payment_intent_id: paymentIntent.id,
+      payment_link_id: paymentLink.id,
       // The hosted payment page URL that we'll redirect to
-      hosted_payment_url: `https://checkout.airwallex.com/drop-in.html?intent_id=${paymentIntent.id}&client_secret=${paymentIntent.client_secret}`,
-      client_secret: paymentIntent.client_secret,
+      hosted_payment_url: paymentLink.url,
       amount: amount,
       currency: currency
     })

@@ -6,7 +6,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-// Field mapping utility for transforming between database and frontend formats
+// Transform database snake_case to API camelCase (standard SaaS convention)
 const transformApplicationToFrontend = (app: any) => ({
   applicationId: app.application_id,
   organizationId: app.organization_id,

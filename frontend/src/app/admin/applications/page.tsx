@@ -15,23 +15,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
 import { Application } from "@/types/generated/semantic-ids";
 
-// Extended Application interface for this page's needs
+// Extended Application interface for this page's needs (camelCase API response)
 interface ApplicationWithDetails extends Application {
-  organization_name: string;
-  business_name: string;
-  request_type: string;
-  target_bm_dolphin_id?: string;
-  website_url: string;
-  approved_by?: string;
-  approved_at?: string;
-  rejected_by?: string;
-  rejected_at?: string;
-  fulfilled_by?: string;
-  fulfilled_at?: string;
-  client_notes?: string;
-  admin_notes?: string;
-  created_at: string;
-  updated_at: string;
+  organizationName: string;
+  businessName: string;
+  requestType: string;
+  targetBmDolphinId?: string;
+  websiteUrl: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectedBy?: string;
+  rejectedAt?: string;
+  fulfilledBy?: string;
+  fulfilledAt?: string;
+  clientNotes?: string;
+  adminNotes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface BusinessManager {
@@ -136,15 +136,15 @@ export default function AdminApplicationsPage() {
     let targetBmId: string | undefined;
     let existingBMsForOrg: BusinessManager[] = [];
 
-    if (application.request_type) {
-      switch (application.request_type) {
+    if (application.requestType) {
+      switch (application.requestType) {
         case 'new_business_manager':
           mode = 'new-bm';
           break;
         case 'additional_accounts':
-          if (application.target_bm_dolphin_id) {
+          if (application.targetBmDolphinId) {
             mode = 'additional-accounts-specific';
-            targetBmId = application.target_bm_dolphin_id;
+            targetBmId = application.targetBmDolphinId;
           } else {
             mode = 'additional-accounts-general';
             // Fetch existing BMs for this organization
@@ -256,15 +256,15 @@ export default function AdminApplicationsPage() {
   };
 
   const getRequestTypeInfo = (application: ApplicationWithDetails) => {
-    if (!application.request_type) {
+    if (!application.requestType) {
       return { icon: <Building2 className="h-4 w-4" />, label: "New BM Request", variant: "default" as const };
     }
 
-    switch (application.request_type) {
+    switch (application.requestType) {
       case 'new_business_manager':
         return { icon: <Building2 className="h-4 w-4" />, label: "New Business Manager", variant: "default" as const };
       case 'additional_accounts':
-        if (application.target_bm_dolphin_id) {
+        if (application.targetBmDolphinId) {
           return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Specific BM)", variant: "secondary" as const };
         } else {
           return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Choose BM)", variant: "secondary" as const };
@@ -356,10 +356,10 @@ export default function AdminApplicationsPage() {
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
                             <CardTitle className="text-lg">
-                              {application.organization_name}
+                              {application.organizationName}
                             </CardTitle>
                             <CardDescription>
-                              Website: {application.website_url}
+                              Website: {application.websiteUrl}
                             </CardDescription>
                             <div className="flex items-center gap-2 mt-2">
                               <Badge variant={requestTypeInfo.variant}>
@@ -368,9 +368,9 @@ export default function AdminApplicationsPage() {
                                   {requestTypeInfo.label}
                                 </div>
                               </Badge>
-                              {application.target_bm_dolphin_id && (
+                              {application.targetBmDolphinId && (
                                 <Badge variant="outline" className="text-xs">
-                                  Target BM: {application.target_bm_dolphin_id}
+                                  Target BM: {application.targetBmDolphinId}
                                 </Badge>
                               )}
                             </div>
@@ -384,7 +384,7 @@ export default function AdminApplicationsPage() {
                       <CardContent>
                         <div className="flex items-center justify-between">
                           <div className="text-sm text-muted-foreground">
-                            Applied: {formatDate(application.created_at)}
+                            Applied: {formatDate(application.createdAt)}
                           </div>
                           <div className="flex gap-2">
                             {application.status === 'pending' && (
@@ -440,7 +440,7 @@ export default function AdminApplicationsPage() {
         onOpenChange={setDialogOpen}
         application={selectedApplication}
         mode={dialogMode}
-        targetBmId={selectedApplication?.target_bm_dolphin_id}
+        targetBmId={selectedApplication?.targetBmDolphinId}
         existingBMs={existingBMs}
         onSuccess={handleDialogSuccess}
       />

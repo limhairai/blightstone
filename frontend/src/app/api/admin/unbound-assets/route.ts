@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
     // Filter out assets that have active bindings
     const boundAssetIds = new Set(activeBindings?.map(b => b.asset_id) || []);
-    const unboundAssets = assets?.filter(asset => !boundAssetIds.has(asset.id)) || [];
+    const unboundAssets = assets?.filter(asset => !boundAssetIds.has(asset.asset_id)) || [];
 
     return NextResponse.json(unboundAssets);
   } catch (error: any) {

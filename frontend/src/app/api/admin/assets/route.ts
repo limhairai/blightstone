@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
     const { data: bindings, error: bindingsError } = await supabase
       .from('asset_binding')
       .select(`
-        asset_ref_id,
+        asset_id,
         organization_id,
         status,
         bound_at,
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     // Create binding map using semantic ID
     const bindingMap = new Map()
     bindings?.forEach(binding => {
-      bindingMap.set(binding.asset_ref_id, {
+      bindingMap.set(binding.asset_id, {
         organization_id: binding.organization_id,
         organization_name: binding.organizations?.name || 'Unknown Organization',
         bound_at: binding.bound_at
