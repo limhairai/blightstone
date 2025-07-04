@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('organization_id')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile || !profile.organization_id) {
@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
     const userIds = members.map(m => m.user_id);
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, name, email, avatar_url')
-      .in('id', userIds);
+      .select('profile_id, name, email, avatar_url')
+      .in('profile_id', userIds);
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     // Combine the data
     const teamMembers = members.map(member => {
-      const profile = profiles?.find(p => p.id === member.user_id);
+      const profile = profiles?.find(p => p.profile_id === member.user_id);
       return {
         id: member.user_id,
         user_id: member.user_id,

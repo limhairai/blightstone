@@ -6,16 +6,38 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+// Field mapping utility for transforming between database and frontend formats
+const transformApplicationToFrontend = (app: any) => ({
+  applicationId: app.application_id,
+  organizationId: app.organization_id,
+  organizationName: app.organizations?.name || 'Unknown Organization',
+  businessName: app.organizations?.name || 'Unknown Organization', // Alias for compatibility
+  requestType: app.request_type,
+  targetBmDolphinId: app.target_bm_dolphin_id,
+  websiteUrl: app.website_url,
+  status: app.status,
+  approvedBy: app.approved_by,
+  approvedAt: app.approved_at,
+  rejectedBy: app.rejected_by,
+  rejectedAt: app.rejected_at,
+  fulfilledBy: app.fulfilled_by,
+  fulfilledAt: app.fulfilled_at,
+  clientNotes: app.client_notes,
+  adminNotes: app.admin_notes,
+  createdAt: app.created_at,
+  updatedAt: app.updated_at
+})
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const statusParam = searchParams.get('status')
     
-    // Build the query
+    // Build the query using semantic ID columns
     let query = supabase
       .from('application')
       .select(`
-        id,
+        application_id,
         organization_id,
         request_type,
         target_bm_dolphin_id,
@@ -51,27 +73,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Transform to match frontend expectations
-    const transformedApplications = applications?.map(app => ({
-      id: app.id,
-      organization_id: app.organization_id,
-      organization_name: app.organizations?.name || 'Unknown Organization',
-      business_name: app.organizations?.name || 'Unknown Organization', // Alias for compatibility
-      request_type: app.request_type,
-      target_bm_dolphin_id: app.target_bm_dolphin_id,
-      website_url: app.website_url,
-      status: app.status,
-      approved_by: app.approved_by,
-      approved_at: app.approved_at,
-      rejected_by: app.rejected_by,
-      rejected_at: app.rejected_at,
-      fulfilled_by: app.fulfilled_by,
-      fulfilled_at: app.fulfilled_at,
-      client_notes: app.client_notes,
-      admin_notes: app.admin_notes,
-      created_at: app.created_at,
-      updated_at: app.updated_at
-    })) || []
+    // Transform to match frontend expectations (camelCase)
+    const transformedApplications = applications?.map(transformApplicationToFrontend) || []
 
     return NextResponse.json({
       applications: transformedApplications
@@ -90,46 +93,46 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { 
-      organization_id, 
-      request_type, 
-      target_bm_dolphin_id, 
-      website_url, 
-      client_notes 
+      organizationId, 
+      requestType, 
+      targetBmDolphinId, 
+      websiteUrl, 
+      clientNotes 
     } = body
 
     // Validate required fields
-    if (!organization_id || !request_type || !website_url) {
+    if (!organizationId || !requestType || !websiteUrl) {
       return NextResponse.json(
-        { error: 'Missing required fields: organization_id, request_type, website_url' },
+        { error: 'Missing required fields: organizationId, requestType, websiteUrl' },
         { status: 400 }
       )
     }
 
     // Validate request_type
-    if (!['new_business_manager', 'additional_accounts'].includes(request_type)) {
+    if (!['new_business_manager', 'additional_accounts'].includes(requestType)) {
       return NextResponse.json(
-        { error: 'Invalid request_type. Must be new_business_manager or additional_accounts' },
+        { error: 'Invalid requestType. Must be new_business_manager or additional_accounts' },
         { status: 400 }
       )
     }
 
-    // For additional_accounts, target_bm_dolphin_id is required
-    if (request_type === 'additional_accounts' && !target_bm_dolphin_id) {
+    // For additional_accounts, targetBmDolphinId is required
+    if (requestType === 'additional_accounts' && !targetBmDolphinId) {
       return NextResponse.json(
-        { error: 'target_bm_dolphin_id is required for additional_accounts requests' },
+        { error: 'targetBmDolphinId is required for additional_accounts requests' },
         { status: 400 }
       )
     }
 
-    // Create the application
+    // Create the application using semantic ID columns
     const { data: application, error } = await supabase
       .from('application')
       .insert({
-        organization_id,
-        request_type,
-        target_bm_dolphin_id,
-        website_url,
-        client_notes,
+        organization_id: organizationId,
+        request_type: requestType,
+        target_bm_dolphin_id: targetBmDolphinId,
+        website_url: websiteUrl,
+        client_notes: clientNotes,
         status: 'pending'
       })
       .select()
@@ -143,17 +146,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Transform response to frontend format
     return NextResponse.json({
-      application: {
-        id: application.id,
-        organization_id: application.organization_id,
-        request_type: application.request_type,
-        target_bm_dolphin_id: application.target_bm_dolphin_id,
-        website_url: application.website_url,
-        status: application.status,
-        client_notes: application.client_notes,
-        created_at: application.created_at
-      }
+      application: transformApplicationToFrontend(application)
     })
 
   } catch (error) {

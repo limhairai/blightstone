@@ -66,8 +66,10 @@ fi
 
 # Start backend server with local config
 echo "🔧 Starting Backend Server (FastAPI - Local)..."
-uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000 &
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
+cd ..
 
 # Wait a moment for backend to start
 sleep 3

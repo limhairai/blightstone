@@ -129,7 +129,7 @@ class SubscriptionService:
             plan_result = (
                 self.supabase.table("plans")
                 .select("*")
-                .eq("id", plan_id)
+                .eq("plan_id", plan_id)
                 .single()
                 .execute()
             )
@@ -209,7 +209,7 @@ class SubscriptionService:
             new_plan_result = (
                 self.supabase.table("plans")
                 .select("*")
-                .eq("id", new_plan_id)
+                .eq("plan_id", new_plan_id)
                 .single()
                 .execute()
             )

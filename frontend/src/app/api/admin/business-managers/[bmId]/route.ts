@@ -23,7 +23,7 @@ export async function GET(
     const { data: bmAsset, error: bmError } = await supabase
       .from('asset')
       .select('*')
-      .eq('id', bmId)
+      .eq('asset_id', bmId)
       .eq('type', 'business_manager')
       .single();
 
@@ -65,13 +65,13 @@ export async function GET(
     const adAccounts = adAccountBindings?.map(binding => {
       const asset = binding.asset;
       return {
-        id: asset.id,
+        id: asset.asset_id,
         type: asset.type,
         dolphin_id: asset.dolphin_id,
         name: asset.name,
         status: asset.status,
         metadata: asset.metadata,
-        binding_id: binding.id,
+        binding_id: binding.binding_id,
         bound_at: binding.bound_at,
         organization_name: binding.organizations?.name
       };

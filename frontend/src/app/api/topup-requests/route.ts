@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser, organization_id')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     const isAdmin = profile?.is_superuser === true;
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         const { data: userProfile } = await supabase
           .from('profiles')
           .select('email, full_name')
-          .eq('id', request.requested_by)
+          .eq('profile_id', request.requested_by)
           .single();
 
         // Enhance business manager information if missing or incomplete
@@ -98,60 +98,67 @@ export async function GET(request: NextRequest) {
           try {
             // Try to find the ad account in the asset system to get BM info
             if (request.ad_account_id && request.ad_account_id !== 'Account ID Not Available') {
-              const { data: adAccountAsset } = await supabase
+              // First get the asset_binding for this organization and ad account
+              const { data: assetBindings } = await supabase
                 .from('asset_binding')
-                .select(`
-                  asset!inner (
-                    name,
-                    dolphin_id,
-                    metadata,
-                    type
-                  )
-                `)
+                .select('asset_id')
                 .eq('organization_id', request.organization_id)
-                .eq('asset.dolphin_id', request.ad_account_id)
-                .eq('asset.type', 'ad_account')
-                .single();
+                .eq('status', 'active');
 
-              if (adAccountAsset?.asset?.metadata) {
-                const assetMetadata = adAccountAsset.asset.metadata;
-                if (assetMetadata.business_manager_name || assetMetadata.business_manager) {
-                  enhancedMetadata.business_manager_name = assetMetadata.business_manager_name || assetMetadata.business_manager;
-                  enhancedMetadata.business_manager_id = assetMetadata.business_manager_id || enhancedMetadata.business_manager_id;
+              if (assetBindings && assetBindings.length > 0) {
+                // Then find the matching asset by dolphin_id
+                const { data: adAccountAsset } = await supabase
+                  .from('asset')
+                  .select('name, dolphin_id, metadata, type, asset_id')
+                  .eq('dolphin_id', request.ad_account_id)
+                  .eq('type', 'ad_account')
+                  .in('asset_id', assetBindings.map(b => b.asset_id))
+                  .single();
+
+                if (adAccountAsset?.metadata) {
+                  const assetMetadata = adAccountAsset.metadata;
+                  if (assetMetadata.business_manager_name || assetMetadata.business_manager) {
+                    enhancedMetadata.business_manager_name = assetMetadata.business_manager_name || assetMetadata.business_manager;
+                    enhancedMetadata.business_manager_id = assetMetadata.business_manager_id || enhancedMetadata.business_manager_id;
+                  }
                 }
               }
             }
 
             // If still no BM info, get any BM from the organization as fallback
             if (!enhancedMetadata.business_manager_name || enhancedMetadata.business_manager_name === 'Unknown') {
-              const { data: anyBM } = await supabase
+              // First get asset_bindings for business managers in this organization
+              const { data: bmBindings } = await supabase
                 .from('asset_binding')
-                .select(`
-                  asset!inner (
-                    name,
-                    dolphin_id,
-                    type
-                  )
-                `)
+                .select('asset_id')
                 .eq('organization_id', request.organization_id)
-                .eq('asset.type', 'business_manager')
-                .eq('status', 'active')
-                .limit(1)
-                .single();
+                .eq('status', 'active');
 
-              if (anyBM?.asset) {
-                enhancedMetadata.business_manager_name = anyBM.asset.name || 'BM Not Available';
-                enhancedMetadata.business_manager_id = anyBM.asset.dolphin_id || 'BM ID Not Available';
+              if (bmBindings && bmBindings.length > 0) {
+                // Then find a business manager asset
+                const { data: anyBM } = await supabase
+                  .from('asset')
+                  .select('name, dolphin_id, type, asset_id')
+                  .eq('type', 'business_manager')
+                  .in('asset_id', bmBindings.map(b => b.asset_id))
+                  .limit(1)
+                  .single();
+
+                if (anyBM) {
+                  enhancedMetadata.business_manager_name = anyBM.name || 'BM Not Available';
+                  enhancedMetadata.business_manager_id = anyBM.dolphin_id || 'BM ID Not Available';
+                }
               }
             }
           } catch (error) {
-            console.error('Error enhancing BM info for request:', request.id, error);
+            console.error('Error enhancing BM info for request:', request.request_id, error);
             // Continue with existing metadata if enhancement fails
           }
         }
 
         return {
           ...request,
+          id: request.request_id, // Map request_id to id for frontend compatibility
           metadata: enhancedMetadata,
           requested_by_user: userProfile ? {
             email: userProfile.email,
@@ -187,7 +194,7 @@ export async function PATCH(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile?.is_superuser) {
@@ -346,7 +353,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       message: 'Topup request created successfully',
-      request: topupRequest 
+      request: {
+        ...topupRequest,
+        id: topupRequest.request_id // Map request_id to id for frontend compatibility
+      }
     });
 
   } catch (error) {

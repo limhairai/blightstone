@@ -13,16 +13,15 @@ import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus } from "luc
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
+import { Application } from "@/types/generated/semantic-ids";
 
-interface Application {
-  id: string;
-  organization_id: string;
+// Extended Application interface for this page's needs
+interface ApplicationWithDetails extends Application {
   organization_name: string;
   business_name: string;
   request_type: string;
   target_bm_dolphin_id?: string;
   website_url: string;
-  status: string;
   approved_by?: string;
   approved_at?: string;
   rejected_by?: string;
@@ -54,7 +53,7 @@ const fetcher = async (url: string) => {
 
 export default function AdminApplicationsPage() {
   const { session } = useAuth();
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<RequestMode>('new-bm');
@@ -77,19 +76,19 @@ export default function AdminApplicationsPage() {
 
   const applications = applicationsData?.applications || [];
 
-  const handleApprove = async (application: Application) => {
+  const handleApprove = async (application: ApplicationWithDetails) => {
     if (!session?.user?.id) {
       toast.error('Authentication required');
       return;
     }
     
-    setProcessingId(application.id);
+    setProcessingId(application.applicationId);
     
     // Immediate optimistic update - approve moves to processing (BlueFocus submission)
     const optimisticData = {
       ...applicationsData,
-      applications: applications.map((app: Application) => 
-        app.id === application.id 
+      applications: applications.map((app: ApplicationWithDetails) => 
+        app.applicationId === application.applicationId 
           ? { ...app, status: 'processing' }
           : app
       )
@@ -99,7 +98,7 @@ export default function AdminApplicationsPage() {
     mutate(optimisticData, false);
     
     try {
-      const response = await fetch(`/api/admin/applications/${application.id}/approve`, {
+      const response = await fetch(`/api/admin/applications/${application.applicationId}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -131,7 +130,7 @@ export default function AdminApplicationsPage() {
     }
   };
 
-  const handleFulfill = async (application: Application) => {
+  const handleFulfill = async (application: ApplicationWithDetails) => {
     // Determine the request mode based on application data
     let mode: RequestMode = 'new-bm';
     let targetBmId: string | undefined;
@@ -149,9 +148,9 @@ export default function AdminApplicationsPage() {
           } else {
             mode = 'additional-accounts-general';
             // Fetch existing BMs for this organization
-            if (application.organization_id) {
+            if (application.organizationId) {
               try {
-                const response = await fetch(`/api/admin/organizations/${application.organization_id}/business-managers`);
+                const response = await fetch(`/api/admin/organizations/${application.organizationId}/business-managers`);
                 if (response.ok) {
                   const data = await response.json();
                   existingBMsForOrg = data.business_managers || [];
@@ -177,19 +176,19 @@ export default function AdminApplicationsPage() {
     setDialogOpen(false);
   };
 
-  const handleReject = async (application: Application) => {
+  const handleReject = async (application: ApplicationWithDetails) => {
     if (!session?.user?.id) {
       toast.error('Authentication required');
       return;
     }
     
-    setProcessingId(application.id);
+    setProcessingId(application.applicationId);
     
     // Immediate optimistic update
     const optimisticData = {
       ...applicationsData,
-      applications: applications.map((app: Application) => 
-        app.id === application.id 
+      applications: applications.map((app: ApplicationWithDetails) => 
+        app.applicationId === application.applicationId 
           ? { ...app, status: 'rejected' }
           : app
       )
@@ -199,7 +198,7 @@ export default function AdminApplicationsPage() {
     mutate(optimisticData, false);
     
     try {
-      const response = await fetch(`/api/admin/applications/${application.id}/reject`, {
+      const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -256,7 +255,7 @@ export default function AdminApplicationsPage() {
     return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
   };
 
-  const getRequestTypeInfo = (application: Application) => {
+  const getRequestTypeInfo = (application: ApplicationWithDetails) => {
     if (!application.request_type) {
       return { icon: <Building2 className="h-4 w-4" />, label: "New BM Request", variant: "default" as const };
     }
@@ -276,7 +275,7 @@ export default function AdminApplicationsPage() {
   };
 
   const filterApplications = (status: string) => {
-    return applications.filter((app: Application) => app.status === status);
+    return applications.filter((app: ApplicationWithDetails) => app.status === status);
   };
 
   const formatDate = (dateString: string) => {
@@ -349,10 +348,10 @@ export default function AdminApplicationsPage() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {filterApplications(status).map((application: Application) => {
+                {filterApplications(status).map((application: ApplicationWithDetails) => {
                   const requestTypeInfo = getRequestTypeInfo(application);
                   return (
-                    <Card key={application.id}>
+                    <Card key={application.applicationId}>
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
@@ -394,9 +393,9 @@ export default function AdminApplicationsPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleReject(application)}
-                                  disabled={processingId === application.id}
+                                  disabled={processingId === application.applicationId}
                                 >
-                                  {processingId === application.id ? (
+                                  {processingId === application.applicationId ? (
                                     <RefreshCw className="h-4 w-4 animate-spin" />
                                   ) : (
                                     'Reject'
@@ -405,9 +404,9 @@ export default function AdminApplicationsPage() {
                                 <Button
                                   size="sm"
                                   onClick={() => handleApprove(application)}
-                                  disabled={processingId === application.id}
+                                  disabled={processingId === application.applicationId}
                                 >
-                                  {processingId === application.id ? (
+                                  {processingId === application.applicationId ? (
                                     <RefreshCw className="h-4 w-4 animate-spin" />
                                   ) : (
                                     'Approve'

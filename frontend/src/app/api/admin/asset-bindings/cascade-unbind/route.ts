@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const { data: asset, error: assetError } = await supabase
       .from('asset')
       .select('*')
-      .eq('id', asset_id)
+      .eq('asset_id', asset_id)
       .single();
 
     if (assetError || !asset) {
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
       // Unbind all associated ad accounts
       if (associatedAdAccounts && associatedAdAccounts.length > 0) {
-        const adAccountBindingIds = associatedAdAccounts.map(binding => binding.id);
+        const adAccountBindingIds = associatedAdAccounts.map(binding => binding.binding_id);
         
         const { error: unbindError } = await supabase
           .from('asset_binding')

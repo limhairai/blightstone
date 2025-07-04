@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('organization_id')
-      .eq('id', userId)
+      .eq('profile_id', userId)
       .single();
 
     if (profileError || !profile?.organization_id) {

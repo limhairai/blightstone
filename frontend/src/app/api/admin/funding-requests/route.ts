@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile?.is_superuser) {
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     // Transform data to match the expected format
     const transformedRequests = (requests || []).map((request: any) => ({
-      id: request.id,
+      id: request.request_id,
       account_id: request.account_id,
       account_name: request.account_name,
       requested_amount: request.amount,

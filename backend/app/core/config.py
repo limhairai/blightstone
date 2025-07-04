@@ -59,7 +59,7 @@ class Settings(BaseSettings):
         return v
     
     class Config:
-        env_file = "backend/.env"  # Path from project root
+        env_file = ".env"  # Path from backend directory (where uvicorn runs)
         case_sensitive = True
         extra = "ignore"  # Allow extra environment variables
 
@@ -74,3 +74,6 @@ if settings.ENVIRONMENT == "development":
     print(f"  API URL: {settings.API_URL}")
     print(f"  Allowed Origins: {settings.ALLOWED_ORIGINS}")
     print(f"  Debug: {settings.DEBUG}")
+    print(f"  Supabase URL: {'✅ Set' if settings.SUPABASE_URL else '❌ Not set'}")
+    print(f"  Supabase Service Key: {'✅ Set' if settings.SUPABASE_SERVICE_ROLE_KEY else '❌ Not set'}")
+    print(f"  Supabase JWT Secret: {'✅ Set' if settings.SUPABASE_JWT_SECRET else '❌ Not set'}")

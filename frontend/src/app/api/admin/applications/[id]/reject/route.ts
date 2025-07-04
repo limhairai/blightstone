@@ -13,20 +13,20 @@ export async function POST(
   try {
     const { id } = params
     const body = await request.json()
-    const { admin_user_id, admin_notes } = body
+    const { admin_user_id: adminUserId, admin_notes: adminNotes } = body
 
-    if (!admin_user_id) {
+    if (!adminUserId) {
       return NextResponse.json(
-        { error: 'admin_user_id is required' },
+        { error: 'adminUserId is required' },
         { status: 400 }
       )
     }
 
-    // Verify admin user
+    // Verify admin user using semantic ID
     const { data: adminProfile, error: adminError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', admin_user_id)
+      .eq('profile_id', adminUserId)
       .single()
 
     if (adminError || !adminProfile?.is_superuser) {
@@ -37,16 +37,17 @@ export async function POST(
     }
 
     // Update application status to rejected
+    // Use semantic ID column for the WHERE clause
     const { data: application, error } = await supabase
       .from('application')
       .update({
         status: 'rejected',
-        rejected_by: admin_user_id,
+        rejected_by: adminUserId,
         rejected_at: new Date().toISOString(),
-        admin_notes,
+        admin_notes: adminNotes,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id)
+      .eq('application_id', id)
       .select()
       .single()
 
@@ -58,15 +59,16 @@ export async function POST(
       )
     }
 
+    // Transform response to frontend format (camelCase)
     return NextResponse.json({
       success: true,
       application: {
-        id: application.id,
+        applicationId: application.application_id,
         status: application.status,
-        rejected_by: application.rejected_by,
-        rejected_at: application.rejected_at,
-        admin_notes: application.admin_notes,
-        updated_at: application.updated_at
+        rejectedBy: application.rejected_by,
+        rejectedAt: application.rejected_at,
+        adminNotes: application.admin_notes,
+        updatedAt: application.updated_at
       }
     })
 

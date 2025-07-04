@@ -7,65 +7,88 @@ const supabase = createClient(
 );
 
 interface BindAssetsRequest {
-  asset_ids: string[];
-  organization_id: string;
-  business_id?: string;
-  business_manager_id?: string;
-  admin_user_id: string;
-  application_id?: string;
+  assetIds: string[];
+  organizationId: string;
+  businessId?: string;
+  businessManagerId?: string;
+  adminUserId: string;
+  applicationId?: string;
 }
+
+// Field mapping utility for transforming between database and frontend formats
+const transformBindingToFrontend = (binding: any) => ({
+  bindingId: binding.binding_id,
+  assetId: binding.asset_ref_id,
+  organizationId: binding.organization_id,
+  boundBy: binding.bound_by,
+  status: binding.status,
+  boundAt: binding.bound_at,
+  createdAt: binding.created_at,
+  updatedAt: binding.updated_at,
+  asset: binding.asset ? {
+    assetId: binding.asset.asset_id,
+    name: binding.asset.name,
+    type: binding.asset.type,
+    dolphinId: binding.asset.dolphin_id,
+    status: binding.asset.status,
+    metadata: binding.asset.metadata
+  } : null,
+  organization: binding.organizations ? {
+    name: binding.organizations.name
+  } : null
+})
 
 export async function POST(request: NextRequest) {
   try {
     const body: BindAssetsRequest = await request.json();
     const {
-      asset_ids,
-      organization_id,
-      business_id,
-      business_manager_id,
-      admin_user_id,
-      application_id,
+      assetIds,
+      organizationId,
+      businessId,
+      businessManagerId,
+      adminUserId,
+      applicationId,
     } = body;
 
-    // 1. Application-driven: `application_id` is present.
-    // 2. Manual binding: `application_id` is absent, `business_id` and `business_manager_id` must be present.
+    // 1. Application-driven: `applicationId` is present.
+    // 2. Manual binding: `applicationId` is absent, `businessId` and `businessManagerId` must be present.
 
     let bm_id: string | null = null;
-    if (application_id) {
+    if (applicationId) {
       // Application-driven binding
-      if (application_id.startsWith('biz-app-')) {
-        bm_id = application_id.replace('biz-app-', '');
+      if (applicationId.startsWith('biz-app-')) {
+        bm_id = applicationId.replace('biz-app-', '');
       }
     } else {
       // Manual binding
-      if (!business_id || !business_manager_id) {
+      if (!businessId || !businessManagerId) {
         return NextResponse.json(
-          { message: "Missing required fields: business_id and business_manager_id are required for manual binding" },
+          { message: "Missing required fields: businessId and businessManagerId are required for manual binding" },
           { status: 400 }
         );
       }
-      bm_id = business_manager_id;
+      bm_id = businessManagerId;
     }
 
-    if (!asset_ids || !Array.isArray(asset_ids) || asset_ids.length === 0) {
+    if (!assetIds || !Array.isArray(assetIds) || assetIds.length === 0) {
       return NextResponse.json(
-        { message: "Missing or invalid asset_ids array" },
+        { message: "Missing or invalid assetIds array" },
         { status: 400 }
       );
     }
 
-    if (!organization_id || !admin_user_id) {
+    if (!organizationId || !adminUserId) {
       return NextResponse.json(
-        { message: "Missing required fields: organization_id, admin_user_id" },
+        { message: "Missing required fields: organizationId, adminUserId" },
         { status: 400 }
       );
     }
 
-    // Validate that all assets exist and are unbound
+    // Validate that all assets exist and are unbound using semantic IDs
     const { data: assets, error: assetsError } = await supabase
       .from('asset')
       .select('*')
-      .in('id', asset_ids);
+      .in('asset_id', assetIds);
 
     if (assetsError) {
       console.error("Error validating assets:", assetsError);
@@ -75,18 +98,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!assets || assets.length !== asset_ids.length) {
+    if (!assets || assets.length !== assetIds.length) {
       return NextResponse.json(
         { message: "Some assets not found or invalid" },
         { status: 400 }
       );
     }
 
-    // Check if any assets are already bound
+    // Check if any assets are already bound using semantic IDs
     const { data: existingBindings, error: bindingsError } = await supabase
       .from('asset_binding')
-      .select('asset_id')
-      .in('asset_id', asset_ids)
+      .select('asset_ref_id')
+      .in('asset_ref_id', assetIds)
       .eq('status', 'active');
 
     if (bindingsError) {
@@ -98,18 +121,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingBindings && existingBindings.length > 0) {
-      const boundAssetIds = existingBindings.map(b => b.asset_id);
+      const boundAssetIds = existingBindings.map(b => b.asset_ref_id);
       return NextResponse.json(
         { message: `Some assets are already bound: ${boundAssetIds.join(', ')}` },
         { status: 400 }
       );
     }
 
-    // Create bindings for all assets
-    const bindings = asset_ids.map(asset_id => ({
-      asset_id,
-      organization_id,
-      bound_by: admin_user_id,
+    // Create bindings for all assets using semantic IDs
+    const bindings = assetIds.map(assetId => ({
+      asset_ref_id: assetId,
+      organization_id: organizationId,
+      bound_by: adminUserId,
       status: 'active'
     }));
 
@@ -127,19 +150,19 @@ export async function POST(request: NextRequest) {
     }
 
     // If this is application-driven binding, update the application status
-    if (application_id) {
-      if (application_id.startsWith('biz-app-')) {
+    if (applicationId) {
+      if (applicationId.startsWith('biz-app-')) {
         // Handle business manager application
-        const actualApplicationId = application_id.replace('biz-app-', '');
+        const actualApplicationId = applicationId.replace('biz-app-', '');
         const { error: updateError } = await supabase
           .from('application')
           .update({
             status: 'fulfilled',
-            fulfilled_by: admin_user_id,
+            fulfilled_by: adminUserId,
             fulfilled_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
-          .eq('id', application_id);
+          .eq('application_id', applicationId);
 
         if (updateError) {
           console.error("Error updating application status:", updateError);
@@ -148,10 +171,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Transform response to frontend format
+    const transformedBindings = newBindings?.map(transformBindingToFrontend) || [];
+
     return NextResponse.json({
       message: "Assets bound successfully",
-      bindings: newBindings,
-      count: newBindings?.length || 0
+      bindings: transformedBindings,
+      count: transformedBindings.length
     });
 
   } catch (error: any) {
@@ -184,7 +210,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data);
+    // Transform response to frontend format
+    const transformedBindings = data?.map(transformBindingToFrontend) || [];
+
+    return NextResponse.json(transformedBindings);
   } catch (error: any) {
     console.error("Failed to fetch asset bindings:", error);
     return NextResponse.json(
@@ -195,18 +224,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const { asset_id } = await request.json();
+    const { assetId } = await request.json();
 
-    if (!asset_id) {
+    if (!assetId) {
         return NextResponse.json({ error: 'Asset ID is required' }, { status: 400 });
     }
 
     try {
-        // Use NEW schema (asset_binding table)
+        // Use NEW schema (asset_binding table) with semantic IDs
         const { error: deleteError } = await supabase
             .from('asset_binding')
             .update({ status: 'inactive' })  // Soft delete
-            .eq('asset_id', asset_id)
+            .eq('asset_ref_id', assetId)
             .eq('status', 'active');
 
         if (deleteError) {

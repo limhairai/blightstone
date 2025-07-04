@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { createClient } from "@supabase/supabase-js";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Input } from "../ui/input";
@@ -60,6 +61,12 @@ interface Application {
     full_name: string;
   };
 }
+
+// Create Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export function ApplicationsReviewTable() {
   const { session } = useAuth();
@@ -146,25 +153,49 @@ export function ApplicationsReviewTable() {
   };
 
   const handleApproveApplication = async (applicationId: string, notes?: string) => {
-    if (!session) return;
+    console.log('🔧 DEBUG: handleApproveApplication called');
+    console.log('🔧 DEBUG: applicationId:', applicationId);
+    console.log('🔧 DEBUG: notes:', notes);
+    console.log('🔧 DEBUG: session:', session);
+    
+    if (!session) {
+      console.log('🔧 DEBUG: No session found');
+      return;
+    }
 
     try {
-      const response = await fetch('/api/admin/applications', {
-        method: 'PUT',
+      // Get current user ID from session directly
+      const user = (session as any).user;
+      console.log('🔧 DEBUG: user from session:', user);
+      
+      if (!user?.id) {
+        console.log('🔧 DEBUG: No user ID found');
+        throw new Error('No authenticated user found in session');
+      }
+
+      console.log('🔧 DEBUG - Admin User ID:', user.id);
+      console.log('🔧 DEBUG - Session:', session);
+      
+      const requestBody = {
+        adminUserId: user.id,
+        adminNotes: notes,
+      };
+      
+      console.log('🔧 DEBUG - Request Body:', requestBody);
+      console.log('🔧 DEBUG - Request Body JSON:', JSON.stringify(requestBody));
+
+      const response = await fetch(`/api/admin/applications/${applicationId}/approve`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${(session as any).access_token}`,
         },
-        body: JSON.stringify({
-          action: 'approve',
-          application_id: applicationId,
-          admin_notes: notes,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Failed to approve application');
+        throw new Error(error.error || 'Failed to approve application');
       }
 
       toast.success('Application approved successfully');
@@ -180,22 +211,29 @@ export function ApplicationsReviewTable() {
     if (!session) return;
 
     try {
-      const response = await fetch('/api/admin/applications', {
-        method: 'PUT',
+      // Get current user ID from session directly
+      const user = (session as any).user;
+      if (!user?.id) {
+        throw new Error('No authenticated user found in session');
+      }
+
+      console.log('Debug - Admin User ID:', user.id);
+
+      const response = await fetch(`/api/admin/applications/${applicationId}/reject`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${(session as any).access_token}`,
         },
         body: JSON.stringify({
-          action: 'reject',
-          application_id: applicationId,
-          rejection_reason: reason,
+          adminUserId: user.id,
+          adminNotes: reason,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.detail || 'Failed to reject application');
+        throw new Error(error.error || 'Failed to reject application');
       }
 
       toast.success('Application rejected');

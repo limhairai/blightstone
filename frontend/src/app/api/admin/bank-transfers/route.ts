@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const { data: request, error: requestError } = await supabase
       .from('bank_transfer_requests')
       .select('*')
-      .eq('id', requestId)
+      .eq('request_id', requestId)
       .single()
 
     if (requestError || !request) {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           bank_reference: bankReference,
           processed_at: new Date().toISOString()
         })
-        .eq('id', requestId)
+        .eq('request_id', requestId)
 
       return NextResponse.json({ 
         success: true, 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
           admin_notes: adminNotes,
           processed_at: new Date().toISOString()
         })
-        .eq('id', requestId)
+        .eq('request_id', requestId)
 
       return NextResponse.json({ 
         success: true, 

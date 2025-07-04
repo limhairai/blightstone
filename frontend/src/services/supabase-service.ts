@@ -639,7 +639,7 @@ function convertSupabaseTeamMemberToTeamMember(supabaseTeamMember: any): TeamMem
   const profile = supabaseTeamMember.profiles
   
   return {
-    id: profile.id,
+    id: profile.profile_id,
     name: profile.name || 'Unknown',
     email: profile.email || '',
     role: supabaseTeamMember.role,
@@ -660,7 +660,7 @@ function convertSupabaseTeamMemberToTeamMember(supabaseTeamMember: any): TeamMem
 
 function convertSupabaseProfileToUserProfile(supabaseProfile: any): UserProfile {
   return {
-    id: supabaseProfile.id,
+    id: supabaseProfile.profile_id,
     name: supabaseProfile.name || '',
     email: supabaseProfile.email || '',
     avatar: supabaseProfile.avatar_url,

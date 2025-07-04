@@ -21,7 +21,7 @@ export async function GET() {
 
     // Transform the data to match the expected format
     const transformedPlans = plans.map(plan => ({
-      id: plan.id,
+      id: plan.plan_id, // Use semantic ID
       name: plan.name,
       description: plan.description,
       monthlyPrice: plan.monthly_subscription_fee_cents / 100,

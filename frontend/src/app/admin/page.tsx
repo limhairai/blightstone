@@ -70,7 +70,7 @@ export default function AdminDashboard() {
         try {
           const fundingResponse = await fetch('/api/funding-requests', {
             headers: {
-              'Authorization': `Bearer ${session.access_token}`
+              'Authorization': `Bearer ${session?.access_token}`
             }
           })
           if (fundingResponse.ok) {
@@ -79,9 +79,9 @@ export default function AdminDashboard() {
 
             // Add recent funding requests
             fundingRequests
-              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+              .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               .slice(0, 2)
-              .forEach(request => {
+              .forEach((request: any) => {
                 activities.push({
                   type: "topup",
                   message: `Funding request: $${request.amount || request.requested_amount} for ${request.account_name}`,
@@ -113,10 +113,10 @@ export default function AdminDashboard() {
   }, [session])
 
   // Helper function to format time ago
-  const formatTimeAgo = (dateString) => {
+  const formatTimeAgo = (dateString: string) => {
     const now = new Date()
     const date = new Date(dateString)
-    const diffInMinutes = Math.floor((now - date) / (1000 * 60))
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
     
     if (diffInMinutes < 60) {
       return `${diffInMinutes} minutes ago`

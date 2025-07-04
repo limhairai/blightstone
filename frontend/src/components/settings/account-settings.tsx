@@ -1,55 +1,144 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
-
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { toast } from "sonner"
 import { Upload, Trash2 } from "lucide-react"
-import { UserProfile } from "../../types/user"
+import { useAuth } from "../../contexts/AuthContext"
 import { getInitials } from "../../lib/utils"
 
+interface ProfileData {
+  name: string;
+  email: string;
+  avatar_url: string | null;
+}
+
 export function AccountSettings() {
+  const { user, profile, session } = useAuth()
   const [loading, setLoading] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [profileData, setProfileData] = useState<ProfileData | null>(null)
   
-  // Mock user data - in real app this would come from SWR or similar
+  // Form data state
   const [formData, setFormData] = useState({
-    firstName: "John",
-    lastName: "Doe", 
-    email: "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
     timezone: "UTC",
     language: "en",
   })
-  
 
+  // Load profile data when component mounts or profile changes
+  useEffect(() => {
+    if (profile && user) {
+      // Parse name into first and last name
+      const fullName = profile.name || user.user_metadata?.full_name || ""
+      const nameParts = fullName.split(" ")
+      const firstName = nameParts[0] || ""
+      const lastName = nameParts.slice(1).join(" ") || ""
 
+      setFormData({
+        firstName,
+        lastName,
+        email: profile.email || user.email || "",
+        phone: user.user_metadata?.phone || "",
+        timezone: "UTC",
+        language: "en",
+      })
 
+      setProfileData({
+        name: fullName,
+        email: profile.email || user.email || "",
+        avatar_url: profile.avatar_url
+      })
+    }
+  }, [profile, user])
 
   const handleSave = async () => {
+    if (!session?.access_token) {
+      toast.error("Authentication required")
+      return
+    }
+
     setLoading(true)
     try {
-      // In real app, this would make API call to update user profile
-      await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API call
+      // Combine first and last name
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim()
+      
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: fullName,
+          avatar_url: profileData?.avatar_url || null
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update profile')
+      }
+
+      const data = await response.json()
+      
+      // Update local state
+      setProfileData(prev => ({
+        ...prev!,
+        name: fullName,
+      }))
       
       setIsEditing(false)
       toast.success("Profile updated successfully!")
     } catch (error) {
+      console.error('Error updating profile:', error)
       toast.error("Failed to save profile. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
+  const handleCancel = () => {
+    // Reset form data to original values
+    if (profile && user) {
+      const fullName = profile.name || user.user_metadata?.full_name || ""
+      const nameParts = fullName.split(" ")
+      const firstName = nameParts[0] || ""
+      const lastName = nameParts.slice(1).join(" ") || ""
 
+      setFormData({
+        firstName,
+        lastName,
+        email: profile.email || user.email || "",
+        phone: user.user_metadata?.phone || "",
+        timezone: "UTC",
+        language: "en",
+      })
+    }
+    setIsEditing(false)
+  }
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2)
+  // Show loading state while profile is being fetched
+  if (!profile || !profileData) {
+    return (
+      <div className="space-y-6">
+        <Card className="bg-card border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Profile Information</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Loading profile data...
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -66,9 +155,9 @@ export function AccountSettings() {
           {/* Profile Picture */}
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
-              <AvatarImage src="" alt="Profile" />
+              <AvatarImage src={profileData.avatar_url || ""} alt="Profile" />
               <AvatarFallback className="text-lg bg-gradient-to-br from-[#b4a0ff] to-[#ffb4a0] text-white">
-                {getInitials(`${formData.firstName} ${formData.lastName}`)}
+                {getInitials(profileData.name || formData.email)}
               </AvatarFallback>
             </Avatar>
             <div className="space-y-2">
@@ -106,6 +195,16 @@ export function AccountSettings() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="email" className="text-foreground">Email</Label>
+              <Input
+                id="email"
+                value={formData.email}
+                disabled={true}
+                className="bg-muted border-border text-muted-foreground"
+              />
+              <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="phone" className="text-foreground">Phone Number</Label>
               <Input
                 id="phone"
@@ -113,6 +212,7 @@ export function AccountSettings() {
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 disabled={!isEditing}
                 className="bg-background border-border text-foreground"
+                placeholder="Not provided"
               />
             </div>
             <div className="space-y-2">
@@ -129,6 +229,8 @@ export function AccountSettings() {
                   <SelectItem value="UTC">UTC</SelectItem>
                   <SelectItem value="EST">Eastern Time</SelectItem>
                   <SelectItem value="PST">Pacific Time</SelectItem>
+                  <SelectItem value="CET">Central European Time</SelectItem>
+                  <SelectItem value="JST">Japan Standard Time</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -141,7 +243,7 @@ export function AccountSettings() {
                 <Button onClick={handleSave} disabled={loading} className="bg-[#c4b5fd] hover:bg-[#b4a0ff] text-white">
                   {loading ? "Saving..." : "Save Changes"}
                 </Button>
-                <Button variant="outline" onClick={() => setIsEditing(false)} className="border-border text-foreground hover:bg-accent">
+                <Button variant="outline" onClick={handleCancel} className="border-border text-foreground hover:bg-accent">
                   Cancel
                 </Button>
               </>
@@ -153,8 +255,6 @@ export function AccountSettings() {
           </div>
         </CardContent>
       </Card>
-
-
     </div>
   )
 }

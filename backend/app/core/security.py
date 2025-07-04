@@ -74,7 +74,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
     
     for attempt in range(max_retries + 1):
         try:
-            response = supabase.table("profiles").select("id, email, name, avatar_url, role, is_superuser").eq("id", user_id).maybe_single().execute()
+            response = supabase.table("profiles").select("profile_id, email, name, avatar_url, role, is_superuser").eq("profile_id", user_id).maybe_single().execute()
             break  # Success, exit retry loop
         except Exception as e:
             error_msg = str(e).lower()
@@ -97,7 +97,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
             # Create profile from token data as fallback
             try:
                 profile_data = {
-                    "id": user_id,
+                    "profile_id": user_id,
                     "email": user_email,
                     "name": user_name or (user_email.split('@')[0] if user_email else "User"),
                     "avatar_url": user_avatar,
@@ -110,7 +110,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
                 if create_response.data:
                     logger.info(f"[GET_CURRENT_USER] Created missing profile for user ID: {user_id}")
                     return UserRead(
-                        uid=profile_data["id"],
+                        uid=profile_data["profile_id"],
                         email=profile_data["email"],
                         name=profile_data["name"],
                         avatar=profile_data["avatar_url"],
@@ -144,7 +144,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
         logger.debug(f"[GET_CURRENT_USER] Fetched profile from Supabase: {profile_data}")
         
         return UserRead(
-            uid=profile_data["id"], 
+            uid=profile_data["profile_id"], 
             email=profile_data["email"],
             name=profile_data.get("name"),
             avatar=profile_data.get("avatar_url"),

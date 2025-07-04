@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
         const { data: bindings, error } = await supabase
             .from('asset_binding')
-            .select('id, asset_id, organization_id')
+            .select('binding_id, asset_id, organization_id')
             .eq('asset_id', asset_id)
             .eq('status', 'active')
 
@@ -64,34 +64,30 @@ export async function POST(request: NextRequest) {
         const results = []
         for (const binding of bindings) {
             try {
-                const backendUrl = buildApiUrl(`/api/dolphin-assets/unbind/${binding.id}`)
+                const backendUrl = buildApiUrl(`/api/dolphin-assets/unbind/${binding.binding_id}`)
                 const urlWithParams = new URL(backendUrl)
                 urlWithParams.searchParams.set('cascade', cascade.toString())
                 if (reason) {
                     urlWithParams.searchParams.set('reason', reason)
                 }
 
-                console.log('🔍 Unbind by Asset API: Calling backend URL:', urlWithParams.toString())
-
                 const response = await fetch(urlWithParams.toString(), {
                     method: 'POST',
                     headers: createAuthHeaders(session.access_token),
                 })
 
-                console.log('🔍 Unbind by Asset API: Backend response status:', response.status)
-
                 if (!response.ok) {
                     const errorData = await response.json()
-                    console.error('🔍 Unbind by Asset API: Backend error:', errorData)
-                    results.push({ binding_id: binding.id, success: false, error: errorData })
+                    console.error('Unbind by Asset API: Backend error:', errorData)
+                    results.push({ binding_id: binding.binding_id, success: false, error: errorData })
                 } else {
                     const data = await response.json()
-                    results.push({ binding_id: binding.id, success: true, data })
+                    results.push({ binding_id: binding.binding_id, success: true, data })
                 }
             } catch (error) {
-                console.error(`Error unbinding ${binding.id}:`, error)
+                console.error(`Error unbinding ${binding.binding_id}:`, error)
                 results.push({ 
-                    binding_id: binding.id, 
+                    binding_id: binding.binding_id, 
                     success: false, 
                     error: error instanceof Error ? error.message : 'Unknown error' 
                 })

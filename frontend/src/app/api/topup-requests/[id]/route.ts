@@ -28,7 +28,7 @@ export async function PATCH(
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     const isAdmin = profile?.is_superuser === true;
@@ -44,7 +44,7 @@ export async function PATCH(
     const { data: existingRequest, error: fetchError } = await supabase
       .from('topup_requests')
       .select('*')
-      .eq('id', id)
+      .eq('request_id', id)
       .single();
 
     if (fetchError || !existingRequest) {
@@ -80,7 +80,7 @@ export async function PATCH(
     const { data: updatedRequest, error: updateError } = await supabase
       .from('topup_requests')
       .update(updateData)
-      .eq('id', id)
+      .eq('request_id', id)
       .select()
       .single();
 
@@ -93,7 +93,7 @@ export async function PATCH(
     const { data: userProfile } = await supabase
       .from('profiles')
       .select('name, email')
-      .eq('id', updatedRequest.requested_by)
+      .eq('profile_id', updatedRequest.requested_by)
       .single();
 
     const { data: organization } = await supabase
@@ -103,7 +103,7 @@ export async function PATCH(
       .single();
 
     const transformedRequest = {
-      id: updatedRequest.id,
+      id: updatedRequest.request_id,
       organization_id: updatedRequest.organization_id,
       requested_by: updatedRequest.requested_by,
       ad_account_id: updatedRequest.ad_account_id,

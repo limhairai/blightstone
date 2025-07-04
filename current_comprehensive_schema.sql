@@ -44,13 +44,6 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
 
 
-CREATE EXTENSION IF NOT EXISTS "pgjwt" WITH SCHEMA "extensions";
-
-
-
-
-
-
 CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
 
 
@@ -62,6 +55,79 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
+
+
+
+CREATE OR REPLACE FUNCTION "public"."check_bm_account_limit"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+    current_account_count INTEGER;
+    bm_asset_id UUID;
+    asset_type TEXT;
+BEGIN
+    -- Check if this is an ad account binding
+    SELECT a.type INTO asset_type
+    FROM asset a
+    WHERE a.asset_id = NEW.asset_id;
+
+    -- Only enforce limit for ad account bindings
+    IF asset_type != 'ad_account' THEN
+        RETURN NEW;
+    END IF;
+
+    -- Get the business manager asset_id from the binding
+    SELECT ab.asset_id INTO bm_asset_id
+    FROM asset_binding ab
+    JOIN asset a ON ab.asset_id = a.asset_id
+    WHERE ab.organization_id = NEW.organization_id 
+    AND a.type = 'business_manager'
+    AND ab.status = 'active'
+    LIMIT 1;
+
+    -- If no BM found, allow (this shouldn't happen in normal flow)
+    IF bm_asset_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- Count current ad accounts for this organization
+    SELECT COUNT(*) INTO current_account_count
+    FROM asset_binding ab
+    JOIN asset a ON ab.asset_id = a.asset_id
+    WHERE ab.organization_id = NEW.organization_id
+    AND a.type = 'ad_account'
+    AND ab.status = 'active';
+
+    -- Check if adding this account would exceed 5 per BM
+    -- Get number of active BMs for this org
+    DECLARE
+        active_bm_count INTEGER;
+        max_allowed_accounts INTEGER;
+    BEGIN
+        SELECT COUNT(*) INTO active_bm_count
+        FROM asset_binding ab
+        JOIN asset a ON ab.asset_id = a.asset_id
+        WHERE ab.organization_id = NEW.organization_id
+        AND a.type = 'business_manager'
+        AND ab.status = 'active';
+
+        max_allowed_accounts := active_bm_count * 5;
+
+        IF current_account_count >= max_allowed_accounts THEN
+            RAISE EXCEPTION 'Maximum 5 ad accounts per business manager allowed. Current: % accounts, % BMs', 
+                current_account_count, active_bm_count;
+        END IF;
+    END;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."check_bm_account_limit"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."check_bm_account_limit"() IS 'Enforces maximum 5 ad accounts per business manager using semantic IDs';
 
 
 
@@ -82,9 +148,14 @@ BEGIN
         RETURN 'frozen';
     END IF;
     
-    -- If no plan_id, organization should be frozen (no subscription)
+    -- If no plan_id, assign free plan and return free status
     IF org_record.plan_id IS NULL THEN
-        RETURN 'no_subscription';
+        -- Auto-assign free plan for new users
+        UPDATE organizations 
+        SET plan_id = 'free', updated_at = NOW()
+        WHERE organization_id = org_id;
+        
+        RETURN 'free';
     END IF;
     
     -- Check if plan exists
@@ -97,6 +168,11 @@ BEGIN
         RETURN 'frozen';
     END IF;
     
+    -- If on free plan, return free status
+    IF org_record.plan_id = 'free' THEN
+        RETURN 'free';
+    END IF;
+    
     -- Return current subscription status or active if none set
     RETURN COALESCE(org_record.subscription_status, 'active');
 END;
@@ -106,7 +182,7 @@ $$;
 ALTER FUNCTION "public"."check_organization_subscription_status"("org_id" "uuid") OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."check_organization_subscription_status"("org_id" "uuid") IS 'Returns subscription status: active, frozen, no_subscription, etc.';
+COMMENT ON FUNCTION "public"."check_organization_subscription_status"("org_id" "uuid") IS 'Returns subscription status: active, free, frozen, etc.';
 
 
 
@@ -125,7 +201,7 @@ BEGIN
     
     SELECT p.* INTO plan_record
     FROM plans p
-    WHERE p.id = org_record.plan_id;
+    WHERE p.plan_id = org_record.plan_id;
     
     -- Check specific limit type
     CASE limit_type
@@ -139,7 +215,7 @@ BEGIN
         WHEN 'businesses' THEN
             SELECT COUNT(*) INTO current_count 
             FROM asset_binding ab
-            JOIN asset a ON ab.asset_id = a.id
+            JOIN asset a ON ab.asset_id = a.asset_id
             WHERE ab.organization_id = org_id 
             AND a.type = 'business_manager'
             AND ab.status = 'active';
@@ -149,7 +225,7 @@ BEGIN
         WHEN 'ad_accounts' THEN
             SELECT COUNT(*) INTO current_count 
             FROM asset_binding ab
-            JOIN asset a ON ab.asset_id = a.id
+            JOIN asset a ON ab.asset_id = a.asset_id
             WHERE ab.organization_id = org_id 
             AND a.type = 'ad_account'
             AND ab.status = 'active';
@@ -164,6 +240,10 @@ $$;
 
 
 ALTER FUNCTION "public"."check_plan_limits"("org_id" "uuid", "limit_type" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."check_plan_limits"("org_id" "uuid", "limit_type" "text") IS 'Checks plan limits using semantic IDs for assets and profiles';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."complete_topup_transfer"("p_organization_id" "uuid", "p_amount_cents" integer, "p_request_id" "uuid" DEFAULT NULL::"uuid") RETURNS boolean
@@ -246,8 +326,8 @@ DECLARE
     binding_id UUID;
     result JSON;
 BEGIN
-    -- Get application details
-    SELECT * INTO app_record FROM public.application WHERE id = p_application_id;
+    -- Get application details using semantic ID
+    SELECT * INTO app_record FROM public.application WHERE application_id = p_application_id;
     
     IF NOT FOUND THEN
         RETURN json_build_object('success', false, 'error', 'Application not found');
@@ -262,20 +342,20 @@ BEGIN
     LOOP
         INSERT INTO public.asset_binding (asset_id, organization_id, bound_by)
         VALUES (asset_id, app_record.organization_id, p_admin_user_id)
-        RETURNING id INTO binding_id;
+        RETURNING binding_id INTO binding_id;
         
-        -- Track fulfillment
-        INSERT INTO public.application_fulfillment (application_id, asset_id)
+        -- Track fulfillment using semantic IDs
+        INSERT INTO public.application_fulfillment (application_ref_id, asset_ref_id)
         VALUES (p_application_id, asset_id);
     END LOOP;
     
-    -- Update application status
+    -- Update application status using semantic ID
     UPDATE public.application 
     SET status = 'fulfilled',
         fulfilled_by = p_admin_user_id,
         fulfilled_at = NOW(),
         updated_at = NOW()
-    WHERE id = p_application_id;
+    WHERE application_id = p_application_id;
     
     RETURN json_build_object(
         'success', true, 
@@ -289,13 +369,17 @@ $$;
 ALTER FUNCTION "public"."fulfill_application"("p_application_id" "uuid", "p_asset_ids" "uuid"[], "p_admin_user_id" "uuid") OWNER TO "postgres";
 
 
+COMMENT ON FUNCTION "public"."fulfill_application"("p_application_id" "uuid", "p_asset_ids" "uuid"[], "p_admin_user_id" "uuid") IS 'Fulfills application using semantic IDs';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."get_applications"() RETURNS TABLE("id" "uuid", "organization_id" "uuid", "organization_name" "text", "name" "text", "request_type" "text", "target_bm_dolphin_id" "text", "website_url" "text", "status" "text", "approved_by" "uuid", "approved_at" timestamp with time zone, "rejected_by" "uuid", "rejected_at" timestamp with time zone, "fulfilled_by" "uuid", "fulfilled_at" timestamp with time zone, "client_notes" "text", "admin_notes" "text", "created_at" timestamp with time zone, "updated_at" timestamp with time zone, "approved_by_name" "text", "rejected_by_name" "text", "fulfilled_by_name" "text")
     LANGUAGE "plpgsql"
     AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        a.id,
+        a.application_id as id,
         a.organization_id,
         o.name as organization_name,
         a.name,
@@ -318,9 +402,9 @@ BEGIN
         fp.name as fulfilled_by_name
     FROM public.application a
     LEFT JOIN public.organizations o ON a.organization_id = o.organization_id
-    LEFT JOIN public.profiles ap ON a.approved_by = ap.id
-    LEFT JOIN public.profiles rp ON a.rejected_by = rp.id
-    LEFT JOIN public.profiles fp ON a.fulfilled_by = fp.id
+    LEFT JOIN public.profiles ap ON a.approved_by = ap.profile_id
+    LEFT JOIN public.profiles rp ON a.rejected_by = rp.profile_id
+    LEFT JOIN public.profiles fp ON a.fulfilled_by = fp.profile_id
     ORDER BY a.created_at DESC;
 END;
 $$;
@@ -329,13 +413,17 @@ $$;
 ALTER FUNCTION "public"."get_applications"() OWNER TO "postgres";
 
 
+COMMENT ON FUNCTION "public"."get_applications"() IS 'Returns all applications with semantic ID compatibility';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."get_available_assets"("p_asset_type" "text" DEFAULT NULL::"text") RETURNS TABLE("id" "uuid", "type" "text", "dolphin_id" "text", "name" "text", "status" "text", "metadata" "jsonb", "last_synced_at" timestamp with time zone)
     LANGUAGE "plpgsql"
     AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        a.id,
+        a.asset_id as id,
         a.type,
         a.dolphin_id,
         a.name,
@@ -345,7 +433,7 @@ BEGIN
     FROM public.asset a
     WHERE NOT EXISTS (
         SELECT 1 FROM public.asset_binding ab 
-        WHERE ab.asset_id = a.id AND ab.status = 'active'
+        WHERE ab.asset_id = a.asset_id AND ab.status = 'active'
     )
     AND a.status = 'active'
     AND (p_asset_type IS NULL OR a.type = p_asset_type)
@@ -355,6 +443,50 @@ $$;
 
 
 ALTER FUNCTION "public"."get_available_assets"("p_asset_type" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."get_available_assets"("p_asset_type" "text") IS 'Returns available assets using semantic IDs';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."get_available_assets"("p_asset_type" "text" DEFAULT NULL::"text", "p_unbound_only" boolean DEFAULT false) RETURNS TABLE("asset_id" "uuid", "type" "text", "dolphin_id" "text", "name" "text", "status" "text", "metadata" "jsonb", "last_synced_at" timestamp with time zone, "is_bound" boolean)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+    -- Check if the calling user is a superuser
+    IF (SELECT p.is_superuser FROM public.profiles p WHERE p.profile_id = auth.uid()) IS NOT TRUE THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        a.asset_id,
+        a.type,
+        a.dolphin_id,
+        a.name,
+        a.status,
+        a.metadata,
+        a.last_synced_at,
+        EXISTS(
+            SELECT 1 FROM public.asset_binding ab 
+            WHERE ab.asset_id = a.asset_id AND ab.status = 'active'
+        ) as is_bound
+    FROM
+        public.asset a
+    WHERE
+        a.status = 'active'
+        AND (p_asset_type IS NULL OR a.type = p_asset_type)
+        AND (NOT p_unbound_only OR NOT EXISTS(
+            SELECT 1 FROM public.asset_binding ab 
+            WHERE ab.asset_id = a.asset_id AND ab.status = 'active'
+        ))
+    ORDER BY
+        a.created_at DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_available_assets"("p_asset_type" "text", "p_unbound_only" boolean) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_available_balance"("wallet_id" "uuid") RETURNS integer
@@ -379,27 +511,31 @@ CREATE OR REPLACE FUNCTION "public"."get_organization_assets"("p_organization_id
 BEGIN
     RETURN QUERY
     SELECT 
-        a.id,
+        a.asset_id as id,
         a.type,
         a.dolphin_id,
         a.name,
         a.status,
         a.metadata,
         a.last_synced_at,
-        ab.id as binding_id,
+        ab.binding_id,
         ab.bound_at,
         ab.bound_by
     FROM public.asset a
-    INNER JOIN public.asset_binding ab ON a.id = ab.asset_id
+    INNER JOIN public.asset_binding ab ON a.asset_id = ab.asset_id
     WHERE ab.organization_id = p_organization_id
-      AND ab.status = 'active'
-      AND (p_asset_type IS NULL OR a.type = p_asset_type)
-    ORDER BY a.created_at DESC;
+    AND ab.status = 'active'
+    AND (p_asset_type IS NULL OR a.type = p_asset_type)
+    ORDER BY ab.bound_at DESC;
 END;
 $$;
 
 
 ALTER FUNCTION "public"."get_organization_assets"("p_organization_id" "uuid", "p_asset_type" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."get_organization_assets"("p_organization_id" "uuid", "p_asset_type" "text") IS 'Returns organization assets using semantic IDs';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_funding_request_changes"() RETURNS "trigger"
@@ -448,38 +584,37 @@ CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     AS $$
 DECLARE
   new_org_id UUID;
-  user_name TEXT;
+  user_email TEXT;
+  new_org_name TEXT;
 BEGIN
-  -- Extract user name from metadata or email
-  user_name := COALESCE(
-    NEW.raw_user_meta_data->>'name',
-    NEW.raw_user_meta_data->>'full_name',
-    split_part(NEW.email, '@', 1)
-  );
+  -- Get the email from the NEW record
+  user_email := NEW.email;
+  
+  -- Create a user-friendly default organization name
+  new_org_name := split_part(user_email, '@', 1) || '''s Team';
 
-  -- Create organization for the new user
+  -- Create a new organization for the user
   INSERT INTO public.organizations (name, owner_id)
-  VALUES (user_name || '''s Organization', NEW.id)
+  VALUES (new_org_name, NEW.id)
   RETURNING organization_id INTO new_org_id;
 
-  -- Create wallet for the organization
-  INSERT INTO public.wallets (organization_id, balance_cents)
-  VALUES (new_org_id, 0);
-
-  -- Add user as owner in organization_members
-  INSERT INTO public.organization_members (user_id, organization_id, role)
+  -- Create the user's profile, linking it to the new organization
+  INSERT INTO public.profiles(profile_id, organization_id, email, role)
+  VALUES (NEW.id, new_org_id, user_email, 'client');
+  
+  -- Add the user to the organization as a member with the 'owner' role
+  INSERT INTO public.organization_members(user_id, organization_id, role)
   VALUES (NEW.id, new_org_id, 'owner');
-
-  -- Create profile with organization_id set
-  INSERT INTO public.profiles (id, name, email, organization_id, role)
-  VALUES (
-    NEW.id,
-    user_name,
-    NEW.email,
-    new_org_id,
-    'client'
-  );
-
+  
+  -- Create a wallet for the organization
+  INSERT INTO public.wallets(organization_id)
+  VALUES (new_org_id);
+  
+  -- Inject the organization_id into the user's app_metadata for easy access on the client
+  UPDATE auth.users
+  SET raw_app_meta_data = raw_app_meta_data || jsonb_build_object('organization_id', new_org_id)
+  WHERE id = NEW.id;
+  
   RETURN NEW;
 END;
 $$;
@@ -549,42 +684,87 @@ CREATE OR REPLACE FUNCTION "public"."handle_topup_request_changes"() RETURNS "tr
     AS $$
 DECLARE
     subscription_status TEXT;
+    debug_wallet_id UUID;
+    debug_available_balance INTEGER;
 BEGIN
+    RAISE NOTICE 'DEBUG: Trigger started for operation: %', TG_OP;
+    
     -- On INSERT (new topup request)
     IF TG_OP = 'INSERT' THEN
-        -- Check subscription status first
-        SELECT check_organization_subscription_status(NEW.organization_id) INTO subscription_status;
+        RAISE NOTICE 'DEBUG: Processing INSERT for organization_id: %', NEW.organization_id;
         
-        -- If organization is frozen or has no subscription, reject the request
-        IF subscription_status IN ('frozen', 'no_subscription') THEN
-            RAISE EXCEPTION 'Organization subscription is % - topup requests are not allowed. Please contact support.', subscription_status;
+        -- Check subscription status first
+        BEGIN
+            SELECT check_organization_subscription_status(NEW.organization_id) INTO subscription_status;
+            RAISE NOTICE 'DEBUG: Subscription status: %', subscription_status;
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE NOTICE 'DEBUG: Error in subscription check: %', SQLERRM;
+                RAISE;
+        END;
+        
+        -- If organization is frozen, reject the request
+        IF subscription_status = 'frozen' THEN
+            RAISE EXCEPTION 'Organization is frozen - topup requests are not allowed. Please contact support.';
         END IF;
+        
+        -- If organization is on free plan, require subscription
+        IF subscription_status = 'free' THEN
+            RAISE EXCEPTION 'Please subscribe to a plan to submit topup requests. Upgrade your plan to access this feature.';
+        END IF;
+        
+        -- Debug wallet lookup
+        BEGIN
+            SELECT wallet_id INTO debug_wallet_id
+            FROM public.wallets 
+            WHERE organization_id = NEW.organization_id;
+            RAISE NOTICE 'DEBUG: Found wallet_id: %', debug_wallet_id;
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE NOTICE 'DEBUG: Error finding wallet: %', SQLERRM;
+                RAISE;
+        END;
+        
+        -- Debug available balance check
+        BEGIN
+            SELECT get_available_balance(debug_wallet_id) INTO debug_available_balance;
+            RAISE NOTICE 'DEBUG: Available balance: %', debug_available_balance;
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE NOTICE 'DEBUG: Error getting available balance: %', SQLERRM;
+                RAISE;
+        END;
         
         -- Reserve funds using total_deducted_cents (which includes fees)
-        IF NOT public.reserve_funds_for_topup(NEW.organization_id, NEW.total_deducted_cents) THEN
-            RAISE EXCEPTION 'Insufficient available balance for topup request. Required: %, Available: %', 
-                NEW.total_deducted_cents, 
-                (SELECT get_available_balance(wallet_id) FROM wallets WHERE organization_id = NEW.organization_id);
-        END IF;
+        BEGIN
+            IF NOT public.reserve_funds_for_topup(NEW.organization_id, NEW.total_deducted_cents) THEN
+                RAISE EXCEPTION 'Insufficient available balance for topup request. Required: %, Available: %', 
+                    NEW.total_deducted_cents, 
+                    debug_available_balance;
+            END IF;
+            RAISE NOTICE 'DEBUG: Successfully reserved funds';
+        EXCEPTION
+            WHEN OTHERS THEN
+                RAISE NOTICE 'DEBUG: Error reserving funds: %', SQLERRM;
+                RAISE;
+        END;
+        
         RETURN NEW;
     END IF;
     
     -- On UPDATE (status change)
     IF TG_OP = 'UPDATE' THEN
+        RAISE NOTICE 'DEBUG: Processing UPDATE';
+        
         -- If request was cancelled, rejected, or failed, release reserved funds
         IF OLD.status = 'pending' AND NEW.status IN ('rejected', 'cancelled', 'failed') THEN
             PERFORM public.release_reserved_funds(NEW.organization_id, OLD.total_deducted_cents);
         END IF;
         
         -- If request was completed, complete the transfer and create transaction
-        -- Use approved_amount_cents if set, otherwise use total_deducted_cents
+        -- Always use total_deducted_cents (includes fees)
         IF OLD.status IN ('pending', 'processing') AND NEW.status = 'completed' THEN
-            DECLARE
-                actual_amount INTEGER;
-            BEGIN
-                actual_amount := COALESCE(NEW.approved_amount_cents, NEW.total_deducted_cents);
-                PERFORM public.complete_topup_transfer(NEW.organization_id, actual_amount, NEW.id);
-            END;
+            PERFORM public.complete_topup_transfer(NEW.organization_id, NEW.total_deducted_cents, NEW.id);
         END IF;
         
         RETURN NEW;
@@ -596,6 +776,10 @@ $$;
 
 
 ALTER FUNCTION "public"."handle_topup_request_changes"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."handle_topup_request_changes"() IS 'Debug version of topup request trigger function';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."release_reserved_funds"("p_organization_id" "uuid", "p_amount_cents" integer) RETURNS boolean
@@ -759,7 +943,6 @@ ALTER TABLE "public"."admin_tasks" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."application" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "organization_id" "uuid" NOT NULL,
     "name" "text",
     "request_type" "text" NOT NULL,
@@ -776,6 +959,7 @@ CREATE TABLE IF NOT EXISTS "public"."application" (
     "admin_notes" "text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "application_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     CONSTRAINT "application_request_type_check" CHECK (("request_type" = ANY (ARRAY['new_business_manager'::"text", 'additional_accounts'::"text"]))),
     CONSTRAINT "application_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'approved'::"text", 'processing'::"text", 'rejected'::"text", 'fulfilled'::"text"])))
 );
@@ -784,27 +968,26 @@ CREATE TABLE IF NOT EXISTS "public"."application" (
 ALTER TABLE "public"."application" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."application" IS 'Client requests for new assets or additional accounts';
+COMMENT ON TABLE "public"."application" IS 'Applications table - uses semantic ID (application_id) for clarity';
 
 
 
 CREATE TABLE IF NOT EXISTS "public"."application_fulfillment" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "application_id" "uuid" NOT NULL,
-    "asset_id" "uuid" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "fulfillment_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "application_id" "uuid",
+    "asset_id" "uuid"
 );
 
 
 ALTER TABLE "public"."application_fulfillment" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."application_fulfillment" IS 'Tracks which assets were assigned to fulfill which applications';
+COMMENT ON TABLE "public"."application_fulfillment" IS 'Application fulfillment table - uses semantic ID (fulfillment_id) for clarity';
 
 
 
 CREATE TABLE IF NOT EXISTS "public"."asset" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "type" "text" NOT NULL,
     "dolphin_id" "text" NOT NULL,
     "name" "text" NOT NULL,
@@ -813,7 +996,8 @@ CREATE TABLE IF NOT EXISTS "public"."asset" (
     "last_synced_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "asset_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'inactive'::"text", 'suspended'::"text"]))),
+    "asset_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    CONSTRAINT "asset_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'inactive'::"text", 'suspended'::"text", 'restricted'::"text"]))),
     CONSTRAINT "asset_type_check" CHECK (("type" = ANY (ARRAY['business_manager'::"text", 'ad_account'::"text", 'profile'::"text"])))
 );
 
@@ -821,19 +1005,19 @@ CREATE TABLE IF NOT EXISTS "public"."asset" (
 ALTER TABLE "public"."asset" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."asset" IS 'All Facebook assets (Business Managers, Ad Accounts, Profiles) synced from Dolphin';
+COMMENT ON TABLE "public"."asset" IS 'Assets table - uses semantic ID (asset_id) for clarity';
 
 
 
 CREATE TABLE IF NOT EXISTS "public"."asset_binding" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "asset_id" "uuid" NOT NULL,
     "organization_id" "uuid" NOT NULL,
     "status" "text" DEFAULT 'active'::"text" NOT NULL,
     "bound_by" "uuid" NOT NULL,
     "bound_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "binding_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "asset_id" "uuid",
     CONSTRAINT "asset_binding_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'inactive'::"text"])))
 );
 
@@ -841,7 +1025,7 @@ CREATE TABLE IF NOT EXISTS "public"."asset_binding" (
 ALTER TABLE "public"."asset_binding" OWNER TO "postgres";
 
 
-COMMENT ON TABLE "public"."asset_binding" IS 'Which assets are bound to which organizations';
+COMMENT ON TABLE "public"."asset_binding" IS 'Asset bindings table - uses semantic ID (binding_id) for clarity';
 
 
 
@@ -916,7 +1100,7 @@ ALTER TABLE "public"."organizations" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."plans" (
-    "id" "text" NOT NULL,
+    "plan_id" "text" NOT NULL,
     "name" "text" NOT NULL,
     "description" "text",
     "monthly_subscription_fee_cents" integer NOT NULL,
@@ -936,7 +1120,6 @@ ALTER TABLE "public"."plans" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
-    "id" "uuid" NOT NULL,
     "organization_id" "uuid",
     "name" "text",
     "email" "text",
@@ -944,11 +1127,16 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "is_superuser" boolean DEFAULT false,
     "avatar_url" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "profile_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL
 );
 
 
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."profiles" IS 'Profiles table - uses semantic ID (profile_id) for clarity';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."subscriptions" (
@@ -991,6 +1179,7 @@ CREATE TABLE IF NOT EXISTS "public"."topup_requests" (
     "total_deducted_cents" integer DEFAULT 0,
     "plan_fee_percentage" numeric(5,2) DEFAULT 0,
     "approved_amount_cents" integer,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
     CONSTRAINT "topup_requests_amount_cents_check" CHECK (("amount_cents" > 0)),
     CONSTRAINT "topup_requests_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'normal'::"text", 'high'::"text", 'urgent'::"text"]))),
     CONSTRAINT "topup_requests_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'processing'::"text", 'completed'::"text", 'failed'::"text", 'cancelled'::"text"])))
@@ -1001,6 +1190,10 @@ ALTER TABLE "public"."topup_requests" OWNER TO "postgres";
 
 
 COMMENT ON COLUMN "public"."topup_requests"."approved_amount_cents" IS 'Amount approved by admin (may differ from requested amount)';
+
+
+
+COMMENT ON COLUMN "public"."topup_requests"."metadata" IS 'Additional metadata including business manager information';
 
 
 
@@ -1045,32 +1238,37 @@ ALTER TABLE ONLY "public"."admin_tasks"
 
 
 ALTER TABLE ONLY "public"."application_fulfillment"
-    ADD CONSTRAINT "application_fulfillment_application_id_asset_id_key" UNIQUE ("application_id", "asset_id");
+    ADD CONSTRAINT "application_fulfillment_application_asset_unique" UNIQUE ("application_id", "asset_id");
 
 
 
 ALTER TABLE ONLY "public"."application_fulfillment"
-    ADD CONSTRAINT "application_fulfillment_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "application_fulfillment_pkey" PRIMARY KEY ("fulfillment_id");
 
 
 
 ALTER TABLE ONLY "public"."application"
-    ADD CONSTRAINT "application_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "application_pkey" PRIMARY KEY ("application_id");
 
 
 
 ALTER TABLE ONLY "public"."asset_binding"
-    ADD CONSTRAINT "asset_binding_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "asset_binding_pkey" PRIMARY KEY ("binding_id");
 
 
 
 ALTER TABLE ONLY "public"."asset"
-    ADD CONSTRAINT "asset_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "asset_pkey" PRIMARY KEY ("asset_id");
 
 
 
 ALTER TABLE ONLY "public"."asset"
     ADD CONSTRAINT "asset_type_dolphin_id_key" UNIQUE ("type", "dolphin_id");
+
+
+
+ALTER TABLE ONLY "public"."asset"
+    ADD CONSTRAINT "asset_type_dolphin_id_unique" UNIQUE ("type", "dolphin_id");
 
 
 
@@ -1100,12 +1298,12 @@ ALTER TABLE ONLY "public"."organizations"
 
 
 ALTER TABLE ONLY "public"."plans"
-    ADD CONSTRAINT "plans_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "plans_pkey" PRIMARY KEY ("plan_id");
 
 
 
 ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("profile_id");
 
 
 
@@ -1151,11 +1349,11 @@ CREATE INDEX "idx_application_created_at" ON "public"."application" USING "btree
 
 
 
-CREATE INDEX "idx_application_fulfillment_application_id" ON "public"."application_fulfillment" USING "btree" ("application_id");
+CREATE INDEX "idx_application_fulfillment_application_ref_id" ON "public"."application_fulfillment" USING "btree" ("application_id");
 
 
 
-CREATE INDEX "idx_application_fulfillment_asset_id" ON "public"."application_fulfillment" USING "btree" ("asset_id");
+CREATE INDEX "idx_application_fulfillment_asset_ref_id" ON "public"."application_fulfillment" USING "btree" ("asset_id");
 
 
 
@@ -1175,11 +1373,7 @@ CREATE INDEX "idx_application_status" ON "public"."application" USING "btree" ("
 
 
 
-CREATE UNIQUE INDEX "idx_asset_binding_active_unique" ON "public"."asset_binding" USING "btree" ("asset_id") WHERE ("status" = 'active'::"text");
-
-
-
-CREATE INDEX "idx_asset_binding_asset_id" ON "public"."asset_binding" USING "btree" ("asset_id");
+CREATE INDEX "idx_asset_binding_asset_ref_id" ON "public"."asset_binding" USING "btree" ("asset_id");
 
 
 
@@ -1247,6 +1441,10 @@ CREATE INDEX "idx_topup_requests_created_at" ON "public"."topup_requests" USING 
 
 
 
+CREATE INDEX "idx_topup_requests_metadata" ON "public"."topup_requests" USING "gin" ("metadata");
+
+
+
 CREATE INDEX "idx_topup_requests_organization_id" ON "public"."topup_requests" USING "btree" ("organization_id");
 
 
@@ -1264,6 +1462,26 @@ CREATE INDEX "idx_wallets_organization_id" ON "public"."wallets" USING "btree" (
 
 
 CREATE INDEX "idx_wallets_reserved_balance" ON "public"."wallets" USING "btree" ("reserved_balance_cents");
+
+
+
+CREATE OR REPLACE TRIGGER "enforce_bm_account_limit" BEFORE INSERT OR UPDATE ON "public"."asset_binding" FOR EACH ROW WHEN (("new"."status" = 'active'::"text")) EXECUTE FUNCTION "public"."check_bm_account_limit"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_application" BEFORE UPDATE ON "public"."application" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_asset" BEFORE UPDATE ON "public"."asset" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_asset_binding" BEFORE UPDATE ON "public"."asset_binding" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_profiles" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -1316,17 +1534,21 @@ ALTER TABLE ONLY "public"."application"
 
 
 ALTER TABLE ONLY "public"."application_fulfillment"
-    ADD CONSTRAINT "application_fulfillment_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "public"."application"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "application_fulfillment_application_id_fkey" FOREIGN KEY ("application_id") REFERENCES "public"."application"("application_id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."application_fulfillment"
-    ADD CONSTRAINT "application_fulfillment_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."asset"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "application_fulfillment_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."asset"("asset_id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."application"
     ADD CONSTRAINT "application_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("organization_id") ON DELETE CASCADE;
+
+
+
+COMMENT ON CONSTRAINT "application_organization_id_fkey" ON "public"."application" IS 'Foreign key relationship between application and organizations using semantic IDs';
 
 
 
@@ -1336,7 +1558,7 @@ ALTER TABLE ONLY "public"."application"
 
 
 ALTER TABLE ONLY "public"."asset_binding"
-    ADD CONSTRAINT "asset_binding_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."asset"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "asset_binding_asset_id_fkey" FOREIGN KEY ("asset_id") REFERENCES "public"."asset"("asset_id") ON DELETE CASCADE;
 
 
 
@@ -1380,8 +1602,8 @@ ALTER TABLE ONLY "public"."organizations"
 
 
 
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+ALTER TABLE ONLY "public"."organizations"
+    ADD CONSTRAINT "organizations_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("plan_id");
 
 
 
@@ -1396,7 +1618,7 @@ ALTER TABLE ONLY "public"."subscriptions"
 
 
 ALTER TABLE ONLY "public"."subscriptions"
-    ADD CONSTRAINT "subscriptions_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("id");
+    ADD CONSTRAINT "subscriptions_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("plan_id");
 
 
 
@@ -1432,13 +1654,21 @@ ALTER TABLE ONLY "public"."wallets"
 
 CREATE POLICY "Admins can manage all onboarding states" ON "public"."onboarding_states" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
-  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_superuser" = true)))));
+  WHERE (("profiles"."profile_id" = "auth"."uid"()) AND ("profiles"."is_superuser" = true)))));
+
+
+
+COMMENT ON POLICY "Admins can manage all onboarding states" ON "public"."onboarding_states" IS 'Allows superuser profiles to manage all onboarding states';
 
 
 
 CREATE POLICY "Admins can manage all topup requests" ON "public"."topup_requests" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
-  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_superuser" = true)))));
+  WHERE (("profiles"."profile_id" = "auth"."uid"()) AND ("profiles"."is_superuser" = true)))));
+
+
+
+COMMENT ON POLICY "Admins can manage all topup requests" ON "public"."topup_requests" IS 'Allows superuser profiles to manage all topup requests';
 
 
 
@@ -1651,21 +1881,9 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+GRANT ALL ON FUNCTION "public"."check_bm_account_limit"() TO "anon";
+GRANT ALL ON FUNCTION "public"."check_bm_account_limit"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."check_bm_account_limit"() TO "service_role";
 
 
 
@@ -1702,6 +1920,12 @@ GRANT ALL ON FUNCTION "public"."get_applications"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."get_available_assets"("p_asset_type" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_available_assets"("p_asset_type" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_available_assets"("p_asset_type" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_available_assets"("p_asset_type" "text", "p_unbound_only" boolean) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_available_assets"("p_asset_type" "text", "p_unbound_only" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_available_assets"("p_asset_type" "text", "p_unbound_only" boolean) TO "service_role";
 
 
 

@@ -14,14 +14,14 @@ import type { DolphinAsset } from "@/services/supabase-service"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Application } from "@/types/generated/semantic-ids"
 
 type RequestMode = 'new-bm' | 'additional-accounts-specific' | 'additional-accounts-general'
 
-interface Application {
-  id: string
+// Extended Application interface for this component's needs
+interface ApplicationWithDetails extends Application {
   organization_name: string
   business_name: string
-  request_type?: string
   target_bm_id?: string
 }
 
@@ -32,10 +32,20 @@ interface BusinessManager {
   current_account_count: number
 }
 
+// Union type for business manager objects from different sources
+type BusinessManagerUnion = BusinessManager | DolphinAsset | {
+  id: string;
+  name: string;
+  asset_id: string;
+  status: string;
+  type: string;
+  dolphin_id?: string;
+}
+
 interface ApplicationAssetBindingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  application: Application | null;
+  application: ApplicationWithDetails | null;
   mode: RequestMode;
   targetBmId?: string; // For specific BM requests
   existingBMs?: BusinessManager[]; // For general additional requests
@@ -84,8 +94,8 @@ export function ApplicationAssetBindingDialog({
         
         // Transform the data to match expected format
         const transformedBMs = bmData.map((asset: any) => ({
-          id: asset.id,
-          asset_id: asset.id,
+          id: asset.asset_id || asset.id || asset.dolphin_id,
+          asset_id: asset.asset_id || asset.id,
           dolphin_id: asset.dolphin_id,
           name: asset.name,
           type: asset.type,
@@ -94,8 +104,8 @@ export function ApplicationAssetBindingDialog({
         }))
         
         const transformedAds = adData.map((asset: any) => ({
-          id: asset.id,
-          asset_id: asset.id,
+          id: asset.asset_id || asset.id || asset.dolphin_id,
+          asset_id: asset.asset_id || asset.id,
           dolphin_id: asset.dolphin_id,
           name: asset.name,
           type: asset.type,
@@ -122,8 +132,9 @@ export function ApplicationAssetBindingDialog({
         
         let allAssets = Array.isArray(adData) ? adData.map(asset => ({
           ...asset,
+          id: asset.asset_id || asset.id || asset.dolphin_id,
           type: asset.type,
-          asset_id: asset.dolphin_id,
+          asset_id: asset.asset_id || asset.id,
           metadata: asset.metadata
         })) : []
         
@@ -140,8 +151,9 @@ export function ApplicationAssetBindingDialog({
               if (targetBM) {
                 allAssets.push({
                   ...targetBM,
+                  id: targetBM.asset_id || targetBM.id || targetBM.dolphin_id,
                   type: 'business_manager',
-                  asset_id: targetBM.dolphin_id,
+                  asset_id: targetBM.asset_id || targetBM.id,
                   metadata: targetBM.metadata
                 });
               }
@@ -181,7 +193,7 @@ export function ApplicationAssetBindingDialog({
   }, [open, loadAvailableAssets, mode, targetBmId])
 
   const handleSubmit = async () => {
-    if (!application?.id) {
+    if (!application?.applicationId) {
       setError("Application ID is missing. Cannot proceed.")
       return
     }
@@ -202,8 +214,8 @@ export function ApplicationAssetBindingDialog({
     try {
       let endpoint = '/api/admin/fulfill-bm-application'
       let payload: any = {
-        application_id: application.id,
-        organization_id: application.organization_id || null,
+        application_id: application.applicationId,
+        organization_id: application.organizationId || null,
         request_type: mode,
       }
 
@@ -256,31 +268,44 @@ export function ApplicationAssetBindingDialog({
 
   // Filter and categorize assets based on mode
   const businessManagers = useMemo(() => {
+    console.log('🔧 FULFILLMENT DEBUG: businessManagers calculation')
+    console.log('🔧 FULFILLMENT DEBUG: mode:', mode)
+    console.log('🔧 FULFILLMENT DEBUG: assets:', assets)
+    console.log('🔧 FULFILLMENT DEBUG: targetBmId:', targetBmId)
+    console.log('🔧 FULFILLMENT DEBUG: existingBMs:', existingBMs)
+    
     if (mode === 'additional-accounts-specific') {
       // For specific BM requests, find the target BM in assets
       const targetBMs = assets.filter(asset => asset.id === targetBmId || asset.dolphin_id === targetBmId);
+      console.log('🔧 FULFILLMENT DEBUG: additional-accounts-specific targetBMs:', targetBMs)
       return targetBMs;
     }
     
     if (mode === 'additional-accounts-general') {
       // For general additional requests, use existing BMs
-      return existingBMs.map(bm => ({
+      const mappedBMs = existingBMs.map(bm => ({
         id: bm.id,
         name: bm.name,
         asset_id: bm.id,
         status: 'active',
         type: 'business_manager'
       }))
+      console.log('🔧 FULFILLMENT DEBUG: additional-accounts-general mappedBMs:', mappedBMs)
+      return mappedBMs
     }
 
     // For new BM requests, show unbound BMs
-    return assets
-      .filter(asset => asset.type === 'business_manager')
-      .filter(asset => 
-        searchTerm === "" || 
-        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.dolphin_id?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    const bmAssets = assets.filter(asset => asset.type === 'business_manager')
+    console.log('🔧 FULFILLMENT DEBUG: BM assets before filtering:', bmAssets)
+    
+    const filteredBMs = bmAssets.filter(asset => 
+      searchTerm === "" || 
+      asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.dolphin_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    console.log('🔧 FULFILLMENT DEBUG: filtered BMs for new-bm mode:', filteredBMs)
+    
+    return filteredBMs
   }, [assets, searchTerm, mode, targetBmId, existingBMs])
 
   const adAccounts = useMemo(() => {
@@ -292,17 +317,26 @@ export function ApplicationAssetBindingDialog({
     } else {
       selectedBM = businessManagers.find(bm => 
         bm.id === selectedBusinessManager || 
-        bm.dolphin_id === selectedBusinessManager ||
-        bm.asset_id === selectedBusinessManager
+        ('dolphin_id' in bm && bm.dolphin_id === selectedBusinessManager) ||
+        ('asset_id' in bm && bm.asset_id === selectedBusinessManager)
       )
     }
     
-    if (!selectedBM) return []
+    if (!selectedBM) {
+      console.log('🔧 FULFILLMENT DEBUG: No selectedBM found for ID:', selectedBusinessManager)
+      return []
+    }
+
+    console.log('🔧 FULFILLMENT DEBUG: Selected BM:', selectedBM)
+    console.log('🔧 FULFILLMENT DEBUG: Mode:', mode)
+    console.log('🔧 FULFILLMENT DEBUG: All assets count:', assets.length)
+    console.log('🔧 FULFILLMENT DEBUG: Ad account assets:', assets.filter(asset => asset.type === 'ad_account'))
 
     // For additional-accounts-specific mode, the API already filtered by BM
     // So we just need to return all ad accounts (they're already filtered)
     if (mode === 'additional-accounts-specific') {
       const accounts = assets.filter(asset => asset.type === 'ad_account');
+      console.log('🔧 FULFILLMENT DEBUG: Additional-specific mode, returning accounts:', accounts)
       return accounts;
     }
     
@@ -311,16 +345,20 @@ export function ApplicationAssetBindingDialog({
       .filter(asset => asset.type === 'ad_account')
       .filter(asset => {
         if (mode === 'new-bm') {
-          const bmDolphinId = selectedBM.dolphin_id || selectedBM.id;
+          const bmDolphinId = ('dolphin_id' in selectedBM && selectedBM.dolphin_id) || selectedBM.id;
+          console.log('🔧 FULFILLMENT DEBUG: Comparing BM dolphin_id:', bmDolphinId, 'with ad account business_manager_id:', asset.metadata?.business_manager_id)
           return asset.metadata?.business_manager_id === bmDolphinId;
         }
         return true;
       })
 
+    console.log('🔧 FULFILLMENT DEBUG: Filtered accounts result:', filteredAccounts)
     return filteredAccounts;
   }, [assets, selectedBusinessManager, mode, businessManagers])
 
   const handleBusinessManagerSelect = (bmId: string) => {
+    console.log('🔧 FULFILLMENT DEBUG: BM selected:', bmId)
+    console.log('🔧 FULFILLMENT DEBUG: Current selected BM:', selectedBusinessManager)
     setSelectedBusinessManager(bmId)
     setSelectedAdAccounts([]) // Reset ad account selection when BM changes
   }
@@ -434,9 +472,15 @@ export function ApplicationAssetBindingDialog({
                     </div>
                   ) : (
                     <div className="space-y-1 max-h-40 overflow-y-auto">
-                      {businessManagers.map((bm) => (
+                      {businessManagers.map((bm, index) => {
+                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index}:`, bm)
+                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} id:`, bm.id)
+                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} asset_id:`, bm.asset_id)
+                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} dolphin_id:`, bm.dolphin_id)
+                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} keys:`, Object.keys(bm))
+                        return (
                         <div 
-                          key={bm.id}
+                          key={bm.id || bm.dolphin_id || index}
                           className={cn(
                             "flex items-center space-x-3 p-3 rounded-md border cursor-pointer transition-colors",
                             selectedBusinessManager === bm.id 
@@ -448,14 +492,20 @@ export function ApplicationAssetBindingDialog({
                           <input
                             type="radio"
                             name="business-manager"
+                            value={bm.id}
                             checked={selectedBusinessManager === bm.id}
-                            onChange={() => handleBusinessManagerSelect(bm.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleBusinessManagerSelect(bm.id)
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
                             className="w-4 h-4"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-sm truncate">{bm.name}</div>
                             <div className="text-xs text-muted-foreground">
-                              {bm.dolphin_id || bm.id}
+                              {('dolphin_id' in bm && bm.dolphin_id) || bm.id}
                               {mode === 'additional-accounts-general' && (
                                 <span className="ml-2 text-blue-600">
                                   {getCurrentAccountCount}/7 accounts
@@ -464,7 +514,8 @@ export function ApplicationAssetBindingDialog({
                             </div>
                           </div>
                         </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -475,7 +526,7 @@ export function ApplicationAssetBindingDialog({
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
                   <div className="text-sm">
                     <div className="font-medium text-blue-900">{selectedBM.name}</div>
-                    <div className="text-xs text-blue-600">{selectedBM.dolphin_id || selectedBM.id}</div>
+                    <div className="text-xs text-blue-600">{('dolphin_id' in selectedBM && selectedBM.dolphin_id) || selectedBM.id}</div>
                   </div>
                 </div>
               )}
@@ -561,10 +612,10 @@ export function ApplicationAssetBindingDialog({
 
               {/* Compact Summary */}
               {selectedBusinessManager && selectedAdAccounts.length > 0 && (
-                <div className="bg-green-50 border border-green-200 rounded-md p-3">
-                  <div className="text-sm text-green-800">
+                <div className="bg-green-500/10 border border-green-500/20 rounded-md p-3">
+                  <div className="text-sm text-green-400">
                     <div className="font-medium">Ready to assign:</div>
-                    <div className="text-xs mt-1">
+                    <div className="text-xs mt-1 text-green-300">
                       {mode === 'new-bm' ? '1 Business Manager + ' : ''}{selectedAdAccounts.length} ad account{selectedAdAccounts.length !== 1 ? 's' : ''}
                     </div>
                   </div>

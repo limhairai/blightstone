@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // Check if any superusers exist
     const { data: existingSuperusers, error: countError } = await supabase
       .from('profiles')
-      .select('id')
+      .select('profile_id')
       .eq('is_superuser', true)
       .limit(1)
 
@@ -62,10 +62,10 @@ export async function POST(request: NextRequest) {
       const { error: upsertError } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          profile_id: user.id,
           is_superuser: true
         }, {
-          onConflict: 'id'
+          onConflict: 'profile_id'
         })
 
       if (upsertError) {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       const { data: currentProfile, error: profileError } = await supabase
         .from('profiles')
         .select('is_superuser')
-        .eq('id', currentUser.id)
+        .eq('profile_id', currentUser.id)
         .single()
 
       if (profileError || !currentProfile?.is_superuser) {
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       const { error: updateError } = await supabase
         .from('profiles')
         .update({ is_superuser: true })
-        .eq('id', targetUser.id)
+        .eq('profile_id', targetUser.id)
 
       if (updateError) {
         console.error('Error promoting user:', updateError)

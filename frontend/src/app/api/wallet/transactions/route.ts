@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     const { error: updateError } = await supabase
       .from('wallets')
       .update({ balance_cents: newBalanceCents })
-      .eq('id', wallet.id);
+      .eq('wallet_id', wallet.wallet_id);
 
     if (updateError) {
       throw new Error(`Failed to update wallet balance: ${updateError.message}`);
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // 3. Create the transaction record
     const transactionData = {
       organization_id,
-      wallet_id: wallet.id,
+      wallet_id: wallet.wallet_id,
       type,
       amount_cents: amountCents,
       description,

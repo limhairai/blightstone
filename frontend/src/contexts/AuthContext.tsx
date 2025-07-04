@@ -28,7 +28,7 @@ import { clearStaleOrganizationData } from '../lib/localStorage-cleanup'
 import { Loader } from "../components/core/Loader";
 
 interface UserProfile {
-  id: string;
+  profile_id: string;
   organization_id: string | null;
   name: string | null;
   email: string | null;
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('profile_id', userId)
         .single();
 
       if (error) {
@@ -123,15 +123,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         console.error("🔐 AuthContext signUp error:", error);
         
+        // Ensure we have a valid error message
+        const errorMessage = error.message || error.toString() || 'Unknown error occurred';
+        
         // Handle specific Supabase error messages with better UX
-        if (error.message.includes('User already registered')) {
-          toast.error(authMessages.signUp.accountExists.description);
-        } else if (error.message.includes('Password should be at least')) {
-          toast.error(authMessages.signUp.weakPassword.description);
-        } else if (error.message.includes('Invalid email')) {
-          toast.error(authMessages.signUp.invalidEmail.description);
+        if (errorMessage.includes('User already registered')) {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signUp.accountExists.description);
+            }, 100);
+          }
+        } else if (errorMessage.includes('Password should be at least')) {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signUp.weakPassword.description);
+            }, 100);
+          }
+        } else if (errorMessage.includes('Invalid email')) {
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(authMessages.signUp.invalidEmail.description);
+            }, 100);
+          }
+        } else if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('502')) {
+          // Handle network/connection errors
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error('Connection error. Please check your internet connection and try again.');
+            }, 100);
+          }
         } else {
-          toast.error(error.message || authMessages.signUp.unknown.description);
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(errorMessage || authMessages.signUp.unknown.description);
+            }, 100);
+          }
         }
         
         setLoading(false);
@@ -141,21 +167,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.user && !data.session) {
         // Email confirmation required
         console.log('🔐 Email confirmation required, showing success toast');
-        toast.success(authMessages.signUp.success.description, {
-          duration: authMessages.signUp.success.duration
-        });
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            toast.success(authMessages.signUp.success.description, {
+              duration: authMessages.signUp.success.duration
+            });
+          }, 100);
+        }
         setLoading(false);
         return { data: { user: data.user, session: data.session }, error: null };
       }
       
       // User is immediately logged in
       console.log('🔐 User immediately logged in, showing success toast');
-      toast.success("Registration successful! Redirecting to dashboard...");
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          toast.success("Registration successful! Redirecting to dashboard...");
+        }, 100);
+      }
       setLoading(false);
       return { data: { user: data.user, session: data.session }, error: null };
     } catch (err: any) {
       console.error('🔐 AuthContext signUp exception:', err);
-      toast.error("An unexpected error occurred during registration.");
+      const errorMessage = err?.message || err?.toString() || "An unexpected error occurred during registration.";
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          toast.error(errorMessage);
+        }, 100);
+      }
       setLoading(false);
       return { data: null, error: err };
     }
@@ -174,8 +213,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error("🔐 AuthContext signIn error:", error);
         console.log("🔐 About to show toast error for:", error.message);
         
+        // Ensure we have a valid error message
+        const errorMessage = error.message || error.toString() || 'Unknown error occurred';
+        
         // Handle specific Supabase error messages with better UX
-        if (error.message === 'Invalid login credentials') {
+        if (errorMessage === 'Invalid login credentials') {
           console.log("🔐 Showing invalid credentials toast");
           // Ensure we're on client side for toast with small delay for hydration
           if (typeof window !== 'undefined') {
@@ -183,7 +225,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               toast.error(authMessages.signIn.invalidCredentials.description);
             }, 100);
           }
-        } else if (error.message === 'Email not confirmed') {
+        } else if (errorMessage === 'Email not confirmed') {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(authMessages.signIn.emailNotConfirmed.description);
@@ -191,23 +233,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               window.location.href = `/confirm-email?email=${encodeURIComponent(email)}`;
             }, 100);
           }
-        } else if (error.message.includes('Too many requests')) {
+        } else if (errorMessage.includes('Too many requests')) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(authMessages.signIn.tooManyRequests.description);
             }, 100);
           }
-        } else if (error.message.includes('User not found')) {
+        } else if (errorMessage.includes('User not found')) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(authMessages.signIn.userNotFound.description);
             }, 100);
           }
-        } else {
-          console.log("🔐 Showing generic error toast:", error.message);
+        } else if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('502')) {
+          // Handle network/connection errors
           if (typeof window !== 'undefined') {
             setTimeout(() => {
-              toast.error(error.message || authMessages.signIn.unknown.description);
+              toast.error('Connection error. Please check your internet connection and try again.');
+            }, 100);
+          }
+        } else {
+          console.log("🔐 Showing generic error toast:", errorMessage);
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              toast.error(errorMessage || authMessages.signIn.unknown.description);
             }, 100);
           }
         }
@@ -231,8 +280,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { data: { user: data.user, session: data.session }, error: null };
     } catch (err: any) {
       console.error("🔐 AuthContext signIn exception:", err);
+      const errorMessage = err?.message || err?.toString() || "An unexpected error occurred during sign in.";
       if (typeof window !== 'undefined') {
-        toast.error("An unexpected error occurred during sign in.");
+        setTimeout(() => {
+          toast.error(errorMessage);
+        }, 100);
       }
       setLoading(false);
       return { data: null, error: err };

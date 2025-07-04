@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Check for existing pending request
     const { data: existingRequest } = await supabase
       .from('bank_transfer_requests')
-      .select('id')
+      .select('request_id')
       .eq('organization_id', org.organization_id)
       .eq('status', 'pending')
       .single()
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('bank_transfer_requests')
       .update({ reference_number: referenceNumber })
-      .eq('id', bankRequest.id)
+      .eq('request_id', bankRequest.id)
 
     return NextResponse.json({
       success: true,

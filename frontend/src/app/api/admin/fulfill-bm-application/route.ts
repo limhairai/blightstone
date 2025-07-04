@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
         }
 
         // You might want to add a check here to ensure the user is a superuser
-        // const { data: profile } = await supabase.from('profiles').select('is_superuser').eq('id', user.id).single();
+        // const { data: profile } = await supabase.from('profiles').select('is_superuser').eq('profile_id', user.id).single();
         // if (!profile?.is_superuser) {
         //     return NextResponse.json({ error: 'You are not authorized to perform this action.' }, { status: 403 });
         // }
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
                 fulfilled_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
-            .eq('id', application_id);
+            .eq('application_id', application_id);
 
         console.log('Update result - error:', updateError);
 
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
         // Step 4: First get the Business Manager asset to get its dolphin_id
         const { data: bmAsset, error: bmError } = await supabase
             .from('asset')
-            .select('id, dolphin_id, name')
-            .eq('id', dolphin_id)
+            .select('asset_id, dolphin_id, name')
+            .eq('asset_id', dolphin_id)
             .eq('type', 'business_manager')
             .single();
 

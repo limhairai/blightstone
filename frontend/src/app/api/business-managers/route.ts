@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('organization_id')
-      .eq('id', user.id)
+              .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile || !profile.organization_id) {
@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
     const { data: boundAssets, error: assetsError } = await supabase
       .from('asset_binding')
       .select(`
-        id,
+        binding_id,
         asset_id,
         bound_at,
         asset:asset_id (
-          id,
+          asset_id,
           name,
           type,
           dolphin_id,
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Filter out bindings with null/undefined assets
     const validBoundAssets = (boundAssets || []).filter((binding: any) => 
-      binding.asset && binding.asset.id && binding.asset.name
+      binding.asset && binding.asset.asset_id && binding.asset.name
     );
 
     // Calculate ad account count for each business manager by counting actual ad accounts
@@ -113,22 +113,22 @@ export async function GET(request: NextRequest) {
           created_at: binding.bound_at,
           ad_account_count: adAccountCount, // Use calculated count instead of metadata
           dolphin_business_manager_id: binding.asset?.dolphin_id,
-          binding_id: binding.id,
-          asset_id: binding.asset?.id // Keep the actual asset ID for reference
+          binding_id: binding.binding_id,
+          asset_id: binding.asset?.asset_id // Keep the actual asset ID for reference
         };
       })
     );
 
     // Format pending applications as "pending" business managers
     const formattedPendingApps = (pendingApps || []).map((app: any) => ({
-      id: `app-${app.id}`,
-      name: app.name || `Application ${app.id.toString().substring(0, 8)}...`,
+      id: `app-${app.application_id || app.id || 'unknown'}`,
+      name: app.name || `Application ${(app.application_id || app.id || 'unknown').toString().substring(0, 8)}...`,
       status: app.status === 'pending' ? 'pending' : app.status === 'processing' ? 'processing' : 'pending',
       created_at: app.created_at,
       ad_account_count: 0,
       dolphin_business_manager_id: null,
       is_application: true,
-      application_id: app.id,
+      application_id: app.application_id || app.id,
       organization_id: app.organization_id
     }));
 

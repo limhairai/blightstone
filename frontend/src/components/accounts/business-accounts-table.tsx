@@ -14,7 +14,7 @@ import {
 } from "../ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { StatusBadge } from "../ui/status-badge"
-import { StatusDot } from "../ui/status-dot"
+import { StatusDot } from "../dashboard/status-dot"
 import { formatCurrency } from "../../utils/format"
 import { Search, MoreHorizontal, Eye, Edit, Trash2, Pause, Play, CreditCard, Plus } from "lucide-react"
 import { layout } from "../../lib/layout-utils"

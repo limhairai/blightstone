@@ -38,9 +38,11 @@ def get_current_user_data_from_token(token: str) -> dict | None:
     Validates a Supabase JWT and returns user data using multiple verification approaches.
     """
     try:
+        logger.debug(f"[TOKEN_VALIDATION] Received token (first 20 chars): {token[:20]}...")
         # Remove "Bearer " prefix if present
         if token.lower().startswith("bearer "):
             token = token.split(" ", 1)[1]
+        logger.debug(f"[TOKEN_VALIDATION] Token after bearer removal (first 20 chars): {token[:20]}...")
         
         # Method 1: Try with JWT secret if available (most reliable)
         if settings.SUPABASE_JWT_SECRET:
@@ -54,7 +56,7 @@ def get_current_user_data_from_token(token: str) -> dict | None:
                 logger.debug(f"JWT secret verification successful for user: {decoded.get('sub')}")
                 return decoded
             except jwt.InvalidTokenError as e:
-                logger.debug(f"JWT secret verification failed: {e}")
+                logger.warning(f"JWT secret verification failed: {e}")
         
         # Method 2: Try with anon client (for client-side tokens)
         if settings.SUPABASE_ANON_KEY:
@@ -62,21 +64,22 @@ def get_current_user_data_from_token(token: str) -> dict | None:
                 anon_client = get_supabase_anon_client()
                 user_response = anon_client.auth.get_user(token)
                 if user_response and user_response.user:
-                    logger.debug(f"Anon client verification successful for user: {user_response.user.id}")
-                    return user_response.user.model_dump()
+                                    logger.debug(f"Anon client verification successful for user: {user_response.user.id}")
+                return user_response.user.model_dump()
             except Exception as e:
-                logger.debug(f"Anon client verification failed: {e}")
+                logger.warning(f"Anon client verification failed: {e}")
         
         # Method 3: Fallback to service role verification
         try:
             client = get_supabase_client()
             user_response = client.auth.get_user(token)
             if user_response and user_response.user:
-                logger.debug(f"Service role verification successful for user: {user_response.user.id}")
-                return user_response.user.model_dump() 
+                            logger.debug(f"Service role verification successful for user: {user_response.user.id}")
+            return user_response.user.model_dump() 
         except Exception as e:
-            logger.debug(f"Service role verification failed: {e}")
+            logger.warning(f"Service role verification failed: {e}")
         
+        logger.warning("[TOKEN_VALIDATION] All token validation methods failed")
         return None
         
     except Exception as e:

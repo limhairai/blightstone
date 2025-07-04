@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single()
 
     if (profileError) {

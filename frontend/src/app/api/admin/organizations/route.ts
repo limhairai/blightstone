@@ -10,7 +10,15 @@ export async function GET(request: NextRequest) {
     try {
         const { data, error } = await supabase
             .from('organizations')
-            .select('organization_id, name, created_at');
+            .select(`
+                organization_id, 
+                name, 
+                created_at,
+                plan_id,
+                subscription_status,
+                current_period_start,
+                current_period_end
+            `);
 
         if (error) {
             console.error('Error fetching organizations for admin:', error);

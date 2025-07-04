@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     const { data: planData, error: planError } = await supabase
       .from('plans')
       .select('*')
-      .eq('id', orgData.plan_id)
+      .eq('plan_id', orgData.plan_id)
       .single()
 
     if (!planError && planData) {

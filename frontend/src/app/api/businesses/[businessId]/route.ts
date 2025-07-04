@@ -39,7 +39,7 @@ export async function GET(
           name
         )
       `)
-      .eq('id', businessId)
+      .eq('business_id', businessId)
       .single();
 
     if (businessError) {
@@ -53,7 +53,7 @@ export async function GET(
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('organization_id')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile || profile.organization_id !== business.organization_id) {

@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role, organization_id')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile) {
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
         const { data: userProfile } = await supabase
           .from('profiles')
           .select('name, email')
-          .eq('id', request.user_id)
+          .eq('profile_id', request.user_id)
           .single();
 
         return {
@@ -108,7 +108,7 @@ export async function PATCH(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile || profile.role !== 'admin') {

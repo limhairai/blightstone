@@ -12,21 +12,35 @@ export async function POST(
 ) {
   try {
     const { id } = params
+    console.log('🔧 BACKEND DEBUG: Approve application API called');
+    console.log('🔧 BACKEND DEBUG: Application ID:', id);
     const body = await request.json()
-    const { admin_user_id, admin_notes } = body
+    console.log('🔧 BACKEND DEBUG - Received body:', body);
+    console.log('🔧 BACKEND DEBUG - Body type:', typeof body);
+    console.log('🔧 BACKEND DEBUG - Body keys:', Object.keys(body));
+    
+    const { admin_user_id: adminUserId, admin_notes: adminNotes } = body
+    console.log('🔧 BACKEND DEBUG - Extracted adminUserId:', adminUserId);
+    console.log('🔧 BACKEND DEBUG - adminUserId type:', typeof adminUserId);
+    console.log('🔧 BACKEND DEBUG - Extracted adminNotes:', adminNotes);
 
-    if (!admin_user_id) {
+    if (!adminUserId) {
+      console.log('🔧 BACKEND DEBUG - adminUserId is missing or falsy');
+      console.log('🔧 BACKEND DEBUG - adminUserId value:', adminUserId);
+      console.log('🔧 BACKEND DEBUG - adminUserId === null:', adminUserId === null);
+      console.log('🔧 BACKEND DEBUG - adminUserId === undefined:', adminUserId === undefined);
+      console.log('🔧 BACKEND DEBUG - adminUserId === "":', adminUserId === '');
       return NextResponse.json(
-        { error: 'admin_user_id is required' },
+        { error: 'adminUserId is required' },
         { status: 400 }
       )
     }
 
-    // Verify admin user
+    // Verify admin user using semantic ID
     const { data: adminProfile, error: adminError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', admin_user_id)
+      .eq('profile_id', adminUserId)
       .single()
 
     if (adminError || !adminProfile?.is_superuser) {
@@ -37,16 +51,17 @@ export async function POST(
     }
 
     // Update application status to processing (submitted to BlueFocus)
+    // Use semantic ID column for the WHERE clause
     const { data: application, error } = await supabase
       .from('application')
       .update({
         status: 'processing',
-        approved_by: admin_user_id,
+        approved_by: adminUserId,
         approved_at: new Date().toISOString(),
-        admin_notes,
+        admin_notes: adminNotes,
         updated_at: new Date().toISOString()
       })
-      .eq('id', id)
+      .eq('application_id', id)
       .select()
       .single()
 
@@ -58,15 +73,16 @@ export async function POST(
       )
     }
 
+    // Transform response to frontend format (camelCase)
     return NextResponse.json({
       success: true,
       application: {
-        id: application.id,
+        applicationId: application.application_id,
         status: application.status,
-        approved_by: application.approved_by,
-        approved_at: application.approved_at,
-        admin_notes: application.admin_notes,
-        updated_at: application.updated_at
+        approvedBy: application.approved_by,
+        approvedAt: application.approved_at,
+        adminNotes: application.admin_notes,
+        updatedAt: application.updated_at
       }
     })
 

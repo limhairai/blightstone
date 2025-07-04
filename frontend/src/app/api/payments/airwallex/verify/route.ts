@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const { data: existingPayment } = await supabase
       .from('payment_intents')
       .select('status')
-      .eq('id', payment_intent_id)
+      .eq('intent_id', payment_intent_id)
       .single()
 
     if (existingPayment?.status === 'completed') {
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         status: 'completed',
         completed_at: new Date().toISOString()
       })
-      .eq('id', payment_intent_id)
+      .eq('intent_id', payment_intent_id)
 
     return NextResponse.json({ 
       success: true,

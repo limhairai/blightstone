@@ -204,15 +204,15 @@ async def update_my_profile(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No update data provided.")
 
     try:
-        response = supabase.table("profiles").update(update_payload).eq("id", current_user.uid).execute()
+        response = supabase.table("profiles").update(update_payload).eq("profile_id", current_user.uid).execute()
         if response.data:
             logger.info(f"Profile updated for user ID: {current_user.uid}")
-            # Refetch the updated profile to return the full UserRead model
-            updated_profile_response = supabase.table("profiles").select("id, email, name, avatar, role, is_superuser").eq("id", current_user.uid).single().execute()
+            # Get updated profile
+            updated_profile_response = supabase.table("profiles").select("profile_id, email, name, avatar, role, is_superuser").eq("profile_id", current_user.uid).single().execute()
             if updated_profile_response.data:
                 profile_data = updated_profile_response.data
                 return UserRead(
-                    uid=profile_data["id"],
+                    uid=profile_data["profile_id"],
                     email=profile_data["email"],
                     name=profile_data.get("name"),
                     avatar=profile_data.get("avatar"),
@@ -254,9 +254,9 @@ async def promote_superuser(
             # Find user ID by email from 'profiles' table (assuming email is unique there too, or take first)
             # Or, for auth users, you might need supabase.auth.admin.list_users() and filter, but that's heavy.
             # Best if profiles.email is reliably synced with auth.users.email.
-            profile_by_email_response = supabase.table("profiles").select("id").eq("email", email).maybe_single().execute()
+            profile_by_email_response = supabase.table("profiles").select("profile_id").eq("email", email).maybe_single().execute()
             if profile_by_email_response.data:
-                target_user_id = profile_by_email_response.data["id"]
+                target_user_id = profile_by_email_response.data["profile_id"]
             else:
                 logger.warning(f"Promote superuser: No user found with email {email} in profiles table.")
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with email {email} not found.")
@@ -265,7 +265,7 @@ async def promote_superuser(
              raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
 
         # Update is_superuser flag in the 'profiles' table
-        update_response = supabase.table("profiles").update({"is_superuser": True}).eq("id", target_user_id).execute()
+        update_response = supabase.table("profiles").update({"is_superuser": True}).eq("profile_id", target_user_id).execute()
 
         if update_response.data:
             logger.info(f"User {target_user_id} successfully promoted to superuser by {current_admin_user.uid}.")
@@ -296,7 +296,7 @@ async def create_profile_for_current_user(
 
     try:
         # Check if profile already exists
-        existing_profile = supabase.table("profiles").select("id").eq("id", current_user_from_auth.uid).maybe_single().execute()
+        existing_profile = supabase.table("profiles").select("profile_id").eq("profile_id", current_user_from_auth.uid).maybe_single().execute()
         
         if existing_profile.data:
             return {
@@ -360,7 +360,7 @@ async def bootstrap_first_admin(
 
     try:
         # Check if any superusers already exist
-        existing_superusers = supabase.table("profiles").select("id").eq("is_superuser", True).execute()
+        existing_superusers = supabase.table("profiles").select("profile_id").eq("is_superuser", True).execute()
         
         if existing_superusers.data and len(existing_superusers.data) > 0:
             logger.warning(f"Bootstrap first admin rejected - superusers already exist")
@@ -370,7 +370,7 @@ async def bootstrap_first_admin(
             )
 
         # Find user by email
-        profile_response = supabase.table("profiles").select("id, email, name").eq("email", email).maybe_single().execute()
+        profile_response = supabase.table("profiles").select("profile_id, email, name").eq("email", email).maybe_single().execute()
         
         if not profile_response.data:
             logger.warning(f"Bootstrap first admin: No user found with email {email}")
@@ -379,13 +379,13 @@ async def bootstrap_first_admin(
                 detail=f"User with email {email} not found. Please register first."
             )
 
-        target_user_id = profile_response.data["id"]
+        target_user_id = profile_response.data["profile_id"]
         
         # Promote user to superuser
         update_response = supabase.table("profiles").update({
             "is_superuser": True,
             "role": "admin"
-        }).eq("id", target_user_id).execute()
+        }).eq("profile_id", target_user_id).execute()
 
         if update_response.data:
             logger.info(f"First admin successfully bootstrapped: {target_user_id} ({email})")

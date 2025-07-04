@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const { data: plan, error: planError } = await supabase
       .from('plans')
       .select('*')
-      .eq('id', planId)
+      .eq('plan_id', planId)
       .single();
 
     if (planError || !plan) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', organization.owner_id)
+      .eq('profile_id', organization.owner_id)
       .single();
 
     if (profileError || !profile) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: profile.email,
-        name: profile.full_name || profile.email,
+        name: profile.name || profile.email,
         metadata: {
           organization_id: organizationId,
           user_id: organization.owner_id,

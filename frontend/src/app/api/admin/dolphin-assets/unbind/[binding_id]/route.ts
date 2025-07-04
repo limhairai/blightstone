@@ -42,14 +42,10 @@ export async function POST(
             urlWithParams.searchParams.set('reason', reason);
         }
         
-        console.log('🔍 Unbind API: Calling backend URL:', urlWithParams.toString());
-        
-        const response = await fetch(urlWithParams.toString(), {
+                const response = await fetch(urlWithParams.toString(), {
             method: 'POST',
             headers: createAuthHeaders(session.access_token),
         });
-
-        console.log('🔍 Unbind API: Backend response status:', response.status);
 
         if (!response.ok) {
             const errorData = await response.json();

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
     
     if (profileError) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         status: new_status, 
         updated_at: new Date().toISOString() 
       })
-      .eq('id', application_id)
+      .eq('application_id', application_id)
       .select()
       .single();
 

@@ -19,7 +19,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   const [pageTitle, setPageTitle] = useState("Dashboard");
 
   const getPageInfo = useCallback(() => {
-    const segments = pathname.split("/").filter(Boolean);
+    const segments = (pathname || "").split("/").filter(Boolean);
     
     // Remove 'admin' from the beginning if present
     const relevantSegments = segments[0] === "admin" ? segments.slice(1) : segments;

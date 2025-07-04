@@ -6,13 +6,30 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+// Field mapping utility for transforming between database and frontend formats
+const transformAssetToFrontend = (asset: any, bindingInfo?: any) => ({
+  assetId: asset.asset_id,
+  id: asset.asset_id, // For backward compatibility
+  name: asset.name,
+  type: asset.type,
+  dolphinId: asset.dolphin_id,
+  status: asset.status,
+  metadata: asset.metadata,
+  lastSyncedAt: asset.last_synced_at,
+  createdAt: asset.created_at,
+  updatedAt: asset.updated_at,
+  organizationId: bindingInfo?.organization_id || null,
+  organizationName: bindingInfo?.organization_name || null,
+  boundAt: bindingInfo?.bound_at || null
+})
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const unbound_only = searchParams.get('unbound_only') === 'true'
 
-    // Get all assets
+    // Get all assets using semantic ID columns
     let query = supabase.from('asset').select('*').order('created_at', { ascending: false })
     
     if (type) {
@@ -29,11 +46,11 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get all active bindings
+    // Get all active bindings using semantic ID columns
     const { data: bindings, error: bindingsError } = await supabase
       .from('asset_binding')
       .select(`
-        asset_id,
+        asset_ref_id,
         organization_id,
         status,
         bound_at,
@@ -49,10 +66,10 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Create binding map
+    // Create binding map using semantic ID
     const bindingMap = new Map()
     bindings?.forEach(binding => {
-      bindingMap.set(binding.asset_id, {
+      bindingMap.set(binding.asset_ref_id, {
         organization_id: binding.organization_id,
         organization_name: binding.organizations?.name || 'Unknown Organization',
         bound_at: binding.bound_at
@@ -61,27 +78,12 @@ export async function GET(request: NextRequest) {
 
     // Process assets with binding information
     const processedAssets = assets?.map(asset => {
-      const bindingInfo = bindingMap.get(asset.id)
-      
-      return {
-        asset_id: asset.id, // Frontend compatibility
-        id: asset.id,
-        name: asset.name,
-        type: asset.type,
-        dolphin_id: asset.dolphin_id,
-        status: asset.status,
-        metadata: asset.metadata,
-        last_synced_at: asset.last_synced_at,
-        created_at: asset.created_at,
-        updated_at: asset.updated_at,
-        organization_id: bindingInfo?.organization_id || null,
-        organization_name: bindingInfo?.organization_name || null,
-        bound_at: bindingInfo?.bound_at || null
-      }
+      const bindingInfo = bindingMap.get(asset.asset_id)
+      return transformAssetToFrontend(asset, bindingInfo)
     }).filter(asset => {
       // Apply unbound_only filter if requested
       if (unbound_only) {
-        return !asset.organization_id
+        return !asset.organizationId
       }
       return true
     }) || []
@@ -102,12 +104,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, dolphin_id, name, status = 'active', metadata } = body
+    const { type, dolphinId, name, status = 'active', metadata } = body
 
     // Validate required fields
-    if (!type || !dolphin_id || !name) {
+    if (!type || !dolphinId || !name) {
       return NextResponse.json(
-        { error: 'Missing required fields: type, dolphin_id, name' },
+        { error: 'Missing required fields: type, dolphinId, name' },
         { status: 400 }
       )
     }
@@ -120,12 +122,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create the asset
+    // Create the asset using semantic ID columns
     const { data: asset, error } = await supabase
       .from('asset')
       .insert({
         type,
-        dolphin_id,
+        dolphin_id: dolphinId,
         name,
         status,
         metadata,
@@ -140,7 +142,7 @@ export async function POST(request: NextRequest) {
       // Handle unique constraint violation
       if (error.code === '23505') {
         return NextResponse.json(
-          { error: 'Asset with this dolphin_id already exists for this type' },
+          { error: 'Asset with this dolphinId already exists for this type' },
           { status: 409 }
         )
       }
@@ -151,17 +153,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Transform response to frontend format
     return NextResponse.json({
-      asset: {
-        id: asset.id,
-        type: asset.type,
-        dolphin_id: asset.dolphin_id,
-        name: asset.name,
-        status: asset.status,
-        metadata: asset.metadata,
-        last_synced_at: asset.last_synced_at,
-        created_at: asset.created_at
-      }
+      asset: transformAssetToFrontend(asset)
     })
 
   } catch (error) {

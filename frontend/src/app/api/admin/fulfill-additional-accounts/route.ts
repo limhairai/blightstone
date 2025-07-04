@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
                 fulfilled_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
-            .eq('id', application_id);
+            .eq('application_id', application_id);
 
         if (updateError) {
             console.error('Error updating application status:', updateError);

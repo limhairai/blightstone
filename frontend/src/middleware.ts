@@ -13,6 +13,9 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  // Get pathname early to avoid initialization errors
+  const { pathname } = request.nextUrl
+
   // Check if environment variables are available
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     console.warn('Supabase environment variables not available in middleware, skipping auth check')
@@ -84,8 +87,6 @@ export async function middleware(request: NextRequest) {
     console.warn('Error getting session in middleware:', error)
     // Continue without session - will be treated as unauthenticated
   }
-
-  const { pathname } = request.nextUrl
 
   // Define public routes
   const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email']

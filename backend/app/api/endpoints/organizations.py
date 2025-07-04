@@ -169,7 +169,7 @@ async def get_organization_details_endpoint(
         org_response = (
             supabase.table("organizations")
             .select("*" ) # Select all columns or specify for OrganizationRead
-            .eq("id", str(org_id))
+            .eq("organization_id", str(org_id))
             .single() # Expect exactly one
             .execute()
         )
@@ -360,7 +360,7 @@ async def add_member_to_organization_endpoint(
         # Find user by email
         user_response = (
             supabase.table("profiles")
-            .select("id, email, full_name")
+            .select("profile_id, email, name")
             .eq("email", request.email)
             .maybe_single()
             .execute()
@@ -374,9 +374,9 @@ async def add_member_to_organization_endpoint(
         # Check if user is already a member
         existing_member = (
             supabase.table("organization_members")
-            .select("id")
+            .select("user_id")
             .eq("organization_id", str(org_id))
-            .eq("user_id", user_to_add['id'])
+            .eq("user_id", user_to_add['profile_id'])
             .maybe_single()
             .execute()
         )
@@ -387,7 +387,7 @@ async def add_member_to_organization_endpoint(
         # Add member
         member_data = {
             "organization_id": str(org_id),
-            "user_id": user_to_add['id'],
+            "user_id": user_to_add['profile_id'],
             "role": request.role
         }
         
@@ -397,12 +397,12 @@ async def add_member_to_organization_endpoint(
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to add member")
         
         return OrganizationMemberRead(
-            id=member_response.data[0]['id'],
-            user_id=user_to_add['id'],
+            id=user_to_add['profile_id'],  # Use profile_id as the identifier
+            user_id=user_to_add['profile_id'],
             organization_id=str(org_id),
             role=request.role,
             user_email=user_to_add['email'],
-            user_name=user_to_add.get('full_name', ''),
+            user_name=user_to_add.get('name', ''),
             joined_at=member_response.data[0]['joined_at']
         )
         
@@ -438,7 +438,7 @@ async def list_organization_members_endpoint(
         # Get all members with user details
         members_response = (
             supabase.table("organization_members")
-            .select("id, user_id, role, joined_at, profiles(email, full_name)")
+            .select("user_id, role, joined_at, profiles(email, name)")
             .eq("organization_id", str(org_id))
             .execute()
         )
@@ -447,12 +447,12 @@ async def list_organization_members_endpoint(
         for member in members_response.data:
             profile = member.get('profiles', {})
             members.append(OrganizationMemberRead(
-                id=member['id'],
+                id=member['user_id'],  # Use user_id as the identifier
                 user_id=member['user_id'],
                 organization_id=str(org_id),
                 role=member['role'],
                 user_email=profile.get('email', ''),
-                user_name=profile.get('full_name', ''),
+                user_name=profile.get('name', ''),
                 joined_at=member['joined_at']
             ))
         
@@ -504,7 +504,7 @@ async def remove_member_from_organization_endpoint(
         if target_member.data['role'] == 'owner':
             owner_count = (
                 supabase.table("organization_members")
-                .select("id")
+                .select("user_id")
                 .eq("organization_id", str(org_id))
                 .eq("role", "owner")
                 .execute()
@@ -565,7 +565,7 @@ async def update_organization_endpoint(
             update_response = (
                 supabase.table("organizations")
                 .update(update_data)
-                .eq("id", str(org_id))
+                .eq("organization_id", str(org_id))
                 .execute()
             )
             
@@ -578,7 +578,7 @@ async def update_organization_endpoint(
             org_response = (
                 supabase.table("organizations")
                 .select("*")
-                .eq("id", str(org_id))
+                .eq("organization_id", str(org_id))
                 .single()
                 .execute()
             )

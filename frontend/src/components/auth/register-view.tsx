@@ -55,6 +55,13 @@ export function RegisterView() {
         console.error('📝 Registration error:', error);
         // Error toast is handled by AuthContext, but set local error too
         setError(error.message);
+        
+        // If user already exists, redirect to login after showing the message
+        if (error.message.includes('User already registered')) {
+          setTimeout(() => {
+            router.push('/login');
+          }, 3000); // Match the toast duration
+        }
         return;
       }
 

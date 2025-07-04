@@ -141,7 +141,7 @@ async def deactivate_access_code(
     supabase = get_supabase_client()
     try:
         # Get the access code and verify permissions
-        code_response = supabase.table("access_codes").select("*, organizations(*)").eq("id", code_id).single().execute()
+        code_response = supabase.table("access_codes").select("*, organizations(*)").eq("code_id", code_id).single().execute()
         
         if not code_response.data:
             raise HTTPException(
@@ -160,7 +160,7 @@ async def deactivate_access_code(
             )
         
         # Deactivate the code
-        response = supabase.table("access_codes").update({"is_active": False}).eq("id", code_id).execute()
+        response = supabase.table("access_codes").update({"is_active": False}).eq("code_id", code_id).execute()
         
         if not response.data:
             raise HTTPException(

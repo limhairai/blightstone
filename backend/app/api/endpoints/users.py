@@ -37,15 +37,15 @@ async def get_current_user_profile(current_user: User = Depends(get_current_user
         # Fetch user profile from profiles table
         response = (
             supabase.table("profiles")
-            .select("id, email, name, avatar_url, role, is_superuser")
-            .eq("id", str(current_user.uid))
+            .select("profile_id, email, name, avatar_url, role, is_superuser")
+            .eq("profile_id", str(current_user.uid))
             .single()
             .execute()
         )
         
         if response.data:
             return {
-                "id": response.data["id"],
+                "id": response.data["profile_id"],
                 "email": response.data["email"],
                 "name": response.data.get("name"),
                 "avatar_url": response.data.get("avatar_url"),

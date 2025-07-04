@@ -26,7 +26,7 @@ export async function POST(
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile?.is_superuser) {
@@ -43,7 +43,7 @@ export async function POST(
         processed_at: new Date().toISOString(),
         processed_by: user.id
       })
-      .eq('id', requestId)
+      .eq('request_id', requestId)
       .eq('status', 'pending') // Only update if still pending
       .select()
       .single();

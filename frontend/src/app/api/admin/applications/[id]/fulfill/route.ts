@@ -33,7 +33,7 @@ export async function POST(
     const { data: adminProfile, error: adminError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', admin_user_id)
+      .eq('profile_id', admin_user_id)
       .single()
 
     if (adminError || !adminProfile?.is_superuser) {

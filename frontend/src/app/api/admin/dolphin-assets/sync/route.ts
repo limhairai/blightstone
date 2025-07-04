@@ -16,8 +16,13 @@ async function getAuth(request: NextRequest) {
             },
         }
     );
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
+        return { session: null, user: null };
+    }
+    // Get the session to access the access_token
     const { data: { session } } = await supabase.auth.getSession();
-    return { session, user: session?.user };
+    return { session, user };
 }
 
 export async function POST(request: NextRequest) {

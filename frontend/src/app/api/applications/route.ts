@@ -55,9 +55,9 @@ export async function POST(request: NextRequest) {
             const { data: bmBindings, error: bmError } = await supabase
                 .from('asset_binding')
                 .select(`
-                    id,
+                    binding_id,
                     asset:asset_id (
-                        id,
+                        asset_id,
                         dolphin_id,
                         type,
                         name

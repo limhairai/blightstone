@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('is_superuser')
-      .eq('id', user.id)
+      .eq('profile_id', user.id)
       .single();
 
     if (profileError || !profile?.is_superuser) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     const { data: requests, error: requestsError } = await supabase
       .from('topup_requests')
       .select(`
-        id,
+        request_id,
         organization_id,
         ad_account_name,
         amount_cents,
@@ -55,9 +55,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch topup requests' }, { status: 500 });
     }
 
+    // Transform requests to map request_id to id for frontend compatibility
+    const transformedRequests = (requests || []).map(request => ({
+      ...request,
+      id: request.request_id // Map request_id to id for frontend compatibility
+    }));
+
     return NextResponse.json({ 
-      requests: requests || [],
-      total: requests?.length || 0
+      requests: transformedRequests,
+      total: transformedRequests.length
     });
 
   } catch (error) {

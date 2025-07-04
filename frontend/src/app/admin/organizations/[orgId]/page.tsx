@@ -19,13 +19,13 @@ import { useParams } from "next/navigation"
 interface BusinessManager {
   id: string
   name: string
-  organizationId: string
   status: "active" | "pending" | "suspended" | "inactive"
+  organizationId: string
   adAccountsCount: number
+  dolphin_business_manager_id: string
   totalSpend: number
   monthlyBudget: number
   createdAt: string
-  dolphin_business_manager_id?: string
 }
 
 interface Organization {
@@ -62,18 +62,9 @@ export default function OrganizationDetailPage() {
       
       const orgData = await orgResponse.json()
       setOrganization(orgData.organization)
-
-      // Fetch business managers for this organization
-      const bmResponse = await fetch(`/api/admin/organizations/${orgId}/business-managers`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      })
       
-      if (!bmResponse.ok) {
-        throw new Error('Failed to fetch business managers')
-      }
-      
-      const bmData = await bmResponse.json()
-      setBusinessManagers(bmData.businessManagers || [])
+      // Business managers are already included in the organization response
+      setBusinessManagers(orgData.businessManagers || [])
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')

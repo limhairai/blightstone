@@ -16,7 +16,7 @@ import { Badge } from "../ui/badge"
 
 import { CreateAdAccountDialog } from "./create-ad-account-dialog"
 import { TopUpDialog } from "./top-up-dialog"
-import { AccountsTable } from "./accounts-table"
+import { BusinessAccountsTable } from "./business-accounts-table"
 import { AccountsCardGrid } from "./accounts-card-grid"
 import { formatCurrency } from "../../utils/format"
 
