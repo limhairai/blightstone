@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { buildApiUrl } from '../../../lib/api-utils';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -291,7 +292,7 @@ export async function POST(request: NextRequest) {
     if (!fee_amount_cents || !plan_fee_percentage) {
       // Calculate fee using subscription service
       try {
-        const feeResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/subscriptions/calculate-fee`, {
+        const feeResponse = await fetch(buildApiUrl('/subscriptions/calculate-fee'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
