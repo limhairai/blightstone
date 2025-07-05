@@ -20,18 +20,54 @@ class SubscriptionService:
     async def get_organization_plan(self, organization_id: str) -> Dict[str, Any]:
         """Get organization's current plan details"""
         try:
-            result = (
+            # First get the organization
+            org_result = (
                 self.supabase.table("organizations")
-                .select("*, plans(*)")
+                .select("*")
                 .eq("organization_id", organization_id)
                 .single()
                 .execute()
             )
             
-            if not result.data:
+            if not org_result.data:
                 raise ValueError("Organization not found")
             
-            return result.data
+            org_data = org_result.data
+            plan_id = org_data.get("plan_id")
+            
+            # If no plan_id, use default free plan
+            if not plan_id:
+                plan_id = "free"
+            
+            # Get the plan details
+            plan_result = (
+                self.supabase.table("plans")
+                .select("*")
+                .eq("plan_id", plan_id)
+                .single()
+                .execute()
+            )
+            
+            # If plan not found, create a default plan data
+            if not plan_result.data:
+                logger.warning(f"Plan {plan_id} not found for org {organization_id}, using default")
+                plan_data = {
+                    "plan_id": "free",
+                    "name": "Free Plan",
+                    "ad_spend_fee_percentage": 3.0,  # Default 3% fee
+                    "monthly_subscription_fee_cents": 0,
+                    "max_team_members": 2,
+                    "max_businesses": 1,
+                    "max_ad_accounts": 5
+                }
+            else:
+                plan_data = plan_result.data
+            
+            # Combine org data with plan data
+            return {
+                **org_data,
+                "plans": plan_data
+            }
         except Exception as e:
             logger.error(f"Error getting organization plan: {e}")
             raise

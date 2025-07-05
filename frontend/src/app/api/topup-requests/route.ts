@@ -311,10 +311,27 @@ export async function POST(request: NextRequest) {
             total_deducted_cents: Math.round(feeData.total_amount * 100),
             plan_fee_percentage: feeData.fee_percentage
           };
+        } else {
+          console.error('Fee calculation failed:', feeResponse.status, await feeResponse.text());
+          // Use default fee calculation (3% like the old system)
+          const defaultFeePercentage = 3.0;
+          const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
+          calculatedFeeData = {
+            fee_amount_cents: defaultFeeAmount,
+            total_deducted_cents: amount_cents + defaultFeeAmount,
+            plan_fee_percentage: defaultFeePercentage
+          };
         }
       } catch (error) {
         console.error('Error calculating fee:', error);
-        // Continue with provided values or defaults
+        // Use default fee calculation (3% like the old system)
+        const defaultFeePercentage = 3.0;
+        const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
+        calculatedFeeData = {
+          fee_amount_cents: defaultFeeAmount,
+          total_deducted_cents: amount_cents + defaultFeeAmount,
+          plan_fee_percentage: defaultFeePercentage
+        };
       }
     }
 
