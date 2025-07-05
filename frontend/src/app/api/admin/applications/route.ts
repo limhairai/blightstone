@@ -76,9 +76,15 @@ export async function GET(request: NextRequest) {
     // Transform to match frontend expectations (camelCase)
     const transformedApplications = applications?.map(transformApplicationToFrontend) || []
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       applications: transformedApplications
-    })
+    });
+    
+    // **PERFORMANCE**: Add caching headers
+    response.headers.set('Cache-Control', 'private, max-age=10, s-maxage=10'); // Reduced to 10 seconds for immediate responsiveness after fulfill operations
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in applications API:', error)

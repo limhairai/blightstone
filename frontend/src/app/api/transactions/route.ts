@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         }
     }
     if (searchQuery) {
-      query = query.ilike('description', `%${searchQuery}%`);
+      query = query.or(`description.ilike.%${searchQuery}%,display_id.ilike.%${searchQuery}%,transaction_id.ilike.%${searchQuery}%`);
     }
 
     const offset = (page - 1) * limit;
@@ -96,12 +96,18 @@ export async function GET(request: NextRequest) {
     // The count needs to be calculated on the total set, not the paginated one.
     // The { count: 'exact' } should handle this.
 
-    return NextResponse.json({ 
+    const response = NextResponse.json({ 
       transactions: data,
       totalCount: count,
       totalPages: Math.ceil((count || 0) / limit),
       currentPage: page,
     });
+    
+    // **PERFORMANCE**: Add caching headers
+    response.headers.set('Cache-Control', 'private, max-age=60, s-maxage=60'); // Cache for 1 minute
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';

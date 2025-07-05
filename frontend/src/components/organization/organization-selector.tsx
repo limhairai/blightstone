@@ -42,9 +42,10 @@ export function OrganizationSelector() {
   
   const [componentIsLoading, setComponentIsLoading] = useState(false)
 
-  // 🚀 PERFORMANCE: Use separate hooks for different purposes
+  // 🚀 PERFORMANCE: Consolidated data fetching with better caching
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations() // For dropdown list
   const { data: currentOrgData, isLoading: isCurrentOrgLoading, error: currentOrgError } = useCurrentOrganization(currentOrganizationId) // For current org display
+  // Only fetch business managers if we have a current organization - reduces unnecessary API calls
   const { data: bizData, isLoading: isBizLoading, error: bizError } = useBusinessManagers(currentOrganizationId)
   
   const allOrganizations = orgData?.organizations || [];
@@ -53,14 +54,23 @@ export function OrganizationSelector() {
   // Handle auth errors gracefully - don't show errors for 401/403, just show loading state
   const hasAuthError = orgError && (orgError.message.includes('401') || orgError.message.includes('403'))
   const hasCurrentOrgAuthError = currentOrgError && (currentOrgError.message.includes('401') || currentOrgError.message.includes('403'))
-  const shouldShowLoading = isOrgLoading || isCurrentOrgLoading || hasAuthError || hasCurrentOrgAuthError || componentIsLoading
+  
+  // Only show loading if we don't have any data yet AND we're actually loading
+  // This prevents flickering when data is already available
+  const shouldShowLoading = componentIsLoading || (
+    (isOrgLoading && !orgData) || 
+    (isCurrentOrgLoading && !currentOrgData) || 
+    (isBizLoading && !bizData && currentOrganizationId) ||
+    hasAuthError || 
+    hasCurrentOrgAuthError
+  )
 
   // Get current organization directly from the dedicated hook instead of filtering all orgs
   const currentOrganization = currentOrgData?.organizations?.[0] || null;
 
-  // Use real organization data from context
+  // Use real organization data from context with better fallback logic
   const selectedOrg = useMemo<Organization>(() => {
-    if (shouldShowLoading || !currentOrganization) {
+    if (shouldShowLoading && !currentOrganization) {
       return {
         id: "loading",
         name: "Loading...",
@@ -69,20 +79,51 @@ export function OrganizationSelector() {
       };
     }
     
-    // For the current organization, use actual business manager count
-    // For other organizations, use the count from the organization data
-    const businessCount = currentOrganization.id === currentOrganizationId 
-      ? allBusinessManagers.length 
-      : currentOrganization.business_count || 0;
+    // If we have current organization data, use it
+    if (currentOrganization) {
+      // For the current organization, prefer actual business manager count over stored count
+      // But only if we have successfully loaded the business managers (not during loading)
+      let businessCount = currentOrganization.business_count || 0;
+      
+      // Only use live business manager count if:
+      // 1. We're not loading business managers
+      // 2. We have business manager data
+      // 3. This is the current organization
+      if (!isBizLoading && bizData && currentOrganization.id === currentOrganizationId) {
+        businessCount = allBusinessManagers.length;
+      }
+      
+      return {
+        id: currentOrganization.id,
+        name: currentOrganization.name,
+        avatar: currentOrganization.avatar,
+        role: "Owner",
+        businessCount: businessCount,
+      };
+    }
     
+    // Fallback: try to find current org in the organizations list
+    if (currentOrganizationId && allOrganizations.length > 0) {
+      const fallbackOrg = allOrganizations.find(org => org.id === currentOrganizationId);
+      if (fallbackOrg) {
+        return {
+          id: fallbackOrg.id,
+          name: fallbackOrg.name,
+          avatar: fallbackOrg.avatar,
+          role: "Owner",
+          businessCount: fallbackOrg.business_count || 0,
+        };
+      }
+    }
+    
+    // Final fallback
     return {
-      id: currentOrganization.id,
-      name: currentOrganization.name,
-      avatar: currentOrganization.avatar,
-      role: "Owner",
-      businessCount: businessCount,
+      id: "loading",
+      name: "Loading...",
+      role: "Loading",
+      businessCount: 0,
     };
-  }, [currentOrganization, allBusinessManagers, currentOrganizationId, shouldShowLoading]);
+  }, [currentOrganization, allBusinessManagers, currentOrganizationId, shouldShowLoading, isBizLoading, bizData, allOrganizations]);
 
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
@@ -98,11 +139,13 @@ export function OrganizationSelector() {
       name: org.name,
       avatar: org.avatar,
       role: org.id === currentOrganizationId ? "Owner" : "Member",
-      businessCount: org.id === currentOrganizationId 
+      // Use stored business count for non-current organizations
+      // Use live count only for current organization if we have the data
+      businessCount: org.id === currentOrganizationId && !isBizLoading && bizData
         ? allBusinessManagers.length 
         : org.business_count || 0
     }))
-  }, [allOrganizations, currentOrganizationId, allBusinessManagers])
+  }, [allOrganizations, currentOrganizationId, allBusinessManagers, isBizLoading, bizData])
 
   // Convert business managers to the format expected by the component
   const businessManagers: BusinessManager[] = useMemo(() => {
@@ -233,7 +276,8 @@ export function OrganizationSelector() {
     cleanupTimeouts()
   }, [selectedOrg.id, setCurrentOrganizationId, cleanupTimeouts])
 
-  const globalLoading = isOrgLoading || isBizLoading;
+  // Only show global loading for initial loads, not for every API call
+  const globalLoading = (isOrgLoading && !orgData) || (isBizLoading && !bizData && currentOrganizationId);
 
   // Show error state only for non-auth errors
   const hasNonAuthError = (orgError && !orgError.message.includes('401') && !orgError.message.includes('403')) || 

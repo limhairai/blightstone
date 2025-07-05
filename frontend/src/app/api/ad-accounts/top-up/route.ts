@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { buildApiUrl } from '../../../lib/api-utils';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -35,24 +36,82 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        // Instead of calling the non-existent topup_ad_account function,
-        // we create a funding request which will handle the reserved balance system
-        const topupNotes = `Top-up request for ad account: ${accountName || 'Unknown Account'} (${accountId})\nAmount: $${amount}\nImmediate processing requested`;
+        // Calculate fee using subscription service
+        let calculatedFeeData = {
+            fee_amount_cents: 0,
+            total_deducted_cents: amount * 100,
+            plan_fee_percentage: 0
+        };
 
-        const { data: fundingRequest, error: insertError } = await supabaseAdmin
-            .from('funding_requests')
+        try {
+            const feeResponse = await fetch(buildApiUrl('/subscriptions/calculate-fee'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${request.headers.get('Authorization')?.replace('Bearer ', '') || ''}`
+                },
+                body: JSON.stringify({
+                    organization_id: organizationId,
+                    amount: amount
+                })
+            });
+
+            if (feeResponse.ok) {
+                const feeData = await feeResponse.json();
+                calculatedFeeData = {
+                    fee_amount_cents: Math.round(feeData.fee_amount * 100),
+                    total_deducted_cents: Math.round(feeData.total_amount * 100),
+                    plan_fee_percentage: feeData.fee_percentage
+                };
+            } else {
+                console.error('Fee calculation failed:', feeResponse.status);
+                // Use default fee calculation (3% like the old system)
+                const defaultFeePercentage = 3.0;
+                const defaultFeeAmount = Math.round(amount * 100 * (defaultFeePercentage / 100));
+                calculatedFeeData = {
+                    fee_amount_cents: defaultFeeAmount,
+                    total_deducted_cents: amount * 100 + defaultFeeAmount,
+                    plan_fee_percentage: defaultFeePercentage
+                };
+            }
+        } catch (error) {
+            console.error('Error calculating fee:', error);
+            // Use default fee calculation (3% like the old system)
+            const defaultFeePercentage = 3.0;
+            const defaultFeeAmount = Math.round(amount * 100 * (defaultFeePercentage / 100));
+            calculatedFeeData = {
+                fee_amount_cents: defaultFeeAmount,
+                total_deducted_cents: amount * 100 + defaultFeeAmount,
+                plan_fee_percentage: defaultFeePercentage
+            };
+        }
+
+        // Create topup request with fee tracking
+        const { data: topupRequest, error: insertError } = await supabaseAdmin
+            .from('topup_requests')
             .insert({
                 organization_id: organizationId,
-                user_id: user.id,
-                requested_amount_cents: amount * 100,
-                notes: topupNotes,
-                status: 'pending' // This will trigger the reserved balance system
+                requested_by: user.id,
+                ad_account_id: accountId,
+                ad_account_name: accountName || 'Unknown Account',
+                amount_cents: amount * 100,
+                currency: 'USD',
+                status: 'pending',
+                priority: 'high', // High priority for immediate processing
+                notes: `Immediate topup request for ad account: ${accountName || 'Unknown Account'} (${accountId})`,
+                fee_amount_cents: calculatedFeeData.fee_amount_cents,
+                total_deducted_cents: calculatedFeeData.total_deducted_cents,
+                plan_fee_percentage: calculatedFeeData.plan_fee_percentage,
+                metadata: {
+                    immediate_processing: true,
+                    requested_via: 'ad_account_topup_api'
+                }
             })
             .select()
             .single();
 
         if (insertError) {
-            console.error('Error creating funding request:', insertError);
+            console.error('Error creating topup request:', insertError);
             
             // Check if the error is due to insufficient balance
             if (insertError.message?.includes('Insufficient available balance')) {
@@ -67,48 +126,26 @@ export async function POST(request: NextRequest) {
         // For immediate processing, we can approve the request right away
         // This simulates the old direct topup behavior
         const { error: approveError } = await supabaseAdmin
-            .from('funding_requests')
+            .from('topup_requests')
             .update({ 
-                status: 'approved',
-                admin_notes: 'Auto-approved for immediate ad account topup'
+                status: 'completed',
+                admin_notes: 'Auto-approved for immediate ad account topup',
+                processed_by: user.id,
+                processed_at: new Date().toISOString()
             })
-            .eq('request_id', fundingRequest.request_id);
+            .eq('request_id', topupRequest.request_id);
 
         if (approveError) {
-            console.error('Error approving funding request:', approveError);
+            console.error('Error approving topup request:', approveError);
             // Don't throw here - the request was created successfully
-        }
-
-        // Create a transaction record for the ad account topup
-        const { error: transactionError } = await supabaseAdmin
-            .from('transactions')
-            .insert({
-                organization_id: organizationId,
-                wallet_id: (await supabaseAdmin
-                    .from('wallets')
-                    .select('wallet_id')
-                    .eq('organization_id', organizationId)
-                    .single()).data?.wallet_id,
-                type: 'topup',
-                amount_cents: -amount * 100, // Negative because it's leaving the wallet
-                status: 'completed',
-                description: `Ad Account Top-up - ${accountName || 'Unknown Account'}`,
-                metadata: {
-                    ad_account_id: accountId,
-                    ad_account_name: accountName,
-                    funding_request_id: fundingRequest.request_id
-                }
-            });
-
-        if (transactionError) {
-            console.error('Error creating transaction record:', transactionError);
-            // Don't throw here - the main operation succeeded
         }
 
         return NextResponse.json({ 
             success: true, 
             message: 'Account topped up successfully.',
-            request_id: fundingRequest.request_id
+            request_id: topupRequest.request_id,
+            amount_deducted: calculatedFeeData.total_deducted_cents / 100,
+            fee_applied: calculatedFeeData.fee_amount_cents / 100
         });
     } catch (error) {
         console.error('Error in ad account topup:', error);

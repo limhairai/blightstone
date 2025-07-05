@@ -30,19 +30,19 @@ export async function POST(request: NextRequest) {
     const { data: orphanedBindings } = await supabase
       .from('asset_binding')
       .select(`
-        id,
+        binding_id,
         asset_id,
-        asset:asset_id (id)
+        asset:asset_id (asset_id)
       `)
       .eq('status', 'active')
-      .is('asset.id', null);
+      .is('asset.asset_id', null);
 
     if (orphanedBindings && orphanedBindings.length > 0) {
-      const orphanedIds = orphanedBindings.map(b => b.id);
+      const orphanedIds = orphanedBindings.map(b => b.binding_id);
       const { error: deleteError } = await supabase
         .from('asset_binding')
         .delete()
-        .in('id', orphanedIds);
+        .in('binding_id', orphanedIds);
 
       if (!deleteError) {
         cleanupResults.orphaned_bindings_removed = orphanedIds.length;
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       for (const app of applications) {
         const key = `${app.organization_id}-${app.request_type}`;
         if (seen.has(key)) {
-          duplicateIds.push(app.id);
+          duplicateIds.push(app.application_id);
         } else {
           seen.add(key);
         }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         const { error: deleteError } = await supabase
           .from('application')
           .delete()
-          .in('id', duplicateIds);
+          .in('application_id', duplicateIds);
 
         if (!deleteError) {
           cleanupResults.duplicate_applications_removed = duplicateIds.length;
@@ -83,15 +83,15 @@ export async function POST(request: NextRequest) {
     // 3. Remove assets with null/empty names or IDs
     const { data: invalidAssets } = await supabase
       .from('asset')
-      .select('id')
+      .select('asset_id')
       .or('name.is.null,dolphin_id.is.null,name.eq.,dolphin_id.eq.');
 
     if (invalidAssets && invalidAssets.length > 0) {
-      const invalidIds = invalidAssets.map(a => a.id);
+      const invalidIds = invalidAssets.map(a => a.asset_id);
       const { error: deleteError } = await supabase
         .from('asset')
         .delete()
-        .in('id', invalidIds);
+        .in('asset_id', invalidIds);
 
       if (!deleteError) {
         cleanupResults.invalid_assets_removed = invalidIds.length;

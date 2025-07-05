@@ -31,15 +31,10 @@ export class WalletService {
    */
   static async processTopup(request: WalletTopupRequest): Promise<WalletTopupResult> {
     try {
-      console.log(`Processing ${request.paymentMethod} topup:`, {
-        organizationId: request.organizationId,
-        amount: request.amount,
-        transactionId: request.transactionId
-      })
-
       // Get or create wallet
       const wallet = await this.getOrCreateWallet(request.organizationId)
       if (!wallet.success) {
+        console.error('Failed to get/create wallet:', wallet.error)
         return { success: false, error: wallet.error }
       }
 
@@ -84,8 +79,6 @@ export class WalletService {
         console.error('Error creating transaction record:', transactionError)
         // Don't fail the topup if transaction record fails, but log it
       }
-
-      console.log(`Successfully processed ${request.paymentMethod} topup: $${request.amount} for org ${request.organizationId}`)
 
       return {
         success: true,

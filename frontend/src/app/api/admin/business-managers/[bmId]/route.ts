@@ -40,7 +40,7 @@ export async function GET(
       .select(`
         *,
         asset!inner(
-          id,
+          asset_id,
           type,
           dolphin_id,
           name,
@@ -79,7 +79,7 @@ export async function GET(
 
     return NextResponse.json({
       business_manager: {
-        id: bmAsset.id,
+        id: bmAsset.asset_id,
         type: bmAsset.type,
         dolphin_id: bmAsset.dolphin_id,
         name: bmAsset.name,

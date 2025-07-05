@@ -1,43 +1,50 @@
-import useSWR, { SWRConfiguration } from 'swr'
-import { useAuth } from '../contexts/AuthContext'
+import useSWR from 'swr'
+import { useAuth } from '@/contexts/AuthContext'
+import { useMemo } from 'react'
 
-// Optimized fetcher with error handling
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-  }
-  return response.json()
-}
-
-// Authenticated fetcher
+// Optimized fetcher with better error handling
 export const authenticatedFetcher = async (url: string, token: string) => {
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   })
+  
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+    const error = new Error(`HTTP ${response.status}: ${response.statusText}`)
+    error.name = `${response.status}`
+    throw error
   }
+  
   return response.json()
 }
 
-// Optimized SWR configuration
-export const swrConfig: SWRConfiguration = {
-  fetcher,
-  dedupingInterval: 10 * 60 * 1000, // 10 minutes deduplication - longer to reduce calls
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false, // Don't revalidate on reconnect to reduce calls
-  revalidateIfStale: false,
-  errorRetryCount: 1, // Reduce retries to prevent flickering
-  errorRetryInterval: 5000, // Longer interval between retries
-  refreshInterval: 0, // Disable auto refresh by default
-  // Use stale data while revalidating for better UX
-  keepPreviousData: true,
-  // Add fallback data to prevent empty states
-  fallbackData: null,
+// **PERFORMANCE OPTIMIZED** SWR configuration
+export const swrConfig = {
+  revalidateOnFocus: false,        // Don't revalidate when window gains focus
+  revalidateOnReconnect: false,    // Don't revalidate when connection is restored
+  revalidateOnMount: true,         // DO revalidate on mount to get initial data
+  dedupingInterval: 60 * 1000,     // Dedupe requests within 60 seconds (increased from default 2s)
+  focusThrottleInterval: 5 * 60 * 1000, // Throttle focus revalidation to 5 minutes
+  errorRetryInterval: 30 * 1000,   // Retry failed requests every 30 seconds
+  errorRetryCount: 3,              // Maximum 3 retry attempts
+  shouldRetryOnError: (error: Error) => {
+    // Don't retry on 4xx errors (client errors)
+    if (error.name === '401' || error.name === '403' || error.name === '404') {
+      return false
+    }
+    return true
+  },
+  onError: (error: Error) => {
+    // Only log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('SWR Error:', error)
+    }
+  }
 }
 
-// Specialized hooks for common data patterns
+// Specialized hooks for common data patterns with aggressive caching
 export function useOrganizations() {
   const { session } = useAuth()
   
@@ -46,9 +53,10 @@ export function useOrganizations() {
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
-      dedupingInterval: 5 * 60 * 1000, // Organizations change rarely - 5 minutes
+      dedupingInterval: 10 * 60 * 1000, // Organizations change rarely - 10 minutes
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      // Allow initial mount, but cache aggressively after that
     }
   )
 }
@@ -56,135 +64,92 @@ export function useOrganizations() {
 export function useCurrentOrganization(organizationId: string | null) {
   const { session } = useAuth()
   
-  // Simplified: just check if we have the basic requirements
-  // Since we fixed the 401 errors in the API, we don't need complex access checking here
-  const shouldFetch = !!(organizationId && session?.access_token)
-  
-  // Debug logging (can be removed in production)
-  // console.log('🔍 useCurrentOrganization debug:', {
-  //   organizationId,
-  //   hasSession: !!session,
-  //   hasAccessToken: !!session?.access_token,
-  //   shouldFetch,
-  //   swrKey: shouldFetch ? `org-${organizationId}` : null,
-  //   apiUrl: `/api/organizations?id=${organizationId}`
-  // });
-  
-  const result = useSWR(
-    shouldFetch ? `org-${organizationId}` : null,
-    () => authenticatedFetcher(`/api/organizations?id=${organizationId}`, session.access_token!),
+  return useSWR(
+    organizationId && session?.access_token 
+      ? [`/api/organizations?id=${organizationId}`, session.access_token]
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
-      dedupingInterval: 2 * 60 * 1000, // 2 minutes - reasonable cache time
-      revalidateOnMount: true, // Always revalidate on mount for current org data
+      dedupingInterval: 5 * 1000, // Reduced to 5 seconds to allow immediate cache invalidation
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      onError: (error) => {
-        // Only log non-auth errors to reduce noise
-        if (!error.message.includes('401') && !error.message.includes('403')) {
-          console.error('useCurrentOrganization error:', error);
-        }
-      },
-      // Don't retry on authentication or permission errors
-      shouldRetryOnError: (error) => {
-        if (error.message.includes('401') || error.message.includes('403') || error.message.includes('404')) {
-          return false;
-        }
-        return true;
-      },
-      // Return empty result on error to prevent component failures
-      onErrorRetry: (error, key, config, revalidate, { retryCount }) => {
-        // Don't retry auth errors
-        if (error.message.includes('401') || error.message.includes('403')) {
-          return;
-        }
-        // Don't retry more than 1 time for other errors
-        if (retryCount >= 1) return;
-        
-        // Retry after 3 seconds
-        setTimeout(() => revalidate({ retryCount }), 3000);
-      },
-      // Return empty organizations array on error to prevent component crashes
-      fallbackData: { organizations: [] }  // Re-enabled to prevent crashes
-    }
-  );
-  
-  // Debug the result (can be removed in production)
-  // console.log('🔍 useCurrentOrganization result:', {
-  //   data: result.data,
-  //   error: result.error?.message,
-  //   isLoading: result.isLoading,
-  //   isValidating: result.isValidating
-  // });
-  
-  return result;
-}
-
-export function useBusinessManagers(organizationId: string | null) {
-  const { session } = useAuth()
-  
-  return useSWR(
-    organizationId && session?.access_token 
-      ? ['/api/business-managers', session.access_token] 
-      : null,
-    ([url, token]) => authenticatedFetcher(url, token),
-    {
-      ...swrConfig,
-      dedupingInterval: 3 * 60 * 1000, // Business managers change moderately
-      onError: (error) => {
-        console.error('useBusinessManagers error:', error);
-      },
-      // Don't retry on 404/401/403 errors - these indicate missing data or auth issues
-      shouldRetryOnError: (error) => {
-        if (error.message.includes('404') || error.message.includes('401') || error.message.includes('403')) {
-          return false;
-        }
-        return true;
-      }
+      revalidateOnMount: true, // Always get fresh data on mount
+      refreshInterval: 0, // No automatic polling
     }
   )
 }
 
-export function useAdAccounts(organizationId: string | null) {
+export function useBusinessManagers() {
   const { session } = useAuth()
   
   return useSWR(
-    organizationId && session?.access_token 
-      ? ['/api/ad-accounts', session.access_token]
-      : null,
-    ([url, token]) => authenticatedFetcher(url, token),
+    session?.access_token ? 'business-managers' : null,
+    () => authenticatedFetcher('/api/business-managers', session!.access_token),
     {
       ...swrConfig,
-      dedupingInterval: 2 * 60 * 1000, // Ad accounts change more frequently
-      onError: (error) => {
-        console.error('useAdAccounts error:', error);
-      },
-      // Don't retry on 404/401/403 errors - these indicate missing data or auth issues
-      shouldRetryOnError: (error) => {
-        if (error.message.includes('404') || error.message.includes('401') || error.message.includes('403')) {
-          return false;
-        }
-        return true;
-      }
+      dedupingInterval: 30 * 1000, // Reduced to 30 seconds for immediate responsiveness
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateOnMount: true, // Always get fresh data on mount
+      refreshInterval: 0, // No automatic polling
     }
   )
 }
 
-export function useTransactions(organizationId: string | null) {
+export function useAdAccounts(bmIdFilter?: string | null) {
   const { session } = useAuth()
   
+  const apiUrl = bmIdFilter ? `/api/ad-accounts?bm_id=${encodeURIComponent(bmIdFilter)}` : '/api/ad-accounts'
+  const cacheKey = bmIdFilter ? `ad-accounts-${bmIdFilter}` : 'ad-accounts'
+  
   return useSWR(
-    organizationId && session?.access_token 
-      ? ['/api/transactions', session.access_token]
-      : null,
-    ([url, token]) => authenticatedFetcher(url, token),
+    session?.access_token ? cacheKey : null,
+    () => authenticatedFetcher(apiUrl, session!.access_token),
     {
       ...swrConfig,
-      dedupingInterval: 30 * 1000, // Reduced from 1 minute to 30 seconds for faster loading
-      revalidateOnMount: true, // Always revalidate on mount for fresh data
-      revalidateOnFocus: true, // Revalidate when user focuses the tab
+      dedupingInterval: 30 * 1000, // Reduced to 30 seconds for immediate responsiveness
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateOnMount: true, // Always get fresh data on mount
+      refreshInterval: 0, // No automatic polling
+    }
+  )
+}
+
+export function useTransactions(filters?: {
+  type?: string
+  search?: string
+  status?: string
+  business_id?: string
+  date?: string
+}) {
+  const { session } = useAuth()
+  
+  const queryString = useMemo(() => {
+    if (!filters) return ''
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value)
+    })
+    return params.toString()
+  }, [filters])
+  
+  const apiUrl = queryString ? `/api/transactions?${queryString}` : '/api/transactions'
+  const cacheKey = queryString ? `transactions-${queryString}` : 'transactions'
+  
+  return useSWR(
+    session?.access_token ? cacheKey : null,
+    () => authenticatedFetcher(apiUrl, session!.access_token),
+    {
+      ...swrConfig,
+      dedupingInterval: 60 * 1000, // Transactions - 1 minute
+      revalidateOnFocus: false,
+      // Allow initial mount, but cache aggressively after that
       onError: (error) => {
-        console.error('useTransactions error:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('useTransactions error:', error);
+        }
       },
       shouldRetryOnError: (error) => {
         if (error.message.includes('404') || error.message.includes('401') || error.message.includes('403')) {
@@ -196,20 +161,83 @@ export function useTransactions(organizationId: string | null) {
   )
 }
 
-// Bulk data hook for dashboard - fetches everything needed in one optimized call
+// Optimized subscription hook with SWR
+export function useSubscriptionSWR(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    organizationId && session?.access_token
+      ? [`/api/subscriptions/current?organizationId=${organizationId}`, session.access_token]
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 30 * 1000, // Reduced to 30 seconds for immediate responsiveness after upgrades
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateOnMount: true, // Enable revalidation on mount to get fresh data
+      refreshInterval: 0, // No automatic polling - we handle refreshes manually
+    }
+  )
+}
+
+// Optimized businesses hook
+export function useBusinesses(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    organizationId && session?.access_token 
+      ? [`/api/businesses?organization_id=${organizationId}`, session.access_token]
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 10 * 60 * 1000, // Businesses change rarely - 10 minutes
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateOnMount: false,
+    }
+  )
+}
+
+// Topup requests hook
+export function useTopupRequests() {
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token ? ['/api/topup-requests', session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 5 * 1000, // Reduced to 5 seconds for immediate responsiveness
+      refreshInterval: 10 * 1000, // Auto-refresh every 10 seconds to catch admin changes
+      revalidateOnFocus: true, // Revalidate when user returns to tab
+      revalidateOnMount: true, // Always get fresh data on mount
+      revalidateOnReconnect: true, // Revalidate when connection is restored
+      focusThrottleInterval: 2000, // Throttle focus revalidation to 2 seconds
+    }
+  )
+}
+
+// Bulk data hook for dashboard - fetches everything needed with optimized caching
 export function useDashboardData(organizationId: string | null) {
   const orgs = useOrganizations()
   const currentOrg = useCurrentOrganization(organizationId)
-  const businessManagers = useBusinessManagers(organizationId)
-  const adAccounts = useAdAccounts(organizationId)
-  const transactions = useTransactions(organizationId)
+  const businessManagers = useBusinessManagers()
+  const adAccounts = useAdAccounts()
+  const transactions = useTransactions()
 
   const isLoading = orgs.isLoading || currentOrg.isLoading || businessManagers.isLoading || adAccounts.isLoading || transactions.isLoading
   const error = orgs.error || currentOrg.error || businessManagers.error || adAccounts.error || transactions.error
 
+  // Debug logging disabled - performance is now optimal
+  // if (process.env.NODE_ENV === 'development') {
+  //   console.log('🔍 Dashboard Data Debug:', ...)
+  // }
+
   return {
     organizations: orgs.data?.organizations || [],
-    currentOrganization: currentOrg.data?.organizations?.[0],
+    currentOrganization: currentOrg.data?.organizations?.[0] || null,
     businessManagers: businessManagers.data || [],
     adAccounts: adAccounts.data?.accounts || [],
     transactions: transactions.data?.transactions || [],

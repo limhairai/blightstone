@@ -32,7 +32,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
     }
 
-    return NextResponse.json({ profile });
+    const response = NextResponse.json({ profile });
+    
+    // **PERFORMANCE**: Add caching headers
+    response.headers.set('Cache-Control', 'private, max-age=300, s-maxage=300'); // Cache for 5 minutes
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in profile API:', error);

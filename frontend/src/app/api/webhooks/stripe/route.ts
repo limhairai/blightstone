@@ -71,58 +71,43 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const organizationId = session.metadata?.organization_id
-  const planId = session.metadata?.plan_id
-  const walletCredit = session.metadata?.wallet_credit
+  // Handle subscription checkout completion
+  if (session.metadata?.plan_id) {
+    // Update organization plan
+    const { error: updateError } = await supabase
+      .from('organizations')
+      .update({ 
+        plan_id: session.metadata.plan_id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('organization_id', session.metadata.organization_id)
 
-  // Handle subscription checkout
-  if (organizationId && planId && !walletCredit) {
-    console.log('Processing subscription checkout:', session.id)
-    // Update organization with customer ID if not already set
-    if (session.customer) {
-      await supabase
-        .from('organizations')
-        .update({
-          stripe_customer_id: session.customer as string,
-          plan_id: planId,
-          subscription_status: 'active',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('organization_id', organizationId)
+    if (updateError) {
+      console.error('Failed to update organization plan:', updateError)
+      return NextResponse.json({ error: 'Failed to update organization plan' }, { status: 500 })
     }
-    return
   }
-
-  // Handle wallet topup checkout using unified service
-  if (organizationId && walletCredit) {
-    console.log('Processing wallet topup checkout:', session.id)
-    
+  
+  // Handle wallet credit checkout completion
+  if (session.metadata?.wallet_credit) {
     const result = await WalletService.processTopup({
-      organizationId,
-      amount: parseFloat(walletCredit),
+      organizationId: session.metadata.organization_id,
+      amount: parseFloat(session.metadata.wallet_credit),
       paymentMethod: 'stripe',
       transactionId: session.id,
       metadata: {
         stripe_session_id: session.id,
         stripe_payment_intent_id: session.payment_intent,
-        stripe_customer_id: session.customer
+        customer_email: session.customer_details?.email
       },
-      description: `Stripe Wallet Top-up - $${parseFloat(walletCredit).toFixed(2)}`
+      description: `Stripe Checkout - $${session.metadata.wallet_credit}`
     })
 
     if (!result.success) {
-      console.error('Failed to process Stripe wallet topup:', result.error)
+      console.error('Wallet topup failed:', result.error)
+      return NextResponse.json({ error: 'Failed to process wallet topup' }, { status: 500 })
     }
-    return
   }
-
-  console.error('Missing or invalid metadata in checkout session:', {
-    sessionId: session.id,
-    organizationId,
-    planId,
-    walletCredit,
-    metadata: session.metadata
-  })
 }
 
 async function handleSubscriptionCreated(subscription: Stripe.Subscription) {

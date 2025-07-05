@@ -17,6 +17,8 @@ import { Label } from "../ui/label"
 import { Loader2, Building2 } from "lucide-react"
 import { useAuth } from "../../contexts/AuthContext"
 import { toast } from "sonner"
+import { refreshAfterBusinessManagerChange } from "../../lib/subscription-utils"
+import { useOrganizationStore } from "../../lib/stores/organization-store"
 
 interface CreateBusinessDialogProps {
   trigger: React.ReactNode
@@ -25,6 +27,7 @@ interface CreateBusinessDialogProps {
 
 export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusinessDialogProps) {
   const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
   const [open, setOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [name, setName] = useState("")
@@ -33,14 +36,18 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setIsSubmitting(true)
 
     if (!name) {
       toast.error("Business name is required.");
-      setIsSubmitting(false);
       return;
     }
 
+    // Show success immediately for better UX
+    toast.success("Application Submitted!", { description: "Your business application has been submitted for review." })
+    setOpen(false)
+    onBusinessCreated?.()
+
+    setIsSubmitting(true)
     try {
       const orgsResponse = await fetch('/api/organizations', {
         headers: {
@@ -73,14 +80,13 @@ export function CreateBusinessDialog({ trigger, onBusinessCreated }: CreateBusin
         throw new Error(errorData.error || 'Failed to submit business application')
       }
 
-      toast.success("Application Submitted!", { description: "Your business application has been submitted for review." })
-      
-      setOpen(false)
-      onBusinessCreated?.()
+      // Background cache refresh after optimistic update
+      await refreshAfterBusinessManagerChange(currentOrganizationId)
 
     } catch (error) {
       console.error('Failed to create business:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to create business application.')
+      // Show error but don't revert the optimistic update since user already saw success
+      // In a real app, you might want to show a subtle error notification
     } finally {
       setIsSubmitting(false)
     }

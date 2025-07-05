@@ -23,7 +23,7 @@ export async function GET(
       .select(`
         *,
         asset!inner(
-          id,
+          asset_id,
           type,
           dolphin_id,
           name,
@@ -48,13 +48,13 @@ export async function GET(
     const businessManagers = bindings?.map(binding => {
       const asset = binding.asset
       return {
-        id: asset.id,
+        id: asset.asset_id,
         type: asset.type,
         dolphin_id: asset.dolphin_id,
         name: asset.name,
         status: asset.status,
         metadata: asset.metadata,
-        binding_id: binding.id,
+        binding_id: binding.binding_id,
         bound_at: binding.bound_at
       }
     }) || []

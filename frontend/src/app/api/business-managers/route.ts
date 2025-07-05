@@ -132,7 +132,12 @@ export async function GET(request: NextRequest) {
       organization_id: app.organization_id
     }));
 
-    return NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps]);
+    return NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps], {
+      headers: {
+        'Cache-Control': 'private, max-age=30, s-maxage=30', // Reduced to 30 seconds for immediate responsiveness
+        'Vary': 'Authorization'
+      }
+    });
 
   } catch (error) {
     console.error('Error in business managers API:', error);

@@ -2,9 +2,8 @@ import { Button } from "../ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table"
 import { Badge } from "../ui/badge"
 import { DownloadIcon, FilterIcon } from "lucide-react"
-import { useAuth } from "../../contexts/AuthContext"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
-import useSWR from "swr"
+import { useTransactions } from "@/lib/swr-config"
 
 interface Transaction {
   id: string
@@ -21,36 +20,23 @@ interface TransactionTableProps {
 }
 
 export function TransactionTable({ transactions: propTransactions, showFilters = true }: TransactionTableProps) {
-  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
 
-  // Fetch transactions if not provided as props
-  const { data: fetchedTransactions, isLoading } = useSWR(
-    !propTransactions && session && currentOrganizationId ? ['/api/transactions', session.access_token] : null,
-    async ([url, token]) => {
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-      if (!response.ok) throw new Error('Failed to fetch transactions')
-      const result = await response.json()
-      const data = result.transactions || []
-      
-      // Transform API data to match our interface
-      return data.map((t: any) => ({
-        id: t.id,
-        date: new Date(t.created_at).toLocaleDateString(),
-        description: t.description || 'Transaction',
-        amount: `$${Math.abs(t.amount_cents / 100).toFixed(2)}`,
-        status: t.status || 'completed',
-        type: t.type || 'deposit'
-      }))
-    }
-  )
+  // Use optimized hook instead of direct SWR call
+  const { data: fetchedTransactions, isLoading } = useTransactions();
+
+  // Transform API data to match our interface
+  const transformedTransactions = fetchedTransactions?.transactions?.map((t: any) => ({
+    id: t.id,
+    date: new Date(t.created_at).toLocaleDateString(),
+    description: t.description || 'Transaction',
+    amount: `$${Math.abs(t.amount_cents / 100).toFixed(2)}`,
+    status: t.status || 'completed',
+    type: t.type || 'deposit'
+  })) || []
 
   // Use provided transactions or fetched transactions, with fallback to empty array
-  const transactions = propTransactions || fetchedTransactions || []
+  const transactions = propTransactions || transformedTransactions
 
   // Updated status colors to match our brand colors
   const statusColors = {
@@ -109,44 +95,38 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
           </Button>
         </div>
       )}
+
       <Table>
-        <TableHeader className="bg-gray-50 dark:bg-secondary/30">
-          <TableRow className="border-b-gray-200 dark:border-b-[#1A1A1A] hover:bg-transparent">
-            <TableHead className="text-xs font-medium text-gray-500 dark:text-muted-foreground">Date</TableHead>
-            <TableHead className="text-xs font-medium text-gray-500 dark:text-muted-foreground">Description</TableHead>
-            <TableHead className="text-xs font-medium text-gray-500 dark:text-muted-foreground">Amount</TableHead>
-            <TableHead className="text-xs font-medium text-gray-500 dark:text-muted-foreground">Status</TableHead>
+        <TableHeader>
+          <TableRow className="border-b border-gray-200 dark:border-[#1A1A1A]">
+            <TableHead className="text-gray-600 dark:text-gray-400">Date</TableHead>
+            <TableHead className="text-gray-600 dark:text-gray-400">Description</TableHead>
+            <TableHead className="text-gray-600 dark:text-gray-400">Amount</TableHead>
+            <TableHead className="text-gray-600 dark:text-gray-400">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {transactions.length > 0 ? (
+          {transactions.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                No transactions found
+              </TableCell>
+            </TableRow>
+          ) : (
             transactions.map((transaction) => (
-              <TableRow
-                key={transaction.id}
-                className="border-b-gray-200 dark:border-b-[#1A1A1A] hover:bg-gray-50 dark:hover:bg-secondary/5"
-              >
-                <TableCell className="text-sm">{transaction.date}</TableCell>
-                <TableCell className="text-sm">{transaction.description}</TableCell>
-                <TableCell className={`text-sm ${typeColors[transaction.type]}`}>
-                  {transaction.type === "deposit" ? "+" : transaction.type === "withdrawal" ? "-" : ""}
+              <TableRow key={transaction.id} className="border-b border-gray-200 dark:border-[#1A1A1A] hover:bg-gray-50 dark:hover:bg-[#1A1A1A]">
+                <TableCell className="text-gray-900 dark:text-gray-100">{transaction.date}</TableCell>
+                <TableCell className="text-gray-900 dark:text-gray-100">{transaction.description}</TableCell>
+                <TableCell className={`font-medium ${typeColors[transaction.type]}`}>
                   {transaction.amount}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline" className={statusColors[transaction.status]}>
-                    {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                    {transaction.status}
                   </Badge>
                 </TableCell>
               </TableRow>
             ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={4} className="text-center py-8">
-                <div className="text-muted-foreground">
-                  <p className="text-sm">No transactions found</p>
-                  <p className="text-xs mt-1">Transactions will appear here after you add funds or make payments</p>
-                </div>
-              </TableCell>
-            </TableRow>
           )}
         </TableBody>
       </Table>

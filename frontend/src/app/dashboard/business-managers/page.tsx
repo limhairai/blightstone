@@ -6,19 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Plus, Building2 } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
-import useSWR from 'swr'
+import { useBusinessManagers } from '@/lib/swr-config'
 import { useMemo } from 'react'
-
-const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json())
 
 export default function BusinessManagersPage() {
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
 
-  const { data: bms, error, isLoading, mutate } = useSWR(
-    session && currentOrganizationId ? ['/api/business-managers', session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-  )
+  const { data: bms, error, isLoading, mutate } = useBusinessManagers()
 
   const businessManagers = useMemo(() => {
     if (!bms || !Array.isArray(bms)) return []

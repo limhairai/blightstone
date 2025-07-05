@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // Transform assets to look like the old business manager format for backward compatibility
     const businesses = (assets || []).map((asset: any) => ({
-      id: asset.id,
+      id: asset.asset_id || asset.id,
       name: asset.name,
       business_id: asset.dolphin_id, // Dolphin ID
       status: asset.status,
@@ -58,7 +58,8 @@ export async function GET(request: NextRequest) {
       // Additional fields that might be expected
       dolphin_business_manager_id: asset.dolphin_id,
       binding_id: asset.binding_id,
-      metadata: asset.metadata
+      metadata: asset.metadata,
+      asset_id: asset.asset_id || asset.id
     }));
 
     return NextResponse.json({ businesses });

@@ -80,7 +80,13 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ members: teamMembers });
+    const response = NextResponse.json({ members: teamMembers });
+    
+    // **PERFORMANCE**: Add caching headers
+    response.headers.set('Cache-Control', 'private, max-age=300, s-maxage=300'); // Cache for 5 minutes
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     console.error('Error fetching team members:', error);

@@ -144,18 +144,21 @@ export function ApplicationAssetBindingDialog({
             const bmResponse = await fetch(`/api/admin/assets?type=business_manager`)
             if (bmResponse.ok) {
               const bmData = await bmResponse.json()
-              const targetBM = bmData.assets?.find((asset: any) => 
-                asset.dolphin_id === targetBmId || asset.id === targetBmId
-              )
+              const targetBM = bmData.assets?.find((asset: any) => {
+                // Use the transformed field names from the API response
+                return asset.dolphinId === targetBmId || asset.id === targetBmId || asset.assetId === targetBmId;
+              })
               
               if (targetBM) {
-                allAssets.push({
+                const transformedBM = {
                   ...targetBM,
-                  id: targetBM.asset_id || targetBM.id || targetBM.dolphin_id,
+                  id: targetBM.assetId || targetBM.id || targetBM.dolphinId,
                   type: 'business_manager',
-                  asset_id: targetBM.asset_id || targetBM.id,
+                  asset_id: targetBM.assetId || targetBM.id,
+                  dolphin_id: targetBM.dolphinId,
                   metadata: targetBM.metadata
-                });
+                };
+                allAssets.push(transformedBM);
               }
             }
           } catch (error) {
@@ -171,7 +174,7 @@ export function ApplicationAssetBindingDialog({
     } finally {
       setLoadingAssets(false)
     }
-  }, [mode]);
+  }, [mode, targetBmId]);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -268,16 +271,9 @@ export function ApplicationAssetBindingDialog({
 
   // Filter and categorize assets based on mode
   const businessManagers = useMemo(() => {
-    console.log('🔧 FULFILLMENT DEBUG: businessManagers calculation')
-    console.log('🔧 FULFILLMENT DEBUG: mode:', mode)
-    console.log('🔧 FULFILLMENT DEBUG: assets:', assets)
-    console.log('🔧 FULFILLMENT DEBUG: targetBmId:', targetBmId)
-    console.log('🔧 FULFILLMENT DEBUG: existingBMs:', existingBMs)
-    
     if (mode === 'additional-accounts-specific') {
       // For specific BM requests, find the target BM in assets
       const targetBMs = assets.filter(asset => asset.id === targetBmId || asset.dolphin_id === targetBmId);
-      console.log('🔧 FULFILLMENT DEBUG: additional-accounts-specific targetBMs:', targetBMs)
       return targetBMs;
     }
     
@@ -290,20 +286,17 @@ export function ApplicationAssetBindingDialog({
         status: 'active',
         type: 'business_manager'
       }))
-      console.log('🔧 FULFILLMENT DEBUG: additional-accounts-general mappedBMs:', mappedBMs)
       return mappedBMs
     }
 
     // For new BM requests, show unbound BMs
     const bmAssets = assets.filter(asset => asset.type === 'business_manager')
-    console.log('🔧 FULFILLMENT DEBUG: BM assets before filtering:', bmAssets)
     
     const filteredBMs = bmAssets.filter(asset => 
       searchTerm === "" || 
       asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.dolphin_id?.toLowerCase().includes(searchTerm.toLowerCase())
     )
-    console.log('🔧 FULFILLMENT DEBUG: filtered BMs for new-bm mode:', filteredBMs)
     
     return filteredBMs
   }, [assets, searchTerm, mode, targetBmId, existingBMs])
@@ -323,20 +316,13 @@ export function ApplicationAssetBindingDialog({
     }
     
     if (!selectedBM) {
-      console.log('🔧 FULFILLMENT DEBUG: No selectedBM found for ID:', selectedBusinessManager)
       return []
     }
-
-    console.log('🔧 FULFILLMENT DEBUG: Selected BM:', selectedBM)
-    console.log('🔧 FULFILLMENT DEBUG: Mode:', mode)
-    console.log('🔧 FULFILLMENT DEBUG: All assets count:', assets.length)
-    console.log('🔧 FULFILLMENT DEBUG: Ad account assets:', assets.filter(asset => asset.type === 'ad_account'))
 
     // For additional-accounts-specific mode, the API already filtered by BM
     // So we just need to return all ad accounts (they're already filtered)
     if (mode === 'additional-accounts-specific') {
       const accounts = assets.filter(asset => asset.type === 'ad_account');
-      console.log('🔧 FULFILLMENT DEBUG: Additional-specific mode, returning accounts:', accounts)
       return accounts;
     }
     
@@ -346,19 +332,15 @@ export function ApplicationAssetBindingDialog({
       .filter(asset => {
         if (mode === 'new-bm') {
           const bmDolphinId = ('dolphin_id' in selectedBM && selectedBM.dolphin_id) || selectedBM.id;
-          console.log('🔧 FULFILLMENT DEBUG: Comparing BM dolphin_id:', bmDolphinId, 'with ad account business_manager_id:', asset.metadata?.business_manager_id)
           return asset.metadata?.business_manager_id === bmDolphinId;
         }
         return true;
       })
 
-    console.log('🔧 FULFILLMENT DEBUG: Filtered accounts result:', filteredAccounts)
     return filteredAccounts;
   }, [assets, selectedBusinessManager, mode, businessManagers])
 
   const handleBusinessManagerSelect = (bmId: string) => {
-    console.log('🔧 FULFILLMENT DEBUG: BM selected:', bmId)
-    console.log('🔧 FULFILLMENT DEBUG: Current selected BM:', selectedBusinessManager)
     setSelectedBusinessManager(bmId)
     setSelectedAdAccounts([]) // Reset ad account selection when BM changes
   }
@@ -473,11 +455,6 @@ export function ApplicationAssetBindingDialog({
                   ) : (
                     <div className="space-y-1 max-h-40 overflow-y-auto">
                       {businessManagers.map((bm, index) => {
-                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index}:`, bm)
-                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} id:`, bm.id)
-                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} asset_id:`, bm.asset_id)
-                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} dolphin_id:`, bm.dolphin_id)
-                        console.log(`🔧 FULFILLMENT DEBUG: BM ${index} keys:`, Object.keys(bm))
                         return (
                         <div 
                           key={bm.id || bm.dolphin_id || index}

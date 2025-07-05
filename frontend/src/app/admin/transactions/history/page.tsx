@@ -17,6 +17,7 @@ import { Search, Download } from "lucide-react"
 
 interface Transaction {
   id: string
+  display_id?: string
   type: "topup" | "spend" | "refund" | "fee"
   amount: number
   currency: string
@@ -69,7 +70,8 @@ export default function TransactionHistoryPage() {
       const matchesSearch = searchTerm === "" || 
         transaction.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        transaction.id.toLowerCase().includes(searchTerm.toLowerCase())
+        transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (transaction.display_id && transaction.display_id.toLowerCase().includes(searchTerm.toLowerCase()))
       return matchesType && matchesStatus && matchesSearch
     })
   }, [transactions, typeFilter, statusFilter, searchTerm])
@@ -114,14 +116,31 @@ export default function TransactionHistoryPage() {
 
   const columns: ColumnDef<Transaction>[] = [
     {
-      accessorKey: "id",
+      accessorKey: "display_id",
       header: "Transaction ID",
       size: 120,
-      cell: ({ row }) => (
-        <div className="font-mono text-xs">
-          {row.getValue("id")}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const displayId = row.getValue<string>("display_id")
+        const id = row.original.id
+        return (
+          <div className="space-y-1">
+            {displayId ? (
+              <>
+                <div className="font-mono text-sm font-medium">{displayId}</div>
+                {id && (
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {id.substring(0, 8)}...
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="font-mono text-xs text-muted-foreground">
+                {id ? `${id.substring(0, 8)}...` : 'No ID'}
+              </div>
+            )}
+          </div>
+        )
+      },
     },
     {
       accessorKey: "type",
@@ -232,10 +251,10 @@ export default function TransactionHistoryPage() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search transactions..."
+              placeholder="Search by ID, organization, or description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-[250px]"
+              className="pl-10 w-[300px]"
             />
           </div>
         </div>

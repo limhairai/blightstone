@@ -12,24 +12,11 @@ export async function POST(
 ) {
   try {
     const { id } = params
-    console.log('🔧 BACKEND DEBUG: Approve application API called');
-    console.log('🔧 BACKEND DEBUG: Application ID:', id);
     const body = await request.json()
-    console.log('🔧 BACKEND DEBUG - Received body:', body);
-    console.log('🔧 BACKEND DEBUG - Body type:', typeof body);
-    console.log('🔧 BACKEND DEBUG - Body keys:', Object.keys(body));
     
     const { admin_user_id: adminUserId, admin_notes: adminNotes } = body
-    console.log('🔧 BACKEND DEBUG - Extracted adminUserId:', adminUserId);
-    console.log('🔧 BACKEND DEBUG - adminUserId type:', typeof adminUserId);
-    console.log('🔧 BACKEND DEBUG - Extracted adminNotes:', adminNotes);
 
     if (!adminUserId) {
-      console.log('🔧 BACKEND DEBUG - adminUserId is missing or falsy');
-      console.log('🔧 BACKEND DEBUG - adminUserId value:', adminUserId);
-      console.log('🔧 BACKEND DEBUG - adminUserId === null:', adminUserId === null);
-      console.log('🔧 BACKEND DEBUG - adminUserId === undefined:', adminUserId === undefined);
-      console.log('🔧 BACKEND DEBUG - adminUserId === "":', adminUserId === '');
       return NextResponse.json(
         { error: 'adminUserId is required' },
         { status: 400 }

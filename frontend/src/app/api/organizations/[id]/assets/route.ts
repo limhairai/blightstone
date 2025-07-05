@@ -32,7 +32,8 @@ export async function GET(
 
     // Transform to match frontend expectations and group by type
     const transformedAssets = assets?.map(asset => ({
-      id: asset.id,
+      id: asset.asset_id || asset.id,
+      asset_id: asset.asset_id || asset.id,
       type: asset.type,
       dolphin_id: asset.dolphin_id,
       name: asset.name,

@@ -2,8 +2,6 @@
 
 import type React from "react"
 import { useState } from "react"
-import useSWR, { useSWRConfig } from 'swr'
-import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "../ui/button"
 import {
   Dialog,
@@ -21,14 +19,15 @@ import { toast } from "sonner"
 import { EmptyState } from "../ui/states"
 import { timezones } from "../../lib/timezones"
 import { useOrganizationStore } from "../../lib/stores/organization-store"
+import { useBusinessManagers } from "@/lib/swr-config"
+import { useSWRConfig } from "swr"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
   bmId?: string | null // Business Manager ID if we're on a specific BM page
   onAccountCreated?: () => void
 }
-
-const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
 
 export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: CreateAdAccountDialogProps) {
   const { session } = useAuth();
@@ -39,10 +38,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
   const { mutate } = useSWRConfig();
 
   // Fetch business managers with organization ID
-  const { data: businessManagers, isLoading: areBusinessManagersLoading } = useSWR(
-    session && currentOrganizationId ? ['/api/business-managers', session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-  );
+  const { data: businessManagers, isLoading: areBusinessManagersLoading } = useBusinessManagers(currentOrganizationId);
 
   const approvedBusinessManagers = Array.isArray(businessManagers) ? businessManagers : [];
 

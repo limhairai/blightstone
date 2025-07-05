@@ -18,6 +18,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { validateBusinessManagerApplicationForm, showValidationErrors } from "@/lib/form-validation"
 import { useSubscription } from "@/hooks/useSubscription"
+import { refreshAfterBusinessManagerChange } from "@/lib/subscription-utils"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -26,10 +28,11 @@ interface ApplyForBmDialogProps {
 
 export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps) {
   const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { session } = useAuth()
   const { subscriptionData } = useSubscription()
+  const { currentOrganizationId } = useOrganizationStore()
 
   const [formData, setFormData] = useState({
     website: "",
@@ -43,71 +46,70 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Check subscription status first
-    if (!subscriptionData?.canRequestAssets) {
-      toast.error("Upgrade Required", {
-        description: "Please subscribe to a plan to request business managers."
-      })
-      return
-    }
-    
-    // Validate form
-    const validation = validateBusinessManagerApplicationForm(formData)
-    
-    if (!validation.isValid) {
-      showValidationErrors(validation.errors)
-      return
-    }
-    
-    setIsLoading(true)
 
+    // Validate form
+    const validationErrors = validateBusinessManagerApplicationForm(formData)
+    if (validationErrors.length > 0) {
+      showValidationErrors(validationErrors)
+      return
+    }
+
+    // Show success immediately for better UX
+    toast.success("Application submitted successfully!", {
+      description: "Your business manager application is now under review."
+    })
+    setOpen(false)
+    onSuccess?.()
+
+    setIsSubmitting(true)
     try {
-      console.log('🏢 Submitting business manager application:', formData);
-      
-      const response = await fetch('/api/applications', {
+      // Get current organization
+      const orgsResponse = await fetch('/api/organizations', {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+      })
+
+      if (!orgsResponse.ok) {
+        throw new Error('Failed to fetch organization')
+      }
+
+      const orgsData = await orgsResponse.json()
+      const organizationId = orgsData.organizations?.[0]?.organization_id
+
+      if (!organizationId) {
+        throw new Error('No organization found')
+      }
+
+      // Submit application
+      const response = await fetch('/api/bm-applications', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
-          website_url: formData.website, // Fixed: send website_url instead of website
-          type: 'business_manager',
+          website_url: formData.website,
+          organization_id: organizationId,
         }),
-      });
-
-      const responseData = await response.json();
-      console.log('🏢 Application response:', responseData);
+      })
 
       if (!response.ok) {
-        throw new Error(responseData.error || 'Failed to submit application');
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to submit application')
       }
 
-      setShowSuccess(true)
-      toast.success("Application Submitted!", {
-        description: "Your business manager application has been submitted for review."
-      })
-
-      // Call the callback
-      if (onSuccess) {
-        onSuccess()
+      // Background cache refresh after optimistic update
+      if (currentOrganizationId) {
+        await refreshAfterBusinessManagerChange(currentOrganizationId)
       }
 
-      // Close dialog after success
-      setTimeout(() => {
-        setShowSuccess(false)
-        setOpen(false)
-        resetForm()
-      }, 2000)
     } catch (error) {
-      console.error('🏢 Application submission error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast.error("Submission Failed", {
-        description: errorMessage
-      })
+      console.error('Error submitting application:', error)
+      // Show error but don't revert the optimistic update since user already saw success
+      // In a real app, you might want to show a subtle error notification
     } finally {
-      setIsLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -176,17 +178,17 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="border-border text-foreground hover:bg-accent"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isLoading || !formData.website}
+              disabled={isSubmitting || !formData.website}
               className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Submitting...

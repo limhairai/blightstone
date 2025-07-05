@@ -91,7 +91,12 @@ export async function GET(request: NextRequest) {
         accountCreatedAt: user.user_metadata.created_at
     };
 
-    return NextResponse.json({ progress, persistence });
+    return NextResponse.json({ progress, persistence }, {
+      headers: {
+        'Cache-Control': 'private, max-age=300, s-maxage=300', // Cache for 5 minutes
+        'Vary': 'Authorization'
+      }
+    });
 
   } catch (error) {
     console.error('Error fetching onboarding progress:', error);

@@ -3,7 +3,6 @@
 import { Wallet } from 'lucide-react'
 import { formatCurrency } from "../../utils/format"
 import { typographyTokens } from "../../lib/design-tokens"
-import useSWR from 'swr'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useCurrentOrganization } from '@/lib/swr-config'
 
@@ -30,7 +29,7 @@ export function BalanceCard({ balance, growth }: BalanceCardProps) {
       <div className="flex items-center justify-between">
         <div className="space-y-2">
           <div className="flex items-baseline gap-3">
-            <span className={typographyTokens.patterns.balanceLarge}>${formatCurrency(actualBalance)}</span>
+            <span className={typographyTokens.patterns.balanceLarge}>{formatCurrency(actualBalance)}</span>
             {actualGrowth > 0 && (
               <span className={`${typographyTokens.patterns.bodySmall} text-[#b4a0ff] font-medium`}>
                 +{actualGrowth}% this month
@@ -41,7 +40,7 @@ export function BalanceCard({ balance, growth }: BalanceCardProps) {
             <p className={typographyTokens.patterns.mutedMedium}>Available for ad campaigns and funding</p>
             {reservedBalance > 0 && (
               <p className={`${typographyTokens.patterns.bodySmall} text-orange-600`}>
-                ${formatCurrency(reservedBalance)} reserved for pending requests
+                {formatCurrency(reservedBalance)} reserved for pending requests
               </p>
             )}
           </div>

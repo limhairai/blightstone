@@ -5,15 +5,17 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useMemo } from "react";
 import useSWR from 'swr';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTable } from "@/components/ui/data-table";
 import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
 import { Application } from "@/types/generated/semantic-ids";
+import { cn } from "@/lib/utils";
 
 // Extended Application interface for this page's needs (camelCase API response)
 interface ApplicationWithDetails extends Application {
@@ -46,7 +48,7 @@ type RequestMode = 'new-bm' | 'additional-accounts-specific' | 'additional-accou
 const fetcher = async (url: string) => {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error('Failed to fetch data');
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
   return response.json();
 };
@@ -64,13 +66,14 @@ export default function AdminApplicationsPage() {
     '/api/admin/applications',
     fetcher,
     {
-      refreshInterval: 5000, // Reduced to 5 seconds for more responsive updates
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      refreshInterval: 0, // No automatic polling - manual refresh only
+      revalidateOnFocus: true, // Revalidate when window gains focus
+      revalidateOnReconnect: true, // Revalidate when connection is restored
+      revalidateOnMount: true, // Always get fresh data on mount
       errorRetryCount: 3,
-      errorRetryInterval: 2000, // Reduced retry interval
-      dedupingInterval: 1000, // Prevent duplicate requests
-      focusThrottleInterval: 1000, // Throttle focus revalidation
+      errorRetryInterval: 2000,
+      dedupingInterval: 5 * 1000, // Reduced to 5 seconds for immediate responsiveness
+      focusThrottleInterval: 1000,
     }
   );
 
@@ -81,50 +84,114 @@ export default function AdminApplicationsPage() {
       toast.error('Authentication required');
       return;
     }
-    
-    setProcessingId(application.applicationId);
-    
-    // Immediate optimistic update - approve moves to processing (BlueFocus submission)
-    const optimisticData = {
-      ...applicationsData,
-      applications: applications.map((app: ApplicationWithDetails) => 
-        app.applicationId === application.applicationId 
-          ? { ...app, status: 'processing' }
-          : app
-      )
+
+    // OPTIMISTIC UPDATE: Immediately update the UI
+    const optimisticApplication = {
+      ...application,
+      status: 'processing' as const,
+      admin_notes: 'Approved by admin',
+      updated_at: new Date().toISOString()
     };
-    
-    // Update UI immediately
-    mutate(optimisticData, false);
-    
+
+    // Update cache immediately
+    mutate(
+      (data: any) => {
+        if (!data?.applications) return data;
+        return {
+          ...data,
+          applications: data.applications.map((app: ApplicationWithDetails) =>
+            app.applicationId === application.applicationId ? optimisticApplication : app
+          )
+        };
+      },
+      { revalidate: false }
+    );
+
+    // Show success immediately
+    toast.success('Application approved successfully');
+
+    setProcessingId(application.applicationId);
     try {
       const response = await fetch(`/api/admin/applications/${application.applicationId}/approve`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           admin_user_id: session.user.id
-        })
+        }),
       });
 
       if (!response.ok) {
-        // Revert optimistic update on error
-        mutate();
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to approve application');
+        throw new Error('Failed to approve application');
       }
 
-      toast.success('Application approved successfully!');
-      
-      // Revalidate to ensure consistency
-      setTimeout(() => mutate(), 500);
-      
+      // Sync with server data (background update)
+      mutate();
     } catch (error) {
       console.error('Error approving application:', error);
-      toast.error(`Failed to approve application: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Revert the optimistic update
+      // Revert optimistic update on error
       mutate();
+      toast.error('Failed to approve application - reverted');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (application: ApplicationWithDetails) => {
+    if (!session?.user?.id) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    // OPTIMISTIC UPDATE: Immediately update the UI
+    const optimisticApplication = {
+      ...application,
+      status: 'rejected' as const,
+      admin_notes: 'Rejected by admin',
+      updated_at: new Date().toISOString()
+    };
+
+    // Update cache immediately
+    mutate(
+      (data: any) => {
+        if (!data?.applications) return data;
+        return {
+          ...data,
+          applications: data.applications.map((app: ApplicationWithDetails) =>
+            app.applicationId === application.applicationId ? optimisticApplication : app
+          )
+        };
+      },
+      { revalidate: false }
+    );
+
+    // Show success immediately
+    toast.success('Application rejected successfully');
+
+    setProcessingId(application.applicationId);
+    try {
+      const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          admin_user_id: session.user.id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject application');
+      }
+
+      // Sync with server data (background update)
+      mutate();
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      // Revert optimistic update on error
+      mutate();
+      toast.error('Failed to reject application - reverted');
     } finally {
       setProcessingId(null);
     }
@@ -171,88 +238,59 @@ export default function AdminApplicationsPage() {
   };
 
   const handleDialogSuccess = () => {
-    mutate(); // Refresh the applications list
+    // Show success message
+    toast.success('Application fulfilled successfully');
+    
+    // Force immediate refresh with cache bypass
+    mutate(undefined, { revalidate: true });
     setSelectedApplication(null);
     setDialogOpen(false);
+    
+    // Additional refresh after a short delay to ensure consistency
+    setTimeout(() => {
+      mutate(undefined, { revalidate: true });
+    }, 1000);
   };
 
-  const handleReject = async (application: ApplicationWithDetails) => {
-    if (!session?.user?.id) {
-      toast.error('Authentication required');
-      return;
-    }
-    
-    setProcessingId(application.applicationId);
-    
-    // Immediate optimistic update
-    const optimisticData = {
-      ...applicationsData,
-      applications: applications.map((app: ApplicationWithDetails) => 
-        app.applicationId === application.applicationId 
-          ? { ...app, status: 'rejected' }
-          : app
-      )
+  const getStatusConfig = (status: string) => {
+    const configs = {
+      pending: { 
+        label: "Pending", 
+        className: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800", 
+        icon: Clock, 
+        color: "text-[#FFC857]" 
+      },
+      processing: { 
+        label: "Processing", 
+        className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800", 
+        icon: AlertCircle, 
+        color: "text-blue-500" 
+      },
+      fulfilled: { 
+        label: "Fulfilled", 
+        className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", 
+        icon: CheckCircle, 
+        color: "text-[#34D197]" 
+      },
+      rejected: { 
+        label: "Rejected", 
+        className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", 
+        icon: AlertCircle, 
+        color: "text-[#F56565]" 
+      },
     };
-    
-    // Update UI immediately
-    mutate(optimisticData, false);
-    
-    try {
-      const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          admin_user_id: session.user.id
-        })
-      });
-
-      if (!response.ok) {
-        // Revert optimistic update on error
-        mutate();
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to reject application');
-      }
-
-      toast.success('Application rejected');
-      
-      // Revalidate to ensure consistency
-      setTimeout(() => mutate(), 500);
-      
-    } catch (error) {
-      console.error('Error rejecting application:', error);
-      toast.error(`Failed to reject application: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      // Revert the optimistic update
-      mutate();
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4 text-[#FFC857]" />;
-      case 'processing':
-        return <AlertCircle className="h-4 w-4 text-blue-500" />;
-      case 'approved':
-        return <CheckCircle className="h-4 w-4 text-[#34D197]" />;
-      case 'rejected':
-        return <AlertCircle className="h-4 w-4 text-[#F56565]" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
-    }
+    return configs[status as keyof typeof configs] || configs.pending;
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      pending: "outline",
-      processing: "secondary",
-      approved: "default",
-      rejected: "destructive"
-    };
-    return <Badge variant={variants[status] || "outline"}>{status}</Badge>;
+    const statusConfig = getStatusConfig(status);
+    const StatusIcon = statusConfig.icon;
+    return (
+      <Badge className={cn("border", statusConfig.className)}>
+        <StatusIcon className={cn("h-3 w-3 mr-1", statusConfig.color)} />
+        {statusConfig.label}
+      </Badge>
+    );
   };
 
   const getRequestTypeInfo = (application: ApplicationWithDetails) => {
@@ -288,6 +326,119 @@ export default function AdminApplicationsPage() {
     });
   };
 
+  const createColumns = (statusFilter: string) => [
+    {
+      accessorKey: "organizationName",
+      header: "Organization",
+      size: 250,
+      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => {
+        const application = row.original;
+        const requestTypeInfo = getRequestTypeInfo(application);
+        return (
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+              {requestTypeInfo.icon}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium truncate">{application.organizationName}</div>
+              <div className="text-sm text-muted-foreground truncate">{application.websiteUrl}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "requestType",
+      header: "Request Type",
+      size: 200,
+      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => {
+        const application = row.original;
+        const requestTypeInfo = getRequestTypeInfo(application);
+        return (
+          <div className="space-y-1">
+            <Badge variant={requestTypeInfo.variant}>
+              <div className="flex items-center gap-1">
+                {requestTypeInfo.icon}
+                {requestTypeInfo.label}
+              </div>
+            </Badge>
+            {application.targetBmDolphinId && (
+              <div className="text-xs text-muted-foreground font-mono">
+                Target: {application.targetBmDolphinId}
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Applied",
+      size: 150,
+      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => (
+        <div className="text-sm">{formatDate(row.original.createdAt)}</div>
+      ),
+    },
+    // Only show status column if we're showing all statuses
+    ...(statusFilter === 'all' ? [{
+      accessorKey: "status",
+      header: "Status",
+      size: 120,
+      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => 
+        getStatusBadge(row.original.status),
+    }] : []),
+    {
+      accessorKey: "actions",
+      header: "Actions",
+      size: 200,
+      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => {
+        const application = row.original;
+        const isProcessing = processingId === application.applicationId;
+        
+        return (
+          <div className="flex gap-2">
+            {application.status === 'pending' && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleReject(application)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Reject'
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => handleApprove(application)}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Approve'
+                  )}
+                </Button>
+              </>
+            )}
+            {application.status === 'processing' && (
+              <Button
+                size="sm"
+                onClick={() => handleFulfill(application)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Mark as Fulfilled
+              </Button>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -308,128 +459,47 @@ export default function AdminApplicationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => mutate()}
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
       <Tabs defaultValue="pending" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pending">
-            Pending ({filterApplications('pending').length})
-          </TabsTrigger>
-          <TabsTrigger value="processing">
-            Processing ({filterApplications('processing').length})
-          </TabsTrigger>
-          <TabsTrigger value="fulfilled">
-            Fulfilled ({filterApplications('fulfilled').length})
-          </TabsTrigger>
-          <TabsTrigger value="rejected">
-            Rejected ({filterApplications('rejected').length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="pending">
+              Pending ({filterApplications('pending').length})
+            </TabsTrigger>
+            <TabsTrigger value="processing">
+              Processing ({filterApplications('processing').length})
+            </TabsTrigger>
+            <TabsTrigger value="fulfilled">
+              Fulfilled ({filterApplications('fulfilled').length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected">
+              Rejected ({filterApplications('rejected').length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => mutate()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
 
         {['pending', 'processing', 'fulfilled', 'rejected'].map((status) => (
           <TabsContent key={status} value={status} className="space-y-4">
             {filterApplications(status).length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-muted-foreground">
-                    No {status} applications found.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {filterApplications(status).map((application: ApplicationWithDetails) => {
-                  const requestTypeInfo = getRequestTypeInfo(application);
-                  return (
-                    <Card key={application.applicationId}>
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <CardTitle className="text-lg">
-                              {application.organizationName}
-                            </CardTitle>
-                            <CardDescription>
-                              Website: {application.websiteUrl}
-                            </CardDescription>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant={requestTypeInfo.variant}>
-                                <div className="flex items-center gap-1">
-                                  {requestTypeInfo.icon}
-                                  {requestTypeInfo.label}
-                                </div>
-                              </Badge>
-                              {application.targetBmDolphinId && (
-                                <Badge variant="outline" className="text-xs">
-                                  Target BM: {application.targetBmDolphinId}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(application.status)}
-                            {getStatusBadge(application.status)}
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-muted-foreground">
-                            Applied: {formatDate(application.createdAt)}
-                          </div>
-                          <div className="flex gap-2">
-                            {application.status === 'pending' && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleReject(application)}
-                                  disabled={processingId === application.applicationId}
-                                >
-                                  {processingId === application.applicationId ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    'Reject'
-                                  )}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleApprove(application)}
-                                  disabled={processingId === application.applicationId}
-                                >
-                                  {processingId === application.applicationId ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    'Approve'
-                                  )}
-                                </Button>
-                              </>
-                            )}
-                            {application.status === 'processing' && (
-                              <Button
-                                size="sm"
-                                onClick={() => handleFulfill(application)}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                Mark as Fulfilled
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+              <div className="text-center py-8 text-muted-foreground">
+                No {status} applications found.
               </div>
+            ) : (
+              <DataTable 
+                columns={createColumns(status)} 
+                data={filterApplications(status)} 
+                searchKey="organizationName"
+                searchPlaceholder="Search applications..."
+              />
             )}
           </TabsContent>
         ))}

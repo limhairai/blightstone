@@ -114,28 +114,28 @@ export function DolphinIntegrationTest() {
         };
       }
 
-      // Test 5: Fetch Funding Requests
+      // Test 5: Fetch Topup Requests
       testResults.push({
-        name: 'Funding Requests API',
+        name: 'Topup Requests API',
         status: 'pending',
-        message: 'Testing funding requests endpoint...'
+        message: 'Testing topup requests endpoint...'
       });
       setResults([...testResults]);
 
-      const fundingResponse = await fetch('/api/funding-requests');
-      if (fundingResponse.ok) {
-        const fundingData = await fundingResponse.json();
+      const topupResponse = await fetch('/api/topup-requests');
+      if (topupResponse.ok) {
+        const topupData = await topupResponse.json();
         testResults[4] = {
-          name: 'Funding Requests API',
+          name: 'Topup Requests API',
           status: 'success',
-          message: `Found ${fundingData.requests?.length || 0} funding requests`,
-          data: fundingData
+          message: `Found ${Array.isArray(topupData) ? topupData.length : 0} topup requests`,
+          data: topupData
         };
       } else {
         testResults[4] = {
-          name: 'Funding Requests API',
+          name: 'Topup Requests API',
           status: 'error',
-          message: 'Failed to fetch funding requests'
+          message: 'Failed to fetch topup requests'
         };
       }
 

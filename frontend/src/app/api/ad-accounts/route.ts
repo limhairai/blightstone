@@ -100,8 +100,9 @@ export async function GET(request: NextRequest) {
       }
       
       return {
-        id: asset.id,
-        name: asset.name || `Account ${asset.id?.substring(0, 8) || 'Unknown'}`,
+        id: asset.asset_id || asset.id,
+        asset_id: asset.asset_id || asset.id,
+        name: asset.name || `Account ${(asset.asset_id || asset.id)?.substring(0, 8) || 'Unknown'}`,
         ad_account_id: metadata.ad_account_id || asset.dolphin_id || 'unknown',
         dolphin_account_id: asset.dolphin_id || 'unknown',
         business_manager_name: businessManagerName || 'N/A',
@@ -132,7 +133,12 @@ export async function GET(request: NextRequest) {
       console.log('🔍 Filtered to:', filteredData.length, 'accounts');
     }
 
-    return NextResponse.json({ accounts: filteredData });
+    return NextResponse.json({ accounts: filteredData }, {
+      headers: {
+        'Cache-Control': 'private, max-age=120, s-maxage=120', // Cache for 2 minutes
+        'Vary': 'Authorization'
+      }
+    });
 
   } catch (error) {
     console.error('Error in ad-accounts API:', error);

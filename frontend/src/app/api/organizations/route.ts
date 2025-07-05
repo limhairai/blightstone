@@ -6,12 +6,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// **PERFORMANCE**: Simple in-memory cache for organizations
+const orgCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 10 * 1000; // Reduced to 10 seconds for immediate wallet balance updates
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
-    
-    // console.log(`🔍 Organizations API called: ${orgId ? `specific org ${orgId}` : 'all orgs'}`);
     
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
@@ -29,13 +31,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Build query differently for specific org vs all orgs to handle membership issues
-    let orgs, error;
-    
+    // **PERFORMANCE**: Check server-side cache first
+    const cacheKey = `${user.id}-${orgId || 'all'}`;
+    const cached = orgCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      const response = NextResponse.json(cached.data);
+      response.headers.set('Cache-Control', 'public, max-age=10, s-maxage=10');
+      response.headers.set('Vary', 'Authorization');
+      response.headers.set('X-Cache', 'HIT');
+      return response;
+    }
+
+    // **OPTIMIZED**: Use basic queries with correct semantic IDs
+    let organizations;
+
     if (orgId) {
-      // For specific organization, check if user owns it OR is a member
-      // First try to get the organization if they own it
-      const { data: ownedOrg, error: ownedError } = await supabase
+      // Get specific organization
+      const { data: specificOrg, error: specificError } = await supabase
         .from('organizations')
         .select(`
           organization_id,
@@ -48,30 +60,14 @@ export async function GET(request: NextRequest) {
         .eq('owner_id', user.id)
         .maybeSingle();
         
-      if (ownedOrg && !ownedError) {
-        // User owns this organization, return it even if they're not in organization_members
-        orgs = [ownedOrg];
-        error = null;
-      } else {
-        // Check if they're a member of this organization
-        const { data: memberOrg, error: memberError } = await supabase
-          .from('organizations')
-          .select(`
-            organization_id,
-            name,
-            created_at,
-            organization_members!inner(user_id),
-            wallets(wallet_id, balance_cents, reserved_balance_cents)
-          `)
-          .eq('organization_members.user_id', user.id)
-          .eq('organization_id', orgId)
-          .maybeSingle();
-          
-        orgs = memberOrg ? [memberOrg] : [];
-        error = memberError;
+      organizations = specificOrg ? [specificOrg] : [];
+      
+      if (specificError) {
+        console.error("Error fetching specific organization:", specificError);
+        return NextResponse.json({ error: 'Failed to fetch organization', details: specificError.message }, { status: 500 });
       }
     } else {
-      // For all organizations, get both owned and member organizations
+      // **FIXED**: Get organizations using separate queries to avoid OR syntax issues
       const [ownedResult, memberResult] = await Promise.all([
         // Organizations the user owns
         supabase
@@ -85,13 +81,14 @@ export async function GET(request: NextRequest) {
           `)
           .eq('owner_id', user.id),
         
-        // Organizations the user is a member of (but doesn't own)
+        // Organizations the user is a member of
         supabase
           .from('organizations')
           .select(`
             organization_id,
             name,
             created_at,
+            owner_id,
             organization_members!inner(user_id),
             wallets(wallet_id, balance_cents, reserved_balance_cents)
           `)
@@ -99,58 +96,87 @@ export async function GET(request: NextRequest) {
           .neq('owner_id', user.id) // Exclude owned orgs to avoid duplicates
       ]);
       
+      if (ownedResult.error) {
+        console.error("Error fetching owned organizations:", ownedResult.error);
+        return NextResponse.json({ error: 'Failed to fetch owned organizations', details: ownedResult.error.message }, { status: 500 });
+      }
+      
+      if (memberResult.error) {
+        console.error("Error fetching member organizations:", memberResult.error);
+        return NextResponse.json({ error: 'Failed to fetch member organizations', details: memberResult.error.message }, { status: 500 });
+      }
+      
       // Combine results
       const ownedOrgs = ownedResult.data || [];
       const memberOrgs = memberResult.data || [];
-      orgs = [...ownedOrgs, ...memberOrgs];
-      error = ownedResult.error || memberResult.error;
+      organizations = [...ownedOrgs, ...memberOrgs];
     }
 
-    if (error) {
-      console.error("Error fetching organizations:", error);
-      throw error;
-    }
-
-    // If no organizations found, return empty array instead of error
-    if (!orgs || orgs.length === 0) {
+    // If no organizations found, return empty array
+    if (!organizations || organizations.length === 0) {
       return NextResponse.json({ organizations: [] });
     }
 
-    // Get business manager count for each organization using our new asset system
-    const mappedOrgs = await Promise.all((orgs || []).map(async (org) => {
-      // Count business managers bound to this organization
-      let bmCount = 0;
-      try {
-        const { data: bmAssets, error: bmError } = await supabase.rpc('get_organization_assets', {
-          p_organization_id: org.organization_id,
-          p_asset_type: 'business_manager'
-        });
+    // **OPTIMIZED**: Get business manager counts using correct semantic IDs
+    const orgIds = organizations.map(org => org.organization_id);
+    
+    const { data: bmCounts, error: bmError } = await supabase
+      .from('asset_binding')
+      .select(`
+        organization_id,
+        asset!inner(type)
+      `)
+      .in('organization_id', orgIds)
+      .eq('asset.type', 'business_manager')
+      .eq('status', 'active');
 
-        if (!bmError) {
-          bmCount = bmAssets?.length || 0;
-        }
-      } catch (error) {
-        console.error('Error fetching BM count for org:', org.organization_id, error);
-      }
+    // Count business managers by organization
+    const bmCountMap = new Map();
+    if (!bmError && bmCounts) {
+      bmCounts.forEach(binding => {
+        const orgId = binding.organization_id;
+        bmCountMap.set(orgId, (bmCountMap.get(orgId) || 0) + 1);
+      });
+    }
 
+    // **OPTIMIZED**: Map organizations with business manager counts
+    const mappedOrgs = organizations.map(org => {
       // Calculate available balance (total - reserved)
       const totalBalance = org.wallets?.balance_cents || 0;
       const reservedBalance = org.wallets?.reserved_balance_cents || 0;
       const availableBalance = totalBalance - reservedBalance;
 
       return {
-        ...org,
+        organization_id: org.organization_id,
         id: org.organization_id, // Map organization_id to id for frontend compatibility
-        organization_id: org.organization_id, // Keep original field for subscription API
-        business_count: bmCount, // Keep field name for backward compatibility
-        balance_cents: availableBalance, // Return available balance instead of total
-        balance: availableBalance / 100, // Convert cents to dollars for backward compatibility
-        total_balance_cents: totalBalance, // Include total balance for reference
-        reserved_balance_cents: reservedBalance // Include reserved balance for transparency
+        name: org.name,
+        created_at: org.created_at,
+        owner_id: org.owner_id,
+        business_count: bmCountMap.get(org.organization_id) || 0, // Use calculated count
+        balance_cents: availableBalance,
+        balance: availableBalance / 100,
+        total_balance_cents: totalBalance,
+        reserved_balance_cents: reservedBalance,
+        wallets: {
+          balance_cents: totalBalance,
+          reserved_balance_cents: reservedBalance
+        }
       };
-    }));
+    });
 
-    return NextResponse.json({ organizations: mappedOrgs });
+    const responseData = { organizations: mappedOrgs };
+    
+    // **PERFORMANCE**: Cache the result server-side
+    orgCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+    
+    const response = NextResponse.json(responseData);
+    
+    // **PERFORMANCE**: Add caching headers
+    response.headers.set('Cache-Control', 'public, max-age=10, s-maxage=10') // Reduced to 10 seconds for wallet updates
+    response.headers.set('Vary', 'Authorization')
+    response.headers.set('X-Cache', 'MISS')
+    
+    return response;
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching organizations:', msg);
@@ -176,6 +202,7 @@ export async function POST(request: NextRequest) {
     if (!name) {
       return NextResponse.json({ error: 'Organization name is required' }, { status: 400 });
     }
+    
     // Create the organization
     const { data: newOrg, error: orgError } = await supabase
       .from('organizations')
@@ -216,6 +243,7 @@ export async function PATCH(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+    
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
     const { name } = await request.json();
@@ -269,6 +297,7 @@ export async function DELETE(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
+    
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
 

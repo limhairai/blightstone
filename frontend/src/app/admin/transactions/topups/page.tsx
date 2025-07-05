@@ -69,7 +69,9 @@ export default function TopupRequestsPage() {
       const matchesSearch = searchTerm === "" || 
         request.ad_account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (request.notes && request.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (request.organization?.name && request.organization.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        (request.organization?.name && request.organization.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (request.display_id && request.display_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (request.id && request.id.toLowerCase().includes(searchTerm.toLowerCase()))
       return matchesStatus && matchesSearch
     })
   }, [requests, statusFilter, searchTerm])
@@ -92,7 +94,34 @@ export default function TopupRequestsPage() {
   }
 
   const handleProcessRequest = async (request: TopupRequest, status: TopupRequestStatus, notes?: string) => {
-    setIsProcessing(true)
+    // OPTIMISTIC UPDATE: Immediately update the UI
+    const optimisticRequest = {
+      ...request,
+      status,
+      admin_notes: notes || '',
+      processed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Update local state immediately
+    setRequests(prev => prev.map(req => 
+      req.id === request.id ? optimisticRequest : req
+    ));
+
+    const statusMessages = {
+      processing: 'Request marked as processing',
+      completed: 'Request completed successfully',
+      failed: 'Request marked as failed',
+      cancelled: 'Request cancelled'
+    };
+
+    // Show success immediately
+    toast.success(statusMessages[status] || 'Request updated');
+    setShowProcessDialog(false);
+    setSelectedRequest(null);
+    setAdminNotes('');
+
+    setIsProcessing(true);
     try {
       const response = await fetch(`/api/topup-requests/${request.id}`, {
         method: 'PATCH',
@@ -104,38 +133,29 @@ export default function TopupRequestsPage() {
           status,
           admin_notes: notes
         })
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update request')
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update request');
       }
 
-      const updatedRequest = await response.json()
-      
-      // Update local state
+      // Background sync with server data
+      const updatedRequest = await response.json();
       setRequests(prev => prev.map(req => 
         req.id === request.id ? updatedRequest : req
-      ))
-      
-      const statusMessages = {
-        processing: 'Request marked as processing',
-        completed: 'Request completed successfully',
-        failed: 'Request marked as failed',
-        cancelled: 'Request cancelled'
-      }
-      
-      toast.success(statusMessages[status] || 'Request updated')
-      setShowProcessDialog(false)
-      setSelectedRequest(null)
-      setAdminNotes('')
+      ));
       
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update request')
+      // Revert optimistic update on error
+      setRequests(prev => prev.map(req => 
+        req.id === request.id ? request : req
+      ));
+      toast.error(err instanceof Error ? err.message : 'Failed to update request');
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   const openProcessDialog = (request: TopupRequest, status: TopupRequestStatus) => {
     setSelectedRequest(request)
@@ -177,6 +197,33 @@ export default function TopupRequestsPage() {
   }
 
   const columns: ColumnDef<TopupRequest>[] = [
+    {
+      accessorKey: "display_id",
+      header: "Request ID",
+      size: 100,
+      cell: ({ row }) => {
+        const displayId = row.getValue<string>("display_id")
+        const id = row.original.id
+        return (
+          <div className="space-y-1">
+            {displayId ? (
+              <>
+                <div className="font-mono text-sm font-medium">{displayId}</div>
+                {id && (
+                  <div className="font-mono text-xs text-muted-foreground">
+                    {id.substring(0, 8)}...
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="font-mono text-xs text-muted-foreground">
+                {id ? `${id.substring(0, 8)}...` : 'No ID'}
+              </div>
+            )}
+          </div>
+        )
+      },
+    },
     {
       accessorKey: "ad_account_name",
       header: "Account Details",

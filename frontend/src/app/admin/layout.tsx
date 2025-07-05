@@ -41,7 +41,6 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       "files": "Files",
       "notes": "Notes",
       "infrastructure": "Infrastructure",
-      "funding-requests": "Funding Requests",
       "access-codes": "Access Codes",
       "finances": "Finances",
       "revenue": "Revenue"

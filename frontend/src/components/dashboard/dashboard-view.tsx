@@ -92,8 +92,8 @@ export function DashboardView() {
   ]
 
   const { manualRefresh, isRefreshing } = useAutoRefresh({
-    enabled: !!user && !authLoading && !isDashboardLoading, // Simplified condition
-    interval: REFRESH_INTERVALS.NORMAL,
+    enabled: !!user && !authLoading && !isDashboardLoading, // Re-enabled for testing
+    interval: REFRESH_INTERVALS.VERY_SLOW, // Use very slow interval (30 minutes) to minimize API calls
     onRefresh: async () => {
       // Refresh app data (demo state is reactive and doesn't need manual refresh)
       if (user && !authLoading) {
@@ -245,6 +245,51 @@ export function DashboardView() {
   // Force re-render key based on balance and time filter
   const chartKey = `${realBalance}-${timeFilter}-${transactionsData.length}`
 
+  // Clean up transaction description for better readability
+  const getCleanDescription = (tx: any) => {
+    const desc = tx.description || 'Transaction'
+    
+    // Handle new display_id format (e.g., "Ad Account Top-up TR-A1B2C3 completed")
+    if (desc.includes('Ad Account Top-up') && desc.includes('completed')) {
+      const displayIdMatch = desc.match(/TR-[A-Z0-9]{6}/)
+      if (displayIdMatch) {
+        return `Ad Account Top-up ${displayIdMatch[0]} completed`
+      }
+      return 'Ad Account Top-up completed'
+    }
+    
+    // Handle legacy topup request completed messages - need to distinguish wallet vs ad account
+    if (desc.startsWith('Topup request completed:')) {
+      // Check if this is an ad account transaction by looking at metadata
+      if (tx.metadata?.ad_account_id || tx.metadata?.ad_account_name || tx.metadata?.topup_request_id) {
+        return 'Ad Account Top-up completed'
+      }
+      // Otherwise it's a wallet transaction
+      return 'Wallet Top-up completed'
+    }
+    
+    // Handle Stripe wallet top-ups
+    if (desc.includes('Stripe Wallet Top-up')) {
+      const match = desc.match(/\$[\d,]+\.?\d*/)
+      if (match) {
+        return `Wallet Top-up - ${match[0]}`
+      }
+      return 'Wallet Top-up'
+    }
+    
+    // Handle ad account top-ups (legacy format)
+    if (desc.includes('Ad Account Top-up')) {
+      const match = desc.match(/\$[\d,]+\.?\d*/)
+      if (match) {
+        return `Ad Account Top-up - ${match[0]}`
+      }
+      return 'Ad Account Top-up'
+    }
+    
+    // Return original description if no patterns match
+    return desc
+  }
+
   // Use real-time transactions and accounts from state
   const transactions = useMemo(() => {
     // Ensure transactionsData is an array and has data
@@ -254,7 +299,7 @@ export function DashboardView() {
     
     return transactionsData.slice(0, 5).map(tx => ({
       id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,
-      name: tx.description || 'Transaction',
+      name: getCleanDescription(tx), // Use cleaned description instead of raw description
       amount: (tx.amount_cents || 0) / 100,
       type: tx.type || 'transfer',
       date: tx.created_at ? new Date(tx.created_at).toLocaleDateString() : new Date().toLocaleDateString(),

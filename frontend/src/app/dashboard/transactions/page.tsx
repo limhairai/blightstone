@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import useSWR from 'swr'
 import { useDebounce } from 'use-debounce'
 import {
   ArrowDownIcon,
@@ -25,11 +24,13 @@ import { formatCurrency } from "../../../utils/format"
 
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useAuth } from "@/contexts/AuthContext"
-import { authenticatedFetcher } from "@/lib/swr-config"
+import { useTransactions } from "@/lib/swr-config"
 
 // Transaction interface matching our database structure
 interface Transaction {
-  id: string
+  id?: string // May be undefined in some cases
+  transaction_id?: string // Semantic ID field
+  display_id?: string // User-friendly display ID
   organization_id: string
   wallet_id?: string
   ad_account_id?: string
@@ -42,9 +43,11 @@ interface Transaction {
     stripe_payment_intent_id?: string
     account_id?: string
     account_name?: string
+    topup_request_display_id?: string
   }
   created_at: string
   updated_at: string
+  transaction_date?: string // Alternative date field
   businesses?: {
     id: string
     name: string
@@ -80,42 +83,30 @@ export default function TransactionsPage() {
     document.title = "Transactions | AdHub"
   }, [])
 
-  // Fetch businesses for the filter dropdown
-  const { data: businessesData, isLoading: areBusinessesLoading } = useSWR(
-    session && currentOrganizationId ? ['/api/businesses', session.access_token] : null,
-    ([url, token]) => authenticatedFetcher(url, token)
-  )
-
-  const businesses: Business[] = businessesData?.businesses?.map((business: any) => ({
-    id: business.id,
-    name: business.name,
-  })) || []
-
-  // Build query string for transactions API
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams()
-    if (activeTab !== 'all') {
-      // Map tab values to actual transaction types
-      if (activeTab === 'deposit') params.set('type', 'deposit,topup')
-      else if (activeTab === 'withdrawal') params.set('type', 'withdrawal')
-      else if (activeTab === 'transfer') params.set('type', 'transfer')
-      else params.set('type', activeTab)
-    }
-    if (debouncedSearchQuery) params.set('search', debouncedSearchQuery)
-    if (statusFilter !== 'all') params.set('status', statusFilter)
-    if (businessFilter !== 'all') params.set('business_id', businessFilter)
-    if (date) params.set('date', format(date, 'yyyy-MM-dd'))
-    return params.toString()
-  }, [activeTab, debouncedSearchQuery, statusFilter, businessFilter, date])
-
-  // Fetch transactions
-  const { data: transactionsData, error, isLoading } = useSWR(
-    session && currentOrganizationId ? [`/api/transactions?${queryString}`, session.access_token] : null,
-    ([url, token]) => authenticatedFetcher(url, token),
-    { keepPreviousData: true }
-  )
+  // Use optimized transactions hook with filters
+  const { data: transactionsData, error, isLoading } = useTransactions({
+    type: activeTab !== 'all' ? activeTab : undefined,
+    search: debouncedSearchQuery || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    business_id: businessFilter !== 'all' ? businessFilter : undefined,
+    date: date ? format(date, 'yyyy-MM-dd') : undefined,
+  })
   
   const allTransactions = transactionsData?.transactions || []
+
+  // Extract businesses from transactions for filter options
+  const businesses: Business[] = useMemo(() => {
+    const businessMap = new Map<string, Business>()
+    allTransactions.forEach((tx: Transaction) => {
+      if (tx.businesses?.id && tx.businesses?.name) {
+        businessMap.set(tx.businesses.id, {
+          id: tx.businesses.id,
+          name: tx.businesses.name
+        })
+      }
+    })
+    return Array.from(businessMap.values())
+  }, [allTransactions])
 
   // Filter transactions based on active tab and filters (client-side for pagination)
   const filteredTransactions = allTransactions.filter((tx: Transaction) => {
@@ -193,11 +184,56 @@ export default function TransactionsPage() {
     }
   }
 
-  // Get business/account name for display
-  const getBusinessOrAccountName = (tx: Transaction) => {
-    // For wallet top-ups (Stripe), show "Main Wallet"
+  // Clean up transaction description for better readability
+  const getCleanDescription = (tx: Transaction) => {
+    const desc = tx.description
+    
+    // Handle new display_id format (e.g., "Ad Account Top-up TR-A1B2C3 completed")
+    if (desc.includes('Ad Account Top-up') && desc.includes('completed')) {
+      const displayIdMatch = desc.match(/TR-[A-Z0-9]{6}/)
+      if (displayIdMatch) {
+        return `Ad Account Top-up ${displayIdMatch[0]} completed`
+      }
+      return 'Ad Account Top-up completed'
+    }
+    
+    // Handle legacy topup request completed messages - need to distinguish wallet vs ad account
+    if (desc.startsWith('Topup request completed:')) {
+      // Check if this is an ad account transaction by looking at metadata
+      if (tx.metadata?.ad_account_id || tx.metadata?.ad_account_name || tx.metadata?.topup_request_id) {
+        return 'Ad Account Top-up completed'
+      }
+      // Otherwise it's a wallet transaction
+      return 'Wallet Top-up completed'
+    }
+    
+    // Handle Stripe wallet top-ups
+    if (desc.includes('Stripe Wallet Top-up')) {
+      const match = desc.match(/\$[\d,]+\.?\d*/)
+      if (match) {
+        return `Wallet Top-up - ${match[0]}`
+      }
+      return 'Wallet Top-up'
+    }
+    
+    // Handle ad account top-ups (legacy format)
+    if (desc.includes('Ad Account Top-up')) {
+      const match = desc.match(/\$[\d,]+\.?\d*/)
+      if (match) {
+        return `Ad Account Top-up - ${match[0]}`
+      }
+      return 'Ad Account Top-up'
+    }
+    
+    // Return original description if no patterns match
+    return desc
+  }
+
+  // Get business or wallet name for display
+  const getSourceName = (tx: Transaction) => {
+    // For wallet top-ups (Stripe), show "Wallet"
     if (['deposit'].includes(tx.type) && tx.metadata?.stripe_payment_intent_id) {
-      return "Main Wallet"
+      return "Wallet"
     }
     
     // For ad account top-ups, show business name if available
@@ -210,54 +246,97 @@ export default function TransactionsPage() {
       return tx.metadata.account_name || tx.ad_accounts?.name
     }
     
-    // Default to Main Wallet for wallet transactions
-    return "Main Wallet"
+    // Default to Wallet for wallet transactions
+    return "Wallet"
   }
 
-  // Get account field for display
-  const getAccountField = (tx: Transaction) => {
-    // For wallet transactions
-    if (['deposit', 'withdrawal'].includes(tx.type) && !tx.ad_account_id) {
+  // Get destination account for display
+  const getDestinationName = (tx: Transaction) => {
+    // For ad account transactions, prioritize showing the actual ad account
+    // Check metadata first since that's where ad account info is stored
+    if (tx.metadata?.ad_account_id || tx.metadata?.ad_account_name) {
+      // Try to get ad account name from metadata
+      if (tx.metadata?.ad_account_name) {
+        return tx.metadata.ad_account_name
+      }
+      
+      // Show ad account ID if available
+      if (tx.metadata?.ad_account_id) {
+        return `Ad Account ${tx.metadata.ad_account_id.substring(0, 8)}`
+      }
+    }
+    
+    // Legacy check for ad_account_id field (in case it's set)
+    if (tx.ad_account_id) {
+      // Try to get ad account name first
+      if (tx.ad_accounts?.name) {
+        return tx.ad_accounts.name
+      }
+      
+      // Try to get from metadata
+      if (tx.metadata?.account_name) {
+        return tx.metadata.account_name
+      }
+      
+      // Try to get account ID from metadata
+      if (tx.metadata?.account_id) {
+        return `Ad Account ${tx.metadata.account_id.substring(0, 8)}`
+      }
+      
+      // Show ad account ID if available
+      return `Ad Account ${tx.ad_account_id.substring(0, 8)}`
+    }
+    
+    // For wallet deposits without ad account
+    if (['deposit'].includes(tx.type) && !tx.ad_account_id && !tx.metadata?.ad_account_id) {
       return "Organization Wallet"
     }
     
-    // For ad account transactions
-    if (tx.ad_accounts?.name) {
-      return tx.ad_accounts.name
-    }
-    
-    if (tx.metadata?.account_name) {
-      return tx.metadata.account_name
-    }
-    
-    return "Main Account"
+    // Default to Organization Wallet
+    return "Organization Wallet"
   }
 
-  // Get reference field for display
-  const getReferenceField = (tx: Transaction) => {
-    // For Stripe transactions
+  // Get simplified reference for display
+  const getTransactionReference = (tx: Transaction) => {
+    // Prioritize display_id if available
+    if (tx.display_id) {
+      return tx.display_id
+    }
+    
+    // For Stripe transactions, show shortened payment intent ID
     if (tx.metadata?.stripe_payment_intent_id) {
-      return tx.metadata.stripe_payment_intent_id.substring(0, 20) + "..."
+      const piId = tx.metadata.stripe_payment_intent_id
+      return piId.startsWith('pi_') ? piId.substring(3, 11) : piId.substring(0, 8)
     }
     
-    // For ad account transactions
+    // For ad account transactions, use account ID if available
     if (tx.metadata?.account_id) {
-      return tx.metadata.account_id
+      return tx.metadata.account_id.substring(0, 8)
     }
     
-    // Use transaction ID as fallback
-    return tx.id.substring(0, 8) + "..."
+    // Use transaction_id (semantic ID) as fallback
+    if (tx.transaction_id) {
+      return tx.transaction_id.substring(0, 8)
+    }
+    
+    // Use regular id as final fallback
+    if (tx.id) {
+      return tx.id.substring(0, 8)
+    }
+    
+    // Final fallback if no ID is available
+    return "—"
   }
 
   // Export CSV functionality
   const exportToCSV = () => {
-    const headers = ["Date", "Description", "Business", "Account", "Reference", "Amount", "Type", "Status"]
+    const headers = ["Date", "Description", "Source", "Destination", "Reference", "Amount", "Type", "Status"]
     const csvData = filteredTransactions.map((tx: Transaction) => [
       format(new Date(tx.created_at), "yyyy-MM-dd"),
-      tx.description,
-      getBusinessOrAccountName(tx),
-      getAccountField(tx),
-      getReferenceField(tx),
+      getCleanDescription(tx),
+      getSourceName(tx),
+      getDestinationName(tx),
+      getTransactionReference(tx),
       (tx.amount_cents / 100).toFixed(2),
       tx.type,
       tx.status,
@@ -302,25 +381,25 @@ export default function TransactionsPage() {
                 <thead>
                   <tr className="bg-muted/50 dark:bg-muted/50">
                     <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground"></th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Transaction</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Business</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Account</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Description</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Source</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Destination</th>
                     <th className="h-10 px-4 text-left align-middle font-medium text-xs text-muted-foreground">Reference</th>
                     <th className="h-10 px-4 text-right align-middle font-medium text-xs text-muted-foreground">Amount</th>
                     <th className="h-10 px-4 text-right align-middle font-medium text-xs text-muted-foreground">Status</th>
                 </tr>
               </thead>
               <tbody>
-                  {paginatedTransactions.map((tx: Transaction) => (
-                    <tr key={tx.id} className="border-t border-border hover:bg-muted/30 transition-colors">
+                  {paginatedTransactions.map((tx: Transaction, index: number) => (
+                    <tr key={tx.transaction_id || tx.id || `tx-${index}`} className="border-t border-border hover:bg-muted/30 transition-colors">
                       <td className="p-4 align-middle w-8">{getTypeIcon(tx.type, tx.amount_cents)}</td>
                       <td className="p-4 align-middle text-sm">
-                        <div className="font-medium">{tx.description}</div>
+                        <div className="font-medium">{getCleanDescription(tx)}</div>
                         <div className="text-xs text-muted-foreground">{format(new Date(tx.created_at), "MMM dd, yyyy")}</div>
                       </td>
-                      <td className="p-4 align-middle text-sm">{getBusinessOrAccountName(tx)}</td>
-                      <td className="p-4 align-middle text-sm">{getAccountField(tx)}</td>
-                      <td className="p-4 align-middle text-sm font-mono">{getReferenceField(tx)}</td>
+                      <td className="p-4 align-middle text-sm">{getSourceName(tx)}</td>
+                      <td className="p-4 align-middle text-sm">{getDestinationName(tx)}</td>
+                      <td className="p-4 align-middle text-sm font-mono text-muted-foreground">{getTransactionReference(tx)}</td>
                       <td className="p-4 align-middle text-sm text-right">
                         <span className={getAmountColor(tx.amount_cents)}>
                           {tx.amount_cents > 0 ? "+" : ""}

@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
 import { DynamicToaster } from "../components/ui/dynamic-toaster";
+
 const inter = Inter({ subsets: ["latin"] });
 
 // Add or edit your "generateMetadata" to include the Sentry trace data:

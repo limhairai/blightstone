@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import useSWR, { useSWRConfig } from 'swr'
+import { useSWRConfig } from 'swr'
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Input } from "../ui/input"
@@ -21,11 +21,10 @@ import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, S
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { useAuth } from "@/contexts/AuthContext"
-import { useCurrentOrganization, useBusinessManagers, useAdAccounts, authenticatedFetcher } from "../../lib/swr-config"
+import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
-
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+import { refreshAfterSubscriptionChange } from "@/lib/subscription-utils"
 
 export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
@@ -33,37 +32,17 @@ export function OrganizationSettings() {
   const { session } = useAuth();
   const { currentPlan: subscriptionPlan, usage, subscriptionData } = useSubscription();
 
-  // Authenticated fetcher for business-managers API
-  const authFetcher = (url: string) => 
-    fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${session?.access_token}`
-      }
-    }).then(res => res.json());
-
+  // Use optimized hooks - remove individual API calls
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useCurrentOrganization(currentOrganizationId);
-  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
-  const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
-  const { data: teamData, isLoading: isTeamLoading } = useSWR(
-    session && currentOrganizationId ? ['/api/teams/members', session.access_token] : null, 
-    ([url, token]) => authenticatedFetcher(url, token)
-  );
+  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers();
+  const { data: accData, isLoading: isAccLoading } = useAdAccounts();
+  
+  // Remove the teams API call since it's not essential for organization settings
+  // Team data will be loaded only in the team settings tab
   
   const organization = orgData?.organizations?.[0];
-  
-  // Debug logging (can be removed in production)
-  // console.log('🔍 OrganizationSettings Debug:', {
-  //   currentOrganizationId,
-  //   orgData,
-  //   organization,
-  //   isOrgLoading,
-  //   orgError: orgError?.message,
-  //   hasSession: !!session,
-  //   hasAccessToken: !!session?.access_token
-  // });
   const businesses = bizData || [];
   const accounts = accData?.accounts || [];
-  const teamMembers = teamData?.members || [];
   
   const [editOrgOpen, setEditOrgOpen] = useState(false)
   const [deleteOrgOpen, setDeleteOrgOpen] = useState(false)
@@ -73,10 +52,23 @@ export function OrganizationSettings() {
   const [confirmDeleteText, setConfirmDeleteText] = useState("")
   const [loading, setLoading] = useState(false)
 
+  // Auto-refresh subscription data when upgrade dialog closes
+  const handleUpgradeDialogChange = (open: boolean) => {
+    setUpgradeOpen(open)
+    // If dialog is closing and we have an organization, refresh subscription data
+    if (!open && currentOrganizationId) {
+      // Small delay to allow any pending operations to complete
+      setTimeout(() => {
+        refreshAfterSubscriptionChange(currentOrganizationId)
+      }, 1000)
+    }
+  }
+
   // Use real usage data from subscription hook, fallback to counting from API data
   const totalBusinesses = usage?.businessManagers ?? businesses.length
   const totalAccounts = usage?.adAccounts ?? accounts.length
-  const totalTeamMembers = usage?.teamMembers ?? teamMembers.length
+  // For team members, use subscription data or fallback to 1 (current user)
+  const totalTeamMembers = usage?.teamMembers ?? 1
   
   // Use real subscription plan data instead of hardcoded defaultPlans
   const currentPlan = subscriptionPlan || {
@@ -161,7 +153,7 @@ export function OrganizationSettings() {
   // Use organization-specific billing history
   const billingHistory = organization?.billing?.billingHistory || []
 
-  const globalLoading = isOrgLoading || isBizLoading || isAccLoading || isTeamLoading;
+  const globalLoading = isOrgLoading || isBizLoading || isAccLoading;
 
   if (globalLoading) {
     return <div>Loading organization settings...</div>;
@@ -360,7 +352,7 @@ export function OrganizationSettings() {
               {/* Action Buttons */}
               <div className="space-y-2">
                 <Button
-                  onClick={() => setUpgradeOpen(true)}
+                  onClick={() => handleUpgradeDialogChange(true)}
                   className={`w-full ${gradientTokens.primary}`}
                 >
                   {currentPlan.id === 'free' ? 'Choose Plan' : 'Upgrade Plan'}
@@ -525,7 +517,7 @@ export function OrganizationSettings() {
       {/* Upgrade Plan Dialog */}
       <PlanUpgradeDialog
         open={upgradeOpen}
-        onOpenChange={setUpgradeOpen}
+        onOpenChange={handleUpgradeDialogChange}
       />
 
       {/* Payment Method Dialog */}

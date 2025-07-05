@@ -7,11 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Plus, LayoutGrid, ArrowLeft } from "lucide-react"
 import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import useSWR from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
-
-const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
+import { useBusinessManagers } from '@/lib/swr-config'
 
 export default function AccountsPage() {
   const { session } = useAuth();
@@ -23,10 +21,7 @@ export default function AccountsPage() {
   const [businessFilter, setBusinessFilter] = useState<string>(initialBusinessFilter)
 
   // Fetch business managers for filter options with organization ID
-  const { data: businessManagers } = useSWR(
-    session && currentOrganizationId ? ['/api/business-managers', session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-  );
+  const { data: businessManagers } = useBusinessManagers(currentOrganizationId);
 
   const businessManagerOptions = useMemo(() => {
     if (!Array.isArray(businessManagers)) return [];

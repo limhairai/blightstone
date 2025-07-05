@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { useSWRConfig } from 'swr'
+import { useSWRConfig, mutate } from 'swr'
+import { useAuth } from "@/contexts/AuthContext"
 import { WalletPortfolioCard } from "../../../components/wallet/wallet-portfolio-card"
 import { WalletFundingPanel } from "../../../components/wallet/wallet-funding-panel"
 import { BusinessBalancesTable } from "../../../components/wallet/business-balances-table"
 import { layout } from "../../../lib/layout-utils"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { refreshAfterBusinessManagerChange, invalidateOrganizationCache } from "@/lib/subscription-utils"
+import { authenticatedFetcher } from "@/lib/swr-config"
 
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic'
@@ -17,6 +20,7 @@ export default function WalletPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { mutate } = useSWRConfig()
+  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [isRefreshing, setIsRefreshing] = useState(false)
 
@@ -25,16 +29,17 @@ export default function WalletPage() {
     
     setIsRefreshing(true)
     try {
-      // Invalidate all API endpoints that display balance/organization data
+      // Use cache-busting with timestamp to force fresh data
+      const timestamp = Date.now()
       await Promise.all([
-        mutate(`/api/organizations?id=${currentOrganizationId}`), // Current org (wallet page, topbar)
-        mutate('/api/organizations'), // All organizations (general org data)
-        mutate('/api/transactions'), // Transaction history
-        mutate('/api/business-managers'), // Business managers data
-        mutate('/api/ad-accounts'), // Ad accounts data
-        mutate(`org-${currentOrganizationId}`), // SWR key used by useCurrentOrganization
+        // Force fresh organization data with cache-busting
+        mutate([`/api/organizations?id=${currentOrganizationId}`, session?.access_token], 
+               () => authenticatedFetcher(`/api/organizations?id=${currentOrganizationId}&_t=${timestamp}`, session?.access_token!),
+               { revalidate: true }),
+        // Invalidate other related caches
+        invalidateOrganizationCache(currentOrganizationId),
+        refreshAfterBusinessManagerChange(currentOrganizationId),
       ])
-      // Don't show toast for automatic refresh, only for manual refresh
       return true
     } catch (error) {
       console.error('Manual refresh failed:', error)
@@ -57,17 +62,78 @@ export default function WalletPage() {
     
     const paymentStatus = searchParams.get("payment")
     if (paymentStatus === "success") {
-      toast.success("Payment successful! Your new balance will be reflected shortly.")
-      // Wait a moment for webhook to process, then revalidate ALL relevant caches
-      setTimeout(() => {
+      toast.success("Payment successful! Your wallet balance has been updated.")
+      
+      // Get the payment amount from sessionStorage (set during checkout)
+      const paymentAmount = sessionStorage.getItem('pending_payment_amount')
+      if (paymentAmount && currentOrganizationId && session?.access_token) {
+        const amount = parseFloat(paymentAmount)
+        
+        // OPTIMISTIC UPDATE: Immediately update the cache with new balance
+        const cacheKey = [`/api/organizations?id=${currentOrganizationId}`, session.access_token]
+        mutate(cacheKey, (currentData: any) => {
+          if (currentData?.organizations?.[0]) {
+            const org = { ...currentData.organizations[0] }
+            const amountCents = Math.round(amount * 100)
+            
+            // Update all balance fields immediately
+            org.balance_cents += amountCents
+            org.total_balance_cents += amountCents
+            org.balance = org.balance_cents / 100
+            
+            if (org.wallets) {
+              org.wallets.balance_cents += amountCents
+            }
+            
+            return { organizations: [org] }
+          }
+          return currentData
+        }, { revalidate: false }) // Don't revalidate immediately, let optimistic update show
+        
+        // Clear the pending payment amount
+        sessionStorage.removeItem('pending_payment_amount')
+        
+        // Background sync after optimistic update (user already sees the change)
+        setTimeout(() => {
+          refreshAllData()
+        }, 1000)
+      } else {
+        // Fallback: if no payment amount stored, do immediate refresh
         refreshAllData()
-      }, 2000)
+      }
+      
       router.replace('/dashboard/wallet', { scroll: false })
     } else if (paymentStatus === "cancelled") {
       toast.info("Payment was cancelled.")
+      // Clear any pending payment amount on cancellation
+      sessionStorage.removeItem('pending_payment_amount')
       router.replace('/dashboard/wallet', { scroll: false })
     }
-  }, [searchParams, router, mutate, currentOrganizationId])
+  }, [searchParams, router, currentOrganizationId, session])
+
+  useEffect(() => {
+    // Cleanup: remove pending payment amount on unmount or if it's been there too long
+    const cleanup = () => {
+      const pendingAmount = sessionStorage.getItem('pending_payment_amount')
+      const pendingTimestamp = sessionStorage.getItem('pending_payment_timestamp')
+      
+      if (pendingAmount && pendingTimestamp) {
+        const elapsed = Date.now() - parseInt(pendingTimestamp)
+        // Clear if older than 10 minutes (payment likely failed or abandoned)
+        if (elapsed > 10 * 60 * 1000) {
+          sessionStorage.removeItem('pending_payment_amount')
+          sessionStorage.removeItem('pending_payment_timestamp')
+        }
+      }
+    }
+    
+    cleanup()
+    
+    return () => {
+      // Don't clear on unmount - user might navigate away and come back
+      // The timestamp-based cleanup above handles stale data
+    }
+  }, [])
 
   return (
     <div className={layout.pageContent}>

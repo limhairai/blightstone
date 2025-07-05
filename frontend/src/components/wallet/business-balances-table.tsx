@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import useSWR from 'swr'
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { formatCurrency, getInitials } from "../../utils/format"
@@ -11,8 +10,7 @@ import { useRouter } from "next/navigation"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useTheme } from "next-themes"
 import { Skeleton } from "../ui/skeleton"
-import { useAuth } from '@/contexts/AuthContext'
-import { authenticatedFetcher } from '@/lib/swr-config'
+import { useCurrentOrganization, useBusinessManagers } from '@/lib/swr-config'
 
 interface BusinessBalance {
   id: string
@@ -28,21 +26,15 @@ interface BusinessBalance {
 export function BusinessBalancesTable() {
   const router = useRouter()
   const { theme } = useTheme()
-  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [isExpanded, setIsExpanded] = useState(true)
 
-  const { data: orgData, isLoading: isOrgLoading } = useSWR(
-    session && currentOrganizationId ? [`/api/organizations?id=${currentOrganizationId}`, session.access_token] : null,
-    ([url, token]) => authenticatedFetcher(url, token)
-  );
-  const { data: businessManagersData, isLoading: areBMsLoading } = useSWR(
-    session && currentOrganizationId ? [`/api/admin/dolphin-assets?organization_id=${currentOrganizationId}&type=business_manager`, session.access_token] : null,
-    ([url, token]) => authenticatedFetcher(url, token)
-  );
+  // Use optimized hooks instead of direct SWR calls
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data: businessManagersData, isLoading: areBMsLoading } = useBusinessManagers();
 
   const organization = orgData?.organizations?.[0];
-  const businessManagers = businessManagersData?.assets || [];
+  const businessManagers = businessManagersData?.business_managers || [];
   const isLoading = isOrgLoading || areBMsLoading;
 
   // Calculate total balance from all business managers to determine percentages
@@ -161,8 +153,8 @@ export function BusinessBalancesTable() {
 
                 {/* Balance */}
                 <div className="col-span-3 flex flex-col items-end justify-center">
-                  <div className="font-medium text-foreground">${formatCurrency(businessManager.balance)}</div>
-                  <div className="text-xs text-muted-foreground">${formatCurrency(businessManager.balance)} USD</div>
+                  <div className="font-medium text-foreground">{formatCurrency(businessManager.balance)}</div>
+                  <div className="text-xs text-muted-foreground">{formatCurrency(businessManager.balance)} USD</div>
                 </div>
 
                 {/* Allocation % */}

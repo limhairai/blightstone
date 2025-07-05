@@ -12,18 +12,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../compo
 import { Label } from "../../../components/ui/label"
 import type { ColumnDef } from "@tanstack/react-table"
 import { formatDistanceToNow } from "date-fns"
-import { Search, Clock, CheckCircle, X, Eye, LayoutGrid, DollarSign } from "lucide-react"
+import { Search, Clock, CheckCircle, X, Eye, LayoutGrid, DollarSign, Loader2, AlertTriangle } from "lucide-react"
 import { formatCurrency } from "../../../utils/format"
 import { toast } from "sonner"
 import type { TopupRequest, TopupRequestStatus } from "../../../types/topup-request"
 import { useSWRConfig } from 'swr'
+import { useTopupRequests } from "../../../lib/swr-config"
 
 export default function ClientTopupRequestsPage() {
   const { session } = useAuth()
   const { mutate } = useSWRConfig()
   const { currentOrganizationId } = useOrganizationStore()
-  const [requests, setRequests] = useState<TopupRequest[]>([])
-  const [loading, setLoading] = useState(true)
+  
+  // Use optimized hook instead of manual fetch
+  const { data: requestsData, error, isLoading, mutate: mutateRequests } = useTopupRequests()
+  const requests: TopupRequest[] = Array.isArray(requestsData) ? requestsData : requestsData?.requests || []
+  
   const [statusFilter, setStatusFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRequest, setSelectedRequest] = useState<TopupRequest | null>(null)
@@ -33,36 +37,6 @@ export default function ClientTopupRequestsPage() {
   useEffect(() => {
     document.title = "Top-up Requests | AdHub"
   }, [])
-
-  useEffect(() => {
-    if (currentOrganizationId && session?.access_token) {
-      fetchRequests()
-    }
-  }, [currentOrganizationId, session?.access_token])
-
-  const fetchRequests = async () => {
-    try {
-      // Use the correct API endpoint that returns enriched data
-      const response = await fetch('/api/topup-requests', {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch top-up requests')
-      }
-      
-      const data = await response.json()
-      // The API returns an array directly, not wrapped in a requests property
-      setRequests(Array.isArray(data) ? data : data.requests || [])
-    } catch (err) {
-      console.error('Error fetching top-up requests:', err)
-      toast.error('Failed to load top-up requests')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
@@ -115,8 +89,8 @@ export default function ClientTopupRequestsPage() {
         throw new Error(errorData.error || 'Failed to cancel request');
       }
 
-      // Refresh the requests list
-      await fetchRequests();
+      // Refresh the requests list using SWR
+      await mutateRequests();
       
       // Refresh wallet balance and organization data
       if (currentOrganizationId) {
@@ -233,6 +207,8 @@ export default function ClientTopupRequestsPage() {
       size: 100,
       cell: ({ row }) => {
         const request = row.original
+        const canCancel = request.status === 'pending' // Only pending requests can be cancelled
+        
         return (
           <div className="flex items-center gap-2">
             <Button
@@ -243,7 +219,7 @@ export default function ClientTopupRequestsPage() {
               <Eye className="h-4 w-4 mr-1" />
               View
             </Button>
-            {request.status === 'pending' && (
+            {canCancel && (
               <Button
                 variant="outline"
                 size="sm"
@@ -268,19 +244,27 @@ export default function ClientTopupRequestsPage() {
     { value: "cancelled", label: "Cancelled" },
   ]
 
-  if (loading) {
+  // Loading state
+  if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-foreground bg-accent">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Top-up Requests
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center justify-center py-20">
-          <div className="text-muted-foreground">Loading top-up requests...</div>
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="ml-2 text-muted-foreground">Loading top-up requests...</span>
+      </div>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <AlertTriangle className="h-12 w-12 text-destructive" />
+        <div className="text-center">
+          <h3 className="text-lg font-semibold">Failed to load top-up requests</h3>
+          <p className="text-muted-foreground">Please try again later</p>
+          <Button onClick={() => mutateRequests()} className="mt-2">
+            Try Again
+          </Button>
         </div>
       </div>
     )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import useSWR, { useSWRConfig } from 'swr'
+import { useSWRConfig } from 'swr'
 import { MoreHorizontal, Search, Plus } from "lucide-react"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
@@ -39,7 +39,27 @@ import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuth } from "@/contexts/AuthContext"
+
+// Create optimized hook for team members
+import useSWR from 'swr'
 import { authenticatedFetcher } from "@/lib/swr-config"
+
+function useTeamMembers() {
+  const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  
+  return useSWR(
+    session?.access_token && currentOrganizationId ? 'team-members' : null,
+    () => authenticatedFetcher('/api/teams/members', session!.access_token),
+    {
+      dedupingInterval: 5 * 60 * 1000, // 5 minutes caching
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      errorRetryCount: 2,
+      errorRetryInterval: 5000,
+    }
+  )
+}
 
 type TeamMember = {
   id: string
@@ -63,11 +83,8 @@ export function TeamSettings() {
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const teamSWRKey = session && currentOrganizationId ? ['/api/teams/members', session.access_token] : null
-  const { data: teamData, isLoading: isTeamLoading, error: teamError } = useSWR(
-    teamSWRKey, 
-    ([url, token]) => authenticatedFetcher(url, token)
-  );
+  // Use optimized hook
+  const { data: teamData, isLoading: isTeamLoading, error: teamError } = useTeamMembers();
   const teamMembers = teamData?.members || [];
   
   const filteredMembers = searchQuery
@@ -204,6 +221,36 @@ export function TeamSettings() {
   const canManageUser = (member: TeamMember) => {
     // This logic needs to be re-implemented with the new data structure from usePermissions
     return true;
+  }
+
+  // Loading state
+  if (isTeamLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-9 w-24" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (teamError) {
+    return (
+      <div className="text-center py-8">
+        <div className="text-muted-foreground mb-4">Failed to load team members</div>
+        <Button onClick={() => mutate('team-members')} variant="outline">
+          Try Again
+        </Button>
+      </div>
+    )
   }
 
   return (

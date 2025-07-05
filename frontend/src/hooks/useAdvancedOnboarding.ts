@@ -2,7 +2,13 @@ import useSWR from 'swr'
 import { useAuth } from '../contexts/AuthContext'
 import { useMemo } from 'react'
 
-const fetcher = (url: string) => fetch(url).then(res => res.json())
+const fetcher = async (url: string) => {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+  }
+  return response.json()
+}
 
 // This defines the structure of the data returned by our new API endpoint
 interface OnboardingProgress {
@@ -32,7 +38,30 @@ export function useAdvancedOnboarding() {
   // We only fetch data if the user is logged in.
   const { data, error, isLoading, mutate } = useSWR<OnboardingProgress>(
     user ? '/api/onboarding-progress' : null,
-    fetcher
+    fetcher,
+    {
+      // **PERFORMANCE OPTIMIZED** - Prevent excessive API calls
+      revalidateOnFocus: false,        // Don't revalidate when window gains focus
+      revalidateOnReconnect: false,    // Don't revalidate when connection is restored
+      revalidateOnMount: false,        // Don't revalidate on component mount if cache exists
+      dedupingInterval: 5 * 60 * 1000, // Dedupe requests within 5 minutes
+      focusThrottleInterval: 10 * 60 * 1000, // Throttle focus revalidation to 10 minutes
+      errorRetryInterval: 60 * 1000,   // Retry failed requests every 60 seconds
+      errorRetryCount: 2,              // Maximum 2 retry attempts
+      shouldRetryOnError: (error: Error) => {
+        // Don't retry on 4xx errors (client errors)
+        if (error.message.includes('401') || error.message.includes('403') || error.message.includes('404')) {
+          return false
+        }
+        return true
+      },
+      onError: (error: Error) => {
+        // Only log errors in development
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Onboarding SWR Error:', error)
+        }
+      }
+    }
   )
 
   const loading = isAuthLoading || isLoading;

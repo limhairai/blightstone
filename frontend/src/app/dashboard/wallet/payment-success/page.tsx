@@ -18,10 +18,10 @@ export default function PaymentSuccessPage() {
   const amount = searchParams?.get('amount')
 
   useEffect(() => {
-    // Refresh data when payment succeeds to update wallet balance
+    // Refresh data when payment succeeds to update wallet balance using optimized SWR keys
     if (currentOrganizationId) {
-      mutate(`/api/organizations?id=${currentOrganizationId}`)
-      mutate(`/api/transactions?organization_id=${currentOrganizationId}`)
+      mutate(`org-${currentOrganizationId}`) // useCurrentOrganization key
+      mutate('transactions') // useTransactions key
     }
   }, [currentOrganizationId, mutate])
 

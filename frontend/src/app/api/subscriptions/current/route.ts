@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       message = 'You\'re on the free plan. Upgrade to access topups and request business managers & ad accounts.'
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       currentPlan,
       usage,
       subscriptionStatus: isOnFreePlan ? 'free' : orgData.subscription_status,
@@ -120,6 +120,12 @@ export async function GET(request: NextRequest) {
       canTopup,
       canRequestAssets
     })
+
+    // Add caching headers to reduce API calls
+    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300') // 5 minutes
+    response.headers.set('Vary', 'Authorization')
+
+    return response
 
   } catch (error) {
     console.error('Error in /api/subscriptions/current:', error)

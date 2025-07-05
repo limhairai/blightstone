@@ -169,7 +169,13 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    return NextResponse.json(requestsWithUserData);
+    const response = NextResponse.json(requestsWithUserData);
+    
+    // **PERFORMANCE**: Add caching headers - reduced for immediate responsiveness
+    response.headers.set('Cache-Control', 'private, max-age=5, s-maxage=5'); // Reduced to 5 seconds for immediate admin changes
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in topup-requests GET API:', error);
@@ -216,13 +222,15 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Request ID is required' }, { status: 400 });
     }
 
-    // Update the funding request
+    // Update the topup request (using correct table name)
     const { data: updatedRequest, error: updateError } = await supabase
-      .from('funding_requests')
+      .from('topup_requests')
       .update({
         status,
-        approved_amount_cents: status === 'approved' && approved_amount ? approved_amount * 100 : null,
+        approved_amount_cents: status === 'completed' && approved_amount ? approved_amount * 100 : null,
         admin_notes,
+        processed_by: user.id,
+        processed_at: status === 'completed' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
       })
       .eq('request_id', requestId)
@@ -236,7 +244,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ 
       message: 'Topup request updated successfully',
-      request: updatedRequest 
+      request: {
+        ...updatedRequest,
+        id: updatedRequest.request_id // Map request_id to id for frontend compatibility
+      }
     });
 
   } catch (error) {

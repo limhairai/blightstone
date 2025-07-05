@@ -13,6 +13,7 @@ import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSWRConfig } from 'swr'
 import { formatCurrency } from '@/utils/format'
+import { refreshAfterBusinessManagerChange } from '@/lib/subscription-utils'
 
 interface WalletFundingPanelProps {
   onSuccess?: () => void
@@ -20,30 +21,29 @@ interface WalletFundingPanelProps {
 
 export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
   const { session } = useAuth()
-  const { mutate } = useSWRConfig()
   const { currentOrganizationId } = useOrganizationStore()
-  const { data, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId)
-  
-  const organization = data?.organizations?.[0]
-  const totalBalance = (organization?.balance_cents ?? 0) / 100
-
+  const { mutate } = useSWRConfig()
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('stripe')
   const [loading, setLoading] = useState(false)
 
-  const handlePresetAmount = (value: number) => setAmount(value.toString())
+  // Use optimized hook instead of direct SWR call
+  const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
+
+  const organization = orgData?.organizations?.[0];
+  const currentBalance = (organization?.balance_cents ?? 0) / 100;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     const amountNum = parseFloat(amount)
-    if (!amountNum || amountNum < 10) {
-      toast.error('Minimum amount is $10')
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error('Please enter a valid amount')
       return
     }
-    
-    if (amountNum > 10000) {
-      toast.error('Maximum amount is $10,000')
+
+    if (amountNum < 10) {
+      toast.error('Minimum funding amount is $10')
       return
     }
 
@@ -71,6 +71,16 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
         }
 
         const { checkout_url } = await response.json()
+        
+        // Store payment amount for optimistic update after successful payment
+        sessionStorage.setItem('pending_payment_amount', amountNum.toString())
+        sessionStorage.setItem('pending_payment_timestamp', Date.now().toString())
+        
+        // Preemptively refresh cache since we know payment will succeed
+        if (currentOrganizationId) {
+          await refreshAfterBusinessManagerChange(currentOrganizationId)
+        }
+        
         window.location.href = checkout_url
       } else {
         // Handle Airwallex Hosted Payment Page
@@ -92,6 +102,15 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
 
         const { hosted_payment_url } = await response.json()
         
+        // Store payment amount for optimistic update after successful payment
+        sessionStorage.setItem('pending_payment_amount', amountNum.toString())
+        sessionStorage.setItem('pending_payment_timestamp', Date.now().toString())
+        
+        // Preemptively refresh cache since we know payment will succeed
+        if (currentOrganizationId) {
+          await refreshAfterBusinessManagerChange(currentOrganizationId)
+        }
+        
         // Redirect to Airwallex hosted payment page
         window.location.href = hosted_payment_url
       }
@@ -105,18 +124,15 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
   const isLoading = isOrgLoading || loading
 
   return (
-    <Card>
+    <Card className="flex-1 flex flex-col">
       <CardHeader>
-        <CardTitle>Add Funds</CardTitle>
+        <CardTitle className="text-lg">Add Funds</CardTitle>
         <CardDescription>
-          Top up your wallet balance to fund your advertising campaigns
+          Current balance: {formatCurrency(currentBalance)}
         </CardDescription>
-        <div className="text-sm text-muted-foreground">
-          Current Balance: {formatCurrency(totalBalance)}
-        </div>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <CardContent className="flex-1 flex flex-col justify-between">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="amount">Amount (USD)</Label>
             <Input
@@ -126,30 +142,60 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               min="10"
-              max="10000"
               step="0.01"
               required
               disabled={isLoading}
             />
-            <p className="text-sm text-gray-500">
-              Minimum: $10 • Maximum: $10,000
+            <p className="text-xs text-muted-foreground">
+              Minimum amount: $10.00
             </p>
           </div>
 
-          {/* Preset Amounts */}
-          <div className="grid grid-cols-4 gap-2">
-            {[100, 500, 1000, 5000].map((value) => (
+          {/* Quick Amount Buttons */}
+          <div className="space-y-2">
+            <Label>Quick Amounts</Label>
+            <div className="grid grid-cols-4 gap-2">
               <Button
-                key={value}
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handlePresetAmount(value)}
+                onClick={() => setAmount('100')}
                 disabled={isLoading}
+                className="border-border text-foreground hover:bg-accent"
               >
-                ${value}
+                $100
               </Button>
-            ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('500')}
+                disabled={isLoading}
+                className="border-border text-foreground hover:bg-accent"
+              >
+                $500
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('1000')}
+                disabled={isLoading}
+                className="border-border text-foreground hover:bg-accent"
+              >
+                $1000
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('5000')}
+                disabled={isLoading}
+                className="border-border text-foreground hover:bg-accent"
+              >
+                $5000
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -157,32 +203,28 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
             <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} disabled={isLoading}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="stripe" id="stripe" />
-                <Label htmlFor="stripe" className="flex items-center space-x-2 cursor-pointer">
+                <Label htmlFor="stripe" className="flex items-center gap-2 cursor-pointer">
                   <CreditCard className="h-4 w-4" />
-                  <span>Credit Card</span>
-                  <span className="text-xs text-gray-500">(Instant, 2.9% + $0.30)</span>
+                  Credit Card (Stripe)
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="airwallex" id="airwallex" />
-                <Label htmlFor="airwallex" className="flex items-center space-x-2 cursor-pointer">
+                <Label htmlFor="airwallex" className="flex items-center gap-2 cursor-pointer">
                   <Building2 className="h-4 w-4" />
-                  <span>Bank Transfer</span>
-                  <span className="text-xs text-gray-500">(1-3 days, 0.6-2.5%)</span>
+                  Bank Transfer (Airwallex)
                 </Label>
               </div>
             </RadioGroup>
           </div>
 
-          <Button type="submit" className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0" disabled={isLoading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              `Add $${amount || '0'} to Wallet`
-            )}
+          <Button 
+            type="submit" 
+            className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0" 
+            disabled={isLoading}
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Add ${amount || '0.00'} to Wallet
           </Button>
         </form>
       </CardContent>

@@ -1,15 +1,13 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import useSWR from 'swr'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { formatCurrency } from "../../utils/format"
 import { TrendingDown, TrendingUp, Wallet, RefreshCw } from "lucide-react"
 import { Skeleton } from "../ui/skeleton"
-import { useAuth } from '@/contexts/AuthContext'
-import { authenticatedFetcher } from '@/lib/swr-config'
+import { useCurrentOrganization, useTransactions } from '@/lib/swr-config'
 
 interface WalletPortfolioCardProps {
   onRefresh?: () => void
@@ -17,21 +15,13 @@ interface WalletPortfolioCardProps {
 }
 
 export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletPortfolioCardProps) {
-  const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [timeFilter, setTimeFilter] = useState("1M")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  const { data, error, isLoading } = useSWR(
-    session && currentOrganizationId ? [`/api/organizations?id=${currentOrganizationId}`, session.access_token] : null,
-    ([url, token]) => authenticatedFetcher(url, token)
-  );
-
-  // Also fetch transactions to check if user has real activity
-  const { data: transactionsData } = useSWR(
-    session && currentOrganizationId ? ['/api/transactions', session.access_token] : null,
-    ([url, token]) => authenticatedFetcher(url, token)
-  );
+  // Use optimized hooks instead of direct SWR calls
+  const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data: transactionsData } = useTransactions();
 
   const organization = data?.organizations?.[0];
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
@@ -132,7 +122,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                 {organization?.name || 'Primary Wallet'}
               </h2>
             </div>
-            <div className="text-3xl font-bold text-foreground">${formatCurrency(totalBalance)}</div>
+            <div className="text-3xl font-bold text-foreground">{formatCurrency(totalBalance)}</div>
             <div className="flex items-center gap-1 mt-1">
               {hasRealData ? (
                 <>
@@ -142,7 +132,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                     <TrendingDown className="h-4 w-4 text-red-400" />
                   )}
                   <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                    ${Math.abs(changeAmount).toFixed(2)} ({isPositive ? '+' : ''}{change24h.toFixed(1)}%) this month
+                    {formatCurrency(Math.abs(changeAmount))} ({isPositive ? '+' : ''}{change24h.toFixed(1)}%) this month
                   </span>
                 </>
               ) : (
@@ -238,7 +228,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                   />
                   {hoveredIndex === i && (
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-background border rounded px-2 py-1 text-xs whitespace-nowrap shadow-lg z-30">
-                      <div className="font-medium">${formatCurrency(point.value)}</div>
+                      <div className="font-medium">{formatCurrency(point.value)}</div>
                       <div className="text-muted-foreground">{point.time}</div>
                     </div>
                   )}

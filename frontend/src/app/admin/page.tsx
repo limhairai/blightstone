@@ -66,37 +66,37 @@ export default function AdminDashboard() {
           console.error('Failed to fetch applications:', applicationsResponse.statusText)
         }
 
-        // Fetch funding requests - only if user has admin access
+        // Fetch topup requests - only if user has admin access
         try {
-          const fundingResponse = await fetch('/api/funding-requests', {
+          const topupResponse = await fetch('/api/topup-requests', {
             headers: {
               'Authorization': `Bearer ${session?.access_token}`
             }
           })
-          if (fundingResponse.ok) {
-            const fundingData = await fundingResponse.json()
-            const fundingRequests = fundingData.requests || []
+          if (topupResponse.ok) {
+            const topupData = await topupResponse.json()
+            const topupRequests = Array.isArray(topupData) ? topupData : []
 
-            // Add recent funding requests
-            fundingRequests
+            // Add recent topup requests
+            topupRequests
               .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               .slice(0, 2)
               .forEach((request: any) => {
                 activities.push({
                   type: "topup",
-                  message: `Funding request: $${request.amount || request.requested_amount} for ${request.account_name}`,
+                  message: `Topup request: $${(request.amount_cents / 100).toFixed(2)} for ${request.ad_account_name}`,
                   time: formatTimeAgo(request.created_at),
                   status: request.status || "pending"
                 })
               })
-          } else if (fundingResponse.status === 401 || fundingResponse.status === 403) {
-            // User doesn't have admin access - silently skip funding requests
-            // console.log('Skipping funding requests - insufficient permissions')
+          } else if (topupResponse.status === 401 || topupResponse.status === 403) {
+            // User doesn't have admin access - silently skip topup requests
+            // console.log('Skipping topup requests - insufficient permissions')
           } else {
-            console.error('Failed to fetch funding requests:', fundingResponse.statusText)
+            console.error('Failed to fetch topup requests:', topupResponse.statusText)
           }
         } catch (err) {
-          console.error('Failed to fetch funding requests:', err)
+          console.error('Failed to fetch topup requests:', err)
         }
 
         // Sort all activities by time and take the most recent

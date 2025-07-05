@@ -19,13 +19,10 @@ import { TopUpDialog } from "@/components/accounts/top-up-dialog"
 import { formatCurrency } from "@/utils/format"
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import useSWR from 'swr'
-import { useAuth } from "@/contexts/AuthContext"
 import { Loader2, AlertCircle, Target } from "lucide-react"
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/states"
 import { useOrganizationStore } from "../../lib/stores/organization-store"
-
-const fetcher = (url: string, token: string) => fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
+import { useAdAccounts, useBusinessManagers } from "@/lib/swr-config"
 
 interface CompactAccountsTableProps {
   initialBusinessFilter?: string
@@ -40,31 +37,14 @@ export function CompactAccountsTable({
   onBusinessFilterChange,
   bmIdFilter,
 }: CompactAccountsTableProps) {
-  const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
-  // Build the API URL with bm_id parameter if provided
-  const apiUrl = useMemo(() => {
-    let url = '/api/ad-accounts';
-    if (bmIdFilter) {
-      url += `?bm_id=${encodeURIComponent(bmIdFilter)}`;
-    }
-    return url;
-  }, [bmIdFilter]);
-
-  const { data: accounts, error, isLoading, mutate } = useSWR(
-    session ? [apiUrl, session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-  );
-
-  // Fetch business managers for filtering with organization ID
-  const { data: businessManagers } = useSWR(
-    session && currentOrganizationId ? ['/api/business-managers', session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-  );
+  // Use optimized hooks instead of direct SWR calls
+  const { data: accounts, error, isLoading, mutate } = useAdAccounts(bmIdFilter);
+  const { data: businessManagers } = useBusinessManagers();
 
   // Transform accounts data
   const transformedAccounts = useMemo(() => {

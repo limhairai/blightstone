@@ -34,7 +34,7 @@ export async function GET(
         .select(`
           *,
           asset!inner(
-            id,
+            asset_id,
             type,
             dolphin_id,
             name,

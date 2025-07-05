@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     // 1. Get the current wallet for the organization
     const { data: wallet, error: walletError } = await supabase
       .from('wallets')
-      .select('id, balance_cents')
+      .select('wallet_id, balance_cents')
       .eq('organization_id', organization_id)
       .single();
 
