@@ -8,5 +8,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.53.1"
+  },
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "type-check": "tsc --noEmit",
+    "pre-push": "npm run type-check && npm run audit:production",
+    "audit:production": "node scripts/production-readiness-audit-v2.js"
   }
 }

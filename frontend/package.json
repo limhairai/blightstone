@@ -30,6 +30,7 @@
     "test:financial-safety": "npm run test:financial && npm run test:security",
     "precommit": "npm run test:quick",
     "prepush": "npm run test:ci",
+    "pre-push": "npm run type-check && npm run audit:production",
     "audit:production": "node scripts/production-readiness-audit-v2.js",
     "audit:production:report": "npm run audit:production && echo 'Report saved to SMART_PRODUCTION_AUDIT.md'",
     "audit:security": "node scripts/security-audit.js",
