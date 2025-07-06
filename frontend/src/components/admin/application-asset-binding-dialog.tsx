@@ -409,7 +409,7 @@ export function ApplicationAssetBindingDialog({
         <DialogHeader className="pb-4">
           <DialogTitle className="text-lg">{dialogConfig.title}</DialogTitle>
           <DialogDescription className="text-sm">
-            {application.organization_name} • {application.business_name}
+                          {application.organization_name} • {application.business_name}
           </DialogDescription>
         </DialogHeader>
 

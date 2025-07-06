@@ -482,7 +482,12 @@ export default function AdminApplicationsPage() {
       <ApplicationAssetBindingDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        application={selectedApplication}
+        application={selectedApplication ? {
+          ...selectedApplication,
+          organization_name: selectedApplication.organizationName,
+          business_name: selectedApplication.businessName,
+          target_bm_id: selectedApplication.targetBmDolphinId
+        } : null}
         mode={dialogMode}
         targetBmId={selectedApplication?.targetBmDolphinId}
         existingBMs={existingBMs}
