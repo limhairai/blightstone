@@ -499,7 +499,7 @@ export default function AdminApplicationsPage() {
               <strong>{applicationToApprove?.organizationName}</strong>?
               <br />
               <br />
-              This action will move the application to "Processing" status and notify the BlueFocus provider to begin provisioning the business manager.
+              This action will move the application to "Processing" status. Your team will need to manually apply to BlueFocus on behalf of the client to begin provisioning the business manager.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
