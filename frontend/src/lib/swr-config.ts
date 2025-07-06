@@ -88,9 +88,9 @@ export function useBusinessManagers() {
     () => authenticatedFetcher('/api/business-managers', session!.access_token),
     {
       ...swrConfig,
-      dedupingInterval: 30 * 1000, // Reduced to 30 seconds for immediate responsiveness
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      dedupingInterval: 1000, // Very short deduping interval for immediate responsiveness
+      revalidateOnFocus: true, // Revalidate when user focuses tab
+      revalidateOnReconnect: true, // Revalidate when connection is restored
       revalidateOnMount: true, // Always get fresh data on mount
       refreshInterval: 0, // No automatic polling
     }

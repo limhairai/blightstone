@@ -20,6 +20,7 @@ import { validateBusinessManagerApplicationForm, showValidationErrors } from "@/
 import { useSubscription } from "@/hooks/useSubscription"
 import { refreshAfterBusinessManagerChange } from "@/lib/subscription-utils"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { mutate } from 'swr'
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -53,13 +54,6 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
       showValidationErrors(validationErrors)
       return
     }
-
-    // Show success immediately for better UX
-    toast.success("Application submitted successfully!", {
-      description: "Your business manager application is now under review."
-    })
-    setOpen(false)
-    onSuccess?.()
 
     setIsSubmitting(true)
     try {
@@ -99,15 +93,31 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
         throw new Error(errorData.error || 'Failed to submit application')
       }
 
-      // Background cache refresh after optimistic update
+      // Show success and refresh immediately
+      toast.success("Application submitted successfully!", {
+        description: "Your business manager application is now under review."
+      })
+      
+      // Immediate cache refresh after successful submission
       if (currentOrganizationId) {
         await refreshAfterBusinessManagerChange(currentOrganizationId)
       }
+      
+      // Force refresh of business managers data immediately using SWR mutate
+      await mutate('business-managers')
+      
+      // Also call the onSuccess callback
+      if (onSuccess) {
+        onSuccess()
+      }
+      
+      setOpen(false)
 
     } catch (error) {
       console.error('Error submitting application:', error)
-      // Show error but don't revert the optimistic update since user already saw success
-      // In a real app, you might want to show a subtle error notification
+      toast.error("Failed to submit application", {
+        description: "Please try again or contact support if the issue persists."
+      })
     } finally {
       setIsSubmitting(false)
     }

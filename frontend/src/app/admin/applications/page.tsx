@@ -10,6 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus, History } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +69,8 @@ export default function AdminApplicationsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [dialogMode, setDialogMode] = useState<RequestMode>('new-bm');
   const [existingBMs, setExistingBMs] = useState<BusinessManager[]>([]);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [applicationToApprove, setApplicationToApprove] = useState<ApplicationWithDetails | null>(null);
 
   // Fetch applications with SWR (only pending and processing)
   const { data: applicationsData, error, mutate, isLoading } = useSWR(
@@ -71,47 +83,29 @@ export default function AdminApplicationsPage() {
       revalidateOnMount: true, // Always get fresh data on mount
       errorRetryCount: 3,
       errorRetryInterval: 2000,
-      dedupingInterval: 5 * 1000, // Reduced to 5 seconds for immediate responsiveness
+      dedupingInterval: 1000, // Very short deduping interval for immediate responsiveness
       focusThrottleInterval: 1000,
     }
   );
 
   const applications = applicationsData?.applications || [];
 
-  const handleApprove = async (application: ApplicationWithDetails) => {
-    if (!session?.user?.id) {
+  const handleApprove = (application: ApplicationWithDetails) => {
+    setApplicationToApprove(application);
+    setConfirmDialogOpen(true);
+  };
+
+  const confirmApprove = async () => {
+    if (!session?.user?.id || !applicationToApprove) {
       toast.error('Authentication required');
       return;
     }
 
-    // OPTIMISTIC UPDATE: Immediately update the UI
-    const optimisticApplication = {
-      ...application,
-      status: 'processing' as const,
+    setProcessingId(applicationToApprove.applicationId);
+    setConfirmDialogOpen(false);
 
-      updated_at: new Date().toISOString()
-    };
-
-    // Update cache immediately
-    mutate(
-      (data: any) => {
-        if (!data?.applications) return data;
-        return {
-          ...data,
-          applications: data.applications.map((app: ApplicationWithDetails) =>
-            app.applicationId === application.applicationId ? optimisticApplication : app
-          )
-        };
-      },
-      { revalidate: false }
-    );
-
-    // Show success immediately
-    toast.success('Application approved successfully');
-
-    setProcessingId(application.applicationId);
     try {
-      const response = await fetch(`/api/admin/applications/${application.applicationId}/approve`, {
+      const response = await fetch(`/api/admin/applications/${applicationToApprove.applicationId}/approve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,15 +119,16 @@ export default function AdminApplicationsPage() {
         throw new Error('Failed to approve application');
       }
 
-      // Sync with server data (background update)
-      mutate();
+      // Show success and immediately refresh the data
+      toast.success('Application approved successfully');
+      await mutate(); // Force immediate refresh
+
     } catch (error) {
       console.error('Error approving application:', error);
-      // Revert optimistic update on error
-      mutate();
-      toast.error('Failed to approve application - reverted');
+      toast.error('Failed to approve application');
     } finally {
       setProcessingId(null);
+      setApplicationToApprove(null);
     }
   };
 
@@ -142,31 +137,6 @@ export default function AdminApplicationsPage() {
       toast.error('Authentication required');
       return;
     }
-
-    // OPTIMISTIC UPDATE: Immediately update the UI
-    const optimisticApplication = {
-      ...application,
-      status: 'rejected' as const,
-
-      updated_at: new Date().toISOString()
-    };
-
-    // Update cache immediately
-    mutate(
-      (data: any) => {
-        if (!data?.applications) return data;
-        return {
-          ...data,
-          applications: data.applications.map((app: ApplicationWithDetails) =>
-            app.applicationId === application.applicationId ? optimisticApplication : app
-          )
-        };
-      },
-      { revalidate: false }
-    );
-
-    // Show success immediately
-    toast.success('Application rejected successfully');
 
     setProcessingId(application.applicationId);
     try {
@@ -184,13 +154,13 @@ export default function AdminApplicationsPage() {
         throw new Error('Failed to reject application');
       }
 
-      // Sync with server data (background update)
-      mutate();
+      // Show success and immediately refresh the data
+      toast.success('Application rejected successfully');
+      await mutate(); // Force immediate refresh
+
     } catch (error) {
       console.error('Error rejecting application:', error);
-      // Revert optimistic update on error
-      mutate();
-      toast.error('Failed to reject application - reverted');
+      toast.error('Failed to reject application');
     } finally {
       setProcessingId(null);
     }
@@ -518,6 +488,41 @@ export default function AdminApplicationsPage() {
         existingBMs={existingBMs}
         onSuccess={handleDialogSuccess}
       />
+
+      {/* Approval Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Approve Application</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to approve this business manager application for{' '}
+              <strong>{applicationToApprove?.organizationName}</strong>?
+              <br />
+              <br />
+              This action will move the application to "Processing" status and notify the BlueFocus provider to begin provisioning the business manager.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={processingId === applicationToApprove?.applicationId}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmApprove}
+              disabled={processingId === applicationToApprove?.applicationId}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {processingId === applicationToApprove?.applicationId ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Approving...
+                </>
+              ) : (
+                'Yes, Approve Application'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 } 
