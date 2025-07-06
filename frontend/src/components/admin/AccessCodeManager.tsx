@@ -426,7 +426,7 @@ To get started:
               <div className="bg-green-100 text-green-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✓</div>
               <div>
                 <p className="font-medium">Instant access granted</p>
-                <p className="text-sm text-gray-600">Users get full access to their organization's data</p>
+                <p className="text-sm text-gray-600">Users get full access to their organization&apos;s data</p>
               </div>
             </div>
           </div>

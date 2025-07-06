@@ -622,6 +622,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  
   // Handle build-time rendering gracefully
   if (typeof window === 'undefined') {
     // During build/SSR, return safe defaults
@@ -640,7 +642,6 @@ export function useAuth(): AuthContextType {
     };
   }
 
-  const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }

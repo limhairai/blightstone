@@ -126,7 +126,7 @@ export default function WorkflowGuidePage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground mb-2">Check Landing Page</h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Visit the client's website to verify it's legitimate and doesn't promote anything illegal.
+                  Visit the client&apos;s website to verify it&apos;s legitimate and doesn&apos;t promote anything illegal.
                 </p>
                 <Alert className="mb-3">
                   <Info className="h-4 w-4" />
@@ -271,7 +271,7 @@ export default function WorkflowGuidePage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground mb-2">Add Ad Accounts to Business Manager</h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Use Dolphin Cloud to add the received ad accounts to the client's assigned business manager.
+                  Use Dolphin Cloud to add the received ad accounts to the client&apos;s assigned business manager.
                 </p>
                 <Alert className="mb-3">
                   <Info className="h-4 w-4" />
@@ -406,7 +406,7 @@ export default function WorkflowGuidePage() {
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground mb-2">Connect to Dolphin Cloud</h3>
                 <p className="text-sm text-muted-foreground mb-3">
-                  "Hook up" the Facebook profiles and business managers to Dolphin Cloud for monitoring.
+                  &quot;Hook up&quot; the Facebook profiles and business managers to Dolphin Cloud for monitoring.
                 </p>
                 <div className="flex gap-2">
                   <a 

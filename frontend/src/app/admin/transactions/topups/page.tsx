@@ -653,7 +653,7 @@ export default function TopupRequestsPage() {
                     <span className="text-sm font-medium">Important</span>
                   </div>
                   <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    Completing this request will deduct {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)} from the organization's wallet balance.
+                    Completing this request will deduct {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)} from the organization&apos;s wallet balance.
                     {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
                       <span className="block text-xs text-green-500 dark:text-green-400 mt-1">
                         (Includes {formatCurrency(selectedRequest.fee_amount_cents / 100)} platform fee)

@@ -102,7 +102,7 @@ export function ApplicationApprovalDialog({
               <p>After approval, this application will be:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Submitted to BlueFocus for processing</li>
-                <li>Moved to "At BlueFocus" status</li>
+                <li>Moved to &quot;At BlueFocus&quot; status</li>
                 <li>Available for team assignment once ready</li>
               </ul>
             </div>

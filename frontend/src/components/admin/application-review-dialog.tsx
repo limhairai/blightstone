@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-
+import { Textarea } from "../ui/textarea";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
@@ -318,7 +318,7 @@ export function ApplicationReviewDialog({
                       required
                     />
                     <p className="text-sm text-muted-foreground mt-2">
-                      The application will be marked as "Under Review" and the client will be notified.
+                      The application will be marked as &quot;Under Review&quot; and the client will be notified.
                     </p>
                   </div>
                 )}

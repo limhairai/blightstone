@@ -97,7 +97,7 @@ export function ApplicationReadyDialog({
             <div className="text-sm text-purple-800 dark:text-purple-200">
               <p>After marking as ready, this application will be:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Moved to "Needs Binding" status</li>
+                <li>Moved to &quot;Needs Binding&quot; status</li>
                 <li>Available for team assignment</li>
                 <li>Ready for ad account binding</li>
               </ul>
@@ -105,7 +105,7 @@ export function ApplicationReadyDialog({
           </div>
 
           <div className="text-sm text-muted-foreground">
-            Confirm that BlueFocus has processed this application and it's ready for team assignment.
+            Confirm that BlueFocus has processed this application and it&apos;s ready for team assignment.
           </div>
         </div>
 

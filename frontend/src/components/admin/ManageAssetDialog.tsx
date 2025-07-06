@@ -106,11 +106,11 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
                 {isBusinessManager ? (
                   <>
                     <strong>Cascade Effect:</strong> Unbinding this business manager will also unbind all associated ad accounts. 
-                    This will remove the entire business manager and its ad accounts from the client's dashboard.
+                    This will remove the entire business manager and its ad accounts from the client&apos;s dashboard.
                   </>
                 ) : (
                   <>
-                    Unbinding this ad account will remove it from the client's dashboard, but other ad accounts 
+                    Unbinding this ad account will remove it from the client&apos;s dashboard, but other ad accounts 
                     in the same business manager will remain bound.
                   </>
                 )}
