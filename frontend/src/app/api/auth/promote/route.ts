@@ -58,22 +58,54 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Create or update profile to make them superuser
-      const { error: upsertError } = await supabase
+      // Check if profile already exists
+      const { data: existingProfile, error: profileCheckError } = await supabase
         .from('profiles')
-        .upsert({
-          profile_id: user.id,
-          is_superuser: true
-        }, {
-          onConflict: 'profile_id'
-        })
+        .select('profile_id, is_superuser')
+        .eq('profile_id', user.id)
+        .single()
 
-      if (upsertError) {
-        console.error('Error creating superuser profile:', upsertError)
+      if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+        console.error('Error checking existing profile:', profileCheckError)
         return NextResponse.json(
-          { error: 'Failed to create superuser profile' },
+          { error: 'Failed to check existing profile' },
           { status: 500 }
         )
+      }
+
+      if (existingProfile) {
+        // Update existing profile to make them superuser
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ is_superuser: true })
+          .eq('profile_id', user.id)
+
+        if (updateError) {
+          console.error('Error updating profile to superuser:', updateError)
+          return NextResponse.json(
+            { error: 'Failed to update profile to superuser' },
+            { status: 500 }
+          )
+        }
+      } else {
+        // Create new profile with superuser status
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            profile_id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin',
+            is_superuser: true,
+            role: 'admin'
+          })
+
+        if (insertError) {
+          console.error('Error creating superuser profile:', insertError)
+          return NextResponse.json(
+            { error: 'Failed to create superuser profile' },
+            { status: 500 }
+          )
+        }
       }
 
       return NextResponse.json({
@@ -135,18 +167,54 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      // Promote user to superuser
-      const { error: updateError } = await supabase
+      // Check if target profile exists
+      const { data: targetProfile, error: targetProfileError } = await supabase
         .from('profiles')
-        .update({ is_superuser: true })
+        .select('profile_id, is_superuser')
         .eq('profile_id', targetUser.id)
+        .single()
 
-      if (updateError) {
-        console.error('Error promoting user:', updateError)
+      if (targetProfileError && targetProfileError.code !== 'PGRST116') {
+        console.error('Error checking target profile:', targetProfileError)
         return NextResponse.json(
-          { error: 'Failed to promote user' },
+          { error: 'Failed to check target user profile' },
           { status: 500 }
         )
+      }
+
+      if (targetProfile) {
+        // Update existing profile to superuser
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ is_superuser: true, role: 'admin' })
+          .eq('profile_id', targetUser.id)
+
+        if (updateError) {
+          console.error('Error promoting user:', updateError)
+          return NextResponse.json(
+            { error: 'Failed to promote user' },
+            { status: 500 }
+          )
+        }
+      } else {
+        // Create new profile with superuser status
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            profile_id: targetUser.id,
+            email: targetUser.email,
+            name: targetUser.user_metadata?.full_name || targetUser.email?.split('@')[0] || 'User',
+            is_superuser: true,
+            role: 'admin'
+          })
+
+        if (insertError) {
+          console.error('Error creating superuser profile:', insertError)
+          return NextResponse.json(
+            { error: 'Failed to create superuser profile' },
+            { status: 500 }
+          )
+        }
       }
 
       return NextResponse.json({
