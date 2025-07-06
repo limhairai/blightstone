@@ -12,7 +12,7 @@ import { StatusDot } from "./status-dot"
 import { ErrorBoundary } from "../ui/error-boundary"
 import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
-import { WelcomeOnboardingModal } from "../onboarding/welcome-onboarding-modal"
+
 import { CompactAccountsTable } from "./compact-accounts-table"
 
 import { useSetupWidget } from "../layout/app-shell"
@@ -26,8 +26,8 @@ import {
   transactionColors
 } from "../../utils/format"
 import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "../../lib/state-utils"
-import { getSetupProgress, shouldShowOnboarding } from "../../lib/state-utils"
-import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
+import { getSetupProgress } from "../../lib/state-utils"
+
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
 
 import { Skeleton } from "../ui/skeleton"
@@ -48,7 +48,7 @@ export function DashboardView() {
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
-  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
+
   const [showEmptyStateElements, setShowEmptyStateElements] = useState(false)
   const { currentOrganizationId, setCurrentOrganizationId, onboardingDismissed, setOnboardingDismissed } = useOrganizationStore();
   const { mutate } = useSWRConfig();
@@ -339,30 +339,13 @@ export function DashboardView() {
   )
 
   // Replace the old onboarding logic with the advanced hook
-  const { shouldShowOnboarding: showOnboarding, dismissOnboarding, isLoading: onboardingLoading } = useAdvancedOnboarding()
+
 
   const showEmailBanner = useMemo(() => shouldShowEmailBanner(emptyStateConditions), [emptyStateConditions])
 
-  useEffect(() => {
-    // Don't show modal if it was already dismissed locally
-    if (!authLoading && !onboardingLoading && showOnboarding && !onboardingDismissed) {
-      setShowWelcomeModal(true)
-    }
-  }, [authLoading, onboardingLoading, showOnboarding, onboardingDismissed])
 
-  const handleWelcomeModalClose = async () => {
-    setShowWelcomeModal(false)
-    // Immediately update local storage for instant UI feedback
-    setOnboardingDismissed(true)
-    
-    // Also dismiss via API in the background
-    try {
-      await dismissOnboarding()
-    } catch (error) {
-      console.error('Failed to dismiss onboarding:', error)
-      // If API fails, keep the local dismissal since user explicitly closed it
-    }
-  }
+
+
 
   const handleResendEmail = async () => {
     toast.info("Resending verification email...")
@@ -829,11 +812,7 @@ export function DashboardView() {
         </div>
       </div>
       
-      {/* Welcome Onboarding Modal */}
-      <WelcomeOnboardingModal 
-        isOpen={showWelcomeModal} 
-        onClose={handleWelcomeModalClose} 
-      />
+
 
     </ErrorBoundary>
   )
