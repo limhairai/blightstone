@@ -26,6 +26,8 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
   const organization = data?.organizations?.[0];
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
+  const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
+  const availableBalance = totalBalance - reservedBalance;
   const transactions = transactionsData?.transactions || [];
   
   // Check if user has real data to show (honest assessment)
@@ -225,20 +227,32 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
               </>
             )}
 
-            {/* Data points */}
+            {/* Invisible hover areas */}
             {balanceData.map((point, i) => (
               <circle
-                key={i}
+                key={`hover-${i}`}
                 cx={(i / (balanceData.length - 1)) * 100}
                 cy={100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}
-                r={hoveredIndex === i ? "1.5" : "1"}
-                fill="hsl(var(--primary))"
+                r="3"
+                fill="transparent"
                 vectorEffect="non-scaling-stroke"
-                className="transition-all duration-200 cursor-pointer"
+                className="cursor-pointer"
                 onMouseEnter={() => setHoveredIndex(i)}
                 onMouseLeave={() => setHoveredIndex(null)}
               />
             ))}
+
+            {/* Data points - only visible on hover */}
+            {hoveredIndex !== null && (
+              <circle
+                cx={(hoveredIndex / (balanceData.length - 1)) * 100}
+                cy={100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}
+                r="1.5"
+                fill="hsl(var(--primary))"
+                vectorEffect="non-scaling-stroke"
+                className="transition-all duration-200 pointer-events-none"
+              />
+            )}
           </svg>
 
           {/* Hover tooltip */}
@@ -261,17 +275,21 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
         {/* Additional wallet info */}
         <div className="space-y-3 pt-4 border-t border-border">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Available Balance</span>
+            <span className="text-sm text-muted-foreground">Total Balance</span>
             <span className="text-sm font-medium text-foreground">{formatCurrency(totalBalance)}</span>
           </div>
-          {organization?.reserved_balance_cents && organization.reserved_balance_cents > 0 && (
+          {reservedBalance > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Reserved</span>
               <span className="text-sm font-medium text-orange-400">
-                {formatCurrency(organization.reserved_balance_cents / 100)}
+                -{formatCurrency(reservedBalance)}
               </span>
             </div>
           )}
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Available Balance</span>
+            <span className="text-sm font-medium text-green-400">{formatCurrency(availableBalance)}</span>
+          </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Transactions</span>
             <span className="text-sm font-medium text-foreground">{transactions.length}</span>

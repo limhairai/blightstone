@@ -3,79 +3,59 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
-import { formatCurrency, getInitials } from "../../utils/format"
-import { getBusinessAvatarClasses } from "../../lib/design-tokens"
-import { ChevronUp, ChevronDown, MoreHorizontal } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { formatCurrency } from "../../utils/format"
+import { ChevronUp, ChevronDown, Wallet, Clock } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
-import { useTheme } from "next-themes"
 import { Skeleton } from "../ui/skeleton"
-import { useCurrentOrganization, useBusinessManagers } from '@/lib/swr-config'
+import { useCurrentOrganization } from '@/lib/swr-config'
 
-interface BusinessBalance {
+interface BalanceItem {
   id: string
   name: string
-  logo: string
-  balance: number
-  allocationPercent: number
-  accounts: number
-  bmId?: string
-  isUnallocated?: boolean
+  description: string
+  amount: number
+  icon: React.ReactNode
+  color: string
 }
 
 export function BusinessBalancesTable() {
-  const router = useRouter()
-  const { theme } = useTheme()
   const { currentOrganizationId } = useOrganizationStore()
   const [isExpanded, setIsExpanded] = useState(true)
 
   // Use optimized hooks instead of direct SWR calls
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
-  const { data: businessManagersData, isLoading: areBMsLoading } = useBusinessManagers();
 
   const organization = orgData?.organizations?.[0];
-  const businessManagers = businessManagersData?.business_managers || [];
-  const isLoading = isOrgLoading || areBMsLoading;
+  const isLoading = isOrgLoading;
 
-  // Calculate total balance from all business managers to determine percentages
-  // For now, since we don't have individual BM balances, we'll show the total balance as unallocated
+  // Calculate balances
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
-  const totalAllocated = 0; // TODO: Implement individual BM balance tracking
-  const unallocatedAmount = Math.max(0, totalBalance - totalAllocated)
+  const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
+  const unallocatedBalance = totalBalance; // All balance is unallocated since we're not tracking individual BM allocations
 
-  // Convert business managers to BusinessBalance format
-  const businessBalances: BusinessBalance[] = [
+  // Create balance items array
+  const balanceItems: BalanceItem[] = [
     {
       id: "unallocated",
-      name: "Unallocated",
-      logo: "💰",
-      balance: unallocatedAmount,
-      allocationPercent: totalBalance > 0 ? (unallocatedAmount / totalBalance) * 100 : 0,
-      accounts: 0,
-      isUnallocated: true,
-    },
-    ...businessManagers
-      .filter(bm => bm.status === "active")
-      .map(bm => ({
-        id: bm.id.toString(),
-        name: bm.name,
-        logo: getInitials(bm.name),
-        balance: 0, // TODO: Implement individual BM balance tracking
-        allocationPercent: 0, // TODO: Calculate based on actual allocation
-        accounts: bm.metadata?.ad_accounts_count || 0,
-        bmId: bm.dolphin_id,
-      }))
-  ]
-
-  const handleBusinessManagerClick = (businessManager: BusinessBalance) => {
-    if (!businessManager.isUnallocated) {
-      // For now, redirect to business managers page or show details
-      router.push(`/dashboard/business-managers`)
+      name: "Unallocated Balance",
+      description: "Available for ad campaigns and funding",
+      amount: unallocatedBalance,
+      icon: <Wallet className="h-4 w-4" />,
+      color: "text-green-400"
     }
-  }
+  ];
 
-  // Determine the current theme mode for avatar classes
-  const currentMode = theme === "light" ? "light" : "dark"
+  // Only show reserved balance if it exists
+  if (reservedBalance > 0) {
+    balanceItems.push({
+      id: "reserved",
+      name: "Reserved Balance",
+      description: "Pending topup requests awaiting admin approval",
+      amount: reservedBalance,
+      icon: <Clock className="h-4 w-4" />,
+      color: "text-orange-400"
+    });
+  }
   
   if (isLoading) {
     return (
@@ -96,7 +76,7 @@ export function BusinessBalancesTable() {
     <Card className="bg-card border-border">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold text-foreground">Business Manager balances</CardTitle>
+          <CardTitle className="text-base font-semibold text-foreground">Wallet Balance Breakdown</CardTitle>
           <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 p-0">
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
@@ -105,71 +85,39 @@ export function BusinessBalancesTable() {
 
       {isExpanded && (
         <CardContent className="p-0">
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-border text-sm text-muted-foreground font-medium">
-            <div className="col-span-6">Asset</div>
-            <div className="col-span-3 text-right">Balance</div>
-            <div className="col-span-2 text-right">Allocation %</div>
-            <div className="col-span-1"></div>
-          </div>
-
-          {/* Business Manager Rows */}
+          {/* Balance Items */}
           <div className="divide-y divide-border">
-            {businessBalances.map((businessManager) => (
+            {balanceItems.map((item) => (
               <div
-                key={businessManager.id}
-                className={`grid grid-cols-12 gap-4 px-6 py-4 transition-colors ${
-                  businessManager.isUnallocated ? "hover:bg-muted/20" : "hover:bg-muted/30 cursor-pointer"
-                }`}
-                onClick={() => handleBusinessManagerClick(businessManager)}
+                key={item.id}
+                className="flex items-center justify-between px-6 py-4 hover:bg-muted/20 transition-colors"
               >
-                {/* Asset Info */}
-                <div className="col-span-6 flex items-center gap-3">
-                  <div className="relative">
-                    {businessManager.isUnallocated ? (
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                        {businessManager.logo}
-                      </div>
-                    ) : (
-                      <div className={getBusinessAvatarClasses('md', currentMode)}>
-                        {businessManager.logo}
-                      </div>
-                    )}
+                {/* Balance Info */}
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg bg-muted/30 ${item.color}`}>
+                    {item.icon}
                   </div>
                   <div>
-                    <div className="font-medium text-foreground">{businessManager.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {businessManager.isUnallocated ? (
-                        "Ready for distribution"
-                      ) : (
-                        <>
-                          {businessManager.accounts} account{businessManager.accounts !== 1 ? "s" : ""} 
-                          {businessManager.bmId && ` • ${businessManager.bmId}`}
-                        </>
-                      )}
-                    </div>
+                    <div className="font-medium text-foreground">{item.name}</div>
+                    <div className="text-xs text-muted-foreground">{item.description}</div>
                   </div>
                 </div>
 
-                {/* Balance */}
-                <div className="col-span-3 flex flex-col items-end justify-center">
-                  <div className="font-medium text-foreground">{formatCurrency(businessManager.balance)}</div>
-                  <div className="text-xs text-muted-foreground">{formatCurrency(businessManager.balance)} USD</div>
-                </div>
-
-                {/* Allocation % */}
-                <div className="col-span-2 flex items-center justify-end">
-                  <div className="font-medium text-foreground">{businessManager.allocationPercent.toFixed(2)}%</div>
-                </div>
-
-                {/* Actions */}
-                <div className="col-span-1 flex items-center justify-end">
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                {/* Amount */}
+                <div className="text-right">
+                  <div className={`font-semibold ${item.color}`}>{formatCurrency(item.amount)}</div>
+                  <div className="text-xs text-muted-foreground">{formatCurrency(item.amount)} USD</div>
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Summary */}
+          <div className="px-6 py-4 bg-muted/10 border-t border-border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Total Balance</span>
+              <span className="text-sm font-semibold text-foreground">{formatCurrency(totalBalance)}</span>
+            </div>
           </div>
         </CardContent>
       )}
