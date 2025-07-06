@@ -7,8 +7,7 @@ import { Button } from "../../../../../../components/ui/button"
 import { Input } from "../../../../../../components/ui/input"
 import { Badge } from "../../../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../../../components/ui/select"
-import { DataTable } from "../../../../../../components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
+
 import { CreditCard, ArrowLeft, Search, RefreshCw } from "lucide-react"
 import { StatusBadge } from "../../../../../../components/admin/status-badge"
 import Link from "next/link"
@@ -109,65 +108,7 @@ export default function BusinessManagerDetailPage() {
     })
   }, [adAccounts, selectedStatus, searchTerm])
 
-  const columns: ColumnDef<AdAccount>[] = [
-    {
-      accessorKey: "name",
-      header: "Ad Account",
-      size: 300,
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
-            <CreditCard className="h-4 w-4 text-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium truncate">{row.getValue("name")}</div>
-            <div className="text-xs text-muted-foreground font-mono">{row.original.ad_account_id}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 100,
-      cell: ({ row }) => <StatusBadge status={row.getValue("status")} size="sm" />,
-    },
-    {
-      accessorKey: "balance",
-      header: "Balance",
-      size: 120,
-      cell: ({ row }) => {
-        const spendCap = row.original.metadata?.spend_cap || 0;
-        const amountSpent = row.original.metadata?.amount_spent || 0;
-        const calculatedBalance = spendCap - amountSpent;
-        return (
-          <div className="text-right font-mono">
-            {formatCurrency(calculatedBalance)}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "totalSpend",
-      header: "Total Spend",
-      size: 120,
-      cell: ({ row }) => (
-        <div className="text-right font-mono">
-          {formatCurrency(row.original.metadata?.amount_spent || 0)}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "timezone",
-      header: "Timezone",
-      size: 100,
-      cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground">
-          {row.original.timezone || 'UTC'}
-        </div>
-      ),
-    },
-  ]
+
 
   if (loading) {
     return (
@@ -261,10 +202,62 @@ export default function BusinessManagerDetailPage() {
           </div>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={filteredAdAccounts}
-        />
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left p-4 font-medium">Ad Account</th>
+                <th className="text-left p-4 font-medium">Status</th>
+                <th className="text-right p-4 font-medium">Balance</th>
+                <th className="text-right p-4 font-medium">Total Spend</th>
+                <th className="text-left p-4 font-medium">Timezone</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAdAccounts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center p-8 text-muted-foreground">
+                    No ad accounts found
+                  </td>
+                </tr>
+              ) : (
+                filteredAdAccounts.map((account) => {
+                  const spendCap = account.metadata?.spend_cap || 0;
+                  const amountSpent = account.metadata?.amount_spent || 0;
+                  const calculatedBalance = spendCap - amountSpent;
+                  
+                  return (
+                    <tr key={account.id} className="border-t hover:bg-muted/50">
+                      <td className="p-4">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                            <CreditCard className="h-4 w-4 text-foreground" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium truncate">{account.name}</div>
+                            <div className="text-xs text-muted-foreground font-mono">{account.ad_account_id}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <StatusBadge status={account.status} size="sm" />
+                      </td>
+                      <td className="p-4 text-right font-mono">
+                        {formatCurrency(calculatedBalance)}
+                      </td>
+                      <td className="p-4 text-right font-mono">
+                        {formatCurrency(amountSpent)}
+                      </td>
+                      <td className="p-4 text-sm text-muted-foreground">
+                        {account.timezone || 'UTC'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
