@@ -39,12 +39,17 @@ export default function AdminDashboard() {
       try {
         const activities: any[] = []
 
-        // Fetch applications and other data in parallel for better performance
-        const [applicationsResponse] = await Promise.all([
+        // Fetch ALL data in parallel for better performance
+        const [applicationsResponse, topupResponse] = await Promise.all([
           fetch('/api/bm-applications'),
-          // Add other parallel requests here if needed
+          fetch('/api/topup-requests', {
+            headers: {
+              'Authorization': `Bearer ${session?.access_token}`
+            }
+          }).catch(() => null) // Handle auth errors gracefully
         ])
 
+        // Process applications
         if (applicationsResponse.ok) {
           const applicationsData = await applicationsResponse.json()
           const applicationsList = Array.isArray(applicationsData) ? applicationsData : []
@@ -66,37 +71,27 @@ export default function AdminDashboard() {
           console.error('Failed to fetch applications:', applicationsResponse.statusText)
         }
 
-        // Fetch topup requests - only if user has admin access
-        try {
-          const topupResponse = await fetch('/api/topup-requests', {
-            headers: {
-              'Authorization': `Bearer ${session?.access_token}`
-            }
-          })
-          if (topupResponse.ok) {
-            const topupData = await topupResponse.json()
-            const topupRequests = Array.isArray(topupData) ? topupData : []
+        // Process topup requests
+        if (topupResponse && topupResponse.ok) {
+          const topupData = await topupResponse.json()
+          const topupRequests = Array.isArray(topupData) ? topupData : []
 
-            // Add recent topup requests
-            topupRequests
-              .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-              .slice(0, 2)
-              .forEach((request: any) => {
-                activities.push({
-                  type: "topup",
-                  message: `Topup request: $${(request.amount_cents / 100).toFixed(2)} for ${request.ad_account_name}`,
-                  time: formatTimeAgo(request.created_at),
-                  status: request.status || "pending"
-                })
+          // Add recent topup requests
+          topupRequests
+            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 2)
+            .forEach((request: any) => {
+              activities.push({
+                type: "topup",
+                message: `Topup request: $${(request.amount_cents / 100).toFixed(2)} for ${request.ad_account_name}`,
+                time: formatTimeAgo(request.created_at),
+                status: request.status || "pending"
               })
-          } else if (topupResponse.status === 401 || topupResponse.status === 403) {
-            // User doesn't have admin access - silently skip topup requests
-            // console.log('Skipping topup requests - insufficient permissions')
-          } else {
-            console.error('Failed to fetch topup requests:', topupResponse.statusText)
-          }
-        } catch (err) {
-          console.error('Failed to fetch topup requests:', err)
+            })
+        } else if (topupResponse && (topupResponse.status === 401 || topupResponse.status === 403)) {
+          // User doesn't have admin access - silently skip topup requests
+        } else if (topupResponse) {
+          console.error('Failed to fetch topup requests:', topupResponse.statusText)
         }
 
         // Sort all activities by time and take the most recent
@@ -109,7 +104,9 @@ export default function AdminDashboard() {
       }
     }
 
-    fetchData()
+    if (session) {
+      fetchData()
+    }
   }, [session])
 
   // Helper function to format time ago

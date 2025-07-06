@@ -397,7 +397,7 @@ export default function AdminApplicationsPage() {
               <Button
                 size="sm"
                 onClick={() => handleFulfill(application)}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
               >
                 Mark as Fulfilled
               </Button>

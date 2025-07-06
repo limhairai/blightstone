@@ -28,7 +28,6 @@ export const CONFIG = {
   
   // Feature flags
   FEATURES: {
-    USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true',
     ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
     ENABLE_ERROR_REPORTING: process.env.NEXT_PUBLIC_ENABLE_ERROR_REPORTING === 'true',
     MAINTENANCE_MODE: process.env.NEXT_PUBLIC_MAINTENANCE_MODE === 'true',
@@ -103,7 +102,6 @@ if (CONFIG.APP.DEBUG) {
   console.log('🔧 Configuration loaded:', {
     environment: CONFIG.APP.ENVIRONMENT,
     backendUrl: CONFIG.API.baseUrl,
-    useDemoData: CONFIG.FEATURES.USE_DEMO_DATA,
     hasSupabase: !!(CONFIG.SERVICES.SUPABASE_URL && CONFIG.SERVICES.SUPABASE_ANON_KEY),
   })
 } 

@@ -7,10 +7,10 @@ import React from 'react';
 import AccessCodeManager from '../../../components/admin/AccessCodeManager';
 
 export default function AccessCodesPage() {
-  // For demo mode, we'll use a mock organization ID
-  const organizationId = "demo-org-123";
+  // TODO: Get actual organization ID from context/props
+  const organizationId = "org-placeholder";
 
   return (
-    <AccessCodeManager organizationId={organizationId} organizationName="Demo Organization" />
+    <AccessCodeManager organizationId={organizationId} organizationName="Organization" />
   );
 } 

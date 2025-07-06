@@ -52,9 +52,8 @@ export default function AssetsPage() {
     setLoading(true)
     setError(null)
     try {
-      // Add cache-busting timestamp to force fresh data
-      const timestamp = Date.now()
-      const response = await fetch(`/api/admin/dolphin-assets/all-assets?_t=${timestamp}`)
+      // Remove cache busting for better performance - let browser cache handle it
+      const response = await fetch(`/api/admin/dolphin-assets/all-assets`)
       if (!response.ok) throw new Error(`Failed to load assets: ${response.statusText}`)
       const data = await response.json()
       
@@ -321,9 +320,6 @@ export default function AssetsPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {!asset.organization_id ? <BindAssetDialog asset={asset} onSuccess={loadAssets} /> : <ManageAssetDialog asset={asset} onSuccess={loadAssets} />}
-                      <a href={(asset.metadata as any)?.url} target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="ghost"><ExternalLink className="h-4 w-4" /></Button>
-                      </a>
                     </div>
                   </TableCell>
                 )}
@@ -344,57 +340,57 @@ export default function AssetsPage() {
 
   return (
     <>
-      <header className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Dolphin Assets</h1>
-        <div className="flex items-center gap-4">
-          <Select value={syncType} onValueChange={setSyncType}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select sync type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="normal">Normal Sync</SelectItem>
-              <SelectItem value="force">Force Refresh</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button 
-            onClick={handleSync} 
-            disabled={isLoading}
-            className="flex items-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Sync Assets
-              </>
-            )}
-          </Button>
-          
-          <Button 
-            onClick={handleDiagnostic} 
-            disabled={isLoading}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Search className="h-4 w-4" />
-            Diagnose BM Issues
-          </Button>
-        </div>
-      </header>
+
 
       {error && <Alert variant="destructive" className="mb-4"><AlertCircle className="h-4 w-4" /><AlertDescription>{error}</AlertDescription></Alert>}
 
       <Tabs defaultValue="business_manager">
-        <TabsList>
-          <TabsTrigger value="business_manager">Business Managers</TabsTrigger>
-          <TabsTrigger value="ad_account">Ad Accounts</TabsTrigger>
-          <TabsTrigger value="profile">Teams</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="business_manager">Business Managers</TabsTrigger>
+            <TabsTrigger value="ad_account">Ad Accounts</TabsTrigger>
+            <TabsTrigger value="profile">Teams</TabsTrigger>
+          </TabsList>
+          <div className="flex items-center gap-4">
+            <Select value={syncType} onValueChange={setSyncType}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Select sync type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">Normal Sync</SelectItem>
+                <SelectItem value="force">Force Refresh</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Button 
+              onClick={handleSync} 
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Sync Assets
+                </>
+              )}
+            </Button>
+            
+            <Button 
+              onClick={handleDiagnostic} 
+              disabled={isLoading}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              Diagnose BM Issues
+            </Button>
+          </div>
+        </div>
         <Card className="mt-4">
           <CardHeader>
             <div className="flex items-center gap-4">
@@ -434,91 +430,104 @@ export default function AssetsPage() {
       {/* Diagnostic Results Modal */}
       {showDiagnostic && diagnosticResults && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background border border-border rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-foreground">Dolphin BM Association Diagnostic</h2>
-              <Button variant="ghost" onClick={() => setShowDiagnostic(false)}>✕</Button>
+          <div className="bg-background border border-border rounded-lg max-w-4xl max-h-[80vh] overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-border">
+              <h2 className="text-lg font-medium text-foreground">BM Association Diagnostic</h2>
+              <Button variant="ghost" size="sm" onClick={() => setShowDiagnostic(false)}>✕</Button>
             </div>
             
-            <div className="space-y-4">
-              {/* Summary */}
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2 text-foreground">Summary</h3>
-                <div className="grid grid-cols-3 gap-4 text-sm text-muted-foreground">
-                  <div>Profiles: {diagnosticResults.summary?.profiles_count || 0}</div>
-                  <div>CABs: {diagnosticResults.summary?.cabs_count || 0}</div>
-                  <div>Issues: {diagnosticResults.association_issues?.length || 0}</div>
+            <div className="overflow-y-auto max-h-[calc(80vh-120px)]">
+              <div className="p-4 space-y-4">
+                {/* Summary */}
+                <div className="grid grid-cols-3 gap-4 text-sm border-b border-border pb-4">
+                  <div>
+                    <div className="text-muted-foreground">Profiles</div>
+                    <div className="font-medium">{diagnosticResults.summary?.profiles_count || 0}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">CABs</div>
+                    <div className="font-medium">{diagnosticResults.summary?.cabs_count || 0}</div>
+                  </div>
+                  <div>
+                    <div className="text-muted-foreground">Issues</div>
+                    <div className="font-medium">{diagnosticResults.association_issues?.length || 0}</div>
+                  </div>
                 </div>
+
+                {/* Issues */}
+                {diagnosticResults.association_issues && diagnosticResults.association_issues.length > 0 && (
+                  <div>
+                    <h3 className="font-medium mb-3 text-foreground">Association Issues ({diagnosticResults.association_issues.length})</h3>
+                    <div className="space-y-2">
+                      {diagnosticResults.association_issues.map((issue: any, idx: number) => (
+                        <div key={idx} className="border border-border rounded p-3 text-sm">
+                          <div className="font-medium text-foreground">{issue.cab_name}</div>
+                          <div className="text-muted-foreground text-xs font-mono mt-1">ID: {issue.cab_id}</div>
+                          <div className="text-muted-foreground text-xs mt-1">Managing: {issue.managing_profiles?.join(', ') || 'None'}</div>
+                          <div className="text-foreground text-xs mt-2">{issue.issue}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cross Reference Analysis */}
+                {diagnosticResults.cross_reference && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium mb-3 text-foreground">Cross-Reference Analysis</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">BMs only in profiles:</span>
+                        <span className="font-medium">{diagnosticResults.cross_reference.bm_ids_only_in_profiles?.length || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">BMs only in CABs:</span>
+                        <span className="font-medium">{diagnosticResults.cross_reference.bm_ids_only_in_cabs?.length || 0}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Common BMs:</span>
+                        <span className="font-medium">{diagnosticResults.cross_reference.common_bm_ids?.length || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {diagnosticResults.recommendations && diagnosticResults.recommendations.length > 0 && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium mb-3 text-foreground">Recommendations</h3>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      {diagnosticResults.recommendations.map((rec: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-foreground mt-0.5">•</span>
+                          <span>{rec}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Profile Analysis */}
+                {diagnosticResults.profiles_analysis && (
+                  <div className="border-t border-border pt-4">
+                    <h3 className="font-medium mb-3 text-foreground">Profile Analysis</h3>
+                    <div className="space-y-2">
+                      {diagnosticResults.profiles_analysis.map((profile: any, idx: number) => (
+                        <div key={idx} className="flex justify-between items-center text-sm border border-border rounded p-2">
+                          <span className="font-medium text-foreground">{profile.name}</span>
+                          <span className="text-muted-foreground">{profile.bm_count} BMs</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Issues */}
-              {diagnosticResults.association_issues && diagnosticResults.association_issues.length > 0 && (
-                <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-destructive">Association Issues ({diagnosticResults.association_issues.length})</h3>
-                  <div className="space-y-2">
-                    {diagnosticResults.association_issues.map((issue: any, idx: number) => (
-                      <div key={idx} className="bg-background p-3 rounded border border-border">
-                        <div className="font-medium text-foreground">{issue.cab_name}</div>
-                        <div className="text-sm text-muted-foreground">ID: {issue.cab_id}</div>
-                        <div className="text-sm text-muted-foreground">Managing: {issue.managing_profiles?.join(', ') || 'None'}</div>
-                        <div className="text-sm text-destructive">{issue.issue}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Cross Reference Analysis */}
-              {diagnosticResults.cross_reference && (
-                <div className="bg-orange-500/10 border border-orange-500/20 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-orange-600 dark:text-orange-400">Cross-Reference Analysis</h3>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div>
-                      <span className="font-medium text-foreground">BMs only in profiles:</span> {diagnosticResults.cross_reference.bm_ids_only_in_profiles?.length || 0}
-                      {diagnosticResults.cross_reference.bm_ids_only_in_profiles?.length > 0 && (
-                        <div className="text-orange-600 dark:text-orange-400 ml-4">⚠️ These BMs may have permission issues</div>
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">BMs only in CABs:</span> {diagnosticResults.cross_reference.bm_ids_only_in_cabs?.length || 0}
-                    </div>
-                    <div>
-                      <span className="font-medium text-foreground">Common BMs:</span> {diagnosticResults.cross_reference.common_bm_ids?.length || 0}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Recommendations */}
-              {diagnosticResults.recommendations && diagnosticResults.recommendations.length > 0 && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-emerald-600 dark:text-emerald-400">Recommendations</h3>
-                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                    {diagnosticResults.recommendations.map((rec: string, idx: number) => (
-                      <li key={idx}>{rec}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Profile Analysis Summary */}
-              {diagnosticResults.profiles_analysis && (
-                <div className="bg-muted p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2 text-foreground">Profile Analysis</h3>
-                  <div className="space-y-2">
-                    {diagnosticResults.profiles_analysis.map((profile: any, idx: number) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="font-medium text-foreground">{profile.name}</span>
-                        <span className="text-muted-foreground">{profile.bm_count} BMs</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
             
-            <div className="mt-6 flex justify-end">
-              <Button onClick={() => setShowDiagnostic(false)}>Close</Button>
+            <div className="p-4 border-t border-border">
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setShowDiagnostic(false)}>Close</Button>
+              </div>
             </div>
           </div>
         </div>

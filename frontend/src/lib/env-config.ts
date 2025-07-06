@@ -72,7 +72,6 @@ export const ENV_CONFIG = {
   DOMAIN: IS_PRODUCTION ? 'adhub.com' : (IS_STAGING ? 'staging.adhub.tech' : 'localhost'),
   
   // Feature flags
-  USE_DEMO_DATA: process.env.NEXT_PUBLIC_USE_DEMO_DATA === 'true',
   ENABLE_DEBUG: process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true' || IS_DEVELOPMENT,
   
   // Security
@@ -99,7 +98,6 @@ if (IS_DEVELOPMENT) {
     NODE_ENV: process.env.NODE_ENV,
     BASE_URL: ENV_CONFIG.BASE_URL,
     API_URL: ENV_CONFIG.API_URL,
-    USE_DEMO_DATA: ENV_CONFIG.USE_DEMO_DATA,
   })
 }
 
@@ -111,7 +109,6 @@ export const {
   BACKEND_URL,
   API_BASE_URL,
   DOMAIN,
-  USE_DEMO_DATA,
   ENABLE_DEBUG,
   SECURE_COOKIES,
 } = ENV_CONFIG

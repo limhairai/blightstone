@@ -29,7 +29,7 @@ interface BusinessManager {
 }
 
 interface Organization {
-  organization_id: string
+  id: string
   name: string
   created_at: string
 }
@@ -173,7 +173,7 @@ export default function OrganizationDetailPage() {
         <div>
           <h1 className="text-2xl font-bold">{organization.name}</h1>
           <p className="text-sm text-muted-foreground">
-            Organization ID: {organization.organization_id}
+            Organization ID: <span className="font-mono">{organization.id}</span>
           </p>
         </div>
       </div>

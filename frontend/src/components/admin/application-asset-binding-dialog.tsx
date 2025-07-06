@@ -543,10 +543,10 @@ export function ApplicationAssetBindingDialog({
                   {selectedAdAccounts.length > 0 && (
                     <div className="text-xs text-muted-foreground">
                       {mode === 'additional-accounts-general' && getCurrentAccountCount + selectedAdAccounts.length > 7 && (
-                        <span className="text-orange-600">⚠️ Exceeds 7-account limit</span>
+                        <span className="text-foreground">⚠️ Exceeds 7-account limit</span>
                       )}
                       {mode === 'new-bm' && selectedAdAccounts.length > 7 && (
-                        <span className="text-orange-600">⚠️ More than 7 accounts selected</span>
+                        <span className="text-foreground">⚠️ More than 7 accounts selected</span>
                       )}
                     </div>
                   )}
@@ -589,10 +589,10 @@ export function ApplicationAssetBindingDialog({
 
               {/* Compact Summary */}
               {selectedBusinessManager && selectedAdAccounts.length > 0 && (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-md p-3">
-                  <div className="text-sm text-green-400">
+                <div className="border border-border rounded-md p-3">
+                  <div className="text-sm text-foreground">
                     <div className="font-medium">Ready to assign:</div>
-                    <div className="text-xs mt-1 text-green-300">
+                    <div className="text-xs mt-1 text-muted-foreground">
                       {mode === 'new-bm' ? '1 Business Manager + ' : ''}{selectedAdAccounts.length} ad account{selectedAdAccounts.length !== 1 ? 's' : ''}
                     </div>
                   </div>
@@ -609,7 +609,7 @@ export function ApplicationAssetBindingDialog({
           <Button 
             onClick={handleSubmit} 
             disabled={loading || loadingAssets || !selectedBusinessManager || selectedAdAccounts.length === 0}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:from-[#b4a0ff] to-[#ffb4a0] text-black border-0"
             size="sm"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

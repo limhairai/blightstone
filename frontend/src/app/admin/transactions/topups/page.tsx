@@ -97,19 +97,6 @@ export default function TopupRequestsPage() {
   }
 
   const handleProcessRequest = async (request: TopupRequest, status: TopupRequestStatus) => {
-    // OPTIMISTIC UPDATE: Immediately update the UI
-          const optimisticRequest = {
-        ...request,
-        status,
-        processed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-    // Update local state immediately
-    setRequests(prev => prev.map(req => 
-      req.id === request.id ? optimisticRequest : req
-    ));
-
     const statusMessages = {
       processing: 'Request marked as processing',
       completed: 'Request completed successfully',
@@ -117,12 +104,10 @@ export default function TopupRequestsPage() {
       cancelled: 'Request cancelled'
     };
 
-    // Show success immediately
-    toast.success(statusMessages[status] || 'Request updated');
+    setIsProcessing(true);
     setShowProcessDialog(false);
     setSelectedRequest(null);
 
-    setIsProcessing(true);
     try {
       const response = await fetch(`/api/topup-requests/${request.id}`, {
         method: 'PATCH',
@@ -140,17 +125,16 @@ export default function TopupRequestsPage() {
         throw new Error(errorData.error || 'Failed to update request');
       }
 
-      // Background sync with server data
+      // Update with server response
       const updatedRequest = await response.json();
       setRequests(prev => prev.map(req => 
         req.id === request.id ? updatedRequest : req
       ));
+
+      // Show success after successful server update
+      toast.success(statusMessages[status] || 'Request updated');
       
     } catch (err) {
-      // Revert optimistic update on error
-      setRequests(prev => prev.map(req => 
-        req.id === request.id ? request : req
-      ));
       toast.error(err instanceof Error ? err.message : 'Failed to update request');
     } finally {
       setIsProcessing(false);

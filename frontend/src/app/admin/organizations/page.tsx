@@ -7,10 +7,10 @@ import { Building2, Search } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { DataTable } from "../../../components/ui/data-table"
 import { Badge } from "../../../components/ui/badge"
-
+import useSWR from 'swr'
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "../../../contexts/AuthContext"
@@ -25,43 +25,38 @@ interface Organization {
   subscription_status?: string
 }
 
+const fetcher = async (url: string, token: string) => {
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) {
+    throw new Error('Failed to fetch organizations')
+  }
+  return response.json()
+}
+
 export default function OrganizationsPage() {
   const { session } = useAuth()
-  const [organizations, setOrganizations] = useState<Organization[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   
-  // Fetch real organizations data
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      if (!session?.access_token) return
-
-      try {
-        // Admins should fetch from the dedicated admin endpoint.
-        const response = await fetch('/api/admin/organizations', {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        })
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch organizations')
-        }
-        
-        const data = await response.json()
-        setOrganizations(data.organizations || [])
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load organizations')
-      } finally {
-        setLoading(false)
-      }
+  // Use SWR for better caching and performance
+  const { data, error, isLoading, mutate } = useSWR(
+    session?.access_token ? ['/api/admin/organizations', session.access_token] : null,
+    ([url, token]) => fetcher(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 30000, // 30 seconds
+      errorRetryCount: 3,
+      errorRetryInterval: 2000,
     }
+  )
 
-    fetchOrganizations()
-  }, [session])
+  const organizations = data?.organizations || []
 
   const filteredOrganizations = useMemo(() => {
-    return organizations.filter((org) => {
+    return organizations.filter((org: Organization) => {
       const planFilter = selectedPlan === "all" || org.plan_id === selectedPlan
       const searchFilter = searchTerm === "" || 
         org.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -70,12 +65,12 @@ export default function OrganizationsPage() {
     })
   }, [organizations, selectedPlan, searchTerm])
   
-  if (loading) {
+  if (isLoading) {
     return <div className="flex items-center justify-center p-8">Loading organizations...</div>
   }
   
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error.message}</div>
   }
 
   const columns = [

@@ -221,7 +221,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:from-[#a690ff] hover:to-[#ff9f85] text-white border-0">
+        <Button size="sm" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:from-[#a690ff] hover:to-[#ff9f85] text-black border-0">
           Bind
         </Button>
       </DialogTrigger>

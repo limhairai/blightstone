@@ -3,8 +3,9 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { useAuth } from "../../../contexts/AuthContext"
+import useSWR from 'swr'
 import { Badge } from "../../../components/ui/badge"
 import { Input } from "../../../components/ui/input"
 import { Users, CheckCircle, AlertTriangle, Clock, Search, Plus } from "lucide-react"
@@ -47,37 +48,37 @@ interface Team {
   adAccounts: any[]
 }
 
+const fetcher = async (url: string, token: string) => {
+  const response = await fetch(url, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+  if (!response.ok) {
+    throw new Error('Failed to fetch teams')
+  }
+  return response.json()
+}
+
 export default function TeamsPage() {
   const { session } = useAuth()
-  const [teams, setTeams] = useState<Team[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null)
   const [showTeamDetails, setShowTeamDetails] = useState(false)
 
-  const fetchTeams = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/admin/teams', {
-        headers: { 'Authorization': `Bearer ${session?.access_token}` }
-      })
-      if (!response.ok) throw new Error('Failed to fetch teams');
-      const data = await response.json();
-      setTeams(data.teams || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load teams');
-      toast.error(err instanceof Error ? err.message : 'Failed to load teams');
-    } finally {
-      setLoading(false);
+  // Use SWR for better caching and performance
+  const { data, error, isLoading, mutate } = useSWR(
+    session?.access_token ? ['/api/admin/teams', session.access_token] : null,
+    ([url, token]) => fetcher(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 30000, // 30 seconds
+      errorRetryCount: 3,
+      errorRetryInterval: 2000,
     }
-  };
-  
-  // Fetch real teams data
-  useEffect(() => {
-    if(session) fetchTeams()
-  }, [session])
+  )
+
+  const teams = data?.teams || []
 
   const handleTeamClick = (team: Team) => {
     setSelectedTeam(team)
@@ -85,7 +86,7 @@ export default function TeamsPage() {
   }
 
   const filteredTeams = useMemo(() => {
-    return teams.filter((team) => {
+    return teams.filter((team: Team) => {
       const statusFilter = selectedStatus === "all" || team.status === selectedStatus
       const searchFilter = searchTerm === "" || 
         team.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -93,12 +94,12 @@ export default function TeamsPage() {
     })
   }, [teams, selectedStatus, searchTerm])
   
-  if (loading) {
+  if (isLoading) {
     return <div className="flex items-center justify-center p-8">Loading teams...</div>
   }
   
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error.message}</div>
   }
 
   const getStatusConfig = (status: Team["status"]) => {
