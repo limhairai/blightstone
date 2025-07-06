@@ -224,7 +224,7 @@ export function DashboardView() {
     // For users with spending, show realistic progression
     return Array.from({ length: dataPoints }).map((_, i) => {
       const progressRatio = i / (dataPoints - 1)
-      const historicalSpend = (monthlySpend / 30) * progressRatio * (0.3 + Math.random() * 0.7)
+              const historicalSpend = (monthlySpend / 30) * progressRatio * 0.65 // Use 65% as baseline
       
       return {
         index: i,

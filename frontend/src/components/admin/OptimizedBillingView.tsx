@@ -262,10 +262,10 @@ export function OptimizedBillingView({
                   id: `tx-${i}`,
                   clientName: `Client ${String.fromCharCode(65 + (i % 26))}`,
                   type: ['deposit', 'withdrawal', 'spend'][i % 3] as any,
-                  amount: Math.floor(Math.random() * 10000) + 1000,
+                  amount: 2500 + (i * 100), // Incremental amounts
                   currency: 'USD',
                   status: ['completed', 'pending', 'failed'][i % 3] as any,
-                  date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+                  date: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)).toISOString(), // Daily intervals
                   description: `Transaction ${i + 1} - Ad spend payment`
                 }}
               />

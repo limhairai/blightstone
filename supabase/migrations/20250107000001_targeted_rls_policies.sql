@@ -49,16 +49,16 @@ CREATE POLICY "Users can create organizations" ON public.organizations
 CREATE POLICY "Admins can view all organizations" ON public.organizations
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE profile_id = auth.uid() AND is_superuser = true
+            SELECT 1 FROM public.profiles
+            WHERE profile_id = auth.uid() AND role = 'admin'
         )
     );
 
 CREATE POLICY "Admins can update all organizations" ON public.organizations
     FOR UPDATE USING (
         EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE profile_id = auth.uid() AND is_superuser = true
+            SELECT 1 FROM public.profiles
+            WHERE profile_id = auth.uid() AND role = 'admin'
         )
     );
 

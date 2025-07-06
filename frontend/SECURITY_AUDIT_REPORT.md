@@ -1,16 +1,16 @@
 # 🔒 Security Audit Report
 
-Generated: 2025-07-06T18:18:24.314Z
+Generated: 2025-07-06T18:30:57.332Z
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 3 |
-| Medium | 14 |
+| High | 2 |
+| Medium | 11 |
 | Low | 0 |
-| **Total** | **17** |
+| **Total** | **13** |
 
 ### src/app/admin/assets/debug/page.tsx
 
@@ -42,8 +42,8 @@ Weak cryptographic functions
 #### EXPOSED_SENSITIVE_DATA (HIGH)
 Sensitive data exposed in logs or alerts
 
-- Line 21: `console.log('Verifying user token...');`
-- Line 31: `console.log('No user found from token');`
+- Line 19: `// console.log('Verifying user token...');`
+- Line 23: `// console.log('No user found from token');`
 
 ### src/app/dashboard/wallet/business/[id]/page.tsx
 
@@ -60,26 +60,10 @@ Weak cryptographic functions
 - Line 265: `amount: Math.floor(Math.random() * 10000) + 1000,`
 - Line 268: `date: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),`
 
-### src/components/admin/create-account-dialog.tsx
-
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
-
-- Line 59: `const accountId = `act_${Math.floor(100000000 + Math.random() * 900000000)}`;`
-- Line 63: `id: Math.random().toString(36).substr(2, 9),`
-
 ### src/components/dashboard/dashboard-view.tsx
 
 #### WEAK_CRYPTO (MEDIUM)
 Weak cryptographic functions
 
 - Line 227: `const historicalSpend = (monthlySpend / 30) * progressRatio * (0.3 + Math.random() * 0.7)`
-- Line 301: `id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,`
-
-### src/contexts/AuthContext.tsx
-
-#### EXPOSED_SENSITIVE_DATA (HIGH)
-Sensitive data exposed in logs or alerts
-
-- Line 109: `// console.log('🔐 AuthContext signUp called with:', { email, hasPassword: !!password, options });`
 

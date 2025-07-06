@@ -73,7 +73,7 @@ export default function BusinessDetailPage() {
     return Array.from({ length: 30 }).map((_, i) => {
       const baseSpend = 80 + Math.sin(i * 0.3) * 40
       const weekendMultiplier = i % 7 === 0 || i % 7 === 6 ? 0.6 : 1
-      const randomVariation = Math.random() * 30 - 15
+      const variation = 10 // Fixed 10% variation
 
       return {
         index: i,
@@ -81,8 +81,8 @@ export default function BusinessDetailPage() {
           month: "short",
           day: "numeric",
         }),
-        value: Math.max(20, baseSpend * weekendMultiplier + randomVariation),
-        accounts: Math.floor(Math.random() * 2) + 1,
+        value: Math.max(20, baseSpend * weekendMultiplier + variation),
+        accounts: 1 + (i % 2), // Alternate between 1 and 2 accounts
       }
     })
   }, [])

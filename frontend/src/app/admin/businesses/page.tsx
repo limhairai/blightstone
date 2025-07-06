@@ -104,14 +104,14 @@ export default function BusinessesPage() {
   const enhancedBusinesses = useMemo(() => {
     return allBusinesses.map(business => ({
       ...business,
-      healthScore: Math.floor(Math.random() * 100),
-      riskLevel: Math.random() > 0.8 ? 'high' : Math.random() > 0.5 ? 'medium' : 'low',
-      monthlySpend: business.totalSpend * (0.1 + Math.random() * 0.3),
-      growthRate: (Math.random() - 0.5) * 200, // -100% to +100%
-      activeAccounts: Math.floor(business.accountsCount * (0.5 + Math.random() * 0.5)),
-      lastPayment: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      complianceScore: Math.floor(Math.random() * 100),
-      supportTickets: Math.floor(Math.random() * 10)
+      healthScore: 85, // Default good health score
+      riskLevel: 'low', // Default low risk
+      monthlySpend: business.totalSpend * 0.2, // 20% of total spend as monthly average
+      growthRate: 15, // Default 15% growth
+      activeAccounts: Math.ceil(business.accountsCount * 0.8), // 80% of accounts active
+      lastPayment: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+      complianceScore: 90, // Default good compliance
+      supportTickets: 1 // Default minimal tickets
     }));
   }, [allBusinesses]);
 
