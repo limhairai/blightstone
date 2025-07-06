@@ -154,7 +154,7 @@ export class WalletService {
     try {
       const { data, error } = await supabase
         .from('wallets')
-        .select('balance_cents, reserved_balance_cents')
+        .select('balance_cents')
         .eq('organization_id', organizationId)
         .single()
 
@@ -163,11 +163,10 @@ export class WalletService {
       }
 
       const totalBalance = (data.balance_cents || 0) / 100
-      const availableBalance = ((data.balance_cents || 0) - (data.reserved_balance_cents || 0)) / 100
 
       return {
         success: true,
-        balance: availableBalance
+        balance: totalBalance
       }
     } catch (error) {
       return {

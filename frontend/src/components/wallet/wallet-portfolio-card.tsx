@@ -27,7 +27,6 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
   const organization = data?.organizations?.[0];
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
   const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
-  const availableBalance = totalBalance - reservedBalance;
   const transactions = transactionsData?.transactions || [];
   
   // Check if user has real data to show (honest assessment)
@@ -286,10 +285,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
               </span>
             </div>
           )}
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Available Balance</span>
-            <span className="text-sm font-medium text-green-400">{formatCurrency(availableBalance)}</span>
-          </div>
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Transactions</span>
             <span className="text-sm font-medium text-foreground">{transactions.length}</span>
