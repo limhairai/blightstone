@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="space-y-2">
                 <p className="font-medium">Something went wrong</p>
                 <p className="text-sm text-muted-foreground">
-                  We're sorry, but there was an error loading this section. Please try refreshing the page.
+                  We&apos;re sorry, but there was an error loading this section. Please try refreshing the page.
                 </p>
                 <Button 
                   variant="outline" 

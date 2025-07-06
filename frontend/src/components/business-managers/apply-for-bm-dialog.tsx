@@ -134,7 +134,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">Application Submitted!</h3>
             <p className="text-muted-foreground">
-              Your business manager application has been submitted for review. We'll notify you once it's processed.
+              Your business manager application has been submitted for review. We&apos;ll notify you once it&apos;s processed.
             </p>
           </div>
         </DialogContent>
@@ -178,7 +178,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             <h4 className="text-sm font-medium text-foreground mb-2">What happens next?</h4>
             <ul className="text-xs text-muted-foreground space-y-1">
               <li>• Your application will be reviewed within 1-3 business days</li>
-              <li>• Once approved, you'll receive your Business Manager ID</li>
+                              <li>• Once approved, you&apos;ll receive your Business Manager ID</li>
               <li>• You can then start creating ad accounts and campaigns</li>
             </ul>
           </div>

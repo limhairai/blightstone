@@ -6,6 +6,7 @@ import { Button } from "../ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { StatusDot } from "../dashboard/status-dot"
 import { BusinessAccountsTable } from "./business-accounts-table"
+import { AccountsTable } from "../dashboard/accounts-table"
 import { Search, Plus } from "lucide-react"
 
 type AccountStatus = "active" | "pending" | "disabled" | "idle" | "archived" | "error" | "warning" | "success" | "info" | "suspended" | "inactive"

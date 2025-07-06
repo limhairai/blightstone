@@ -175,7 +175,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
         <DialogHeader>
           <DialogTitle>Upgrade Plan</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Choose a plan that fits your needs. You'll be redirected to Stripe for secure payment.
+            Choose a plan that fits your needs. You&apos;ll be redirected to Stripe for secure payment.
           </p>
         </DialogHeader>
 

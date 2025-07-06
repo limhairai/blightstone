@@ -25,11 +25,11 @@ export function EmailConfirmationView() {
 
     setIsResending(true)
     try {
-      const { error } = await resendVerification(email)
-      if (!error) {
-        toast.success("We've sent another confirmation email to your inbox.", {
-          description: "Email Sent"
-        })
+              const { error } = await resendVerification(email)
+        if (!error) {
+          toast.success("We&apos;ve sent another confirmation email to your inbox.", {
+            description: "Email Sent"
+          })
       }
     } catch (error) {
       toast.error("Failed to resend confirmation email. Please try again.")
@@ -61,7 +61,7 @@ export function EmailConfirmationView() {
             <CardContent className="space-y-6">
               <div className="text-center space-y-2">
                 <p className="text-muted-foreground">
-                  We've sent a confirmation email to:
+                  We&apos;ve sent a confirmation email to:
                 </p>
                 <p className="font-medium text-foreground break-all">
                   {email}

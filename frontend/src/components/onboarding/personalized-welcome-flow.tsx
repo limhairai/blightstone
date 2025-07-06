@@ -40,7 +40,7 @@ const USER_GOALS: UserGoal[] = [
   {
     id: 'new-business',
     title: 'Launch New Business',
-    description: 'I\'m starting fresh and need everything set up',
+            description: 'I&apos;m starting fresh and need everything set up',
     icon: <Building2 className="h-5 w-5" />,
     steps: [
       'Create business profile',
@@ -52,7 +52,7 @@ const USER_GOALS: UserGoal[] = [
   {
     id: 'manage-clients',
     title: 'Manage Client Accounts',
-    description: 'I\'m an agency managing multiple client accounts',
+            description: 'I&apos;m an agency managing multiple client accounts',
     icon: <Users className="h-5 w-5" />,
     badge: 'Agency',
     steps: [
@@ -145,7 +145,7 @@ export function PersonalizedWelcomeFlow({
               <div>
                 <h2 className="text-2xl font-bold">Welcome to AdHub, {userName}!</h2>
                 <p className="text-muted-foreground">
-                  Let's personalize your experience. What brings you here today?
+                  Let&apos;s personalize your experience. What brings you here today?
                 </p>
               </div>
             </div>

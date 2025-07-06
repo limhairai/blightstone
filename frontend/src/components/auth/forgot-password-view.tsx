@@ -58,7 +58,7 @@ export function ForgotPasswordView() {
                 </div>
                 <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
                 <CardDescription>
-                  We've sent password reset instructions to {email}
+                  We&apos;ve sent password reset instructions to {email}
                 </CardDescription>
               </CardHeader>
               
@@ -66,7 +66,7 @@ export function ForgotPasswordView() {
                 <div className="text-center text-sm text-muted-foreground space-y-2">
                   <p>
                     Click the link in the email to reset your password. 
-                    If you don't see it, check your spam folder.
+                    If you don&apos;t see it, check your spam folder.
                   </p>
                 </div>
 
@@ -109,7 +109,7 @@ export function ForgotPasswordView() {
               </div>
               <CardTitle className="text-2xl font-bold">Forgot Password?</CardTitle>
               <CardDescription>
-                No worries! Enter your email and we'll send you reset instructions.
+                No worries! Enter your email and we&apos;ll send you reset instructions.
               </CardDescription>
             </CardHeader>
             

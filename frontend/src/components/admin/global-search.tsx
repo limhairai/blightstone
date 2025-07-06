@@ -244,7 +244,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
               
               {!loading && results.length === 0 && query.length >= 2 && (
                 <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No results found for "{query}"
+                  No results found for &quot;{query}&quot;
                 </div>
               )}
               
