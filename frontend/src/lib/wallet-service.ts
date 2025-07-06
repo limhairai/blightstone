@@ -121,7 +121,7 @@ export class WalletService {
     }
 
     // Create wallet if it doesn't exist
-    console.log('Creating wallet for organization:', organizationId)
+// console.log('Creating wallet for organization:', organizationId)
     const { data: newWallet, error: createError } = await supabase
       .from('wallets')
       .insert({

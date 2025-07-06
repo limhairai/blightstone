@@ -48,10 +48,10 @@ export default function ApplicationHistoryPage() {
         }
         
         const data = await response.json()
-        console.log('Applications API response:', data)
+// console.log('Applications API response:', data)
         // Ensure data is an array before mapping
         const applications = Array.isArray(data) ? data : (data.applications || [])
-        console.log('Applications array:', applications)
+// console.log('Applications array:', applications)
         
         // Check if applications is actually an array
         if (!Array.isArray(applications)) {

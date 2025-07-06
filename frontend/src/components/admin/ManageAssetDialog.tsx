@@ -29,7 +29,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
   const handleUnbind = async () => {
     setIsSubmitting(true)
     try {
-      console.log('🔗 Starting unbind process for asset:', {
+// console.log('🔗 Starting unbind process for asset:', {
         name: asset.name,
         asset_id: asset.id,
         organization_id: asset.organization_id,
@@ -56,7 +56,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
       }
 
       const result = await response.json()
-      console.log('🔗 Unbind successful:', result)
+// console.log('🔗 Unbind successful:', result)
       
       if (result.unbind_count > 1) {
         toast.success(`Successfully unbound ${result.unbind_count} assets (${isBusinessManager ? 'Business Manager + related ad accounts' : 'asset'})`)

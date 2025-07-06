@@ -247,7 +247,7 @@ export function ApplicationAssetBindingDialog({
       }
 
       const result = await response.json();
-      console.log('Application fulfilled successfully:', result);
+// console.log('Application fulfilled successfully:', result);
 
       const successMessage = mode === 'new-bm' 
         ? "Business Manager application fulfilled successfully!"

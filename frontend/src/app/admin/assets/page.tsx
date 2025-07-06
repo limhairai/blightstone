@@ -98,7 +98,7 @@ export default function AssetsPage() {
   // Future: Handle profile switching (A-Admin-1 → A-Backup-1)
   const handleProfileSwitch = useCallback(async (oldProfile: string, newProfile: string) => {
     // This will be implemented when needed for profile switching
-    console.log(`Profile switch requested: ${oldProfile} → ${newProfile}`);
+// console.log(`Profile switch requested: ${oldProfile} → ${newProfile}`);
     toast.info("Profile switching will be available when needed for failover scenarios.");
   }, [])
 
@@ -128,7 +128,7 @@ export default function AssetsPage() {
       setShowDiagnostic(true)
       
       // Show diagnostic results in console for detailed analysis
-      console.log('🔍 Dolphin BM Association Diagnosis:', diagnosis)
+// console.log('🔍 Dolphin BM Association Diagnosis:', diagnosis)
       
       // Show summary in toast
       const issues = diagnosis.association_issues?.length || 0
@@ -142,10 +142,10 @@ export default function AssetsPage() {
       if (diagnosis.cross_reference) {
         const { bm_ids_only_in_profiles, bm_ids_only_in_cabs } = diagnosis.cross_reference
         if (bm_ids_only_in_profiles.length > 0) {
-          console.log('⚠️ BMs only visible in profiles (permission issue?):', bm_ids_only_in_profiles)
+// console.log('⚠️ BMs only visible in profiles (permission issue?):', bm_ids_only_in_profiles)
         }
         if (bm_ids_only_in_cabs.length > 0) {
-          console.log('⚠️ BMs only visible in CABs (orphaned accounts?):', bm_ids_only_in_cabs)
+// console.log('⚠️ BMs only visible in CABs (orphaned accounts?):', bm_ids_only_in_cabs)
         }
       }
       

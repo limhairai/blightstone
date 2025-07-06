@@ -132,17 +132,17 @@ export default function BusinessAnalyticsPage() {
     };
     
     // Debug logging
-    console.log('Analytics Debug - Organizations:', organizations);
-    console.log('Analytics Debug - Plan Pricing:', planPricing);
+// console.log('Analytics Debug - Organizations:', organizations);
+// console.log('Analytics Debug - Plan Pricing:', planPricing);
     
     const subscriptionMRR = organizations.reduce((sum, org) => {
       const planId = org.plan_id || 'starter';
       const planPrice = planPricing[planId] || 29;
-      console.log(`Analytics Debug - Org: ${org.name}, Plan ID: ${planId}, Price: ${planPrice}`);
+// console.log(`Analytics Debug - Org: ${org.name}, Plan ID: ${planId}, Price: ${planPrice}`);
       return sum + planPrice;
     }, 0);
     
-    console.log('Analytics Debug - Total MRR:', subscriptionMRR);
+// console.log('Analytics Debug - Total MRR:', subscriptionMRR);
     
     const feeRequests = topupRequests.filter(req => req.fee_amount_cents && req.fee_amount_cents > 0);
     const transactionFeeRevenue = feeRequests.reduce((sum, req) => 
@@ -164,12 +164,12 @@ export default function BusinessAnalyticsPage() {
     
     const planDistribution = organizations.reduce((acc, org) => {
       const planId = org.plan_id || 'starter';
-      console.log(`Analytics Debug - Plan Distribution - Org: ${org.name}, Plan: ${planId}`);
+// console.log(`Analytics Debug - Plan Distribution - Org: ${org.name}, Plan: ${planId}`);
       acc[planId] = (acc[planId] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    console.log('Analytics Debug - Plan Distribution:', planDistribution);
+// console.log('Analytics Debug - Plan Distribution:', planDistribution);
 
     const rows: AnalyticsRow[] = [
       {
