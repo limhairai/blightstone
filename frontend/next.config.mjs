@@ -16,7 +16,10 @@ const nextConfig = {
   
   // Basic image optimization
   images: {
-    formats: ['image/webp'],
+    formats: ['image/webp', 'image/avif'],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: process.env.NODE_ENV === 'development', // Disable optimization in dev
   },
   
   // Font optimization (using built-in Next.js font optimization)

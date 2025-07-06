@@ -87,7 +87,7 @@ export function EmailConfirmationView() {
               </div>
 
               <div className="text-center text-sm text-muted-foreground">
-                <p>Didn't receive the email? Check your spam folder or</p>
+                <p>Didn&apos;t receive the email? Check your spam folder or</p>
               </div>
 
               <div className="space-y-3">

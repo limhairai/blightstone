@@ -170,23 +170,12 @@ export function BalanceResetDialog({ trigger, account, accounts, onSuccess }: Ba
           {trigger}
         </DialogTrigger>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              Request Submitted
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-center py-4">
-              <p className="text-muted-foreground">
-                Your balance reset request has been submitted and will be processed by our admin team.
-              </p>
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-3">
+              <Check className="w-6 h-6 text-white" />
             </div>
-            <div className="flex justify-center">
-              <Button onClick={() => setOpen(false)} className="bg-gradient-to-r from-violet-400 to-pink-400 hover:opacity-90 text-black">
-                Done
-              </Button>
-            </div>
+            <h3 className="text-base font-medium text-foreground mb-1">Request Submitted</h3>
+            <p className="text-sm text-muted-foreground">Your balance reset request has been submitted for review.</p>
           </div>
         </DialogContent>
       </Dialog>

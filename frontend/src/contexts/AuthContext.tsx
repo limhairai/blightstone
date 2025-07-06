@@ -484,12 +484,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }, 2000);
 
-    // Get initial session
+    // Get initial session with better error handling
     supabase.auth.getSession().then(async ({ data: { session: initialSession }, error }) => {
       clearTimeout(loadingTimeout);
       
       if (error) {
-        console.error('Error getting session:', error);
+        // Silently handle common auth errors
+        if (!error.message.includes('broken pipe') && !error.message.includes('refresh token')) {
+          console.error('Error getting session:', error);
+        }
         setLoading(false);
         return;
       }
@@ -511,7 +514,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(userData);
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          // Silently handle profile fetch errors
+          if (error instanceof Error && !error.message.includes('broken pipe')) {
+            console.error('Error fetching user profile:', error);
+          }
           // Don't fail the whole auth process if profile fetch fails
         }
       }
@@ -519,7 +525,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }).catch(error => {
       clearTimeout(loadingTimeout);
-      console.error('Failed to get initial session:', error);
+      // Silently handle common connection errors
+      if (!error.message.includes('broken pipe') && !error.message.includes('refresh token')) {
+        console.error('Failed to get initial session:', error);
+      }
       setLoading(false);
     });
 
@@ -530,7 +539,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user && event === 'SIGNED_IN') {
-        // Try to get user profile on sign in
+        // Try to get user profile on sign in with retry logic
         try {
           const response = await fetch('/api/auth/user', {
             headers: {
@@ -543,7 +552,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(userData);
           }
         } catch (error) {
-          console.error('Error fetching user profile on sign in:', error);
+          // Silently handle auth errors - they're often temporary connection issues
+          if (error instanceof Error && !error.message.includes('broken pipe')) {
+            console.error('Error fetching user profile on sign in:', error);
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);

@@ -111,12 +111,12 @@ export function CreateAccountDialog({
       <Dialog open={isOpen} onOpenChange={onClose}>
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent className="sm:max-w-md bg-card border-border">
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-white" />
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="w-12 h-12 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-3">
+              <CheckCircle className="w-6 h-6 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">Account Created!</h3>
-            <p className="text-muted-foreground">
+            <h3 className="text-base font-medium text-foreground mb-1">Account Created</h3>
+            <p className="text-sm text-muted-foreground">
               The ad account has been successfully created and assigned to {business?.name}.
             </p>
           </div>
