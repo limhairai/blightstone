@@ -65,16 +65,36 @@ export function RegisterView() {
         return;
       }
 
+      // Check if this is an existing user (Supabase doesn't return error for existing users)
       if (data?.user && !data.session) {
-        // This means email confirmation is required.
-        console.log('📝 Email confirmation required, redirecting to confirm-email page');
-        // Add a small delay to ensure toast is shown before redirect
+        // Check if user already has confirmed email - this indicates an existing user
+        // For new users, email_confirmed_at will be null until they confirm
+        const isExistingUser = data.user.email_confirmed_at !== null;
+        
+        if (isExistingUser) {
+          // This is an existing user with confirmed email - redirect to login
+          console.log('📝 Existing user detected (email already confirmed), redirecting to login');
+          toast.error("An account with this email already exists. Redirecting to login...", {
+            duration: 3000
+          });
+          setTimeout(() => {
+            router.push(`/login?email=${encodeURIComponent(email)}`);
+          }, 3000);
+          return;
+        }
+        
+        // This is a new user - email confirmation is required
+        console.log('📝 New user created, email confirmation required');
+        toast.success("Registration successful! Please check your email to confirm your account.", {
+          duration: 10000
+        });
         setTimeout(() => {
           router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
         }, 1000);
       } else if (data?.user && data.session) {
-        // User is immediately logged in.
+        // User is immediately logged in (new user with auto-confirm enabled)
         console.log('📝 User immediately logged in, redirecting to dashboard');
+        toast.success("Registration successful! Redirecting to dashboard...");
         setTimeout(() => {
           router.push("/dashboard");
         }, 1000);
@@ -195,8 +215,6 @@ export function RegisterView() {
             {error && (
               <div className="text-red-500 text-sm text-center py-2">{error}</div>
             )}
-
-
 
             <div>
               <Button

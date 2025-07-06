@@ -128,11 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Handle specific Supabase error messages with better UX
         if (errorMessage.includes('User already registered')) {
-          if (typeof window !== 'undefined') {
-            setTimeout(() => {
-              toast.error(authMessages.signUp.accountExists.description);
-            }, 100);
-          }
+          // Don't show toast here - let the register component handle it
+          // This prevents duplicate toasts
+          console.log('🔐 User already registered - letting register component handle the message');
         } else if (errorMessage.includes('Password should be at least')) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
