@@ -43,7 +43,7 @@ export default function ClientTopupRequestsPage() {
       const matchesStatus = statusFilter === "all" || request.status === statusFilter
       const matchesSearch = searchTerm === "" || 
         (request.ad_account_name && request.ad_account_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (request.notes && request.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+
         (request.metadata?.business_manager_name && request.metadata.business_manager_name.toLowerCase().includes(searchTerm.toLowerCase()))
       return matchesStatus && matchesSearch
     })
@@ -307,7 +307,7 @@ export default function ClientTopupRequestsPage() {
         <div className="flex items-center gap-2 min-w-[200px]">
           <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-            placeholder="Search accounts, notes..."
+                          placeholder="Search accounts, business managers..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             className="border-0 shadow-none focus-visible:ring-0 bg-transparent"
@@ -407,25 +407,7 @@ export default function ClientTopupRequestsPage() {
                 </div>
               </div>
 
-              {/* Notes */}
-              {selectedRequest.notes && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-                  <div className="mt-2 p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm">{selectedRequest.notes}</p>
-                  </div>
-                </div>
-              )}
 
-              {/* Admin Notes */}
-              {selectedRequest.admin_notes && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Admin Notes</Label>
-                  <div className="mt-2 p-4 bg-muted/50 rounded-lg">
-                    <p className="text-sm">{selectedRequest.admin_notes}</p>
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </DialogContent>

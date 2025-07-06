@@ -24,6 +24,7 @@ interface Plan {
   maxAdAccounts: number
   features: string[]
   stripe_price_id?: string | null
+  isCustom?: boolean
 }
 
 export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps) {
@@ -42,9 +43,8 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
         if (!response.ok) throw new Error('Failed to fetch plans')
         
         const data = await response.json()
-        // Filter out the free plan from upgrade options
-        const paidPlans = data.plans.filter((plan: Plan) => plan.id !== 'free')
-        setPlans(paidPlans)
+        // Show all available plans (starter, growth, scale, custom)
+        setPlans(data.plans)
       } catch (error) {
         console.error('Error fetching plans:', error)
         toast.error('Failed to load plans')
@@ -60,6 +60,13 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
 
   const handleSelectPlan = async (planId: string) => {
     if (isUpgrading || !currentOrganizationId) return
+    
+    // Check if it's a custom plan
+    const selectedPlan = plans.find(p => p.id === planId)
+    if (selectedPlan?.isCustom) {
+      toast.info('Please contact our sales team for custom pricing')
+      return
+    }
     
     setIsUpgrading(true)
     try {
@@ -103,7 +110,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
   const canUpgradeTo = (planId: string) => {
     if (!currentPlan || currentPlan.id === 'free') return true
     
-    const planOrder = ['starter', 'growth', 'scale', 'enterprise']
+    const planOrder = ['starter', 'growth', 'scale', 'custom']
     const currentIndex = planOrder.indexOf(currentPlan.id)
     const targetIndex = planOrder.indexOf(planId)
     
@@ -207,14 +214,24 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
                   <div className="mt-2">
-                    <span className="text-3xl font-bold">
-                      ${formatPrice(plan.monthlyPrice)}
-                    </span>
-                    <span className="text-muted-foreground">/month</span>
+                    {plan.isCustom ? (
+                      <span className="text-2xl font-bold text-muted-foreground">
+                        Contact Sales
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-3xl font-bold">
+                          ${formatPrice(plan.monthlyPrice)}
+                        </span>
+                        <span className="text-muted-foreground">/month</span>
+                      </>
+                    )}
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    + {plan.adSpendFee}% ad spend fee
-                  </div>
+                  {!plan.isCustom && (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      + {plan.adSpendFee}% ad spend fee
+                    </div>
+                  )}
                 </div>
 
                 <ul className="space-y-3 mb-6">
@@ -233,7 +250,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                       : "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
                   }`}
                   variant={isCurrent ? "outline" : "default"}
-                  disabled={isCurrent || !canUpgrade || isUpgrading || !plan.stripe_price_id}
+                  disabled={isCurrent || !canUpgrade || isUpgrading || (!plan.stripe_price_id && !plan.isCustom)}
                   onClick={() => handleSelectPlan(plan.id)}
                 >
                   {isCurrent 
@@ -242,9 +259,11 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                       ? "Downgrade" 
                       : isUpgrading 
                         ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-                        : !plan.stripe_price_id
-                          ? "Not Available"
-                          : "Select Plan"
+                        : plan.isCustom
+                          ? "Contact Sales"
+                          : !plan.stripe_price_id
+                            ? "Not Available"
+                            : "Select Plan"
                   }
                 </Button>
               </div>

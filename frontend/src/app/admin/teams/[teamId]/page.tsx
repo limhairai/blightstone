@@ -278,8 +278,9 @@ export default function TeamDetailPage() {
               <SelectContent>
                 <SelectItem value="all">All Plans</SelectItem>
                 <SelectItem value="starter">Starter</SelectItem>
-                <SelectItem value="professional">Professional</SelectItem>
-                <SelectItem value="enterprise">Enterprise</SelectItem>
+                <SelectItem value="growth">Growth</SelectItem>
+                <SelectItem value="scale">Scale</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
             

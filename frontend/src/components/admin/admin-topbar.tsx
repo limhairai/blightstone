@@ -14,9 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Badge } from '../ui/badge';
-import { Bell, ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X } from 'lucide-react';
+import { Bell, ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPlaceholderUrl } from '@/lib/config/assets';
+import { GlobalSearch } from './global-search';
 
 interface AdminTopbarProps {
   pageTitle?: string;
@@ -59,14 +60,30 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   };
 
   return (
-    <div className="sticky top-0 z-50 h-16 border-b border-border/20 flex items-center justify-between px-3 md:px-4 bg-card/80 backdrop-blur-md">
+    <div className="sticky top-0 z-50 h-16 border-b border-border/20 flex items-center justify-between px-3 md:px-6 bg-card/80 backdrop-blur-md">
       {/* Left: Page Title */}
-      <div className="flex items-center gap-3 ml-4">
+      <div className="flex items-center gap-3">
         <h1 className="text-xl font-semibold text-foreground">{getPageTitle()}</h1>
       </div>
 
+      {/* Center: Global Search */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 w-full max-w-md hidden md:block">
+        <GlobalSearch />
+      </div>
+
       {/* Right: Admin Controls */}
-      <div className="flex items-center gap-2 md:gap-3 ml-auto">
+      <div className="flex items-center gap-2 md:gap-3">
+        {/* Mobile Search Button */}
+        <div className="md:hidden">
+          <GlobalSearch 
+            trigger={
+              <Button variant="ghost" size="icon" className="hover:bg-accent">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            }
+          />
+        </div>
+        
         {/* Notification Bell */}
         <Button variant="ghost" size="icon" className="relative hover:bg-accent">
           <Bell className="h-5 w-5 text-muted-foreground" />
@@ -88,7 +105,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="getPlaceholderUrl()?height=32&width=32&text=A" alt="Admin" />
+                <AvatarImage src={user?.avatar_url || undefined} alt="Admin" />
                 <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-white">
                   {userInitial}
                 </AvatarFallback>

@@ -14,8 +14,7 @@ export interface Application {
   rejectedAt?: string;
   fulfilledBy?: string;
   fulfilledAt?: string;
-  clientNotes?: string;
-  adminNotes?: string;
+
   createdAt: string;
   updatedAt: string;
 }

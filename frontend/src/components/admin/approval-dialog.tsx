@@ -18,7 +18,7 @@ import { validateForm, validators, showValidationErrors, showSuccessToast } from
 interface ApprovalDialogProps {
   isOpen: boolean
   onClose: () => void
-  onApprove: (accountId: string, notes: string) => void
+  onApprove: (accountId: string) => void
   requestId: string
   clientName: string
   accountName: string
@@ -33,7 +33,7 @@ export function ApprovalDialog({
   accountName,
 }: ApprovalDialogProps) {
   const [accountId, setAccountId] = useState("")
-  const [notes, setNotes] = useState("")
+
   const [error, setError] = useState("")
 
   const handleSubmit = () => {
@@ -50,7 +50,7 @@ export function ApprovalDialog({
     }
 
     try {
-      onApprove(accountId, notes)
+      onApprove(accountId)
       showSuccessToast("Request Approved!", "The ad account has been successfully assigned.")
       resetForm()
     } catch (error) {
@@ -60,7 +60,7 @@ export function ApprovalDialog({
 
   const resetForm = () => {
     setAccountId("")
-    setNotes("")
+
     setError("")
   }
 
@@ -107,17 +107,7 @@ export function ApprovalDialog({
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes" className="text-right">
-              Notes (Optional)
-            </Label>
-            <Input
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes for this approval"
-            />
-          </div>
+
         </div>
 
         <DialogFooter>

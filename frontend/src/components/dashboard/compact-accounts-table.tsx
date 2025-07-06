@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { CompactFilters } from "@/components/dashboard/compact-filters"
 import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
 import { TopUpDialog } from "@/components/accounts/top-up-dialog"
+import { BalanceResetDialog } from "@/components/accounts/balance-reset-dialog"
 import { formatCurrency } from "@/utils/format"
 import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -430,6 +431,29 @@ export function CompactAccountsTable({
                     >
                       <Pause className="h-3 w-3 mr-2" />
                       Pause Account
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-popover-foreground hover:bg-accent"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <BalanceResetDialog
+                        account={{
+                          id: account.id,
+                          name: account.name,
+                          adAccount: account.adAccount,
+                          balance: account.balance,
+                          currency: account.currency,
+                          business: account.business,
+                          bmId: account.bmId
+                        }}
+                        onSuccess={() => mutate()}
+                        trigger={
+                          <div className="flex items-center w-full">
+                            <ArrowDownLeft className="h-3 w-3 mr-2" />
+                            Reset Balance
+                          </div>
+                        }
+                      />
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

@@ -12,7 +12,7 @@ import { Badge } from "../../../../components/ui/badge"
 import { DataTable } from "../../../../components/ui/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import { formatDistanceToNow } from "date-fns"
-import { Search } from "lucide-react"
+import { Search, ArrowLeft } from "lucide-react"
 
 interface ApplicationHistory {
   id: string
@@ -20,7 +20,7 @@ interface ApplicationHistory {
   businessName: string
   applicationType: "new_business" | "additional_business"
   accountsRequested: number
-  status: "approved" | "rejected" | "completed"
+  status: "fulfilled" | "rejected"
   teamName: string
   processedAt: string
   completedAt?: string
@@ -39,7 +39,7 @@ export default function ApplicationHistoryPage() {
       if (!session?.access_token) return
 
       try {
-        const response = await fetch('/api/admin/applications?status=approved,rejected,completed', {
+        const response = await fetch('/api/admin/applications?status=fulfilled,rejected', {
           headers: { 'Authorization': `Bearer ${session.access_token}` }
         })
         
@@ -62,15 +62,15 @@ export default function ApplicationHistoryPage() {
         
         // Transform the data to match the history format
         const historyData = applications.map((app: any) => ({
-          id: app.id,
-          organizationName: app.organization_name,
-          businessName: app.organization_name, // Use organization_name since business_name isn't available
-          applicationType: app.request_type === "new_business_manager" ? "new_business" : "additional_business",
+          id: app.applicationId || app.application_id,
+          organizationName: app.organizationName || app.organization_name,
+          businessName: app.businessName || app.organizationName || app.organization_name,
+          applicationType: app.requestType === "new_business_manager" ? "new_business" : "additional_business",
           accountsRequested: 1, // Default for now
           status: app.status,
           teamName: "Team Alpha", // Default for now
-          processedAt: app.created_at, // Use created_at instead of submitted_at
-          completedAt: app.approved_at || app.rejected_at || app.fulfilled_at
+          processedAt: app.createdAt || app.created_at,
+          completedAt: app.fulfilledAt || app.rejectedAt || app.approved_at || app.rejected_at || app.fulfilled_at
         }))
         setApplications(historyData)
       } catch (err) {
@@ -141,11 +141,8 @@ export default function ApplicationHistoryPage() {
         const status = row.getValue<string>("status")
         const getStatusColor = (status: string) => {
           switch (status) {
-            case "completed":
-            case "approved":
+            case "fulfilled":
               return "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20"
-            case "pending":
-              return "bg-[#FFC857]/10 text-[#FFC857] border-[#FFC857]/20"
             case "rejected":
               return "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20"
             default:
@@ -182,6 +179,18 @@ export default function ApplicationHistoryPage() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-4">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.history.back()}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Applications
+        </Button>
+        <div className="text-lg font-semibold">Applications History</div>
+      </div>
+      
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="relative">

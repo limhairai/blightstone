@@ -209,7 +209,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { status, approved_amount, admin_notes } = body;
+    const { status, approved_amount } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'Status is required' }, { status: 400 });
@@ -228,7 +228,6 @@ export async function PATCH(request: NextRequest) {
       .update({
         status,
         approved_amount_cents: status === 'completed' && approved_amount ? approved_amount * 100 : null,
-        admin_notes,
         processed_by: user.id,
         processed_at: status === 'completed' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString()
@@ -276,31 +275,53 @@ export async function POST(request: NextRequest) {
       ad_account_id, 
       ad_account_name, 
       amount_cents, 
-      priority, 
-      notes,
       fee_amount_cents,
       total_deducted_cents,
       plan_fee_percentage,
-      metadata
+      metadata,
+      request_type = 'topup',
+      transfer_destination_type,
+      transfer_destination_id
     } = body;
 
     if (!organization_id || !ad_account_id || !ad_account_name || !amount_cents) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Validate minimum amount
-    if (amount_cents < 50000) { // $500 minimum
+    // Validate request type
+    if (request_type && !['topup', 'balance_reset'].includes(request_type)) {
+      return NextResponse.json({ error: 'Invalid request type' }, { status: 400 });
+    }
+
+    // Validate balance reset specific fields
+    if (request_type === 'balance_reset') {
+      if (!transfer_destination_type || !['wallet', 'ad_account'].includes(transfer_destination_type)) {
+        return NextResponse.json({ error: 'Invalid transfer destination type for balance reset' }, { status: 400 });
+      }
+      if (!transfer_destination_id) {
+        return NextResponse.json({ error: 'Transfer destination ID is required for balance reset' }, { status: 400 });
+      }
+    }
+
+    // Validate minimum amount for topup requests
+    if (request_type === 'topup' && amount_cents < 50000) { // $500 minimum for topups
       return NextResponse.json({ error: 'Minimum top-up amount is $500' }, { status: 400 });
     }
 
+    // Validate minimum amount for balance reset requests
+    if (request_type === 'balance_reset' && amount_cents < 100) { // $1 minimum for balance reset
+      return NextResponse.json({ error: 'Minimum balance reset amount is $1' }, { status: 400 });
+    }
+
     // Get organization's current plan for fee calculation if not provided
+    // Note: Balance reset requests don't have fees, only topup requests do
     let calculatedFeeData = {
       fee_amount_cents: fee_amount_cents || 0,
       total_deducted_cents: total_deducted_cents || amount_cents,
       plan_fee_percentage: plan_fee_percentage || 0
     };
 
-    if (!fee_amount_cents || !plan_fee_percentage) {
+    if (request_type === 'topup' && (!fee_amount_cents || !plan_fee_percentage)) {
       // Calculate fee using subscription service
       try {
         const feeResponse = await fetch(buildApiUrl('/subscriptions/calculate-fee'), {
@@ -346,24 +367,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create topup request with fee tracking
+    // Create request with fee tracking (for topup) or balance reset data
+    const insertData: any = {
+      organization_id,
+      requested_by: user.id,
+      ad_account_id,
+      ad_account_name,
+      amount_cents,
+              currency: 'USD',
+        status: 'pending',
+        fee_amount_cents: calculatedFeeData.fee_amount_cents,
+      total_deducted_cents: calculatedFeeData.total_deducted_cents,
+      plan_fee_percentage: calculatedFeeData.plan_fee_percentage,
+      metadata: metadata || {},
+      request_type: request_type || 'topup'
+    };
+
+    // Add balance reset specific fields
+    if (request_type === 'balance_reset') {
+      insertData.transfer_destination_type = transfer_destination_type;
+      insertData.transfer_destination_id = transfer_destination_id;
+    }
+
+
+
     const { data: topupRequest, error: insertError } = await supabase
       .from('topup_requests')
-      .insert({
-        organization_id,
-        requested_by: user.id,
-        ad_account_id,
-        ad_account_name,
-        amount_cents,
-        currency: 'USD',
-        status: 'pending',
-        priority: priority || 'normal',
-        notes,
-        fee_amount_cents: calculatedFeeData.fee_amount_cents,
-        total_deducted_cents: calculatedFeeData.total_deducted_cents,
-        plan_fee_percentage: calculatedFeeData.plan_fee_percentage,
-        metadata: metadata || {}
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -381,7 +411,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ 
-      message: 'Topup request created successfully',
+      message: request_type === 'balance_reset' ? 'Balance reset request created successfully' : 'Topup request created successfully',
       request: {
         ...topupRequest,
         id: topupRequest.request_id // Map request_id to id for frontend compatibility

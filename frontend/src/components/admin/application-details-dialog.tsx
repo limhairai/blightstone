@@ -179,23 +179,7 @@ export function ApplicationDetailsDialog({
                 </div>
               </div>
 
-              {/* Review Notes */}
-              {application.reviewNotes && (
-                <div className="flex items-start gap-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                  <div className="h-8 w-8 bg-orange-600 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-foreground">Review Notes</p>
-                    <p className="text-sm text-foreground mt-1">{application.reviewNotes}</p>
-                    {application.reviewedAt && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {formatDistanceToNow(new Date(application.reviewedAt), { addSuffix: true })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
+
 
               {/* Rejection Reason */}
               {application.rejectionReason && (

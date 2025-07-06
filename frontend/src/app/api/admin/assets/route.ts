@@ -25,79 +25,68 @@ const transformAssetToFrontend = (asset: any, bindingInfo?: any) => ({
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type')
-    const unbound_only = searchParams.get('unbound_only') === 'true'
+    // Note: Using service role key for admin operations
+    // In production, you should verify admin access via session
 
-    // Get all assets using semantic ID columns
-    let query = supabase.from('asset').select('*').order('created_at', { ascending: false })
-    
-    if (type) {
-      query = query.eq('type', type)
-    }
-
-    const { data: assets, error: assetsError } = await query
-
-    if (assetsError) {
-      console.error('Error fetching assets:', assetsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch assets' },
-        { status: 500 }
-      )
-    }
-
-    // Get all active bindings using semantic ID columns
-    const { data: bindings, error: bindingsError } = await supabase
+    // Fetch assets with organization information
+    const { data: assets, error } = await supabase
       .from('asset_binding')
       .select(`
+        binding_id,
         asset_id,
         organization_id,
         status,
-        bound_at,
-        organizations!inner(name)
+        asset:asset_id (
+          asset_id,
+          name,
+          type,
+          dolphin_id,
+          status,
+          metadata
+        ),
+        organization:organization_id (
+          organization_id,
+          name
+        )
       `)
       .eq('status', 'active')
+      .in('asset.type', ['business_manager', 'ad_account'])
 
-    if (bindingsError) {
-      console.error('Error fetching bindings:', bindingsError)
-      return NextResponse.json(
-        { error: 'Failed to fetch bindings' },
-        { status: 500 }
-      )
+    if (error) {
+      console.error('Error fetching assets:', error)
+      return NextResponse.json({ error: 'Failed to fetch assets' }, { status: 500 })
     }
 
-    // Create binding map using semantic ID
-    const bindingMap = new Map()
-    bindings?.forEach(binding => {
-      bindingMap.set(binding.asset_id, {
-        organization_id: binding.organization_id,
-        organization_name: binding.organizations?.name || 'Unknown Organization',
-        bound_at: binding.bound_at
-      })
-    })
-
-    // Process assets with binding information
-    const processedAssets = assets?.map(asset => {
-      const bindingInfo = bindingMap.get(asset.asset_id)
-      return transformAssetToFrontend(asset, bindingInfo)
-    }).filter(asset => {
-      // Apply unbound_only filter if requested
-      if (unbound_only) {
-        return !asset.organizationId
+    // Transform the data for the global search
+    const transformedAssets = assets?.map((binding: any) => {
+      const asset = binding.asset
+      const organization = binding.organization
+      
+      return {
+        asset_id: asset.asset_id,
+        binding_id: binding.binding_id,
+        name: asset.name,
+        type: asset.type,
+        dolphin_id: asset.dolphin_id,
+        status: asset.status,
+        metadata: asset.metadata,
+        organization_id: organization.organization_id,
+        organization_name: organization.name,
+        // Add computed fields for search
+        ad_accounts_count: asset.type === 'business_manager' ? 
+          (asset.metadata?.ad_accounts_count || 0) : undefined
       }
-      return true
     }) || []
 
-    return NextResponse.json({
-      assets: processedAssets
+    return NextResponse.json({ 
+      assets: transformedAssets,
+      count: transformedAssets.length
     })
 
   } catch (error) {
-    console.error('Error in assets API:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Admin assets API error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred'
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
 

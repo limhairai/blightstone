@@ -44,18 +44,14 @@ export async function GET(request: NextRequest) {
     // Call backend to get all assets - use utility function
     const backendUrl = buildApiUrl('/api/dolphin-assets/all-assets')
     
-    console.log('🔍 Teams API: Calling backend URL:', backendUrl)
-    
-    const response = await fetch(backendUrl, {
+        const response = await fetch(backendUrl, {
       method: 'GET',
       headers: createAuthHeaders(session.access_token),
     })
 
-    console.log('🔍 Teams API: Backend response status:', response.status)
-
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('🔍 Teams API: Backend error:', errorText)
+      console.error('Teams API error:', errorText)
       throw new Error(`Backend error: ${response.status} - ${errorText}`)
     }
 

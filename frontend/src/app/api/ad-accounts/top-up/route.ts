@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
             .from('topup_requests')
             .update({ 
                 status: 'completed',
-                admin_notes: 'Auto-approved for immediate ad account topup',
+        
                 processed_by: user.id,
                 processed_at: new Date().toISOString()
             })

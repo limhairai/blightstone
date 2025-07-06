@@ -12,7 +12,7 @@ import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
 import { DataTable } from "../../../../components/ui/data-table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../../../components/ui/dialog"
-import { Textarea } from "../../../../components/ui/textarea"
+
 import { Label } from "../../../../components/ui/label"
 import type { ColumnDef } from "@tanstack/react-table"
 import { formatDistanceToNow } from "date-fns"
@@ -26,12 +26,13 @@ export default function TopupRequestsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRequest, setSelectedRequest] = useState<TopupRequest | null>(null)
   const [showDetailsDialog, setShowDetailsDialog] = useState(false)
   const [showProcessDialog, setShowProcessDialog] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<TopupRequestStatus>('processing')
-  const [adminNotes, setAdminNotes] = useState('')
+
   const [isProcessing, setIsProcessing] = useState(false)
   
   // Fetch top-up requests
@@ -66,15 +67,15 @@ export default function TopupRequestsPage() {
   const filteredRequests = useMemo(() => {
     return requests.filter((request) => {
       const matchesStatus = statusFilter === "all" || request.status === statusFilter
+      const matchesType = typeFilter === "all" || (request.request_type || 'topup') === typeFilter
       const matchesSearch = searchTerm === "" || 
         request.ad_account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (request.notes && request.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (request.organization?.name && request.organization.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (request.display_id && request.display_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (request.id && request.id.toLowerCase().includes(searchTerm.toLowerCase()))
-      return matchesStatus && matchesSearch
+      return matchesStatus && matchesType && matchesSearch
     })
-  }, [requests, statusFilter, searchTerm])
+  }, [requests, statusFilter, typeFilter, searchTerm])
 
   const stats = useMemo(() => ({
     total: requests.length,
@@ -83,6 +84,8 @@ export default function TopupRequestsPage() {
     completed: requests.filter(r => r.status === "completed").length,
     failed: requests.filter(r => r.status === "failed").length,
     cancelled: requests.filter(r => r.status === "cancelled").length,
+    topups: requests.filter(r => (r.request_type || 'topup') === 'topup').length,
+    balance_resets: requests.filter(r => r.request_type === 'balance_reset').length,
   }), [requests])
   
   if (loading) {
@@ -93,15 +96,14 @@ export default function TopupRequestsPage() {
     return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
   }
 
-  const handleProcessRequest = async (request: TopupRequest, status: TopupRequestStatus, notes?: string) => {
+  const handleProcessRequest = async (request: TopupRequest, status: TopupRequestStatus) => {
     // OPTIMISTIC UPDATE: Immediately update the UI
-    const optimisticRequest = {
-      ...request,
-      status,
-      admin_notes: notes || '',
-      processed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
+          const optimisticRequest = {
+        ...request,
+        status,
+        processed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
     // Update local state immediately
     setRequests(prev => prev.map(req => 
@@ -119,7 +121,6 @@ export default function TopupRequestsPage() {
     toast.success(statusMessages[status] || 'Request updated');
     setShowProcessDialog(false);
     setSelectedRequest(null);
-    setAdminNotes('');
 
     setIsProcessing(true);
     try {
@@ -130,8 +131,7 @@ export default function TopupRequestsPage() {
           'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          status,
-          admin_notes: notes
+          status
         })
       });
 
@@ -160,7 +160,6 @@ export default function TopupRequestsPage() {
   const openProcessDialog = (request: TopupRequest, status: TopupRequestStatus) => {
     setSelectedRequest(request)
     setProcessingStatus(status)
-    setAdminNotes('')
     setShowProcessDialog(true)
   }
 
@@ -181,20 +180,7 @@ export default function TopupRequestsPage() {
     }
   }
 
-  const getPriorityConfig = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return { color: "bg-red-500/20 text-red-500 border-red-500" }
-      case 'high':
-        return { color: "bg-orange-500/20 text-orange-500 border-orange-500" }
-      case 'normal':
-        return { color: "bg-blue-500/20 text-blue-500 border-blue-500" }
-      case 'low':
-        return { color: "bg-gray-500/20 text-gray-500 border-gray-500" }
-      default:
-        return { color: "bg-blue-500/20 text-blue-500 border-blue-500" }
-    }
-  }
+
 
   const columns: ColumnDef<TopupRequest>[] = [
     {
@@ -239,6 +225,28 @@ export default function TopupRequestsPage() {
       },
     },
     {
+      accessorKey: "request_type",
+      header: "Type",
+      size: 100,
+      cell: ({ row }) => {
+        const request = row.original
+        const requestType = request.request_type || 'topup'
+        const isBalanceReset = requestType === 'balance_reset'
+        
+        return (
+          <Badge 
+            className={`capitalize ${
+              isBalanceReset 
+                ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' 
+                : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+            }`}
+          >
+            {isBalanceReset ? 'Reset' : 'Top-up'}
+          </Badge>
+        )
+      },
+    },
+    {
       accessorKey: "business_manager",
       header: "Business Manager",
       size: 180,
@@ -269,14 +277,19 @@ export default function TopupRequestsPage() {
     },
     {
       accessorKey: "amount_cents",
-      header: "Top-up Amount",
+      header: "Amount",
       size: 120,
       cell: ({ row }) => {
         const request = row.original
         const amountCents = request.amount_cents
+        const isBalanceReset = request.request_type === 'balance_reset'
         
         return (
-          <div className="font-medium text-green-600 dark:text-green-400">
+          <div className={`font-medium ${
+            isBalanceReset 
+              ? 'text-purple-600 dark:text-purple-400' 
+              : 'text-green-600 dark:text-green-400'
+          }`}>
             {formatCurrency(amountCents / 100)}
           </div>
         )
@@ -290,10 +303,13 @@ export default function TopupRequestsPage() {
         const request = row.original
         const feeAmountCents = request.fee_amount_cents || 0
         const feePercentage = request.plan_fee_percentage || 0
+        const isBalanceReset = request.request_type === 'balance_reset'
         
         return (
           <div className="text-sm">
-            {feeAmountCents > 0 ? (
+            {isBalanceReset ? (
+              <div className="text-xs text-muted-foreground">N/A</div>
+            ) : feeAmountCents > 0 ? (
               <div className="text-muted-foreground">
                 {formatCurrency(feeAmountCents / 100)}
                 <div className="text-xs">({feePercentage}%)</div>
@@ -312,10 +328,15 @@ export default function TopupRequestsPage() {
       cell: ({ row }) => {
         const request = row.original
         const totalDeductedCents = request.total_deducted_cents || request.amount_cents
+        const isBalanceReset = request.request_type === 'balance_reset'
         
         return (
           <div className="font-medium text-foreground">
-            {formatCurrency(totalDeductedCents / 100)}
+            {isBalanceReset ? (
+              <div className="text-xs text-muted-foreground">N/A</div>
+            ) : (
+              formatCurrency(totalDeductedCents / 100)
+            )}
           </div>
         )
       },
@@ -453,10 +474,21 @@ export default function TopupRequestsPage() {
             </SelectContent>
           </Select>
 
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types ({stats.total})</SelectItem>
+              <SelectItem value="topup">Top-ups ({stats.topups})</SelectItem>
+              <SelectItem value="balance_reset">Balance Resets ({stats.balance_resets})</SelectItem>
+            </SelectContent>
+          </Select>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search requests..."
+              placeholder="Search accounts, organizations..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 w-[300px]"
@@ -495,41 +527,43 @@ export default function TopupRequestsPage() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Amount Details</Label>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    {selectedRequest.request_type === 'balance_reset' ? 'Balance Reset Details' : 'Amount Details'}
+                  </Label>
                   <div className="mt-1 space-y-1">
-                    <div className="text-lg font-semibold text-green-600 dark:text-green-400">
+                    <div className={`text-lg font-semibold ${
+                      selectedRequest.request_type === 'balance_reset' 
+                        ? 'text-purple-600 dark:text-purple-400' 
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
                       {formatCurrency(selectedRequest.amount_cents / 100)}
                     </div>
-                    {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
-                      <>
-                        <div className="text-sm text-amber-600 dark:text-amber-400">
-                          Platform Fee ({selectedRequest.plan_fee_percentage}%): +{formatCurrency(selectedRequest.fee_amount_cents / 100)}
-                        </div>
-                        <div className="text-sm font-medium text-blue-600 dark:text-blue-400 border-t border-border pt-1">
-                          Total Deducted: {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)}
-                        </div>
-                      </>
+                    {selectedRequest.request_type === 'balance_reset' ? (
+                      <div className="text-sm text-muted-foreground">
+                        Reset Amount (No fees apply)
+                      </div>
+                    ) : (
+                      selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
+                        <>
+                          <div className="text-sm text-amber-600 dark:text-amber-400">
+                            Platform Fee ({selectedRequest.plan_fee_percentage}%): +{formatCurrency(selectedRequest.fee_amount_cents / 100)}
+                          </div>
+                          <div className="text-sm font-medium text-blue-600 dark:text-blue-400 border-t border-border pt-1">
+                            Total Deducted: {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)}
+                          </div>
+                        </>
+                      )
                     )}
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Priority</Label>
-                  <div className="mt-1">
-                    <Badge variant="outline" className={getPriorityConfig(selectedRequest.priority).color}>
-                      {selectedRequest.priority}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-                  <div className="mt-1">
-                    <Badge className={getStatusConfig(selectedRequest.status).color}>
-                      {selectedRequest.status}
-                    </Badge>
-                  </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                <div className="mt-1">
+                  <Badge className={getStatusConfig(selectedRequest.status).color}>
+                    {selectedRequest.status}
+                  </Badge>
                 </div>
               </div>
 
@@ -537,6 +571,29 @@ export default function TopupRequestsPage() {
                 <Label className="text-sm font-medium text-muted-foreground">Organization</Label>
                 <div className="mt-1">{selectedRequest.organization?.name || 'Unknown Organization'}</div>
               </div>
+
+              {selectedRequest.request_type === 'balance_reset' && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Transfer Destination</Label>
+                  <div className="mt-1">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="capitalize">
+                        {selectedRequest.transfer_destination_type === 'wallet' ? 'Wallet' : 'Ad Account'}
+                      </Badge>
+                      {selectedRequest.metadata?.destination_account_name && (
+                        <span className="text-sm text-muted-foreground">
+                          → {selectedRequest.metadata.destination_account_name}
+                        </span>
+                      )}
+                    </div>
+                    {selectedRequest.transfer_destination_id && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        ID: {selectedRequest.transfer_destination_id}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Requested By</Label>
@@ -560,23 +617,7 @@ export default function TopupRequestsPage() {
                 )}
               </div>
 
-              {selectedRequest.notes && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Client Notes</Label>
-                  <div className="mt-1 p-3 bg-muted rounded-md text-sm">
-                    {selectedRequest.notes}
-                  </div>
-                </div>
-              )}
 
-              {selectedRequest.admin_notes && (
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Admin Notes</Label>
-                  <div className="mt-1 p-3 bg-muted rounded-md text-sm">
-                    {selectedRequest.admin_notes}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </DialogContent>
@@ -619,16 +660,7 @@ export default function TopupRequestsPage() {
                 </Label>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="admin-notes">Admin Notes</Label>
-                <Textarea
-                  id="admin-notes"
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes about processing this request..."
-                  rows={3}
-                />
-              </div>
+
 
               {processingStatus === 'completed' && (
                 <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
@@ -658,7 +690,7 @@ export default function TopupRequestsPage() {
               Cancel
             </Button>
             <Button
-              onClick={() => selectedRequest && handleProcessRequest(selectedRequest, processingStatus, adminNotes)}
+              onClick={() => selectedRequest && handleProcessRequest(selectedRequest, processingStatus)}
               disabled={isProcessing}
               className={processingStatus === 'completed' ? 'bg-green-600 hover:bg-green-700' : ''}
             >

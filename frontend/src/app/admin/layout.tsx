@@ -39,7 +39,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
       "stats": "Statistics",
       "activity": "Activity Log",
       "files": "Files",
-      "notes": "Notes",
+  
       "infrastructure": "Infrastructure",
       "access-codes": "Access Codes",
       "finances": "Finances",

@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid auth token' }, { status: 401 })
     }
 
-    const { amount, notes } = await request.json()
+    const { amount } = await request.json()
 
     if (!amount || amount < 50 || amount > 50000) {
       return NextResponse.json({ 
@@ -39,29 +39,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Check for existing pending request
-    const { data: existingRequest } = await supabase
-      .from('bank_transfer_requests')
-      .select('request_id')
-      .eq('organization_id', org.organization_id)
-      .eq('status', 'pending')
-      .single()
+    // No rate limiting - users can create multiple bank transfer requests
+    // Each request gets a unique reference number for tracking
+    // This matches the behavior of crypto exchanges and Stripe checkout
 
-    if (existingRequest) {
-      return NextResponse.json({ 
-        error: 'You already have a pending bank transfer request' 
-      }, { status: 400 })
-    }
+    // Generate request ID for reference number generation
+    const requestId = crypto.randomUUID()
 
-    // Create bank transfer request
+    // Generate unique reference number that Airwallex can match
+    // Format: ADHUB-{ORG_ID_SHORT}-{REQUEST_ID_SHORT}-{CHECKSUM}
+    const orgIdShort = org.organization_id.slice(0, 8).toUpperCase()
+    const requestIdShort = requestId.slice(0, 8).toUpperCase()
+    const checksum = Math.abs(hashCode(`${org.organization_id}-${requestId}`)).toString().slice(0, 4)
+    const referenceNumber = `ADHUB-${orgIdShort}-${requestIdShort}-${checksum}`
+
+    // Create bank transfer request with reference number
     const { data: bankRequest, error: createError } = await supabase
       .from('bank_transfer_requests')
       .insert({
+        request_id: requestId,
         organization_id: org.organization_id,
         user_id: user.id,
         requested_amount: amount,
+        reference_number: referenceNumber,
         status: 'pending',
-        user_notes: notes,
+        user_notes: null,
         created_at: new Date().toISOString()
       })
       .select('*')
@@ -72,28 +74,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create request' }, { status: 500 })
     }
 
-    // Generate unique reference number for the transfer
-    const referenceNumber = `ADHUB-${bankRequest.id.slice(0, 8).toUpperCase()}`
-
-    // Update request with reference number
-    await supabase
-      .from('bank_transfer_requests')
-      .update({ reference_number: referenceNumber })
-      .eq('request_id', bankRequest.id)
-
+    // Return bank details and instructions
     return NextResponse.json({
       success: true,
       request: {
-        id: bankRequest.id,
+        id: bankRequest.request_id,
         amount: amount,
         referenceNumber,
-        bankDetails: {
-          bankName: process.env.COMPANY_BANK_NAME || 'Your Bank Name',
-          accountName: process.env.COMPANY_BANK_ACCOUNT_NAME || 'AdHub Inc.',
-          accountNumber: process.env.COMPANY_BANK_ACCOUNT_NUMBER || '****1234',
-          routingNumber: process.env.COMPANY_BANK_ROUTING_NUMBER || '****5678',
-          wireInstructions: 'Please include the reference number in the transfer description'
-        }
+        status: 'pending',
+        created_at: bankRequest.created_at
+      },
+      bankDetails: {
+        // Your company's Airwallex bank account details
+        accountName: process.env.AIRWALLEX_ACCOUNT_NAME || 'AdHub Inc.',
+        bankName: process.env.AIRWALLEX_BANK_NAME || 'Community Federal Savings Bank',
+        accountNumber: process.env.AIRWALLEX_ACCOUNT_NUMBER || '8480425778',
+        routingNumber: process.env.AIRWALLEX_ROUTING_NUMBER || '026073150', // ACH routing
+        fedwireRoutingNumber: process.env.AIRWALLEX_FEDWIRE_ROUTING || '026073008',
+        swiftCode: process.env.AIRWALLEX_SWIFT_CODE || 'CMFGUS33',
+        accountLocation: 'United States of America',
+        
+        // Critical: Reference number for matching
+        referenceNumber: referenceNumber,
+        
+        // Instructions
+        instructions: [
+          `IMPORTANT: Include reference number "${referenceNumber}" in the transfer description/memo`,
+          'Transfer will be processed within 1-3 business days after receipt',
+          'Your wallet will be automatically credited when transfer is confirmed',
+          'Contact support if you have any issues with the transfer'
+        ],
+        
+        // Fees and timing
+        fees: 'No fees charged by AdHub (bank fees may apply)',
+        processingTime: '1-3 business days',
+        minimumAmount: '$50',
+        maximumAmount: '$50,000'
       }
     })
 
@@ -101,4 +117,15 @@ export async function POST(request: NextRequest) {
     console.error('Error creating bank transfer request:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
+}
+
+// Simple hash function for generating reference checksums
+function hashCode(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+  return hash
 } 

@@ -7,9 +7,7 @@ export interface TopupRequest {
   amount_cents: number
   currency: string
   status: TopupRequestStatus
-  priority: TopupRequestPriority
-  notes?: string
-  admin_notes?: string
+
   processed_by?: string
   processed_at?: string
   created_at: string
@@ -18,6 +16,10 @@ export interface TopupRequest {
   fee_amount_cents?: number
   total_deducted_cents?: number
   plan_fee_percentage?: number
+  // Balance reset fields
+  request_type?: 'topup' | 'balance_reset'
+  transfer_destination_type?: 'wallet' | 'ad_account'
+  transfer_destination_id?: string
   metadata?: {
     business_manager_name?: string
     business_manager_id?: string
@@ -27,22 +29,20 @@ export interface TopupRequest {
 
 export type TopupRequestStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
 
-export type TopupRequestPriority = 'low' | 'normal' | 'high' | 'urgent'
+
 
 export interface CreateTopupRequestData {
   ad_account_id: string
   ad_account_name: string
   amount_cents: number
   currency?: string
-  priority?: TopupRequestPriority
-  notes?: string
+  request_type?: 'topup' | 'balance_reset'
+  transfer_destination_type?: 'wallet' | 'ad_account'
+  transfer_destination_id?: string
 }
 
 export interface UpdateTopupRequestData {
   status?: TopupRequestStatus
-  priority?: TopupRequestPriority
-  notes?: string
-  admin_notes?: string
   processed_by?: string
   processed_at?: string
 }

@@ -43,7 +43,7 @@ export function useAdvancedOnboarding() {
       // **PERFORMANCE OPTIMIZED** - Prevent excessive API calls
       revalidateOnFocus: false,        // Don't revalidate when window gains focus
       revalidateOnReconnect: false,    // Don't revalidate when connection is restored
-      revalidateOnMount: false,        // Don't revalidate on component mount if cache exists
+      revalidateOnMount: true,         // Revalidate on component mount to ensure fresh data
       dedupingInterval: 5 * 60 * 1000, // Dedupe requests within 5 minutes
       focusThrottleInterval: 10 * 60 * 1000, // Throttle focus revalidation to 10 minutes
       errorRetryInterval: 60 * 1000,   // Retry failed requests every 60 seconds

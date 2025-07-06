@@ -34,7 +34,7 @@ export async function PATCH(
     const isAdmin = profile?.is_superuser === true;
 
     const body = await request.json();
-    const { status, admin_notes } = body;
+    const { status } = body;
 
     if (!status) {
       return NextResponse.json({ error: 'Status is required' }, { status: 400 });
@@ -72,7 +72,7 @@ export async function PATCH(
 
     // Only admins can set admin notes and processed_by
     if (isAdmin) {
-      updateData.admin_notes = admin_notes;
+  
       updateData.processed_by = user.id;
       updateData.processed_at = new Date().toISOString();
     }
@@ -113,7 +113,7 @@ export async function PATCH(
       status: updatedRequest.status,
       priority: updatedRequest.priority,
       notes: updatedRequest.notes,
-      admin_notes: updatedRequest.admin_notes,
+      
       processed_by: updatedRequest.processed_by,
       processed_at: updatedRequest.processed_at,
       created_at: updatedRequest.created_at,

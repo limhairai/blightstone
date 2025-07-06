@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSWRConfig } from 'swr'
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "../ui/dialog"
 import { toast } from "sonner"
-import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings } from 'lucide-react'
+import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings, RefreshCw } from 'lucide-react'
 
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
-import { refreshAfterSubscriptionChange } from "@/lib/subscription-utils"
+
 
 export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
@@ -51,16 +51,57 @@ export function OrganizationSettings() {
   const [paymentMethodOpen, setPaymentMethodOpen] = useState(false)
   const [confirmDeleteText, setConfirmDeleteText] = useState("")
   const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+
+  // Define handleManualRefresh before useEffect
+  const handleManualRefresh = useCallback(async () => {
+    if (refreshing) return;
+    
+    setRefreshing(true);
+    try {
+      // Refresh all organization-related data
+      await Promise.all([
+        mutate(`/api/organizations?id=${currentOrganizationId}`),
+        mutate('/api/business-managers'),
+        mutate('/api/ad-accounts')
+      ]);
+      // Silent refresh - no toast needed since this is called automatically
+    } catch (error) {
+      console.error("Failed to refresh organization data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshing, mutate, currentOrganizationId])
+
+  // Auto-refresh when returning from payment success
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const subscriptionSuccess = urlParams.get('subscription');
+    const paymentSuccess = urlParams.get('payment');
+    
+    if (subscriptionSuccess === 'success' || paymentSuccess === 'success') {
+      // User returned from successful payment - refresh all data
+      handleManualRefresh();
+      
+      // Clean up URL params
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      
+      // Show success message
+      toast.success('Payment successful! Your plan has been updated.');
+    }
+  }, [handleManualRefresh]);
 
   // Auto-refresh subscription data when upgrade dialog closes
   const handleUpgradeDialogChange = (open: boolean) => {
     setUpgradeOpen(open)
-    // If dialog is closing and we have an organization, refresh subscription data
-    if (!open && currentOrganizationId) {
-      // Small delay to allow any pending operations to complete
+    
+    // If dialog is closing, refresh data to show any changes
+    if (!open) {
       setTimeout(() => {
-        refreshAfterSubscriptionChange(currentOrganizationId)
-      }, 1000)
+        handleManualRefresh();
+      }, 1000); // Small delay to allow Stripe webhooks to process
     }
   }
 
@@ -303,10 +344,15 @@ export function OrganizationSettings() {
         <div className="space-y-4">
           <Card className="bg-card border border-border">
             <CardHeader>
-              <CardTitle className="text-base font-semibold text-foreground">Subscription Plan</CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                Your current plan and billing information
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-semibold text-foreground">Subscription Plan</CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    Your current plan and billing information
+                  </CardDescription>
+                </div>
+
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Plan Details */}

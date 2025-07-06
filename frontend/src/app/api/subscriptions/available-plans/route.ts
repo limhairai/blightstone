@@ -35,15 +35,16 @@ const plans = [
     features: ['Dedicated Support', 'Custom Integrations', 'Advanced Reporting']
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise',
+    id: 'custom',
+    name: 'Custom',
     description: 'For large organizations',
-    monthlyPrice: 1499,
-    adSpendFee: 1.0,
+    monthlyPrice: 0,
+    adSpendFee: 0,
     maxTeamMembers: -1,
     maxBusinesses: -1,
     maxAdAccounts: -1,
-    features: ['24/7 Support', 'Custom Features', 'Unlimited Everything']
+    features: ['24/7 Support', 'Custom Features', 'Unlimited Everything'],
+    isCustom: true
   }
 ]
 

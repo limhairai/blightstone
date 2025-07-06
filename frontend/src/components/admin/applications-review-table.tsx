@@ -37,7 +37,6 @@ interface Application {
   landing_page_url?: string;
   facebook_page_url?: string;
   campaign_description?: string;
-  notes?: string;
   status: 'pending' | 'under_review' | 'approved' | 'rejected';
   assigned_account_id?: string;
   approved_by?: string;
@@ -45,7 +44,6 @@ interface Application {
   rejected_by?: string;
   rejected_at?: string;
   rejection_reason?: string;
-  admin_notes?: string;
   submitted_at: string;
   created_at: string;
   updated_at: string;
@@ -152,10 +150,10 @@ export function ApplicationsReviewTable() {
     setDetailsDialogOpen(true);
   };
 
-  const handleApproveApplication = async (applicationId: string, notes?: string) => {
+  const handleApproveApplication = async (applicationId: string) => {
     console.log('🔧 DEBUG: handleApproveApplication called');
     console.log('🔧 DEBUG: applicationId:', applicationId);
-    console.log('🔧 DEBUG: notes:', notes);
+
     console.log('🔧 DEBUG: session:', session);
     
     if (!session) {
@@ -178,7 +176,6 @@ export function ApplicationsReviewTable() {
       
       const requestBody = {
         adminUserId: user.id,
-        adminNotes: notes,
       };
       
       console.log('🔧 DEBUG - Request Body:', requestBody);
@@ -227,7 +224,7 @@ export function ApplicationsReviewTable() {
         },
         body: JSON.stringify({
           adminUserId: user.id,
-          adminNotes: reason,
+          rejectionReason: reason,
         }),
       });
 

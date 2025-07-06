@@ -75,7 +75,10 @@ export function AdminSidebar({ className }: { className?: string }) {
       name: "System Management",
       href: "/admin/system",
       icon: Settings,
-      subItems: [{ name: "Access Codes", href: "/admin/access-codes", icon: Shield }],
+      subItems: [
+        { name: "Access Codes", href: "/admin/access-codes", icon: Shield },
+        { name: "Settings", href: "/admin/settings", icon: Settings },
+      ],
     },
   ]
 

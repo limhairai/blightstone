@@ -19,6 +19,24 @@ const nextConfig = {
     formats: ['image/webp'],
   },
   
+  // Font optimization (using built-in Next.js font optimization)
+  optimizeFonts: true,
+  
+  // Add headers for better font loading
+  async headers() {
+    return [
+      {
+        source: '/_next/static/css/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+  
   // Disable features we don't need
   trailingSlash: false,
   generateEtags: false,

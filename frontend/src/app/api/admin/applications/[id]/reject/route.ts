@@ -13,7 +13,7 @@ export async function POST(
   try {
     const { id } = params
     const body = await request.json()
-    const { admin_user_id: adminUserId, admin_notes: adminNotes } = body
+    const { admin_user_id: adminUserId, rejectionReason } = body
 
     if (!adminUserId) {
       return NextResponse.json(
@@ -44,7 +44,7 @@ export async function POST(
         status: 'rejected',
         rejected_by: adminUserId,
         rejected_at: new Date().toISOString(),
-        admin_notes: adminNotes,
+        rejection_reason: rejectionReason,
         updated_at: new Date().toISOString()
       })
       .eq('application_id', id)
@@ -67,7 +67,7 @@ export async function POST(
         status: application.status,
         rejectedBy: application.rejected_by,
         rejectedAt: application.rejected_at,
-        adminNotes: application.admin_notes,
+
         updatedAt: application.updated_at
       }
     })

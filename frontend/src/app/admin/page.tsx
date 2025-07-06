@@ -153,22 +153,22 @@ export default function AdminDashboard() {
       href: "/admin/applications"
     },
     {
-      title: "Manage Teams",
-      description: "View and configure teams",
-      icon: Users,
-      href: "/admin/teams"
+      title: "Top Up Requests",
+      description: "Manage funding requests",
+      icon: CreditCard,
+      href: "/admin/transactions/topups"
     },
     {
-      title: "System Analytics",
+      title: "Business Analytics",
       description: "View platform metrics",
       icon: BarChart3,
       href: "/admin/analytics"
     },
     {
-      title: "Access Codes",
-      description: "Manage system access",
-      icon: Shield,
-      href: "/admin/access-codes"
+      title: "Manage Organizations",
+      description: "View and manage organizations",
+      icon: Building2,
+      href: "/admin/organizations"
     }
   ]
 

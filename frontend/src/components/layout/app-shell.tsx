@@ -41,7 +41,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
   const { user, session } = useAuth()
-  const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("expanded")
+  const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("collapsed")
   const { setOrganization } = useOrganizationStore()
   
   // Use the new, simplified onboarding hook
@@ -52,11 +52,18 @@ export function AppShell({ children }: AppShellProps) {
   } = useAdvancedOnboarding()
 
   useEffect(() => {
-    // Automatically close the widget if onboarding is completed or not needed
-    if (!shouldShowOnboarding && !isLoading) {
+    // Don't do anything while loading
+    if (isLoading) return
+    
+    // Auto-close if onboarding shouldn't show
+    if (!shouldShowOnboarding && setupWidgetState !== "closed") {
       setSetupWidgetState("closed")
+    } 
+    // Auto-open if onboarding should show and widget is closed
+    else if (shouldShowOnboarding && setupWidgetState === "closed") {
+      setSetupWidgetState("expanded")
     }
-  }, [shouldShowOnboarding, isLoading])
+  }, [shouldShowOnboarding, isLoading, setupWidgetState])
 
   useEffect(() => {
     if (session?.user?.app_metadata?.organization_id && session?.user?.app_metadata?.organization_name) {

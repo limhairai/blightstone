@@ -102,25 +102,23 @@ export async function invalidateBusinessManagerCache(organizationId?: string) {
 }
 
 /**
- * Comprehensive cache refresh after subscription changes
- * This invalidates all related caches to ensure UI reflects the latest data
+ * Simple refresh after subscription changes - just reload the page
  */
 export async function refreshAfterSubscriptionChange(organizationId: string) {
   if (!organizationId) return false
 
   try {
-    // Invalidate subscription cache
-    await invalidateSubscriptionCache(organizationId)
+    console.log('🔄 Subscription changed, reloading page...')
     
-    // Invalidate organization cache
-    await invalidateOrganizationCache(organizationId)
-    
-    // Wait a moment for the cache to clear
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // Simple page reload to ensure fresh data
+    setTimeout(() => {
+      window.location.reload()
+    }, 1000)
     
     return true
   } catch (error) {
     console.error('Failed to refresh after subscription change:', error)
+    window.location.reload()
     return false
   }
 }

@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Handle no subscription scenario - auto-assign free plan
+    // Handle no subscription scenario - assign free plan
     if (!orgData.plan_id) {
       console.log('No plan_id found - assigning free plan')
       
@@ -53,40 +53,55 @@ export async function GET(request: NextRequest) {
     let currentPlan = null
     console.log('Organization has plan_id:', orgData.plan_id)
     
-    const { data: planData, error: planError } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('plan_id', orgData.plan_id)
-      .single()
-
-    if (!planError && planData) {
+    // Handle free plan specially (not in database)
+    if (orgData.plan_id === 'free') {
       currentPlan = {
-        id: planData.id,
-        name: planData.name,
-        description: planData.description,
-        monthlyPrice: planData.monthly_subscription_fee_cents / 100,
-        adSpendFee: planData.ad_spend_fee_percentage,
-        maxTeamMembers: planData.max_team_members,
-        maxBusinesses: planData.max_businesses,
-        maxAdAccounts: planData.max_ad_accounts,
-        features: planData.features || []
+        id: 'free',
+        name: 'Free',
+        description: 'Basic access to dashboard',
+        monthlyPrice: 0,
+        adSpendFee: 0,
+        maxTeamMembers: 1,
+        maxBusinesses: 0,
+        maxAdAccounts: 0,
+        features: ['Dashboard Access', 'Feature Preview']
       }
     } else {
-      console.error('Error fetching plan data:', planError)
-      // Plan exists in org but not in plans table - treat as frozen
-      return NextResponse.json({
-        currentPlan: null,
-        usage: {
-          teamMembers: 1,
-          businessManagers: 0,
-          adAccounts: 0
-        },
-        subscriptionStatus: 'frozen',
-        frozen: true,
-        message: 'Subscription plan not found. Please contact support.',
-        canTopup: false,
-        canRequestAssets: false
-      })
+      const { data: planData, error: planError } = await supabase
+        .from('plans')
+        .select('*')
+        .eq('plan_id', orgData.plan_id)
+        .single()
+
+      if (!planError && planData) {
+        currentPlan = {
+          id: planData.plan_id,
+          name: planData.name,
+          description: planData.description,
+          monthlyPrice: planData.monthly_subscription_fee_cents / 100,
+          adSpendFee: planData.ad_spend_fee_percentage,
+          maxTeamMembers: planData.max_team_members,
+          maxBusinesses: planData.max_businesses,
+          maxAdAccounts: planData.max_ad_accounts,
+          features: planData.features || []
+        }
+      } else {
+        console.error('Error fetching plan data:', planError)
+        // Plan exists in org but not in plans table - treat as frozen
+        return NextResponse.json({
+          currentPlan: null,
+          usage: {
+            teamMembers: 1,
+            businessManagers: 0,
+            adAccounts: 0
+          },
+          subscriptionStatus: 'frozen',
+          frozen: true,
+          message: 'Subscription plan not found. Please contact support.',
+          canTopup: false,
+          canRequestAssets: false
+        })
+      }
     }
 
     // Check if on free plan

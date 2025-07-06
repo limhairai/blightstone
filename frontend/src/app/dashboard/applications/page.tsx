@@ -316,11 +316,7 @@ export default function ApplicationsPage() {
                         </a>
                       </div>
 
-                      {application.notes && (
-                        <div className="mt-3 p-3 bg-muted rounded-md">
-                          <p className="text-sm text-muted-foreground">{application.notes}</p>
-                        </div>
-                      )}
+
 
                       {application.rejection_reason && (
                         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">

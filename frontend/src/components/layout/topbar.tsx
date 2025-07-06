@@ -12,7 +12,7 @@ import {
 } from "../ui/dropdown-menu"
 
 import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
-import { User, Settings, Moon, Sun, Monitor, LogOut, Zap } from "lucide-react"
+import { User, Settings, Moon, Sun, Monitor, LogOut, Zap, Shield } from "lucide-react"
 import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
 import { useTheme } from "next-themes"
@@ -25,6 +25,7 @@ import { useOrganizationStore } from '@/lib/stores/organization-store'
 import useSWR from 'swr'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useSubscription } from '@/hooks/useSubscription'
+import { useAdminRoute } from '@/hooks/useAdminRoute'
 
 import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
 
@@ -56,6 +57,7 @@ export function Topbar({
   const [mounted, setMounted] = useState(false)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const router = useRouter()
+  const { canViewAdmin } = useAdminRoute()
 
   const { currentOrganizationId } = useOrganizationStore();
   // Use the proper authenticated hook
@@ -203,6 +205,16 @@ export function Topbar({
             <DropdownMenuSeparator className="bg-border" />
 
             <div className="py-2">
+              {/* Admin Panel Access - Only show for users with admin permissions */}
+              {canViewAdmin && (
+                <DropdownMenuItem
+                  className="text-popover-foreground hover:bg-accent px-4 py-2"
+                  onClick={() => router.push('/admin')}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Go to Admin Panel
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={signOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out

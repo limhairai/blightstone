@@ -71,9 +71,9 @@ export function useCurrentOrganization(organizationId: string | null) {
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
-      dedupingInterval: 5 * 1000, // Reduced to 5 seconds to allow immediate cache invalidation
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      dedupingInterval: 1000, // Very short deduping interval for immediate responsiveness
+      revalidateOnFocus: true, // Revalidate when user focuses tab
+      revalidateOnReconnect: true, // Revalidate when connection is restored
       revalidateOnMount: true, // Always get fresh data on mount
       refreshInterval: 0, // No automatic polling
     }
@@ -172,11 +172,13 @@ export function useSubscriptionSWR(organizationId: string | null) {
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
-      dedupingInterval: 30 * 1000, // Reduced to 30 seconds for immediate responsiveness after upgrades
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      dedupingInterval: 1000, // Very short deduping interval for immediate responsiveness
+      revalidateOnFocus: true, // Revalidate when user focuses tab
+      revalidateOnReconnect: true, // Revalidate when connection is restored
       revalidateOnMount: true, // Enable revalidation on mount to get fresh data
       refreshInterval: 0, // No automatic polling - we handle refreshes manually
+      errorRetryCount: 5, // More retries for subscription data
+      errorRetryInterval: 2000, // Faster retry interval
     }
   )
 }

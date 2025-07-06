@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
-import { Textarea } from "../ui/textarea";
+
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Separator } from "../ui/separator";
@@ -25,7 +25,7 @@ interface ApplicationReviewDialogProps {
   isOpen: boolean;
   onClose: () => void;
   application: any;
-  onApprove: (applicationId: string, notes?: string) => void;
+  onApprove: (applicationId: string) => void;
   onReject: (applicationId: string, reason: string) => void;
   onRequestMoreInfo: (applicationId: string, message: string) => void;
 }
@@ -39,7 +39,7 @@ export function ApplicationReviewDialog({
   onRequestMoreInfo,
 }: ApplicationReviewDialogProps) {
   const [activeTab, setActiveTab] = useState<"approve" | "reject" | "more-info">("approve");
-  const [notes, setNotes] = useState("");
+
   const [rejectionReason, setRejectionReason] = useState("");
   const [moreInfoMessage, setMoreInfoMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,7 +52,7 @@ export function ApplicationReviewDialog({
     try {
       switch (activeTab) {
         case "approve":
-          await onApprove(application.id, notes);
+          await onApprove(application.id);
           break;
         case "reject":
           if (!rejectionReason.trim()) {
@@ -71,7 +71,7 @@ export function ApplicationReviewDialog({
       }
       
       // Reset form
-      setNotes("");
+  
       setRejectionReason("");
       setMoreInfoMessage("");
       onClose();
@@ -281,16 +281,7 @@ export function ApplicationReviewDialog({
               <div className="space-y-4">
                 {activeTab === "approve" && (
                   <div>
-                    <Label htmlFor="approval-notes">Approval Notes (Optional)</Label>
-                    <Textarea
-                      id="approval-notes"
-                      placeholder="Add any notes for the approval..."
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows={4}
-                      className="mt-2"
-                    />
-                    <p className="text-sm text-muted-foreground mt-2">
+                    <p className="text-sm text-muted-foreground">
                       Approving this application will start the account provisioning process. The business will be notified once their ad accounts are ready.
                     </p>
                   </div>

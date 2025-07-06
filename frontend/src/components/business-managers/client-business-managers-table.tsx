@@ -219,15 +219,15 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
         </div>
 
       {filteredManagers.length === 0 && (
-        <EmptyState
-          icon={Building2}
-          title="No Business Managers found"
-          description={
-            searchQuery || statusFilter !== "all"
-              ? "Try adjusting your search or filters."
-              : "Apply for your first Business Manager to get started."
-          }
-        />
+        <div className="flex flex-col items-center justify-center py-12">
+          <Building2 className="h-8 w-8 text-muted-foreground mb-3" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No business managers found</h3>
+          <p className="text-sm text-muted-foreground">
+            {searchQuery || statusFilter !== "all"
+              ? "Try adjusting your search or filters"
+              : "Apply for your first business manager to get started"}
+          </p>
+        </div>
       )}
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

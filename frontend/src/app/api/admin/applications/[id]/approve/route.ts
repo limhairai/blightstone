@@ -14,7 +14,7 @@ export async function POST(
     const { id } = params
     const body = await request.json()
     
-    const { admin_user_id: adminUserId, admin_notes: adminNotes } = body
+    const { admin_user_id: adminUserId } = body
 
     if (!adminUserId) {
       return NextResponse.json(
@@ -45,7 +45,6 @@ export async function POST(
         status: 'processing',
         approved_by: adminUserId,
         approved_at: new Date().toISOString(),
-        admin_notes: adminNotes,
         updated_at: new Date().toISOString()
       })
       .eq('application_id', id)
@@ -68,7 +67,7 @@ export async function POST(
         status: application.status,
         approvedBy: application.approved_by,
         approvedAt: application.approved_at,
-        adminNotes: application.admin_notes,
+
         updatedAt: application.updated_at
       }
     })

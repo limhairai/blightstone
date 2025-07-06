@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
-import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus, History } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
@@ -30,8 +30,7 @@ interface ApplicationWithDetails extends Application {
   rejectedAt?: string;
   fulfilledBy?: string;
   fulfilledAt?: string;
-  clientNotes?: string;
-  adminNotes?: string;
+
   createdAt: string;
   updatedAt: string;
 }
@@ -61,9 +60,9 @@ export default function AdminApplicationsPage() {
   const [dialogMode, setDialogMode] = useState<RequestMode>('new-bm');
   const [existingBMs, setExistingBMs] = useState<BusinessManager[]>([]);
 
-  // Fetch applications with SWR
+  // Fetch applications with SWR (only pending and processing)
   const { data: applicationsData, error, mutate, isLoading } = useSWR(
-    '/api/admin/applications',
+    '/api/admin/applications?status=pending,processing',
     fetcher,
     {
       refreshInterval: 0, // No automatic polling - manual refresh only
@@ -89,7 +88,7 @@ export default function AdminApplicationsPage() {
     const optimisticApplication = {
       ...application,
       status: 'processing' as const,
-      admin_notes: 'Approved by admin',
+
       updated_at: new Date().toISOString()
     };
 
@@ -148,7 +147,7 @@ export default function AdminApplicationsPage() {
     const optimisticApplication = {
       ...application,
       status: 'rejected' as const,
-      admin_notes: 'Rejected by admin',
+
       updated_at: new Date().toISOString()
     };
 
@@ -468,26 +467,31 @@ export default function AdminApplicationsPage() {
             <TabsTrigger value="processing">
               Processing ({filterApplications('processing').length})
             </TabsTrigger>
-            <TabsTrigger value="fulfilled">
-              Fulfilled ({filterApplications('fulfilled').length})
-            </TabsTrigger>
-            <TabsTrigger value="rejected">
-              Rejected ({filterApplications('rejected').length})
-            </TabsTrigger>
+
           </TabsList>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => mutate()}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '/admin/applications/history'}
+            >
+              <History className="h-4 w-4 mr-2" />
+              View History
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => mutate()}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
-        {['pending', 'processing', 'fulfilled', 'rejected'].map((status) => (
+        {['pending', 'processing'].map((status) => (
           <TabsContent key={status} value={status} className="space-y-4">
             {filterApplications(status).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

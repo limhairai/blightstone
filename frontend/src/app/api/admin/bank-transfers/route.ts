@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       requestId, 
       action, // 'approve' | 'reject'
       actualAmount, // Amount actually received (may differ from requested)
-      adminNotes,
+
       bankReference // Bank transaction reference
     } = await request.json()
 
@@ -71,8 +71,7 @@ export async function POST(request: NextRequest) {
           bank_transfer_request_id: requestId,
           bank_reference: bankReference,
           requested_amount: request.requested_amount,
-          actual_amount: amountToCredit,
-          admin_notes: adminNotes
+          actual_amount: amountToCredit
         },
         description: `Bank Transfer - $${amountToCredit.toFixed(2)}`
       })
@@ -87,7 +86,6 @@ export async function POST(request: NextRequest) {
         .update({
           status: 'completed',
           actual_amount: amountToCredit,
-          admin_notes: adminNotes,
           bank_reference: bankReference,
           processed_at: new Date().toISOString()
         })
@@ -105,7 +103,6 @@ export async function POST(request: NextRequest) {
         .from('bank_transfer_requests')
         .update({
           status: 'rejected',
-          admin_notes: adminNotes,
           processed_at: new Date().toISOString()
         })
         .eq('request_id', requestId)

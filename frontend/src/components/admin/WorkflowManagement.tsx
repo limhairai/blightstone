@@ -35,7 +35,7 @@ interface Application {
   createdAt: string;
   lastUpdated: string;
   provider: string;
-  notes: string[];
+
   documents: { name: string; status: 'pending' | 'complete' | 'missing' }[];
 }
 

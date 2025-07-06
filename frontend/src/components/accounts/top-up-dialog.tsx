@@ -12,7 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+
 import { Label } from "@/components/ui/label"
 // Removed old useToast - using toast from sonner instead
 import { Check, Loader2, Wallet, DollarSign, Calculator, AlertTriangle } from "lucide-react"
@@ -173,8 +173,8 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
           ad_account_id: acc.adAccount,
           ad_account_name: acc.name,
           amount_cents: Math.round(parseFloat(formData.amount) * 100),
-          priority: 'normal',
-          notes: '',
+
+      
           // Include fee calculation data
           fee_amount_cents: feeCalculation ? Math.round(feeCalculation.fee_amount * 100) : 0,
           total_deducted_cents: feeCalculation ? Math.round(feeCalculation.total_amount * 100) : Math.round(parseFloat(formData.amount) * 100),

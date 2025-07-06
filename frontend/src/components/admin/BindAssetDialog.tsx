@@ -152,7 +152,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
         asset_id: asset.id,
         organization_id: selectedOrgId,
         bm_id: selectedBusinessManagerId || null,
-        notes: `Manually bound ${isBusinessManager ? 'Business Manager' : 'Ad Account'} via admin panel`
+
       }
 
       // For Business Managers, use the auto-bind endpoint if requested

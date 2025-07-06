@@ -9,7 +9,7 @@ const planPriceIds = {
   'starter': process.env.STRIPE_STARTER_PRICE_ID!,
   'growth': process.env.STRIPE_GROWTH_PRICE_ID!,
   'scale': process.env.STRIPE_SCALE_PRICE_ID!,
-  'enterprise': process.env.STRIPE_ENTERPRISE_PRICE_ID!
+  'custom': process.env.STRIPE_CUSTOM_PRICE_ID
 }
 
 export async function POST(request: NextRequest) {

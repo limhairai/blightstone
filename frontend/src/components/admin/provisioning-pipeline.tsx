@@ -89,7 +89,7 @@ export function ProvisioningPipeline() {
           provisioningStatus: "hk_provider_submitted",
           hkProviderApplicationId: `HK-${Date.now()}`,
           hkProviderStatus: "pending",
-          provisioningNotes: "Application submitted to HK provider for ad account creation",
+    
         };
         break;
 
@@ -97,7 +97,7 @@ export function ProvisioningPipeline() {
         updates = {
           provisioningStatus: "hk_provider_approved",
           hkProviderStatus: "approved",
-          provisioningNotes: "HK provider approved ad account creation",
+    
         };
         break;
 
@@ -106,7 +106,7 @@ export function ProvisioningPipeline() {
           provisioningStatus: "bm_assigned",
           assignedBmId: `BM-${Date.now()}`,
           assignedProfileSetId: `PS-${Date.now()}`,
-          provisioningNotes: "Business Manager assigned with 3-profile backup system",
+    
         };
         break;
 
@@ -114,7 +114,7 @@ export function ProvisioningPipeline() {
         updates = {
           provisioningStatus: "account_created",
           adAccountIds: [`AD-${Date.now()}`],
-          provisioningNotes: "Ad account created and linked to Business Manager",
+    
         };
         break;
 
@@ -122,7 +122,7 @@ export function ProvisioningPipeline() {
         updates = {
           provisioningStatus: "client_invited",
           clientInvitedAt: new Date().toISOString(),
-          provisioningNotes: "Client invited to Business Manager with appropriate permissions",
+    
         };
         break;
 
@@ -132,7 +132,7 @@ export function ProvisioningPipeline() {
           status: "ready",
           provisioningCompletedAt: new Date().toISOString(),
           clientAccessGranted: true,
-          provisioningNotes: "Provisioning completed - client has full access to ad accounts",
+    
         };
         break;
     }

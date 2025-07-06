@@ -23,7 +23,7 @@ const transformApplicationToFrontend = (app: any) => ({
   fulfilledBy: app.fulfilled_by,
   fulfilledAt: app.fulfilled_at,
   clientNotes: app.client_notes,
-  adminNotes: app.admin_notes,
+  
   createdAt: app.created_at,
   updatedAt: app.updated_at
 })
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         fulfilled_by,
         fulfilled_at,
         client_notes,
-        admin_notes,
+
         created_at,
         updated_at,
         organizations!inner(name)

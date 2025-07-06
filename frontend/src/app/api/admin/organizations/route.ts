@@ -8,7 +8,8 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
     try {
-        const { data, error } = await supabase
+        // Fetch organizations with wallet and business manager data
+        const { data: organizations, error } = await supabase
             .from('organizations')
             .select(`
                 organization_id, 
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
                 plan_id,
                 subscription_status,
                 current_period_start,
-                current_period_end
+                current_period_end,
+                wallets(balance_cents, reserved_balance_cents)
             `);
 
         if (error) {
@@ -25,7 +27,49 @@ export async function GET(request: NextRequest) {
             throw error;
         }
 
-        return NextResponse.json({ organizations: data });
+        // Get business manager counts for all organizations
+        const { data: bmCounts, error: bmError } = await supabase
+            .from('asset_binding')
+            .select(`
+                organization_id,
+                asset!inner(type)
+            `)
+            .eq('asset.type', 'business_manager')
+            .eq('status', 'active');
+
+        if (bmError) {
+            console.error('Error fetching business manager counts:', bmError);
+        }
+
+        // Create a map of organization_id to business manager count
+        const bmCountMap = new Map<string, number>();
+        bmCounts?.forEach(binding => {
+            const orgId = binding.organization_id;
+            bmCountMap.set(orgId, (bmCountMap.get(orgId) || 0) + 1);
+        });
+
+        // Transform organizations with additional data
+        const transformedOrganizations = organizations?.map(org => {
+            const totalBalance = org.wallets?.balance_cents || 0;
+            const reservedBalance = org.wallets?.reserved_balance_cents || 0;
+            const availableBalance = totalBalance - reservedBalance;
+            
+            return {
+                organization_id: org.organization_id,
+                name: org.name,
+                created_at: org.created_at,
+                plan_id: org.plan_id,
+                subscription_status: org.subscription_status,
+                current_period_start: org.current_period_start,
+                current_period_end: org.current_period_end,
+                balance_cents: availableBalance,
+                total_balance_cents: totalBalance,
+                reserved_balance_cents: reservedBalance,
+                business_managers_count: bmCountMap.get(org.organization_id) || 0
+            };
+        }) || [];
+
+        return NextResponse.json({ organizations: transformedOrganizations });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

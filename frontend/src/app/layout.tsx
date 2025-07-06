@@ -9,7 +9,13 @@ import { SimpleProviders } from "../components/core/simple-providers";
 import { EnvIndicator } from "../components/debug/env-indicator";
 import { DynamicToaster } from "../components/ui/dynamic-toaster";
 
-const inter = Inter({ subsets: ["latin"] });
+// Configure Inter font with minimal configuration to reduce loading issues
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap', // Show fallback immediately, swap when Inter loads
+  weight: ['400', '500', '600', '700'], // Only load weights we use
+  variable: '--font-inter', // CSS variable for easier usage
+});
 
 // Add or edit your "generateMetadata" to include the Sentry trace data:
 export function generateMetadata(): Metadata {
@@ -42,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} ${inter.variable}`}>
         <SimpleProviders>
           {children}
           <EnvIndicator />

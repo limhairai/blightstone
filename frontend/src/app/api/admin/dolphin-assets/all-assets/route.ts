@@ -45,18 +45,14 @@ export async function GET(request: NextRequest) {
       urlWithParams.searchParams.set('unbound_only', unboundOnly)
     }
 
-    console.log('🔍 All Assets API: Calling backend URL:', urlWithParams.toString())
-
     const response = await fetch(urlWithParams.toString(), {
       method: 'GET',
       headers: createAuthHeaders(session.access_token),
     })
 
-    console.log('🔍 All Assets API: Backend response status:', response.status)
-
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('🔍 All Assets API: Backend error:', errorData)
+      console.error('All Assets API error:', errorData)
       return NextResponse.json(errorData, { status: response.status })
     }
 

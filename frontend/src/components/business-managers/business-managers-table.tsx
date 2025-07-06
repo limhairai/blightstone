@@ -382,10 +382,10 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
 
       {/* Empty State */}
       {filteredManagers.length === 0 && (
-        <div className="text-center py-12 bg-card border border-border rounded-lg">
-          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <div className="flex flex-col items-center justify-center py-12">
+          <Building2 className="h-8 w-8 text-muted-foreground mb-3" />
           <h3 className="text-lg font-medium text-foreground mb-2">No business managers found</h3>
-          <p className="text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground">
             {searchQuery || statusFilter !== "all"
               ? "Try adjusting your search or filters"
               : "Get started by applying for your first business manager"}

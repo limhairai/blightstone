@@ -6,7 +6,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Textarea } from "../ui/textarea";
+
 import { Separator } from "../ui/separator";
 import { 
   CreditCard, 
@@ -37,7 +37,6 @@ export function CreateAccountDialog({
     initialBalance: "1000",
     timezone: business?.timezone || "America/New_York",
     currency: "USD",
-    notes: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -94,7 +93,6 @@ export function CreateAccountDialog({
           initialBalance: "1000",
           timezone: business?.timezone || "America/New_York",
           currency: "USD",
-          notes: "",
         });
         setShowSuccess(false);
         onClose();
@@ -268,21 +266,7 @@ export function CreateAccountDialog({
 
           <Separator />
 
-          {/* Additional Notes */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Additional Notes</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="notes">Internal Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Add any internal notes about this account setup..."
-                rows={3}
-              />
-            </div>
-          </div>
+
 
           {/* Warning Notice */}
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
