@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
         id: bt.request_id,
         display_id: bt.request_id ? `BT-${bt.request_id.substring(0, 8).toUpperCase()}` : null,
         type: 'bank_transfer' as const,
-        amount: (bt.actual_amount || bt.requested_amount) / 100, // Convert cents to dollars
+        amount: bt.actual_amount || bt.requested_amount, // Already in dollars, don't divide by 100
         currency: "USD",
         status: bt.status,
         organizationName: bt.organization?.name || 'Unknown Organization',

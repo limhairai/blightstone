@@ -90,7 +90,13 @@ export function AdminSidebar({ className }: { className?: string }) {
   const isItemActive = (href?: string) => {
     if (!href || !pathname) return false
     if (href === "/admin") return pathname === "/admin"
-    return pathname === href || pathname.startsWith(href)
+    
+    // For exact matches, return true
+    if (pathname === href) return true
+    
+    // For sub-items, only match exact paths to avoid parent highlighting
+    // Don't use startsWith for sub-pages to prevent double highlighting
+    return false
   }
 
   const toggleSidebar = () => setCollapsed((c) => !c)
