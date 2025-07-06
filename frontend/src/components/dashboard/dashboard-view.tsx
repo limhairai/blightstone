@@ -520,7 +520,7 @@ export function DashboardView() {
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
-                            <span className="hidden sm:inline">Auto-refresh (5min)</span>
+                            <span className="hidden sm:inline">Auto-refresh (30min)</span>
                           </div>
                           <Button
                             variant="ghost"
@@ -639,7 +639,7 @@ export function DashboardView() {
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
-                            <span className="hidden sm:inline">Auto-refresh (5min)</span>
+                            <span className="hidden sm:inline">Auto-refresh (30min)</span>
                           </div>
                           <Button
                             variant="ghost"

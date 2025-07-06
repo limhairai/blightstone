@@ -637,4 +637,62 @@ async def handle_subscription_updated(supabase, subscription):
 async def handle_invoice_paid(supabase, invoice):
     """Handle successful invoice payment"""
     # TODO: Implement invoice handling for subscriptions
-    pass 
+    pass
+
+@router.get("/billing/history")
+async def get_billing_history(
+    organization_id: str,
+    limit: int = 10,
+    current_user: User = Depends(get_current_user)
+):
+    """Get billing history (Stripe invoices) for organization"""
+    supabase = get_supabase_client()
+    
+    try:
+        # Verify user is member of organization
+        verify_org_membership(supabase, str(current_user.uid), organization_id)
+        
+        # Get organization's Stripe customer ID
+        org_response = (
+            supabase.table("organizations")
+            .select("stripe_customer_id")
+            .eq("organization_id", organization_id)
+            .single()
+            .execute()
+        )
+        
+        if not org_response.data or not org_response.data.get("stripe_customer_id"):
+            return {"invoices": []}
+        
+        stripe_customer_id = org_response.data["stripe_customer_id"]
+        
+        # Get invoices from Stripe
+        invoices = stripe.Invoice.list(
+            customer=stripe_customer_id,
+            limit=limit,
+            expand=['data.charge']
+        )
+        
+        # Format invoices for frontend
+        formatted_invoices = []
+        for invoice in invoices.data:
+            formatted_invoices.append({
+                "id": invoice.id,
+                "date": datetime.fromtimestamp(invoice.created, timezone.utc).strftime("%Y-%m-%d"),
+                "amount": invoice.total / 100,  # Convert from cents to dollars
+                "status": invoice.status,
+                "description": invoice.description or f"Subscription - {invoice.lines.data[0].description if invoice.lines.data else 'N/A'}",
+                "invoice_url": invoice.hosted_invoice_url,
+                "pdf_url": invoice.invoice_pdf
+            })
+        
+        return {"invoices": formatted_invoices}
+        
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error: {e}")
+        raise HTTPException(status_code=400, detail=f"Billing error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching billing history: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch billing history") 

@@ -54,7 +54,7 @@ export function DashboardSidebar() {
     }
     
     // Final fallback
-    return user?.email?.charAt(0).toUpperCase() || 'AD'
+    return user?.email?.charAt(0).toUpperCase() || 'U'
   }
 
   const sidebarItems: SidebarItem[] = [

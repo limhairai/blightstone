@@ -72,24 +72,53 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
     <div className="max-w-full mx-auto py-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
+          {/* Organization Avatar */}
+          <div className="w-12 h-12 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            {currentOrganization?.name 
+              ? currentOrganization.name.split(' ').map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase()
+              : 'ORG'
+            }
+          </div>
+          
+          {/* Organization Info */}
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-foreground">
-              {currentOrganization?.name || 'Organization Settings'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-foreground">
+                {currentOrganization?.name || 'Organization Settings'}
+              </h1>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-accent"
+                onClick={() => {
+                  if (currentOrganization?.organization_id) {
+                    navigator.clipboard.writeText(currentOrganization.organization_id);
+                    // You could add a toast here if needed
+                  }
+                }}
+              >
+                <Copy className="h-3 w-3 text-muted-foreground" />
+              </Button>
+            </div>
             <p className="text-sm text-muted-foreground">
               Manage your organization preferences and team settings
             </p>
           </div>
         </div>
-        <Badge 
-          variant="secondary" 
-          className={cn(
-            "text-xs font-medium px-3 py-1",
-            gradientTokens.text.primary
-          )}
-        >
-          {planName}
-        </Badge>
+        
+        {/* Plan Badge */}
+        <div className="flex items-center gap-3">
+          <Badge 
+            variant="secondary" 
+            className={cn(
+              "text-xs font-medium px-3 py-1.5 bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 border-[#b4a0ff]/20 text-foreground",
+              "hover:from-[#b4a0ff]/20 hover:to-[#ffb4a0]/20 transition-all duration-200"
+            )}
+          >
+            <span className="w-2 h-2 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-full mr-2"></span>
+            {planName}
+          </Badge>
+        </div>
       </div>
 
       <div className="border-b border-border mb-6">

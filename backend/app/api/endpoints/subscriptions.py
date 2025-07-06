@@ -184,4 +184,80 @@ async def reactivate_account(
         
     except Exception as e:
         logger.error(f"Error reactivating account: {e}")
-        raise HTTPException(status_code=500, detail="Failed to reactivate account") 
+        raise HTTPException(status_code=500, detail="Failed to reactivate account")
+
+@router.post("/billing-portal")
+async def create_billing_portal_session(
+    request: dict,
+    current_user: User = Depends(get_current_user)
+):
+    """Create Stripe billing portal session for payment method management"""
+    try:
+        organization_id = request.get("organization_id")
+        return_url = request.get("return_url", "https://adhub.com/dashboard/settings")
+        
+        if not organization_id:
+            raise HTTPException(status_code=400, detail="Organization ID is required")
+        
+        from app.core.supabase_client import get_supabase_client
+        supabase = get_supabase_client()
+        
+        # Verify user is member of organization
+        membership = (
+            supabase.table("organization_members")
+            .select("role")
+            .eq("organization_id", organization_id)
+            .eq("user_id", str(current_user.uid))
+            .maybe_single()
+            .execute()
+        )
+        
+        if not membership.data:
+            raise HTTPException(status_code=403, detail="Not a member of this organization")
+        
+        # Get organization's Stripe customer ID
+        org_result = (
+            supabase.table("organizations")
+            .select("stripe_customer_id, name")
+            .eq("organization_id", organization_id)
+            .single()
+            .execute()
+        )
+        
+        if not org_result.data:
+            raise HTTPException(status_code=404, detail="Organization not found")
+        
+        stripe_customer_id = org_result.data.get("stripe_customer_id")
+        
+        if not stripe_customer_id:
+            # Create Stripe customer if doesn't exist
+            import stripe
+            customer = stripe.Customer.create(
+                email=current_user.email,
+                name=org_result.data["name"],
+                metadata={
+                    "organization_id": organization_id,
+                    "user_id": str(current_user.uid)
+                }
+            )
+            stripe_customer_id = customer.id
+            
+            # Save customer ID
+            supabase.table("organizations").update({
+                "stripe_customer_id": stripe_customer_id
+            }).eq("organization_id", organization_id).execute()
+        
+        # Create billing portal session
+        import stripe
+        session = stripe.billing_portal.Session.create(
+            customer=stripe_customer_id,
+            return_url=return_url,
+        )
+        
+        return {"url": session.url}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating billing portal session: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create billing portal session") 

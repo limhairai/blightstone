@@ -137,7 +137,7 @@ export default function WalletPage() {
 
   return (
     <div className={layout.pageContent}>
-      {/* Portfolio Layout */}
+      {/* Portfolio and Funding Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 items-stretch">
         {/* Main Portfolio Card */}
         <div className="lg:col-span-2 flex">

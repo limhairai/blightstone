@@ -83,10 +83,12 @@ export function Topbar({
 
   const setupPercentage = calculateSetupProgress()
 
-  // Use real user data from demo state
-  const userInitial = user?.user_metadata?.name ? user.user_metadata.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2) : 'AD'
+  // Use real user data from auth context - Fix hardcoded values
+  const userInitial = user?.user_metadata?.name 
+    ? user.user_metadata.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()
+    : user?.email?.charAt(0).toUpperCase() || 'U'
   const userEmail = user?.email || ''
-  const userName = user?.user_metadata?.name || 'User'
+  const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
   const userAvatar = user?.user_metadata?.avatar_url
 
   const handleThemeChange = (newTheme: string) => {
@@ -116,13 +118,7 @@ export function Topbar({
         )}
         
         {/* Notification Bell */}
-        <Button variant="ghost" size="icon" className="relative hover:bg-accent">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          {hasNotifications && (
-            <span className={`absolute top-1 right-1 w-2 h-2 ${gradientTokens.primary.replace('bg-gradient-to-r', 'bg-gradient-to-r').replace('hover:opacity-90 text-black', '')} rounded-full`} />
-          )}
-        </Button>
-
+        {/* Removed notification bell - was non-functional */}
 
         {/* Main Account Balance & Top Up - Now with real-time data */}
         <div className="hidden md:flex bg-muted rounded-full px-4 py-1.5 items-center border border-border">
@@ -227,7 +223,6 @@ export function Topbar({
                 size="sm"
                 onClick={() => setUpgradeDialogOpen(true)}
               >
-                <Zap className="h-4 w-4 mr-2" />
                 {currentPlan?.id !== 'free' ? 'Upgrade Plan' : 'Choose Plan'}
               </Button>
             </div>

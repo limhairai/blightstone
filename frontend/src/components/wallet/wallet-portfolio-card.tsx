@@ -5,9 +5,10 @@ import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { formatCurrency } from "../../utils/format"
-import { TrendingDown, TrendingUp, Wallet, RefreshCw } from "lucide-react"
+import { TrendingDown, TrendingUp, Wallet, RefreshCw, ChevronDown } from "lucide-react"
 import { Skeleton } from "../ui/skeleton"
 import { useCurrentOrganization, useTransactions } from '@/lib/swr-config'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 
 interface WalletPortfolioCardProps {
   onRefresh?: () => void
@@ -16,7 +17,7 @@ interface WalletPortfolioCardProps {
 
 export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletPortfolioCardProps) {
   const { currentOrganizationId } = useOrganizationStore()
-  const [timeFilter, setTimeFilter] = useState("1M")
+  const [timeFilter, setTimeFilter] = useState("7 Days")
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   // Use optimized hooks instead of direct SWR calls
@@ -33,39 +34,31 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
   // For honest change calculation - only show positive change if we actually have data
   const change24h = hasRealData ? 2.5 : 0; 
   const changeAmount = (totalBalance * change24h) / 100;
-  
-  // Generate HONEST chart data based on actual balance history
-  const chartData = useMemo(() => {
-    const dataPoints = timeFilter === "1Y" ? 12 : timeFilter === "3M" ? 12 : timeFilter === "1M" ? 30 : timeFilter === "1W" ? 7 : 24;
+
+  // Generate HONEST balance data based on actual account history
+  const balanceData = useMemo(() => {
+    const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
     
     // Generate time points
     const today = new Date()
     const timePoints = Array.from({ length: dataPoints }).map((_, i) => {
       let pointDate = new Date(today)
       
-      if (timeFilter === "1Y") {
+      if (timeFilter === "1 Year") {
         pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
-      } else if (timeFilter === "3M") {
+      } else if (timeFilter === "3 Months") {
         pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
-      } else if (timeFilter === "1M") {
+      } else if (timeFilter === "1 Month") {
         pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
-      } else if (timeFilter === "1W") {
+      } else { // 7 Days
         pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
-      } else { // 1D - 24 hours
-        pointDate.setHours(today.getHours() - (dataPoints - 1 - i))
       }
       
       return {
         index: i,
-        time: timeFilter === "1Y" 
+        date: timeFilter === "1 Year" 
           ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-          : timeFilter === "3M"
-          ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          : timeFilter === "1M"
-          ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          : timeFilter === "1W"
-          ? pointDate.toLocaleDateString('en-US', { weekday: 'short' })
-          : pointDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          : pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         pointDate,
         value: 0 // Default to zero
       }
@@ -73,7 +66,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
     
     // For new accounts: show zero until today, then current balance
     // This is HONEST - no fake historical buildup
-    if (!hasRealData) {
+    if (transactions.length <= 5) {
       timePoints.forEach((point, i) => {
         // Only show current balance at the very last point (today)
         if (i === dataPoints - 1) {
@@ -82,7 +75,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
         // All other points remain zero (honest representation)
       })
     } else {
-      // For accounts with real data, we'd build actual historical balance
+      // For accounts with transaction history, we'd build actual historical balance
       // For now, still show honest data: zero until today
       timePoints.forEach((point, i) => {
         if (i === dataPoints - 1) {
@@ -91,12 +84,20 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       })
     }
     
-    return timePoints;
-  }, [totalBalance, timeFilter, hasRealData]);
+    return timePoints
+  }, [totalBalance, timeFilter, transactions.length])
+
+  // Time filter options
+  const timeFilterOptions = [
+    { value: "7 Days", label: "7 Days" },
+    { value: "1 Month", label: "1 Month" },
+    { value: "3 Months", label: "3 Months" },
+    { value: "1 Year", label: "1 Year" }
+  ]
   
   if (isLoading) {
     return (
-      <Card className="flex-1 flex flex-col">
+      <Card className="flex-1">
         <CardContent className="p-6">
           <Skeleton className="h-8 w-3/4 mb-2" />
           <Skeleton className="h-10 w-1/2 mb-4" />
@@ -108,19 +109,37 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
   if (error) return <div>Failed to load wallet data.</div>
 
-  const timeFilters = ["1D", "1W", "1M", "3M", "1Y"]
   const isPositive = change24h >= 0
 
   return (
-    <Card className="bg-gradient-to-br from-card to-card/80 border-border overflow-hidden flex-1 flex flex-col">
-      <CardContent className="p-6 flex-1 flex flex-col">
+    <Card className="bg-gradient-to-br from-card to-card/80 border-border overflow-hidden flex-1">
+      <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg font-semibold text-foreground">
-                {organization?.name || 'Primary Wallet'}
+                {organization?.name || 'Wallet Portfolio'}
               </h2>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs text-muted-foreground">
+                    {timeFilter}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {timeFilterOptions.map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => setTimeFilter(option.value)}
+                      className={timeFilter === option.value ? "bg-accent" : ""}
+                    >
+                      {option.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="text-3xl font-bold text-foreground">{formatCurrency(totalBalance)}</div>
             <div className="flex items-center gap-1 mt-1">
@@ -158,130 +177,105 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
           </div>
         </div>
 
-        {/* Chart */}
-        <div className="relative flex-1 mb-4 min-h-[200px]">
-          {/* Chart Area */}
-          <div className="absolute inset-0">
-            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              {/* Gradient Definitions */}
-              <defs>
-                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.3" />
-                  <stop offset="100%" stopColor={isPositive ? "#10b981" : "#ef4444"} stopOpacity="0.05" />
-                </linearGradient>
-                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor={hasRealData ? (isPositive ? "#10b981" : "#ef4444") : "#b4a0ff"} />
-                  <stop offset="100%" stopColor={hasRealData ? (isPositive ? "#059669" : "#f97316") : "#ffb4a0"} />
-                </linearGradient>
-              </defs>
+        {/* Balance Chart */}
+        <div className="h-48 w-full relative">
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            {/* Grid lines */}
+            <defs>
+              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" opacity="0.3" />
+              </pattern>
+              <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="hsl(var(--primary))" />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+              </linearGradient>
+              <linearGradient id="balanceFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
+              </linearGradient>
+            </defs>
+            <rect width="100" height="100" fill="url(#grid)" />
 
-              {/* Area Fill */}
-              <path
-                d={`M 0,${100 - (chartData[0].value / Math.max(...chartData.map((p) => p.value), 1)) * 60} ${chartData
-                  .map(
-                    (point, i) =>
-                      `L ${(i / (chartData.length - 1)) * 100},${100 - (point.value / Math.max(...chartData.map((p) => p.value), 1)) * 60}`,
-                  )
-                  .join(" ")} L 100,100 L 0,100 Z`}
-                fill="url(#chartGradient)"
-              />
-
-              {/* Line */}
-              <path
-                d={`M ${chartData
-                  .map(
-                    (point, i) => {
-                      const maxValue = Math.max(...chartData.map((p) => p.value), 1)
-                      const yPos = hasRealData ? 100 - (point.value / maxValue) * 60 : 30 // Show line at 30% for $0 balance (more visible)
-                      return `${(i / (chartData.length - 1)) * 100},${yPos}`
-                    }
-                  )
-                  .join(" L ")}`}
-                fill="none"
-                stroke="url(#lineGradient)"
-                strokeWidth={hasRealData ? "2" : "3"}
-                vectorEffect="non-scaling-stroke"
-              />
-            </svg>
-
-            {/* Interactive Hover Points */}
-            {chartData.map((point, i) => {
-              const maxValue = Math.max(...chartData.map((p) => p.value), 1)
-              const yPosition = hasRealData ? 100 - (point.value / maxValue) * 60 : 30
-              return (
-                <div
-                  key={i}
-                  className="absolute w-8 h-8 -translate-x-4 -translate-y-4 cursor-pointer z-10 flex items-center justify-center"
-                  style={{
-                    left: `${(i / (chartData.length - 1)) * 100}%`,
-                    top: `${yPosition}%`,
-                  }}
-                  onMouseEnter={() => setHoveredIndex(i)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                >
-                  <div
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      hoveredIndex === i 
-                        ? `${hasRealData ? (isPositive ? 'bg-green-400' : 'bg-red-400') : 'bg-[#b4a0ff]'} scale-150 shadow-lg opacity-100`
-                        : "opacity-0"
-                    }`}
-                  />
-                  {hoveredIndex === i && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-background border rounded px-2 py-1 text-xs whitespace-nowrap shadow-lg z-30">
-                      <div className="font-medium">{formatCurrency(point.value)}</div>
-                      <div className="text-muted-foreground">{point.time}</div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Time Labels */}
-          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-muted-foreground px-2">
-            {timeFilter === "1D" ? (
+            {/* Balance line */}
+            {balanceData.length > 1 && (
               <>
-                <span>00:00</span>
-                <span>04:00</span>
-                <span>08:00</span>
-                <span>12:00</span>
-                <span>16:00</span>
-                <span>20:00</span>
-                <span>24:00</span>
-              </>
-            ) : timeFilter === "1M" ? (
-              chartData.slice(0, 5).map((point, i) => (
-                <span key={i}>{point.time}</span>
-              ))
-            ) : (
-              <>
-                <span>Start</span>
-                <span>25%</span>
-                <span>50%</span>
-                <span>75%</span>
-                <span>End</span>
+                <path
+                  d={`M ${balanceData
+                    .map(
+                      (point, i) =>
+                        `${(i / (balanceData.length - 1)) * 100},${100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}`,
+                    )
+                    .join(" L ")}`}
+                  fill="none"
+                  stroke="url(#balanceGradient)"
+                  strokeWidth="2"
+                  vectorEffect="non-scaling-stroke"
+                />
+
+                {/* Gradient fill */}
+                <path
+                  d={`M ${balanceData
+                    .map(
+                      (point, i) =>
+                        `${(i / (balanceData.length - 1)) * 100},${100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}`,
+                    )
+                    .join(" L ")} L 100,100 L 0,100 Z`}
+                  fill="url(#balanceFill)"
+                />
               </>
             )}
-          </div>
+
+            {/* Data points */}
+            {balanceData.map((point, i) => (
+              <circle
+                key={i}
+                cx={(i / (balanceData.length - 1)) * 100}
+                cy={100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}
+                r={hoveredIndex === i ? "1.5" : "1"}
+                fill="hsl(var(--primary))"
+                vectorEffect="non-scaling-stroke"
+                className="transition-all duration-200 cursor-pointer"
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+              />
+            ))}
+          </svg>
+
+          {/* Hover tooltip */}
+          {hoveredIndex !== null && (
+            <div
+              className="absolute bg-popover border border-border rounded-md px-2 py-1 text-xs shadow-lg pointer-events-none z-10"
+              style={{
+                left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
+                top: `${100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}%`,
+                transform: "translate(-50%, -100%)",
+                marginTop: "-8px",
+              }}
+            >
+              <div className="font-medium">{formatCurrency(balanceData[hoveredIndex].value)}</div>
+              <div className="text-muted-foreground">{balanceData[hoveredIndex].date}</div>
+            </div>
+          )}
         </div>
 
-        {/* Time Filter Buttons */}
-        <div className="flex gap-1">
-          {timeFilters.map((filter) => (
-            <Button
-              key={filter}
-              variant={timeFilter === filter ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setTimeFilter(filter)}
-              className={`h-8 px-3 text-xs ${
-                timeFilter === filter
-                  ? "bg-accent text-accent-foreground hover:bg-accent/80"
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
-              }`}
-            >
-              {filter}
-            </Button>
-          ))}
+        {/* Additional wallet info */}
+        <div className="space-y-3 pt-4 border-t border-border">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Available Balance</span>
+            <span className="text-sm font-medium text-foreground">{formatCurrency(totalBalance)}</span>
+          </div>
+          {organization?.reserved_balance_cents && organization.reserved_balance_cents > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">Reserved</span>
+              <span className="text-sm font-medium text-orange-400">
+                {formatCurrency(organization.reserved_balance_cents / 100)}
+              </span>
+            </div>
+          )}
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Total Transactions</span>
+            <span className="text-sm font-medium text-foreground">{transactions.length}</span>
+          </div>
         </div>
       </CardContent>
     </Card>

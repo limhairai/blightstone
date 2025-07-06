@@ -24,6 +24,8 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
+import useSWR from 'swr'
+import { API_ENDPOINTS, createAuthHeaders } from '@/lib/api-config'
 
 
 export function OrganizationSettings() {
@@ -37,9 +39,36 @@ export function OrganizationSettings() {
   const { data: bizData, isLoading: isBizLoading } = useBusinessManagers();
   const { data: accData, isLoading: isAccLoading } = useAdAccounts();
   
-  // Remove the teams API call since it's not essential for organization settings
-  // Team data will be loaded only in the team settings tab
-  
+  // Fetch payment methods from backend API
+  const { data: paymentMethods = [], error: paymentMethodsError } = useSWR(
+    session?.access_token && currentOrganizationId 
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/api/payments/methods`, currentOrganizationId]
+      : null,
+    async ([url, orgId]) => {
+      const response = await fetch(`${url}?organization_id=${orgId}`, {
+        headers: createAuthHeaders(session!.access_token)
+      });
+      if (!response.ok) throw new Error('Failed to fetch payment methods');
+      return response.json();
+    }
+  );
+
+  // Fetch billing history from backend API
+  const { data: billingHistoryData, error: billingHistoryError } = useSWR(
+    session?.access_token && currentOrganizationId 
+      ? [`${process.env.NEXT_PUBLIC_API_URL}/api/payments/billing/history`, currentOrganizationId]
+      : null,
+    async ([url, orgId]) => {
+      const response = await fetch(`${url}?organization_id=${orgId}&limit=10`, {
+        headers: createAuthHeaders(session!.access_token)
+      });
+      if (!response.ok) throw new Error('Failed to fetch billing history');
+      return response.json();
+    }
+  );
+
+  const billingHistory = billingHistoryData?.invoices || [];
+
   const organization = orgData?.organizations?.[0];
   const businesses = bizData || [];
   const accounts = accData?.accounts || [];
@@ -171,8 +200,9 @@ export function OrganizationSettings() {
 
     setLoading(true);
     try {
-      const response = await fetch(`/api/organizations?id=${currentOrganizationId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/organizations/${currentOrganizationId}`, {
         method: 'DELETE',
+        headers: createAuthHeaders(session!.access_token),
       });
 
       if (!response.ok) {
@@ -180,19 +210,42 @@ export function OrganizationSettings() {
       }
 
       toast.success("Organization deleted successfully.");
-      // You might want to switch to another organization or a default state
+      // You might want to switch to another organization or redirect to onboarding
       setCurrentOrganizationId('');
       setDeleteOrgOpen(false);
       setConfirmDeleteText("");
     } catch (error) {
+      console.error('Error deleting organization:', error);
       toast.error("Failed to delete organization. Please try again.");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // Use organization-specific billing history
-  const billingHistory = organization?.billing?.billingHistory || []
+  const handleAddPaymentMethod = async () => {
+    if (!currentOrganizationId || !session?.access_token) return;
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/billing-portal`, {
+        method: 'POST',
+        headers: createAuthHeaders(session.access_token),
+        body: JSON.stringify({
+          organization_id: currentOrganizationId,
+          return_url: window.location.href
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create billing portal session');
+      }
+
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Error opening billing portal:', error);
+      toast.error('Failed to open payment method management. Please try again.');
+    }
+  };
 
   const globalLoading = isOrgLoading || isBizLoading || isAccLoading;
 
@@ -519,34 +572,50 @@ export function OrganizationSettings() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <div className="border border-border rounded-md overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Invoice</th>
-                    <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Date</th>
-                    <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Amount</th>
-                    <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {billingHistory.map((invoice: any) => (
-                    <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-2 px-4">
-                        <code className="text-xs bg-muted px-1 py-0.5 rounded">{invoice.id}</code>
-                      </td>
-                      <td className="py-2 px-4 text-sm text-foreground">{invoice.date}</td>
-                      <td className="py-2 px-4 text-sm text-foreground">${invoice.amount}</td>
-                      <td className="py-2 px-4">
-                        <Badge className={gradientTokens.primary}>
-                          {invoice.status}
-                        </Badge>
-                      </td>
+            {billingHistory.length > 0 ? (
+              <div className="border border-border rounded-md overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Invoice</th>
+                      <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Date</th>
+                      <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Amount</th>
+                      <th className="text-left py-2 px-4 text-xs font-medium text-muted-foreground">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {billingHistory.map((invoice: any) => (
+                      <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="py-2 px-4">
+                          <code className="text-xs bg-muted px-1 py-0.5 rounded">{invoice.id}</code>
+                        </td>
+                        <td className="py-2 px-4 text-sm text-foreground">{invoice.date}</td>
+                        <td className="py-2 px-4 text-sm text-foreground">${invoice.amount?.toFixed(2) || '0.00'}</td>
+                        <td className="py-2 px-4">
+                          <Badge 
+                            className={
+                              invoice.status === 'paid' 
+                                ? 'bg-green-100 text-green-800 border-green-200' 
+                                : invoice.status === 'open'
+                                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                : gradientTokens.primary
+                            }
+                          >
+                            {invoice.status}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm">No billing history found</p>
+                <p className="text-xs mt-1">Your invoices will appear here once you have an active subscription</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -577,26 +646,40 @@ export function OrganizationSettings() {
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-3">
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-5 bg-blue-600 rounded flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">VISA</span>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-foreground">•••• •••• •••• 4242</div>
-                      <div className="text-xs text-muted-foreground">Expires 12/26</div>
+              {paymentMethods.length > 0 ? (
+                paymentMethods.map((method: any) => (
+                  <div key={method.id} className="p-4 border border-border rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-5 bg-blue-600 rounded flex items-center justify-center">
+                          <span className="text-white text-xs font-bold">
+                            {method.card?.brand?.toUpperCase() || 'CARD'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-foreground">
+                            •••• •••• •••• {method.card?.last4 || '****'}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Expires {method.card?.exp_month || '**'}/{method.card?.exp_year || '**'}
+                          </div>
+                        </div>
+                      </div>
+                      {method.is_default && (
+                        <Badge className={gradientTokens.primary}>Default</Badge>
+                      )}
                     </div>
                   </div>
-                  <Badge className={gradientTokens.primary}>Default</Badge>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  No payment methods found
                 </div>
-              </div>
+              )}
               <Button
                 variant="outline"
                 className="w-full border-border text-foreground hover:bg-accent"
-                onClick={() => {
-                  toast.success("Redirecting to secure payment form...")
-                }}
+                onClick={handleAddPaymentMethod}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add New Payment Method

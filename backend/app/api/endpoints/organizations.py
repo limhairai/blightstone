@@ -588,4 +588,94 @@ async def update_organization_endpoint(
         raise
     except Exception as e:
         logger.error(f"Error updating org {org_id}: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update organization") 
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update organization")
+
+@router.delete("/{org_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_organization_endpoint(
+    org_id: uuid.UUID,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete organization (owner only) - This will cascade delete all related data"""
+    logger.info(f"Deleting organization {org_id} by user {current_user.uid}")
+    supabase = get_supabase_client()
+    
+    try:
+        # Check if current user is owner
+        member_check = (
+            supabase.table("organization_members")
+            .select("role")
+            .eq("organization_id", str(org_id))
+            .eq("user_id", str(current_user.uid))
+            .maybe_single()
+            .execute()
+        )
+        
+        if not member_check.data or member_check.data['role'] != 'owner':
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only organization owner can delete the organization")
+        
+        # Check if organization exists
+        org_check = (
+            supabase.table("organizations")
+            .select("organization_id, name")
+            .eq("organization_id", str(org_id))
+            .maybe_single()
+            .execute()
+        )
+        
+        if not org_check.data:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+        
+        org_name = org_check.data['name']
+        
+        # Delete related data in proper order (child -> parent)
+        # 1. Delete asset bindings
+        supabase.table("asset_binding").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 2. Delete transactions
+        supabase.table("transactions").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 3. Delete wallet
+        supabase.table("wallets").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 4. Delete applications
+        supabase.table("applications").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 5. Delete topup requests
+        supabase.table("topup_requests").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 6. Delete access codes
+        supabase.table("access_codes").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 7. Delete team invitations
+        supabase.table("team_invitations").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 8. Delete subscriptions
+        supabase.table("subscriptions").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 9. Delete payments
+        supabase.table("payments").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 10. Delete organization members
+        supabase.table("organization_members").delete().eq("organization_id", str(org_id)).execute()
+        
+        # 11. Finally delete the organization itself
+        delete_response = (
+            supabase.table("organizations")
+            .delete()
+            .eq("organization_id", str(org_id))
+            .execute()
+        )
+        
+        if not delete_response.data:
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete organization")
+        
+        logger.info(f"Successfully deleted organization '{org_name}' (ID: {org_id}) by user {current_user.uid}")
+        
+        # Return 204 No Content (successful deletion)
+        return
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting organization {org_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to delete organization") 

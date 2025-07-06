@@ -108,20 +108,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
             </div>
 
             <div className="py-2">
-              <DropdownMenuItem
-                className="text-popover-foreground hover:bg-accent px-4 py-2"
-                onClick={() => (window.location.href = "/admin/settings/account")}
-              >
-                <User className="h-4 w-4 mr-2" />
-                Admin Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-popover-foreground hover:bg-accent px-4 py-2"
-                onClick={() => (window.location.href = "/admin/settings")}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                System Settings
-              </DropdownMenuItem>
+              {/* Removed Admin Profile and System Settings - these pages don't exist */}
             </div>
 
             <DropdownMenuSeparator className="bg-border" />
