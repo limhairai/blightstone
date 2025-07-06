@@ -298,7 +298,7 @@ export function DashboardView() {
     }
     
     return transactionsData.slice(0, 5).map(tx => ({
-      id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,
+                  id: tx.id ? tx.id.toString() : `temp-${crypto.randomUUID()}`,
       name: getCleanDescription(tx), // Use cleaned description instead of raw description
       amount: (tx.amount_cents || 0) / 100,
       type: tx.type || 'transfer',

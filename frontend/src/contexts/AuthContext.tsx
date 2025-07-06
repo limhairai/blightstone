@@ -106,20 +106,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Auth functions - moved to top
   const signUp = async (email: string, password: string, options?: { data?: Record<string, any> }) => {
-// console.log('🔐 AuthContext signUp called with:', { email, hasPassword: !!password, options });
-    setLoading(true);
-    
     try {
+      setLoading(true);
+      setError(null);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          ...(options ? { data: options.data } : {}),
-        },
+        options
       });
       
-// console.log('🔐 Supabase signUp response:', { data, error });
-
       if (error) {
         console.error("🔐 AuthContext signUp error:", error);
         
@@ -130,7 +126,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (errorMessage.includes('User already registered')) {
           // Don't show toast here - let the register component handle it
           // This prevents duplicate toasts
-// console.log('🔐 User already registered - letting register component handle the message');
         } else if (errorMessage.includes('Password should be at least')) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
@@ -164,7 +159,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.user && !data.session) {
         // Email confirmation required
-// console.log('🔐 Email confirmation required, showing success toast');
         if (typeof window !== 'undefined') {
           setTimeout(() => {
             toast.success(authMessages.signUp.success.description, {
@@ -177,7 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // User is immediately logged in
-// console.log('🔐 User immediately logged in, showing success toast');
       if (typeof window !== 'undefined') {
         setTimeout(() => {
           toast.success("Registration successful! Redirecting to dashboard...");
@@ -209,14 +202,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         console.error("🔐 AuthContext signIn error:", error);
-// console.log("🔐 About to show toast error for:", error.message);
         
         // Ensure we have a valid error message
         const errorMessage = error.message || error.toString() || 'Unknown error occurred';
         
         // Handle specific Supabase error messages with better UX
         if (errorMessage === 'Invalid login credentials') {
-// console.log("🔐 Showing invalid credentials toast");
           // Ensure we're on client side for toast with small delay for hydration
           if (typeof window !== 'undefined') {
             setTimeout(() => {
@@ -251,7 +242,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }, 100);
           }
         } else {
-// console.log("🔐 Showing generic error toast:", errorMessage);
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(errorMessage || authMessages.signIn.unknown.description);
@@ -370,7 +360,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isPublicRoute = publicRoutes.includes(currentPath) || currentPath.startsWith('/auth/');
       
       if (isPublicRoute) {
-// console.log('🏢 Skipping organization initialization on public route:', currentPath);
         return;
       }
 
@@ -386,12 +375,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await response.json();
           const organizations = data.organizations || [];
           
-          // console.log('🏢 User has access to organizations:', organizations.map(o => ({id: o.id, name: o.name})));
-          
           if (organizations.length > 0) {
             // If we already have a current org ID and it's in the list, keep it
             if (currentOrganizationId && organizations.find(o => o.id === currentOrganizationId)) {
-                              // console.log('🏢 Keeping current organization:', currentOrganizationId);
               orgInitialized.current = true;
               return;
             }
@@ -400,7 +386,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Note: profile.organization_id matches the database organization_id field
             // but API returns organizations with id field (mapped from organization_id)
             if (profile?.organization_id && organizations.find(o => o.id === profile.organization_id)) {
-// console.log('🏢 Using profile organization:', profile.organization_id);
               const profileOrg = organizations.find(o => o.id === profile.organization_id);
               setOrganization(profileOrg!.id, profileOrg!.name);
               orgInitialized.current = true;
@@ -409,11 +394,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
             // Otherwise, use the first available organization
             const firstOrg = organizations[0];
-// console.log('🏢 Using first available organization:', firstOrg.id, firstOrg.name);
             setOrganization(firstOrg.id, firstOrg.name);
             orgInitialized.current = true;
           } else {
-// console.log('🏢 No organizations found for user - clearing invalid org data');
             
             // Check for database inconsistency: profile has org_id but user has no accessible orgs
             if (profile?.organization_id) {
@@ -425,7 +408,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               
                              // Attempt automatic repair by adding the user to their organization
                try {
-// console.log('🔧 Attempting to fix organization membership automatically...');
                  
                  const fixResponse = await fetch('/api/debug/fix-membership', {
                    method: 'POST',
@@ -437,10 +419,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                  
                  if (fixResponse.ok) {
                    const fixResult = await fixResponse.json();
-// console.log('🔧 Fix result:', fixResult);
                    
                    if (fixResult.details.fixed_memberships > 0) {
-// console.log(`✅ Successfully fixed ${fixResult.details.fixed_memberships} organization memberships!`);
                      toast.success(
                        `Fixed ${fixResult.details.fixed_memberships} organization memberships. Refreshing...`,
                        { duration: 3000 }
@@ -452,7 +432,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                        window.location.reload();
                      }, 2000);
                    } else {
-// console.log('🔧 No memberships were fixed, showing manual instructions');
                      toast.error(
                        'Unable to automatically fix account. Please contact support.',
                        { duration: 10000 }
@@ -478,12 +457,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             
             // Clear any stale organization data when user has no access to any orgs
             if (currentOrganizationId) {
-// console.log('🏢 Clearing stale organization ID:', currentOrganizationId);
               clearOrganization();
               // Force clear localStorage directly as well
               localStorage.removeItem('currentOrganizationId');
               localStorage.removeItem('currentOrganizationName');
-// console.log('🏢 Force cleared localStorage organization data');
             }
             orgInitialized.current = true;
           }

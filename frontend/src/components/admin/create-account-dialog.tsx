@@ -56,11 +56,11 @@ export function CreateAccountDialog({
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Generate account ID
-      const accountId = `act_${Math.floor(100000000 + Math.random() * 900000000)}`;
+      const accountId = `act_${crypto.randomUUID().replace(/-/g, '').substring(0, 9)}`;
 
       // Create new account object
       const newAccount = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: crypto.randomUUID(),
         name: formData.accountName,
         accountId: accountId,
         status: "active",

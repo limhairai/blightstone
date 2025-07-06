@@ -1,31 +1,30 @@
 # 🔒 Security Audit Report
 
-Generated: 2025-06-28T07:36:51.466Z
+Generated: 2025-07-06T18:18:24.314Z
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | Critical | 0 |
-| High | 0 |
-| Medium | 27 |
+| High | 3 |
+| Medium | 14 |
 | Low | 0 |
-| **Total** | **27** |
+| **Total** | **17** |
 
-### src/app/admin/analytics/page.tsx
+### src/app/admin/assets/debug/page.tsx
 
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
+#### CSRF_VULNERABILITIES (MEDIUM)
+Potential CSRF vulnerabilities (check for CSRF tokens)
 
-- Line 177: `newClients: Math.floor(Math.random() * 3), // 0-2 new clients per day`
-- Line 178: `applications: Math.floor(Math.random() * 5) + 1 // 1-5 applications per day`
+- Line 27: `const response = await fetch('/api/admin/dolphin-assets/sync', { method: 'POST' })`
 
 ### src/app/admin/assets/page.tsx
 
 #### CSRF_VULNERABILITIES (MEDIUM)
 Potential CSRF vulnerabilities (check for CSRF tokens)
 
-- Line 65: `const response = await fetch('/api/admin/dolphin-assets/sync', { method: 'POST' });`
+- Line 79: `const response = await fetch(url, { method: 'POST' });`
 
 ### src/app/admin/businesses/page.tsx
 
@@ -38,20 +37,13 @@ Weak cryptographic functions
 - Line 113: `complianceScore: Math.floor(Math.random() * 100),`
 - Line 114: `supportTickets: Math.floor(Math.random() * 10)`
 
-### src/app/admin/finances/page.tsx
+### src/app/api/admin/update-application-status/route.ts
 
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
+#### EXPOSED_SENSITIVE_DATA (HIGH)
+Sensitive data exposed in logs or alerts
 
-- Line 109: `riskScore: Math.floor(Math.random() * 100),`
-- Line 110: `paymentId: `pay_${Math.random().toString(36).substr(2, 24)}`,`
-- Line 111: `transactionId: `txn_${Math.random().toString(36).substr(2, 24)}`,`
-- Line 112: `reconciled: Math.random() > 0.05, // 95% reconciled`
-- Line 113: `processingTime: Math.floor(Math.random() * 300) + 50, // 50-350ms`
-- Line 114: `retryCount: Math.random() > 0.9 ? Math.floor(Math.random() * 3) + 1 : 0`
-- Line 133: `customerId: `cus_${Math.random().toString(36).substr(2, 14)}`,`
-- Line 134: `paymentMethods: Math.floor(Math.random() * 3) + 1,`
-- Line 135: `autoTopupEnabled: Math.random() > 0.3,`
+- Line 21: `console.log('Verifying user token...');`
+- Line 31: `console.log('No user found from token');`
 
 ### src/app/dashboard/wallet/business/[id]/page.tsx
 
@@ -73,41 +65,21 @@ Weak cryptographic functions
 #### WEAK_CRYPTO (MEDIUM)
 Weak cryptographic functions
 
-- Line 60: `const accountId = `act_${Math.floor(100000000 + Math.random() * 900000000)}`;`
-- Line 64: `id: Math.random().toString(36).substr(2, 9),`
+- Line 59: `const accountId = `act_${Math.floor(100000000 + Math.random() * 900000000)}`;`
+- Line 63: `id: Math.random().toString(36).substr(2, 9),`
 
 ### src/components/dashboard/dashboard-view.tsx
 
 #### WEAK_CRYPTO (MEDIUM)
 Weak cryptographic functions
 
-- Line 219: `const historicalSpend = (monthlySpend / 30) * progressRatio * (0.3 + Math.random() * 0.7)`
+- Line 227: `const historicalSpend = (monthlySpend / 30) * progressRatio * (0.3 + Math.random() * 0.7)`
+- Line 301: `id: tx.id ? tx.id.toString() : `temp-${Math.random().toString(36).substr(2, 9)}`,`
 
-### src/components/ui/enhanced-loading.tsx
+### src/contexts/AuthContext.tsx
 
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
+#### EXPOSED_SENSITIVE_DATA (HIGH)
+Sensitive data exposed in logs or alerts
 
-- Line 36: `style={{ width: `${Math.random() * 40 + 60}%` }}`
-
-### src/components/ui/sidebar.tsx
-
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
-
-- Line 655: `return `${Math.floor(Math.random() * 40) + 50}%``
-
-### src/components/wallet/advanced-transaction-manager.tsx
-
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
-
-- Line 110: `status: tx.status || (Math.random() > 0.1 ? "completed" : Math.random() > 0.5 ? "pending" : "failed"),`
-
-### src/components/wallet/wallet-portfolio-card.tsx
-
-#### WEAK_CRYPTO (MEDIUM)
-Weak cryptographic functions
-
-- Line 36: `const volatility = (Math.sin(i * 0.5) * 0.2 + Math.random() * 0.1 - 0.05);`
+- Line 109: `// console.log('🔐 AuthContext signUp called with:', { email, hasPassword: !!password, options });`
 

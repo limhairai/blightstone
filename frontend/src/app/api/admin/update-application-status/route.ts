@@ -8,31 +8,21 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('Update application status request received');
-    
-    // First, verify the user is authenticated
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      console.log('No authorization header found');
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-    
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Verifying user token...');
-    
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError) {
-      console.error('Error verifying user token:', userError);
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    
-    if (!user) {
-      console.log('No user found from token');
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('User verified:', user.id);
+    const token = authHeader.split(' ')[1];
+    
+    // Verify the token with Supabase
+    // console.log('Verifying user token...');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      // console.log('No user found from token');
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
 
     // Check if user is a superuser
     const { data: profile, error: profileError } = await supabase
