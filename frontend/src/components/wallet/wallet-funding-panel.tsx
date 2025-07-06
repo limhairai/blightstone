@@ -232,7 +232,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {paymentMethod === 'bank_transfer' 
               ? 'Get Bank Transfer Details' 
-              : `Add $${amount || '0.00'} to Wallet`
+              : `Add ${formatCurrency(parseFloat(amount) || 0)} to Wallet`
             }
           </Button>
         </form>

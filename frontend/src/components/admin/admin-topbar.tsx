@@ -13,8 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { Badge } from '../ui/badge';
-import { Bell, ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X, Search } from 'lucide-react';
+import { ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X, Search } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPlaceholderUrl } from '@/lib/config/assets';
 import { GlobalSearch } from './global-search';
@@ -29,7 +28,6 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const { user, signOut: authSignOut } = useAuth();
   const { theme, setTheme } = useTheme();
   
-  const hasNotifications = true;
   const userEmail = user?.email || 'admin@adhub.com';
   const userInitial = user?.email?.charAt(0).toUpperCase() || "A";
 
@@ -84,21 +82,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
           />
         </div>
         
-        {/* Notification Bell */}
-        <Button variant="ghost" size="icon" className="relative hover:bg-accent">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          {hasNotifications && (
-            <>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full" />
-              <Badge
-                variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs bg-red-600 hover:bg-red-700 text-white border-2 border-background"
-              >
-                90+
-              </Badge>
-            </>
-          )}
-        </Button>
+        {/* Removed notification bell - was fake/non-functional */}
 
         {/* Admin Profile Dropdown */}
         <DropdownMenu>

@@ -8,6 +8,9 @@ import { OrganizationSelector } from "../organization/organization-selector"
 import { AdHubLogo } from "../core/AdHubLogo"
 import { cn } from "../../lib/utils"
 import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, TrendingUp, Users } from "lucide-react"
+import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useCurrentOrganization } from '@/lib/swr-config'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface SidebarItem {
   name: string
@@ -21,6 +24,38 @@ export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>(["Assets"]) // Only expand Assets by default
   const pathname = usePathname()
+  
+  // Get organization and user data
+  const { currentOrganizationId } = useOrganizationStore()
+  const { data: orgData } = useCurrentOrganization(currentOrganizationId)
+  const { user } = useAuth()
+  
+  // Get organization name or user name for initials
+  const organization = orgData?.organizations?.[0]
+  const getInitials = () => {
+    if (organization?.name) {
+      // Get organization initials (e.g., "My Company" -> "MC")
+      return organization.name
+        .split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    }
+    
+    // Fallback to user initials
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name
+        .split(' ')
+        .map(word => word.charAt(0))
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    }
+    
+    // Final fallback
+    return user?.email?.charAt(0).toUpperCase() || 'AD'
+  }
 
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -86,7 +121,8 @@ export function DashboardSidebar() {
             <div className="w-full flex justify-center">
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
                 <span className="text-sm font-semibold bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-transparent">
-                  SP
+                  {/* Replace with actual organization name initials or user initials */}
+                  {getInitials()}
                 </span>
               </Button>
             </div>
