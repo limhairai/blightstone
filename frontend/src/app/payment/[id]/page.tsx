@@ -267,7 +267,7 @@ export default function PaymentPage() {
               </div>
               <hr className="border-border" />
               <div className="flex justify-between font-semibold">
-                <span>You&apos;ll Receive:</span>
+              ./scripts/dev/start-dev-servers.sh                <span>You&apos;ll Receive:</span>
                 <span className="text-green-600">${netAmount.toFixed(2)}</span>
               </div>
             </div>

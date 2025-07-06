@@ -9,8 +9,6 @@ import { toast } from "sonner"
 import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
-import { DataTable } from "../../../../components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
 import { formatDistanceToNow } from "date-fns"
 import { Search, ArrowLeft } from "lucide-react"
 
@@ -65,9 +63,9 @@ export default function ApplicationHistoryPage() {
           id: app.applicationId || app.application_id,
           organizationName: app.organizationName || app.organization_name,
           businessName: app.businessName || app.organizationName || app.organization_name,
-          applicationType: app.requestType === "new_business_manager" ? "new_business" : "additional_business",
+          applicationType: (app.requestType === "new_business_manager" ? "new_business" : "additional_business") as "new_business" | "additional_business",
           accountsRequested: 1, // Default for now
-          status: app.status,
+          status: app.status as "fulfilled" | "rejected",
           teamName: "Team Alpha", // Default for now
           processedAt: app.createdAt || app.created_at,
           completedAt: app.fulfilledAt || app.rejectedAt || app.approved_at || app.rejected_at || app.fulfilled_at
@@ -102,80 +100,16 @@ export default function ApplicationHistoryPage() {
     return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
   }
 
-  const columns: ColumnDef<ApplicationHistory>[] = [
-    {
-      accessorKey: "organizationName",
-      header: "Organization",
-      size: 200,
-      cell: ({ row }) => (
-        <div>
-          <div className="font-medium">{row.original.organizationName}</div>
-          <div className="text-sm text-muted-foreground">{row.original.businessName}</div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "applicationType",
-      header: "Type",
-      size: 120,
-      cell: ({ row }) => (
-        <Badge
-          variant={row.original.applicationType === "new_business" ? "default" : "secondary"}
-          className="capitalize"
-        >
-          {row.original.applicationType === "new_business" ? "New" : "Additional"}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "accountsRequested",
-      header: "Accounts",
-      size: 100,
-      cell: ({ row }) => <div className="text-center">{row.original.accountsRequested}</div>,
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 120,
-      cell: ({ row }) => {
-        const status = row.getValue<string>("status")
-        const getStatusColor = (status: string) => {
-          switch (status) {
-            case "fulfilled":
-              return "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20"
-            case "rejected":
-              return "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20"
-            default:
-              return "bg-gray-100 text-gray-800 border-gray-200"
-          }
-        }
-        return (
-          <Badge className={`capitalize ${getStatusColor(status)}`}>
-            {status}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "teamName",
-      header: "Team",
-      size: 120,
-      cell: ({ row }) => (
-        <Badge variant="outline">
-          {row.original.teamName}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "processedAt",
-      header: "Processed",
-      size: 120,
-      cell: ({ row }) => {
-        const date = new Date(row.getValue<string>("processedAt"))
-        return formatDistanceToNow(date, { addSuffix: true })
-      },
-    },
-  ]
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "fulfilled":
+        return "bg-[#34D197]/10 text-[#34D197] border-[#34D197]/20"
+      case "rejected":
+        return "bg-[#F56565]/10 text-[#F56565] border-[#F56565]/20"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -213,10 +147,62 @@ export default function ApplicationHistoryPage() {
         </Button>
       </div>
       
-      <DataTable 
-        columns={columns} 
-        data={filteredApplications} 
-      />
+      <div className="border border-border rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-muted/50">
+            <tr>
+              <th className="text-left p-4 font-medium text-muted-foreground">Organization</th>
+              <th className="text-left p-4 font-medium text-muted-foreground">Type</th>
+              <th className="text-center p-4 font-medium text-muted-foreground">Accounts</th>
+              <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+              <th className="text-left p-4 font-medium text-muted-foreground">Team</th>
+              <th className="text-left p-4 font-medium text-muted-foreground">Processed</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredApplications.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-8 text-muted-foreground">
+                  No applications found.
+                </td>
+              </tr>
+            ) : (
+              filteredApplications.map((app) => (
+                <tr key={app.id} className="border-t border-border hover:bg-muted/30">
+                  <td className="p-4">
+                    <div>
+                      <div className="font-medium">{app.organizationName}</div>
+                      <div className="text-sm text-muted-foreground">{app.businessName}</div>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <Badge
+                      variant={app.applicationType === "new_business" ? "default" : "secondary"}
+                      className="capitalize"
+                    >
+                      {app.applicationType === "new_business" ? "New" : "Additional"}
+                    </Badge>
+                  </td>
+                  <td className="p-4 text-center">{app.accountsRequested}</td>
+                  <td className="p-4">
+                    <Badge className={`capitalize ${getStatusColor(app.status)}`}>
+                      {app.status}
+                    </Badge>
+                  </td>
+                  <td className="p-4">
+                    <Badge variant="outline">
+                      {app.teamName}
+                    </Badge>
+                  </td>
+                  <td className="p-4">
+                    {formatDistanceToNow(new Date(app.processedAt), { addSuffix: true })}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 } 
