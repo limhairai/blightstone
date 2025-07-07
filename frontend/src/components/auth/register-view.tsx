@@ -29,28 +29,20 @@ export function RegisterView() {
     e.preventDefault();
     setError("");
 
-    console.log('📝 Form submitted with data:', { name, email, password: '***', confirmPassword: '***', terms });
-
     const validation = validateRegistrationForm({ name, email, password, confirmPassword, terms });
 
     if (!validation.isValid) {
-      console.log('📝 Form validation failed:', validation.errors);
       showValidationErrors(validation.errors);
       return;
     }
 
-    console.log('📝 Form validation passed, starting registration...');
     setLoading(true);
-    
-    console.log('📝 Attempting registration with email:', email);
 
     try {
       const { data, error } = await signUp(email, password, {
         data: { full_name: name },
       });
       
-      console.log('📝 Registration result:', { data, error });
-
       if (error) {
         console.error('📝 Registration error:', error);
         // Error toast is handled by AuthContext, but set local error too
@@ -73,7 +65,6 @@ export function RegisterView() {
         
         if (isExistingUser) {
           // This is an existing user with confirmed email - redirect to login
-          console.log('📝 Existing user detected (email already confirmed), redirecting to login');
           toast.error("An account with this email already exists. Redirecting to login...", {
             duration: 3000
           });
@@ -84,7 +75,6 @@ export function RegisterView() {
         }
         
         // This is a new user - email confirmation is required
-        console.log('📝 New user created, email confirmation required');
         toast.success("Registration successful! Please check your email to confirm your account.", {
           duration: 10000
         });
@@ -93,14 +83,12 @@ export function RegisterView() {
         }, 1000);
       } else if (data?.user && data.session) {
         // User is immediately logged in (new user with auto-confirm enabled)
-        console.log('📝 User immediately logged in, redirecting to dashboard');
         toast.success("Registration successful! Redirecting to dashboard...");
         setTimeout(() => {
           router.push("/dashboard");
         }, 1000);
       } else {
         // Handle unexpected cases
-        console.log('📝 Unexpected registration state:', { user: data?.user, session: data?.session });
         setError("Registration failed. Please try again.");
         toast.error("Registration failed. Please try again.");
       }
@@ -116,7 +104,6 @@ export function RegisterView() {
   };
 
   if (loading) {
-    console.log('📝 Showing loading state...');
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center space-y-4">

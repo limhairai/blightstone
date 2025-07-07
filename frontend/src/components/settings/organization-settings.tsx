@@ -90,8 +90,7 @@ export function OrganizationSettings() {
     
     setRefreshing(true);
     try {
-      console.log('🔄 Manual refresh triggered for organization:', currentOrganizationId);
-      console.log('🔄 Current subscription plan before refresh:', subscriptionPlan?.id);
+      
       
       // Refresh all organization-related data
       await Promise.all([
@@ -103,11 +102,8 @@ export function OrganizationSettings() {
         mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`)
       ]);
       
-      console.log('✅ Cache invalidation completed');
-      
       // Small delay to allow data to refresh
       setTimeout(() => {
-        console.log('🔄 Current subscription plan after refresh:', subscriptionPlan?.id);
         toast.success('Subscription data refreshed!');
       }, 500);
       

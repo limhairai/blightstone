@@ -39,12 +39,8 @@ export function LoginView() {
       return
     }
     
-    console.log('🔐 Attempting login with email:', email);
-    
     try {
       const result = await signIn(email, password);
-      
-      console.log('🔐 Login result:', result);
 
       if (result.error) {
         console.error('🔐 Login error:', result.error);

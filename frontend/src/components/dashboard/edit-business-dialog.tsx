@@ -25,7 +25,7 @@ export function EditBusinessDialog({ business, open, onOpenChange, onSuccess }: 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // TODO: Implement business update logic
-    console.log('Update business:', formData)
+
     onSuccess?.()
     onOpenChange(false)
   }

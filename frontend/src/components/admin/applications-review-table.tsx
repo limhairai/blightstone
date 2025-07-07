@@ -151,35 +151,21 @@ export function ApplicationsReviewTable() {
   };
 
   const handleApproveApplication = async (applicationId: string) => {
-// console.log('🔧 DEBUG: handleApproveApplication called');
-// console.log('🔧 DEBUG: applicationId:', applicationId);
-
-// console.log('🔧 DEBUG: session:', session);
-    
     if (!session) {
-// console.log('🔧 DEBUG: No session found');
       return;
     }
 
     try {
       // Get current user ID from session directly
       const user = (session as any).user;
-// console.log('🔧 DEBUG: user from session:', user);
       
       if (!user?.id) {
-// console.log('🔧 DEBUG: No user ID found');
         throw new Error('No authenticated user found in session');
       }
-
-// console.log('🔧 DEBUG - Admin User ID:', user.id);
-// console.log('🔧 DEBUG - Session:', session);
       
       const requestBody = {
         adminUserId: user.id,
       };
-      
-// console.log('🔧 DEBUG - Request Body:', requestBody);
-// console.log('🔧 DEBUG - Request Body JSON:', JSON.stringify(requestBody));
 
       const response = await fetch(`/api/admin/applications/${applicationId}/approve`, {
         method: 'POST',
@@ -213,8 +199,6 @@ export function ApplicationsReviewTable() {
       if (!user?.id) {
         throw new Error('No authenticated user found in session');
       }
-
-// console.log('Debug - Admin User ID:', user.id);
 
       const response = await fetch(`/api/admin/applications/${applicationId}/reject`, {
         method: 'POST',

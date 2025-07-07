@@ -33,12 +33,7 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
         setLoading(true);
         setError(null);
 
-        // Debug: Log current user info
-        console.log('AdminAccessCheck: Checking admin status for user:', {
-          userId: user?.id,
-          email: user?.email,
-          hasSession: !!session
-        });
+
 
         // Use API endpoint only to avoid RLS recursion issues
         const response = await fetch('/api/auth/admin-check', {
@@ -48,14 +43,8 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
           },
         });
 
-        console.log('AdminAccessCheck: API check response:', {
-          status: response.status,
-          ok: response.ok
-        });
-
         if (response.ok) {
           const data = await response.json();
-          console.log('AdminAccessCheck: API check data:', data);
           setIsAdmin(data.isAdmin || false);
         } else {
           const errorData = await response.text();

@@ -17,7 +17,7 @@ export function useCacheInvalidation() {
       if (event.key === `cache_invalidate_${currentOrganizationId}`) {
         const data = event.newValue ? JSON.parse(event.newValue) : null
         if (data && data.type === 'subscription') {
-          console.log('🔄 Cache invalidation detected, refreshing subscription data...')
+      
           invalidateSubscriptionCaches(currentOrganizationId)
         }
       }
@@ -27,7 +27,7 @@ export function useCacheInvalidation() {
     const handleCacheInvalidation = (event: CustomEvent) => {
       const { organizationId, type } = event.detail
       if (organizationId === currentOrganizationId && type === 'subscription') {
-        console.log('🔄 Custom cache invalidation detected, refreshing subscription data...')
+    
         invalidateSubscriptionCaches(currentOrganizationId)
       }
     }
@@ -36,7 +36,7 @@ export function useCacheInvalidation() {
     const handleWindowFocus = () => {
       // Small delay to allow webhooks to process
       setTimeout(() => {
-        console.log('🔄 Window focused, refreshing subscription data...')
+    
         invalidateSubscriptionCaches(currentOrganizationId)
       }, 1000)
     }
@@ -81,7 +81,7 @@ export async function invalidateSubscriptionCaches(organizationId: string) {
       mutate(`org-${organizationId}`, undefined, { revalidate: true }),
     ])
     
-    console.log('✅ SWR caches invalidated successfully')
+
     return true
   } catch (error) {
     console.error('Failed to invalidate SWR caches:', error)
@@ -108,5 +108,5 @@ export function triggerCacheInvalidation(organizationId: string, type: 'subscrip
     localStorage.removeItem(`cache_invalidate_${organizationId}`)
   }, 5000)
 
-  console.log(`🔄 Cache invalidation triggered for org ${organizationId}, type: ${type}`)
+
 } 

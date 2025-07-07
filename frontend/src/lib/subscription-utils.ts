@@ -108,7 +108,7 @@ export async function refreshAfterSubscriptionChange(organizationId: string) {
   if (!organizationId) return false
 
   try {
-    console.log('🔄 Subscription changed, reloading page...')
+
     
     // Simple page reload to ensure fresh data
     setTimeout(() => {

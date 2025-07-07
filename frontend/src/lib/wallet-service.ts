@@ -94,7 +94,7 @@ export class WalletService {
             type: 'wallet'
           })
         })
-        console.log(`✅ Wallet cache invalidated for org: ${request.organizationId}`)
+    
       } catch (cacheError) {
         console.error('Failed to invalidate wallet cache:', cacheError)
         // Don't fail the topup if cache invalidation fails
@@ -141,7 +141,7 @@ export class WalletService {
     }
 
     // Create wallet if it doesn't exist
-    console.log('Creating wallet for organization:', organizationId)
+  
     const { data: newWallet, error: createError } = await supabase
       .from('wallets')
       .insert({

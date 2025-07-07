@@ -51,13 +51,7 @@ export function AppShell({ children }: AppShellProps) {
     progressData
   } = useAdvancedOnboarding()
 
-  // Debug logging for setup widget state (AFTER hook call)
-  console.log('AppShell Debug:', {
-    setupWidgetState,
-    shouldShowOnboarding,
-    progressData: progressData ? { completionPercentage: progressData.completionPercentage } : null,
-    shouldRenderWidget: progressData && progressData.completionPercentage < 100
-  });
+
 
   // SIMPLIFIED LOGIC: Just manage widget state, don't overthink it
   useEffect(() => {

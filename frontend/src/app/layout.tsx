@@ -6,7 +6,7 @@ import { Inter } from 'next/font/google';
 import "../styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
-import { EnvIndicator } from "../components/debug/env-indicator";
+
 import { DynamicToaster } from "../components/ui/dynamic-toaster";
 
 // Configure Inter font with minimal configuration to reduce loading issues
@@ -51,7 +51,6 @@ export default function RootLayout({
       <body className={`${inter.className} ${inter.variable}`}>
         <SimpleProviders>
           {children}
-          <EnvIndicator />
           <DynamicToaster />
         </SimpleProviders>
       </body>

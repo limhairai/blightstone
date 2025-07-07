@@ -74,14 +74,7 @@ export function Topbar({
   const { progressData } = useAdvancedOnboarding();
   const actualSetupPercentage = progressData?.completionPercentage || 0;
 
-  // Debug logging
-  console.log('Topbar Debug:', {
-    showEmptyStateElements,
-    setupWidgetState,
-    actualSetupPercentage,
-    progressData,
-    shouldShowButton: showEmptyStateElements && setupWidgetState === "closed" && actualSetupPercentage < 100
-  });
+
 
   // Avoid hydration mismatch
   useEffect(() => {
@@ -125,7 +118,6 @@ export function Topbar({
             size="sm"
             className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
             onClick={() => {
-              console.log('Setup guide button clicked, opening widget');
               onSetupWidgetStateChange?.("expanded");
             }}
           >
