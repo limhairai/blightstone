@@ -108,7 +108,7 @@ class SubscriptionService:
                 .eq("status", "active")
                 .in_("asset_id", 
                     self.supabase.table("asset")
-                    .select("id")
+                    .select("asset_id")
                     .eq("type", "business_manager")
                     .execute().data
                 )
@@ -123,7 +123,7 @@ class SubscriptionService:
                 .eq("status", "active")
                 .in_("asset_id",
                     self.supabase.table("asset")
-                    .select("id")
+                    .select("asset_id")
                     .eq("type", "ad_account")
                     .execute().data
                 )
