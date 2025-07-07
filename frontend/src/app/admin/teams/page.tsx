@@ -166,7 +166,7 @@ export default function TeamsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTeams.map((team) => (
+              filteredTeams.map((team: any) => (
                 <TableRow key={team.id} className="border-border hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => handleTeamClick(team)}>

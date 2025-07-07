@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
         amount: txn.amount_cents / 100, // Convert cents to dollars
         currency: "USD",
         status: txn.status,
-        organizationName: txn.organizations?.name || 'Unknown Organization',
+        organizationName: txn.organizations?.[0]?.name || 'Unknown Organization',
         description: txn.description || `${txn.type} transaction`,
         createdAt: txn.created_at,
         paymentMethod: paymentMethod,
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
         amount: bt.requested_amount, // Already in dollars, don't divide by 100
         currency: "USD",
         status: bt.status,
-        organizationName: bt.organizations?.name || 'Unknown Organization',
+        organizationName: bt.organizations?.[0]?.name || 'Unknown Organization',
         description: 'Bank Transfer',
         createdAt: bt.created_at,
         paymentMethod: 'Bank Transfer',

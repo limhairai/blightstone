@@ -347,7 +347,7 @@ export default function TopupRequestsPage() {
       cell: ({ row }) => {
         const date = new Date(row.getValue<string>("created_at"))
         const user = row.original.requested_by
-        const orgName = row.original.organization?.name || 'Organization'
+        const orgName = (row.original as any).organization?.name || 'Organization'
         
         return (
           <div className="text-xs">
@@ -589,8 +589,8 @@ export default function TopupRequestsPage() {
                         <div className="text-muted-foreground truncate max-w-[100px]" title={`by ${request.requested_by || 'Unknown User'}`}>
                           by {request.requested_by || 'Unknown User'}
                         </div>
-                        <div className="text-muted-foreground truncate max-w-[100px]" title={request.organization?.name || 'Organization'}>
-                          {request.organization?.name || 'Organization'}
+                        <div className="text-muted-foreground truncate max-w-[100px]" title={(request as any).organization?.name || 'Organization'}>
+                          {(request as any).organization?.name || 'Organization'}
                         </div>
                       </div>
                     </TableCell>
@@ -725,7 +725,7 @@ export default function TopupRequestsPage() {
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground mb-2">Organization</div>
-                  <div className="text-sm text-foreground">{selectedRequest.organization?.name || 'Organization'}</div>
+                  <div className="text-sm text-foreground">{(selectedRequest as any).organization?.name || 'Organization'}</div>
                 </div>
               </div>
 

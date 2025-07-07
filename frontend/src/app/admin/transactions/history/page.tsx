@@ -84,7 +84,7 @@ export default function TransactionHistoryPage() {
 
   const stats = useMemo(() => ({
     total: transactions.length,
-    topup: transactions.filter(t => t.type === "topup" || t.type === "topup_deduction").length,
+    topup: transactions.filter(t => t.type === "topup").length,
     spend: transactions.filter(t => t.type === "spend").length,
     refund: transactions.filter(t => t.type === "refund").length,
     fee: transactions.filter(t => t.type === "fee").length,

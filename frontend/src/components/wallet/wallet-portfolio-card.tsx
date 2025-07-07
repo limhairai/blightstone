@@ -48,7 +48,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
     const cutoffDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
     
     // Filter transactions within the time period
-    const periodTransactions = transactions.filter(tx => {
+    const periodTransactions = transactions.filter((tx: any) => {
       const txDate = new Date(tx.created_at);
       return txDate >= cutoffDate;
     });
@@ -58,7 +58,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
     }
     
     // Calculate net change from transactions in period
-    const netChange = periodTransactions.reduce((sum, tx) => {
+    const netChange = periodTransactions.reduce((sum: any, tx: any) => {
       const amount = tx.amount_cents / 100; // Convert to dollars
       return sum + amount; // Positive = money in, negative = money out
     }, 0);
@@ -110,13 +110,13 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
     // Calculate actual balance at each point based on transaction history
     timePoints.forEach((point, i) => {
       // For each point, calculate balance by working backwards from current balance
-      const transactionsAfterPoint = transactions.filter(tx => {
+      const transactionsAfterPoint = transactions.filter((tx: any) => {
         const txDate = new Date(tx.created_at);
         return txDate > point.pointDate;
       });
       
       // Current balance minus all transactions that happened after this point
-      const balanceAtPoint = transactionsAfterPoint.reduce((balance, tx) => {
+      const balanceAtPoint = transactionsAfterPoint.reduce((balance: any, tx: any) => {
         return balance - (tx.amount_cents / 100); // Subtract future transactions
       }, totalBalance);
       

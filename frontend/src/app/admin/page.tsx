@@ -57,9 +57,9 @@ export default function AdminDashboard() {
 
           // Add recent business applications
           applicationsList
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 3)
-            .forEach(application => {
+            .forEach((application: any) => {
               activities.push({
                 type: "application",
                 message: `New application for ${application.websiteUrl}`,
