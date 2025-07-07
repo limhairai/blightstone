@@ -11,6 +11,10 @@ const supabaseAdmin = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🐛 DEBUG ENDPOINT CALLED - This should appear in Render logs!')
+    console.log('🐛 Timestamp:', new Date().toISOString())
+    console.log('🐛 Environment:', process.env.NODE_ENV)
+    
     // Use the same cookie pattern as other working endpoints
     const cookieStore = cookies()
     const supabase = createServerClient(
@@ -29,6 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Get the current user from session
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('🐛 User from session:', { hasUser: !!user, userId: user?.id, userError: userError?.message })
 
     const debugInfo: any = {
       timestamp: new Date().toISOString(),
@@ -44,6 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (user) {
+      console.log('🐛 Checking profile with admin client...')
       // Check profile in database using admin client for debugging
       const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
@@ -51,12 +57,15 @@ export async function GET(request: NextRequest) {
         .eq('profile_id', user.id)
         .single()
 
+      console.log('🐛 Profile from admin client:', { profile, profileError: profileError?.message })
+
       debugInfo.profile = {
         found: !!profile,
         data: profile || null,
         error: profileError?.message || null
       }
 
+      console.log('🐛 Checking profile with regular client...')
       // Also check with regular client
       const { data: profileRegular, error: profileRegularError } = await supabase
         .from('profiles')
@@ -64,15 +73,20 @@ export async function GET(request: NextRequest) {
         .eq('profile_id', user.id)
         .single()
 
+      console.log('🐛 Profile from regular client:', { profileRegular, profileRegularError: profileRegularError?.message })
+
       debugInfo.profileRegularClient = {
         found: !!profileRegular,
         data: profileRegular || null,
         error: profileRegularError?.message || null
       }
 
+      console.log('🐛 Testing is_admin function...')
       // Test the is_admin() function to avoid RLS recursion
       const { data: adminCheck, error: adminError } = await supabase
         .rpc('is_admin', { user_id: user.id })
+
+      console.log('🐛 is_admin function result:', { adminCheck, adminError: adminError?.message })
 
       debugInfo.isAdminFunction = {
         result: adminCheck,
@@ -80,9 +94,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log('🐛 Final debug info:', JSON.stringify(debugInfo, null, 2))
     return NextResponse.json(debugInfo)
 
   } catch (error) {
+    console.error('🐛 DEBUG ENDPOINT ERROR:', error)
     return NextResponse.json({
       error: 'Debug endpoint error',
       message: error instanceof Error ? error.message : 'Unknown error',
