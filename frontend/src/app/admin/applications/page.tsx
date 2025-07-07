@@ -121,7 +121,14 @@ export default function AdminApplicationsPage() {
 
       // Show success and immediately refresh the data
       toast.success('Application approved successfully');
-      await mutate(); // Force immediate refresh
+      
+      // Comprehensive cache invalidation for immediate UI updates
+      await Promise.all([
+        mutate(), // Refresh admin applications
+        mutate('/api/admin/applications'),
+        mutate('business-managers'),
+        mutate('/api/business-managers'),
+      ]);
 
     } catch (error) {
       console.error('Error approving application:', error);
@@ -156,7 +163,14 @@ export default function AdminApplicationsPage() {
 
       // Show success and immediately refresh the data
       toast.success('Application rejected successfully');
-      await mutate(); // Force immediate refresh
+      
+      // Comprehensive cache invalidation for immediate UI updates
+      await Promise.all([
+        mutate(), // Refresh admin applications
+        mutate('/api/admin/applications'),
+        mutate('business-managers'),
+        mutate('/api/business-managers'),
+      ]);
 
     } catch (error) {
       console.error('Error rejecting application:', error);
@@ -206,19 +220,22 @@ export default function AdminApplicationsPage() {
     setDialogOpen(true);
   };
 
-  const handleDialogSuccess = () => {
+  const handleDialogSuccess = async () => {
     // Show success message
     toast.success('Application fulfilled successfully');
     
-    // Force immediate refresh with cache bypass
-    mutate(undefined, { revalidate: true });
+    // Comprehensive cache invalidation for immediate UI updates
+    await Promise.all([
+      mutate(), // Refresh admin applications
+      mutate('/api/admin/applications'),
+      mutate('business-managers'),
+      mutate('/api/business-managers'),
+      mutate('ad-accounts'),
+      mutate('/api/ad-accounts'),
+    ]);
+    
     setSelectedApplication(null);
     setDialogOpen(false);
-    
-    // Additional refresh after a short delay to ensure consistency
-    setTimeout(() => {
-      mutate(undefined, { revalidate: true });
-    }, 1000);
   };
 
   const getStatusConfig = (status: string) => {
@@ -489,7 +506,7 @@ export default function AdminApplicationsPage() {
             <AlertDialogAction 
               onClick={confirmApprove}
               disabled={processingId === applicationToApprove?.applicationId}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
             >
               {processingId === applicationToApprove?.applicationId ? (
                 <>

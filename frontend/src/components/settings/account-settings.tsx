@@ -156,7 +156,7 @@ export function AccountSettings() {
           <div className="flex items-center gap-4">
             <Avatar className="h-20 w-20">
               <AvatarImage src={profileData.avatar_url || ""} alt="Profile" />
-              <AvatarFallback className="text-lg bg-gradient-to-br from-[#b4a0ff] to-[#ffb4a0] text-white">
+                              <AvatarFallback className="text-lg bg-gradient-to-br from-[#b4a0ff] to-[#ffb4a0] text-white">
                 {getInitials(profileData.name || formData.email)}
               </AvatarFallback>
             </Avatar>

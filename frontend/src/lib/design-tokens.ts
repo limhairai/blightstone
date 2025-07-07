@@ -144,7 +144,7 @@ export const gradientTokens = {
   
   // Avatar gradient for profile pictures and business logos
   // Single gradient that works well in both light and dark modes
-  avatar: "bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 text-gray-800 dark:text-white",
+      avatar: "bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 text-white dark:text-white",
   
   // Text gradient for special text elements
   text: "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent",

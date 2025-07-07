@@ -114,7 +114,7 @@ export function ApprovalDialog({
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} className="bg-[#b19cd9] hover:bg-[#9f84ca] text-white">
+          <Button onClick={handleSubmit} className="bg-[#b19cd9] hover:bg-[#9f84ca] text-black">
             <CheckCircle className="mr-2 h-4 w-4" /> Approve Request
           </Button>
         </DialogFooter>

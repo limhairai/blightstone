@@ -177,7 +177,7 @@ export function AdminView() {
                     >
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-black text-xs font-semibold">
+                          <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-white text-xs font-semibold">
                             {org.name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

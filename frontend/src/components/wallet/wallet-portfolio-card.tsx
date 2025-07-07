@@ -107,21 +107,28 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       }
     })
     
-    // Calculate actual balance at each point based on transaction history
-    timePoints.forEach((point, i) => {
-      // For each point, calculate balance by working backwards from current balance
-      const transactionsAfterPoint = transactions.filter((tx: any) => {
-        const txDate = new Date(tx.created_at);
-        return txDate > point.pointDate;
+    // If we have meaningful transaction history, calculate historical balance
+    if (transactions.length > 0) {
+      timePoints.forEach((point, i) => {
+        // For each point, calculate balance by working backwards from current balance
+        const transactionsAfterPoint = transactions.filter((tx: any) => {
+          const txDate = new Date(tx.created_at);
+          return txDate > point.pointDate;
+        });
+        
+        // Current balance minus all transactions that happened after this point
+        const balanceAtPoint = transactionsAfterPoint.reduce((balance: any, tx: any) => {
+          return balance - (tx.amount_cents / 100); // Subtract future transactions
+        }, totalBalance);
+        
+        point.value = Math.max(0, balanceAtPoint); // Ensure non-negative
       });
-      
-      // Current balance minus all transactions that happened after this point
-      const balanceAtPoint = transactionsAfterPoint.reduce((balance: any, tx: any) => {
-        return balance - (tx.amount_cents / 100); // Subtract future transactions
-      }, totalBalance);
-      
-      point.value = Math.max(0, balanceAtPoint); // Ensure non-negative
-    });
+    } else {
+      // For new accounts with no transaction history, show flat line at current balance
+      timePoints.forEach((point, i) => {
+        point.value = totalBalance;
+      });
+    }
     
     return timePoints
   }, [totalBalance, timeFilter, transactions])
@@ -241,8 +248,11 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                 <path
                   d={`M ${balanceData
                     .map(
-                      (point, i) =>
-                        `${(i / (balanceData.length - 1)) * 100},${100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}`,
+                      (point, i) => {
+                        const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
+                        const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 80 : 50; // Default to middle if no value
+                        return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                      }
                     )
                     .join(" L ")}`}
                   fill="none"
@@ -255,8 +265,11 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                 <path
                   d={`M ${balanceData
                     .map(
-                      (point, i) =>
-                        `${(i / (balanceData.length - 1)) * 100},${100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}`,
+                      (point, i) => {
+                        const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
+                        const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 80 : 50; // Default to middle if no value
+                        return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                      }
                     )
                     .join(" L ")} L 100,100 L 0,100 Z`}
                   fill="url(#balanceFill)"
@@ -265,19 +278,23 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
             )}
 
             {/* Invisible hover areas */}
-            {balanceData.map((point, i) => (
-              <circle
-                key={`hover-${i}`}
-                cx={(i / (balanceData.length - 1)) * 100}
-                cy={100 - (point.value / Math.max(...balanceData.map((p) => p.value))) * 80}
-                r="3"
-                fill="transparent"
-                vectorEffect="non-scaling-stroke"
-                className="cursor-pointer"
-                onMouseEnter={() => setHoveredIndex(i)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              />
-            ))}
+            {balanceData.map((point, i) => {
+              const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
+              const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 80 : 50; // Default to middle if no value
+              return (
+                <circle
+                  key={`hover-${i}`}
+                  cx={(i / (balanceData.length - 1)) * 100}
+                  cy={yPos}
+                  r="3"
+                  fill="transparent"
+                  vectorEffect="non-scaling-stroke"
+                  className="cursor-pointer"
+                  onMouseEnter={() => setHoveredIndex(i)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                />
+              );
+            })}
           </svg>
 
           {/* Hover dot - positioned outside SVG to maintain circular shape */}
@@ -286,7 +303,10 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
               className="absolute w-3 h-3 rounded-full bg-primary border-2 border-background pointer-events-none z-10 transition-all duration-200"
               style={{
                 left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
-                top: `${100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}%`,
+                top: `${(() => {
+                  const maxValue = Math.max(...balanceData.map((p) => p.value), 1);
+                  return maxValue > 0 ? 100 - (balanceData[hoveredIndex].value / maxValue) * 80 : 50;
+                })()}%`,
                 transform: "translate(-50%, -50%)",
               }}
             />
@@ -298,7 +318,10 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
               className="absolute bg-popover border border-border rounded-md px-2 py-1 text-xs shadow-lg pointer-events-none z-20"
               style={{
                 left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
-                top: `${100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}%`,
+                top: `${(() => {
+                  const maxValue = Math.max(...balanceData.map((p) => p.value), 1);
+                  return maxValue > 0 ? 100 - (balanceData[hoveredIndex].value / maxValue) * 80 : 50;
+                })()}%`,
                 transform: "translate(-50%, -100%)",
                 marginTop: "-8px",
               }}

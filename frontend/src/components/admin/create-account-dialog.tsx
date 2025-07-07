@@ -112,8 +112,8 @@ export function CreateAccountDialog({
         {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
         <DialogContent className="sm:max-w-md bg-card border-border">
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="w-12 h-12 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-3">
-              <CheckCircle className="w-6 h-6 text-white" />
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-8 h-8 text-foreground" />
             </div>
             <h3 className="text-base font-medium text-foreground mb-1">Account Created</h3>
             <p className="text-sm text-muted-foreground">
@@ -140,7 +140,7 @@ export function CreateAccountDialog({
           <div className="bg-muted/50 p-4 rounded-lg border">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-white" />
+                <Building2 className="h-5 w-5 text-black" />
               </div>
               <div>
                 <h3 className="font-semibold text-foreground">{business.name}</h3>

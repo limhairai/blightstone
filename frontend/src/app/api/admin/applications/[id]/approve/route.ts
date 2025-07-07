@@ -85,6 +85,19 @@ export async function POST(
           type: 'business-manager'
         })
       })
+      
+      // Also invalidate transactions cache since approvals can affect workflow
+      await fetch(`${baseUrl}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          organizationId: application.organization_id,
+          type: 'wallet'
+        })
+      })
       console.log(`✅ Business manager cache invalidated for org: ${application.organization_id}`)
     } catch (cacheError) {
       console.error('Failed to invalidate business manager cache:', cacheError)

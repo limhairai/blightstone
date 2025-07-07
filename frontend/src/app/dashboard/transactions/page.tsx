@@ -11,6 +11,7 @@ import {
   SearchIcon,
   SlidersHorizontal,
   Receipt,
+  RefreshCw,
 } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 import { Card, CardHeader } from "../../../components/ui/card"
@@ -25,6 +26,7 @@ import { formatCurrency } from "../../../utils/format"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useAuth } from "@/contexts/AuthContext"
 import { useTransactions } from "@/lib/swr-config"
+import { mutate } from 'swr'
 
 // Transaction interface matching our database structure
 interface Transaction {
@@ -84,7 +86,7 @@ export default function TransactionsPage() {
   }, [])
 
   // Use optimized transactions hook with filters
-  const { data: transactionsData, error, isLoading } = useTransactions({
+  const { data: transactionsData, error, isLoading, mutate: mutateTransactions } = useTransactions({
     type: activeTab !== 'all' ? activeTab : undefined,
     search: debouncedSearchQuery || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -93,6 +95,16 @@ export default function TransactionsPage() {
   })
   
   const allTransactions = transactionsData?.transactions || []
+
+  // Manual refresh function for transactions
+  const handleRefreshTransactions = async () => {
+    await Promise.all([
+      mutateTransactions(),
+      mutate('transactions'),
+      mutate('/api/transactions'),
+      mutate(`/api/organizations?id=${currentOrganizationId}`), // Refresh org data for wallet balance
+    ])
+  }
 
   // Extract businesses from transactions for filter options
   const businesses: Business[] = useMemo(() => {
@@ -540,10 +552,22 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        <Button variant="outline" className="h-9 bg-transparent" onClick={exportToCSV}>
-          <DownloadIcon className="mr-2 h-4 w-4" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleRefreshTransactions}
+            disabled={isLoading}
+            className="h-9 bg-transparent"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Button variant="outline" className="h-9 bg-transparent" onClick={exportToCSV}>
+            <DownloadIcon className="mr-2 h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Compact Metrics */}

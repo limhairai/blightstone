@@ -156,15 +156,11 @@ export function DashboardView() {
       }
     })
     
-    // For new accounts: show zero until today, then current balance
-    // This is HONEST - no fake historical buildup
+    // For new accounts with no transaction history, show flat line at current balance
     if (transactionsData.length <= 5) {
       timePoints.forEach((point, i) => {
-        // Only show current balance at the very last point (today)
-        if (i === dataPoints - 1) {
-          point.value = realBalance
-        }
-        // All other points remain zero (honest representation)
+        // Show current balance across all points for smooth line
+        point.value = realBalance
       })
     } else {
       // For accounts with transaction history, we'd build actual historical balance
@@ -690,7 +686,14 @@ export function DashboardView() {
                       variant="ghost" 
                       size="sm" 
                       className="h-6 w-6 p-0"
-                      onClick={() => mutate(['/api/transactions', session?.access_token])}
+                      onClick={async () => {
+                        await Promise.all([
+                          mutate(['/api/transactions', session?.access_token]),
+                          mutate('transactions'),
+                          mutate('/api/transactions'),
+                          mutate(`/api/organizations?id=${currentOrganizationId}`), // Refresh org data for wallet balance
+                        ])
+                      }}
                       disabled={isTransLoading}
                       title="Refresh transactions"
                     >

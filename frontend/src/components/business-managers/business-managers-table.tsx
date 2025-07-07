@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { BusinessManagersViewToggle } from "@/components/business-managers/business-managers-view-toggle"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/utils/format"
-import { Search, ArrowRight, Building2, Copy, MoreHorizontal, Trash2, Loader2 } from "lucide-react"
+import { Search, ArrowRight, Building2, Copy, MoreHorizontal, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessManager } from "@/types/business"
 import {
@@ -20,16 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+
 import { toast } from "sonner"
 
 interface BusinessManagersTableProps {
@@ -43,9 +34,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("activity")
   const [view, setView] = useState<"grid" | "list">("list")
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [managerToDelete, setManagerToDelete] = useState<BusinessManager | null>(null)
-  const [actionLoading, setActionLoading] = useState(false)
+
   const router = useRouter()
 
   const filteredManagers = useMemo(() => {
@@ -106,34 +95,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
     toast.success("Business Manager ID copied to clipboard!")
   }
 
-  const handleDeleteManager = async () => {
-    if (!managerToDelete) return
-    setActionLoading(true)
-    try {
-      const response = await fetch(`/api/business-managers?id=${managerToDelete.id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete Business Manager');
-      }
-      setDeleteDialogOpen(false)
-      setManagerToDelete(null)
-      onRefresh()
-      toast.success("Business Manager deleted successfully!")
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An error occurred'
-      toast.error("Deletion Failed", { description: errorMessage });
-    } finally {
-      setActionLoading(false)
-    }
-  }
 
-  const openDeleteDialog = (manager: BusinessManager, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setManagerToDelete(manager)
-    setDeleteDialogOpen(true)
-  }
 
   return (
     <div className="space-y-4">
@@ -248,11 +210,6 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                             Copy BM ID
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={(e) => openDeleteDialog(manager, e)}>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -364,11 +321,6 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                             Copy BM ID
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={(e) => openDeleteDialog(manager, e)}>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                     <ArrowRight className="h-5 w-5 text-muted-foreground" />
@@ -398,27 +350,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
         Showing {filteredManagers.length} of {businessManagers.length} business managers
       </div>
 
-      {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will delete the Business Manager record. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteManager}
-              disabled={actionLoading}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {actionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
     </div>
   )
 } 

@@ -854,7 +854,7 @@ export default function TopupRequestsPage() {
             <Button
               onClick={() => selectedRequest && handleProcessRequest(selectedRequest, processingStatus)}
               disabled={isProcessing}
-              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white hover:opacity-90 border-0"
+                              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90 border-0"
             >
               {isProcessing ? (
                 <>

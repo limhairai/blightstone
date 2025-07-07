@@ -121,12 +121,14 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
   const renderContent = () => {
     if (showSuccess) {
         return (
-            <div className="flex flex-col items-center justify-center py-6 text-center">
-                <div className="w-12 h-12 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-3">
-                <Check className="w-6 h-6 text-white" />
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+                    <Check className="w-8 h-8 text-foreground" />
                 </div>
-                <h3 className="text-base font-medium text-foreground mb-1">Request Submitted</h3>
-                <p className="text-sm text-muted-foreground">Your ad account request has been submitted for review.</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">Request Submitted</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                    Your ad account request has been submitted for review. You'll be notified once it's processed.
+                </p>
             </div>
         )
     }
@@ -232,7 +234,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
                     <Button 
                       type="submit" 
                       disabled={isLoading || hasReachedAccountLimit}
-                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white hover:opacity-90 disabled:opacity-50"
+                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90 disabled:opacity-50"
                     >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Request Account

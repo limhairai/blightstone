@@ -129,6 +129,7 @@ export function ApplicationAssetBindingDialog({
           throw new Error("Failed to fetch available ad accounts")
         }
         const adData = await adResponse.json()
+        console.log('API response for additional accounts:', adData);
         
         let allAssets = Array.isArray(adData) ? adData.map(asset => ({
           ...asset,
@@ -137,6 +138,8 @@ export function ApplicationAssetBindingDialog({
           asset_id: asset.asset_id || asset.id,
           metadata: asset.metadata
         })) : []
+        
+        console.log('Transformed assets for additional accounts:', allAssets);
         
         // For specific BM requests, we also need to fetch the target BM
         if (mode === 'additional-accounts-specific' && targetBmId) {
@@ -201,7 +204,7 @@ export function ApplicationAssetBindingDialog({
       return
     }
 
-    if (!selectedBusinessManager) {
+    if (!selectedBusinessManager && mode !== 'additional-accounts-specific') {
       setError("Please select a Business Manager to proceed.")
       return
     }
@@ -227,7 +230,7 @@ export function ApplicationAssetBindingDialog({
         payload.selected_ad_accounts = selectedAdAccounts
       } else {
         // Additional accounts request
-        payload.target_bm_id = selectedBusinessManager
+        payload.target_bm_id = selectedBusinessManager || targetBmId
         payload.selected_ad_accounts = selectedAdAccounts
         endpoint = '/api/admin/fulfill-additional-accounts'
       }
@@ -302,6 +305,15 @@ export function ApplicationAssetBindingDialog({
   }, [assets, searchTerm, mode, targetBmId, existingBMs])
 
   const adAccounts = useMemo(() => {
+    // For additional-accounts-specific mode, the API already filtered by BM
+    // So we just need to return all ad accounts (they're already filtered)
+    if (mode === 'additional-accounts-specific') {
+      const accounts = assets.filter(asset => asset.type === 'ad_account');
+      console.log('Additional accounts specific mode - found accounts:', accounts.length, accounts);
+      return accounts;
+    }
+    
+    // For other modes, we need a selected business manager
     if (!selectedBusinessManager) return []
     
     let selectedBM
@@ -317,13 +329,6 @@ export function ApplicationAssetBindingDialog({
     
     if (!selectedBM) {
       return []
-    }
-
-    // For additional-accounts-specific mode, the API already filtered by BM
-    // So we just need to return all ad accounts (they're already filtered)
-    if (mode === 'additional-accounts-specific') {
-      const accounts = assets.filter(asset => asset.type === 'ad_account');
-      return accounts;
     }
     
     // For other modes, apply the original filtering logic
@@ -509,7 +514,7 @@ export function ApplicationAssetBindingDialog({
               )}
 
               {/* Ad Accounts Selection */}
-              {selectedBusinessManager && (
+              {(selectedBusinessManager || mode === 'additional-accounts-specific') && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-medium">
@@ -588,7 +593,7 @@ export function ApplicationAssetBindingDialog({
               )}
 
               {/* Compact Summary */}
-              {selectedBusinessManager && selectedAdAccounts.length > 0 && (
+              {(selectedBusinessManager || mode === 'additional-accounts-specific') && selectedAdAccounts.length > 0 && (
                 <div className="border border-border rounded-md p-3">
                   <div className="text-sm text-foreground">
                     <div className="font-medium">Ready to assign:</div>
@@ -608,7 +613,7 @@ export function ApplicationAssetBindingDialog({
           </Button>
           <Button 
             onClick={handleSubmit} 
-            disabled={loading || loadingAssets || !selectedBusinessManager || selectedAdAccounts.length === 0}
+            disabled={loading || loadingAssets || (mode !== 'additional-accounts-specific' && !selectedBusinessManager) || selectedAdAccounts.length === 0}
             className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:from-[#b4a0ff] to-[#ffb4a0] text-black border-0"
             size="sm"
           >

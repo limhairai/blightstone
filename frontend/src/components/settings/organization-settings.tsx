@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "../ui/dialog"
 import { toast } from "sonner"
-import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings, RefreshCw } from 'lucide-react'
+import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, Settings } from 'lucide-react'
 
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
@@ -479,17 +479,7 @@ export function OrganizationSettings() {
                   {currentPlan.id === 'free' ? 'Choose Plan' : 'Upgrade Plan'}
                 </Button>
                 
-                {/* Manual Refresh Button for Testing */}
-                <Button
-                  onClick={handleManualRefresh}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-border text-foreground hover:bg-accent"
-                  disabled={refreshing}
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                  {refreshing ? 'Refreshing...' : 'Refresh Subscription'}
-                </Button>
+
 
                 {currentPlan.id !== 'free' && (
                   <div className="grid grid-cols-2 gap-2">

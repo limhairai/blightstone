@@ -17,8 +17,9 @@ import { CompactFilters } from "@/components/dashboard/compact-filters"
 import { CreateAdAccountDialog } from "@/components/accounts/create-ad-account-dialog"
 import { TopUpDialog } from "@/components/accounts/top-up-dialog"
 import { BalanceResetDialog } from "@/components/accounts/balance-reset-dialog"
+import { TransferBalanceDialog } from "@/components/accounts/transfer-balance-dialog"
 import { formatCurrency } from "@/utils/format"
-import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Plus } from "lucide-react"
+import { MoreHorizontal, ArrowDownLeft, ArrowRightLeft, Wallet, Copy, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Loader2, AlertCircle, Target } from "lucide-react"
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/states"
@@ -42,6 +43,8 @@ export function CompactAccountsTable({
   const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [resetBalanceAccount, setResetBalanceAccount] = useState<any>(null)
+  const [transferBalanceAccount, setTransferBalanceAccount] = useState<any>(null)
 
   // Use optimized hooks instead of direct SWR calls
   const { data: accounts, error, isLoading, mutate } = useAdAccounts(bmIdFilter);
@@ -226,14 +229,7 @@ export function CompactAccountsTable({
               </Button>
             }
           />
-          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent bg-transparent">
-            <Pause className="h-4 w-4 mr-1" />
-            Pause
-          </Button>
-          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent bg-transparent">
-            <Play className="h-4 w-4 mr-1" />
-            Resume
-          </Button>
+
         </div>
       )}
 
@@ -382,30 +378,6 @@ export function CompactAccountsTable({
                       className="text-popover-foreground hover:bg-accent"
                       onClick={(e) => {
                         e.stopPropagation()
-                        // Handle view details
-                      }}
-                    >
-                      <Eye className="h-3 w-3 mr-2" />
-                      View Details
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        window.open(
-                          `https://business.facebook.com/adsmanager/manage/accounts?act=${account.adAccount}`,
-                          "_blank",
-                        )
-                      }}
-                    >
-                      <ArrowUpRight className="h-3 w-3 mr-2" />
-                      Open in Facebook
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-border" />
-                    <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
-                      onClick={(e) => {
-                        e.stopPropagation()
                         navigator.clipboard.writeText(account.adAccount)
                       }}
                     >
@@ -427,17 +399,9 @@ export function CompactAccountsTable({
                     <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem
                       className="text-popover-foreground hover:bg-accent"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Pause className="h-3 w-3 mr-2" />
-                      Pause Account
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <BalanceResetDialog
-                        account={{
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setTransferBalanceAccount({
                           id: account.id,
                           name: account.name,
                           adAccount: account.adAccount,
@@ -445,15 +409,29 @@ export function CompactAccountsTable({
                           currency: account.currency,
                           business: account.business,
                           bmId: account.bmId
-                        }}
-                        onSuccess={() => mutate()}
-                        trigger={
-                          <div className="flex items-center w-full">
-                            <ArrowDownLeft className="h-3 w-3 mr-2" />
-                            Reset Balance
-                          </div>
-                        }
-                      />
+                        })
+                      }}
+                    >
+                      <ArrowRightLeft className="h-3 w-3 mr-2" />
+                      Transfer Balance
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-popover-foreground hover:bg-accent"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setResetBalanceAccount({
+                          id: account.id,
+                          name: account.name,
+                          adAccount: account.adAccount,
+                          balance: account.balance,
+                          currency: account.currency,
+                          business: account.business,
+                          bmId: account.bmId
+                        })
+                      }}
+                    >
+                      <ArrowDownLeft className="h-3 w-3 mr-2" />
+                      Reset Balance
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -475,6 +453,42 @@ export function CompactAccountsTable({
           title="No ad accounts found"
           description="No accounts match your current filters. Try adjusting your search or filter criteria."
           type="search"
+        />
+      )}
+
+      {/* Transfer Balance Dialog - Outside dropdown to prevent closing issues */}
+      {transferBalanceAccount && (
+        <TransferBalanceDialog
+          account={transferBalanceAccount}
+          onSuccess={() => {
+            mutate()
+            setTransferBalanceAccount(null)
+          }}
+          trigger={<></>}
+          open={!!transferBalanceAccount}
+          onOpenChange={(open) => {
+            if (!open) {
+              setTransferBalanceAccount(null)
+            }
+          }}
+        />
+      )}
+
+      {/* Balance Reset Dialog - Outside dropdown to prevent closing issues */}
+      {resetBalanceAccount && (
+        <BalanceResetDialog
+          account={resetBalanceAccount}
+          onSuccess={() => {
+            mutate()
+            setResetBalanceAccount(null)
+          }}
+          trigger={<></>}
+          open={!!resetBalanceAccount}
+          onOpenChange={(open) => {
+            if (!open) {
+              setResetBalanceAccount(null)
+            }
+          }}
         />
       )}
     </div>
