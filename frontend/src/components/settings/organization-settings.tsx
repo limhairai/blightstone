@@ -26,6 +26,7 @@ import { useSubscription } from "@/hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 import useSWR from 'swr'
 import { API_ENDPOINTS, createAuthHeaders } from '@/lib/api-config'
+import { buildApiUrl } from '../../lib/api-utils'
 
 
 export function OrganizationSettings() {
@@ -42,7 +43,7 @@ export function OrganizationSettings() {
   // Fetch payment methods from backend API
   const { data: paymentMethods = [], error: paymentMethodsError } = useSWR(
     session?.access_token && currentOrganizationId 
-      ? [`${process.env.NEXT_PUBLIC_API_URL}/api/payments/methods`, currentOrganizationId]
+      ? [buildApiUrl('/api/payments/methods'), currentOrganizationId]
       : null,
     async ([url, orgId]) => {
       const response = await fetch(`${url}?organization_id=${orgId}`, {
@@ -56,7 +57,7 @@ export function OrganizationSettings() {
   // Fetch billing history from backend API
   const { data: billingHistoryData, error: billingHistoryError } = useSWR(
     session?.access_token && currentOrganizationId 
-      ? [`${process.env.NEXT_PUBLIC_API_URL}/api/payments/billing/history`, currentOrganizationId]
+      ? [buildApiUrl('/api/payments/billing/history'), currentOrganizationId]
       : null,
     async ([url, orgId]) => {
       const response = await fetch(`${url}?organization_id=${orgId}&limit=10`, {
@@ -209,7 +210,7 @@ export function OrganizationSettings() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/organizations/${currentOrganizationId}`, {
+      const response = await fetch(buildApiUrl(`/api/organizations/${currentOrganizationId}`), {
         method: 'DELETE',
         headers: createAuthHeaders(session!.access_token),
       });
@@ -235,7 +236,7 @@ export function OrganizationSettings() {
     if (!currentOrganizationId || !session?.access_token) return;
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/subscriptions/billing-portal`, {
+      const response = await fetch(buildApiUrl('/api/subscriptions/billing-portal'), {
         method: 'POST',
         headers: createAuthHeaders(session.access_token),
         body: JSON.stringify({
