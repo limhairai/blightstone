@@ -16,8 +16,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organization ID required' }, { status: 400 })
     }
 
-    console.log('Fetching subscription for organization ID:', organizationId)
-
     // Get organization data first
     const { data: orgData, error: orgError } = await supabase
       .from('organizations')
@@ -32,8 +30,6 @@ export async function GET(request: NextRequest) {
 
     // Handle no subscription scenario - assign free plan
     if (!orgData.plan_id) {
-      console.log('No plan_id found - assigning free plan')
-      
       // Update organization with free plan
       const { error: updateError } = await supabase
         .from('organizations')
@@ -52,7 +48,6 @@ export async function GET(request: NextRequest) {
 
     // Get plan data for existing subscription
     let currentPlan = null
-    console.log('Organization has plan_id:', orgData.plan_id)
     
     // Handle free plan specially (not in database)
     if (orgData.plan_id === 'free') {

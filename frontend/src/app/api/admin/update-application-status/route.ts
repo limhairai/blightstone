@@ -37,17 +37,12 @@ export async function POST(request: NextRequest) {
     }
     
     if (!profile?.is_superuser) {
-      console.log('User is not a superuser:', user.id);
       return NextResponse.json({ error: 'You are not authorized to perform this action.' }, { status: 403 });
     }
-
-    console.log('User is authorized as superuser');
 
     // Now, proceed with the status update
     const body = await request.json();
     const { application_id, new_status } = body;
-
-    console.log('Request body:', { application_id, new_status });
 
     if (!application_id || !new_status) {
       return NextResponse.json({ error: 'Application ID and new status are required' }, { status: 400 });
@@ -57,8 +52,6 @@ export async function POST(request: NextRequest) {
     if (!validStatuses.includes(new_status)) {
       return NextResponse.json({ error: 'Invalid status provided.' }, { status: 400 });
     }
-
-    console.log('Updating application status in database...');
 
     const { data, error } = await supabase
       .from('application')
@@ -76,11 +69,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data) {
-      console.log('No application found with ID:', application_id);
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
-
-    console.log('Application status updated successfully:', data);
 
     return NextResponse.json({ success: true, application: data });
 

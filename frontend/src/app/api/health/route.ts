@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
     try {
         const backendUrl = buildApiUrl('/api/health')
         
-        console.log('🔍 Health Check API: Calling backend URL:', backendUrl)
+    
 
         const response = await fetch(backendUrl, {
             method: 'GET',
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
             },
         })
 
-        console.log('🔍 Health Check API: Backend response status:', response.status)
+
 
         if (!response.ok) {
             const errorData = await response.json()

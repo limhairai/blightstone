@@ -34,7 +34,7 @@ export async function POST(
         
         const backendUrl = buildApiUrl(`/api/ad-accounts/${params.id}/topup`)
         
-        console.log('🔍 Ad Account Topup API: Calling backend URL:', backendUrl)
+
 
         const response = await fetch(backendUrl, {
             method: 'POST',
@@ -42,7 +42,7 @@ export async function POST(
             body: JSON.stringify(body),
         })
 
-        console.log('🔍 Ad Account Topup API: Backend response status:', response.status)
+
 
         if (!response.ok) {
             const errorData = await response.json()

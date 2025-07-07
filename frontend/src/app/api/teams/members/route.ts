@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError || !profile || !profile.organization_id) {
-      console.log('🔍 User profile missing organization_id:', { profileError, profile });
+      console.error('User profile missing organization_id:', { profileError, profile });
       return NextResponse.json({ 
         members: [],
         message: 'No organization assigned to user.' 

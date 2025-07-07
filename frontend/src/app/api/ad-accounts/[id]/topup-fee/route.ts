@@ -41,14 +41,14 @@ export async function GET(
         const urlWithParams = new URL(backendUrl)
         urlWithParams.searchParams.set('amount', amount)
 
-        console.log('🔍 Topup Fee API: Calling backend URL:', urlWithParams.toString())
+
 
         const response = await fetch(urlWithParams.toString(), {
             method: 'GET',
             headers: createAuthHeaders(session.access_token),
         })
 
-        console.log('🔍 Topup Fee API: Backend response status:', response.status)
+
 
         if (!response.ok) {
             const errorData = await response.json()

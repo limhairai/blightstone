@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError || !profile || !profile.organization_id) {
-        console.log('🔍 User profile missing organization_id:', { profileError, profile });
+        console.error('User profile missing organization_id:', { profileError, profile });
         return NextResponse.json({ 
           accounts: [], 
           message: 'No organization assigned to user. Please contact support.' 
@@ -126,11 +126,9 @@ export async function GET(request: NextRequest) {
     // Filter by business manager if specified (additional client-side filtering)
     let filteredData = enrichedData;
     if (bmId) {
-      console.log('🔍 Filtering by BM ID:', bmId);
       filteredData = enrichedData.filter((account: any) => 
         account.business_manager_id === bmId
       );
-      console.log('🔍 Filtered to:', filteredData.length, 'accounts');
     }
 
     return NextResponse.json({ accounts: filteredData }, {
