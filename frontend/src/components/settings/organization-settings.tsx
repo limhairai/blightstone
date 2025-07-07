@@ -90,19 +90,35 @@ export function OrganizationSettings() {
     
     setRefreshing(true);
     try {
+      console.log('🔄 Manual refresh triggered for organization:', currentOrganizationId);
+      console.log('🔄 Current subscription plan before refresh:', subscriptionPlan?.id);
+      
       // Refresh all organization-related data
       await Promise.all([
         mutate(`/api/organizations?id=${currentOrganizationId}`),
         mutate('/api/business-managers'),
-        mutate('/api/ad-accounts')
+        mutate('/api/ad-accounts'),
+        // CRITICAL: Also invalidate subscription cache
+        mutate([`/api/subscriptions/current?organizationId=${currentOrganizationId}`, session?.access_token]),
+        mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`)
       ]);
+      
+      console.log('✅ Cache invalidation completed');
+      
+      // Small delay to allow data to refresh
+      setTimeout(() => {
+        console.log('🔄 Current subscription plan after refresh:', subscriptionPlan?.id);
+        toast.success('Subscription data refreshed!');
+      }, 500);
+      
       // Silent refresh - no toast needed since this is called automatically
     } catch (error) {
       console.error("Failed to refresh organization data:", error);
+      toast.error('Failed to refresh data');
     } finally {
       setRefreshing(false);
     }
-  }, [refreshing, mutate, currentOrganizationId])
+  }, [refreshing, mutate, currentOrganizationId, session?.access_token, subscriptionPlan?.id])
 
   // Auto-refresh when returning from payment success
   useEffect(() => {
@@ -465,6 +481,18 @@ export function OrganizationSettings() {
                   className={`w-full ${gradientTokens.primary}`}
                 >
                   {currentPlan.id === 'free' ? 'Choose Plan' : 'Upgrade Plan'}
+                </Button>
+                
+                {/* Manual Refresh Button for Testing */}
+                <Button
+                  onClick={handleManualRefresh}
+                  variant="outline"
+                  size="sm"
+                  className="w-full border-border text-foreground hover:bg-accent"
+                  disabled={refreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh Subscription'}
                 </Button>
 
                 {currentPlan.id !== 'free' && (
