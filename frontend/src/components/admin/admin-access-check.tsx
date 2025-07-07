@@ -5,8 +5,6 @@ import { useState, useEffect, useMemo } from "react"
 import { Loader } from "../core/Loader"
 import { Shield, RefreshCw, ArrowLeft } from "lucide-react"
 import { Button } from "../ui/button"
-import { supabase } from "../../lib/stores/supabase-client"
-import { adminCache } from "../../lib/admin-cache"
 
 interface AdminAccessCheckProps {
   children: React.ReactNode
@@ -35,7 +33,14 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
         setLoading(true);
         setError(null);
 
-        // Simple admin check - just call the API directly
+        // Debug: Log current user info
+        console.log('AdminAccessCheck: Checking admin status for user:', {
+          userId: user?.id,
+          email: user?.email,
+          hasSession: !!session
+        });
+
+        // Use API endpoint only to avoid RLS recursion issues
         const response = await fetch('/api/auth/admin-check', {
           method: 'GET',
           headers: {
@@ -43,10 +48,18 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
           },
         });
 
+        console.log('AdminAccessCheck: API check response:', {
+          status: response.status,
+          ok: response.ok
+        });
+
         if (response.ok) {
           const data = await response.json();
+          console.log('AdminAccessCheck: API check data:', data);
           setIsAdmin(data.isAdmin || false);
         } else {
+          const errorData = await response.text();
+          console.error('AdminAccessCheck: API check failed:', errorData);
           setIsAdmin(false);
         }
       } catch (error) {
