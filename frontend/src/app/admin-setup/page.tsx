@@ -8,6 +8,7 @@ import { Label } from "../../components/ui/label";
 import { toast } from "sonner";
 import { Shield, ArrowRight, CheckCircle, Users } from "lucide-react";
 import Link from "next/link";
+import { supabase } from "../../lib/stores/supabase-client";
 
 export default function AdminSetupPage() {
   const { user, session } = useAuth();
@@ -39,6 +40,19 @@ export default function AdminSetupPage() {
         toast.success(`Successfully created admin account for ${email}`);
         setSuccess(true);
         setEmail("");
+        
+        // Force refresh the user session to get updated admin privileges
+        if (session) {
+          try {
+            const { data: { session: newSession } } = await supabase.auth.refreshSession();
+            if (newSession) {
+              // Session refreshed successfully
+              console.log('Session refreshed with new admin privileges');
+            }
+          } catch (refreshError) {
+            console.log('Session refresh failed, but admin creation succeeded');
+          }
+        }
         
         // Redirect to admin panel after short delay
         setTimeout(() => {
