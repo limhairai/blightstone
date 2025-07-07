@@ -740,7 +740,7 @@ export default function TopupRequestsPage() {
                       </Badge>
                       {selectedRequest.metadata?.destination_account_name && (
                         <span className="text-sm text-muted-foreground">
-                          → {selectedRequest.metadata.destination_account_name}
+                          &rarr; {selectedRequest.metadata.destination_account_name}
                         </span>
                       )}
                     </div>
@@ -828,7 +828,7 @@ export default function TopupRequestsPage() {
                     <div>
                       <div className="text-sm font-medium text-foreground mb-1">Important</div>
                       <p className="text-sm text-muted-foreground">
-                        Completing this request will deduct {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)} from the organization's wallet balance.
+                        Completing this request will deduct {formatCurrency((selectedRequest.total_deducted_cents || selectedRequest.amount_cents) / 100)} from the organization&apos;s wallet balance.
                         {selectedRequest.fee_amount_cents && selectedRequest.fee_amount_cents > 0 && (
                           <span className="block text-xs mt-1">
                             (Includes {formatCurrency(selectedRequest.fee_amount_cents / 100)} platform fee)

@@ -368,7 +368,7 @@ export default function AdminApplicationsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filterApplications(status).map((application) => {
+                    {filterApplications(status).map((application: ApplicationWithDetails) => {
                       const requestTypeInfo = getRequestTypeInfo(application);
                       const isProcessing = processingId === application.applicationId;
                       
