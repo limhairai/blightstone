@@ -41,7 +41,7 @@ export function BusinessBalancesTable() {
       description: "Available for ad account funding",
       amount: unallocatedBalance,
       icon: <Wallet className="h-4 w-4" />,
-      color: "text-green-600"
+      color: "text-[#34D197]"
     }
   ];
 

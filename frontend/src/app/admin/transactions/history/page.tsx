@@ -252,10 +252,10 @@ export default function TransactionHistoryPage() {
                   <TableCell>
                     <div className="text-right font-medium">
                       <div className={`${
-                        transaction.type === 'wallet_deposit' ? 'text-green-600' :
-                        transaction.type === 'ad_account_allocation' ? 'text-blue-600' :
-                        transaction.type === 'spend' || transaction.type === 'fee' ? 'text-red-600' : 
-                        transaction.amount < 0 ? 'text-red-600' : 'text-green-600'
+                        transaction.type === 'wallet_deposit' ? 'text-[#34D197]' :
+                        transaction.type === 'ad_account_allocation' ? 'text-blue-400' :
+                        transaction.type === 'spend' || transaction.type === 'fee' ? 'text-[#F56565]' : 
+                        transaction.amount < 0 ? 'text-[#F56565]' : 'text-[#34D197]'
                       }`}>
                         {transaction.type === 'wallet_deposit' ? '+' :
                          transaction.type === 'ad_account_allocation' ? '→' :
@@ -309,7 +309,7 @@ export default function TransactionHistoryPage() {
                             <Button
                               size="sm"
                               onClick={() => handleTransferAction(transaction, 'completed')}
-                              className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                              className="bg-[#34D197] hover:bg-[#2bb87d] h-6 text-xs px-2 text-black"
                             >
                               <CheckCircle className="h-3 w-3" />
                             </Button>
