@@ -550,7 +550,7 @@ async def handle_subscription_created(supabase, subscription):
         # Insert or update subscription
         existing_sub = (
             supabase.table("subscriptions")
-            .select("id")
+            .select("subscription_id")
             .eq("stripe_subscription_id", subscription.id)
             .maybe_single()
             .execute()
