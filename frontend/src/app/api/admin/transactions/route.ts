@@ -42,8 +42,10 @@ export async function GET(request: NextRequest) {
         amount_cents,
         status,
         description,
+        metadata,
         created_at,
-        organizations(name)
+        organization_id,
+        organizations!inner(name)
       `)
       .order('created_at', { ascending: false })
       .limit(500)
@@ -67,7 +69,8 @@ export async function GET(request: NextRequest) {
         created_at,
         processed_at,
         user_id,
-        organizations(name)
+        organization_id,
+        organizations!inner(name)
       `)
       .order('created_at', { ascending: false })
       .limit(500)
@@ -126,10 +129,33 @@ export async function GET(request: NextRequest) {
     
     // Transform regular transactions
     const transformedTransactions = (transactions || []).map(txn => {
-      // Determine payment method based on transaction type
+      // Determine payment method and transaction type based on transaction details
       let paymentMethod = 'Credit Card'; // Default for most transactions
+      let transactionType = txn.type;
+      let description = txn.description || `${txn.type} transaction`;
       
-      if (txn.type === 'topup' || txn.type === 'topup_deduction' || txn.type === 'spend' || txn.type === 'fee') {
+      // Distinguish between wallet deposits and ad account allocations
+      if (txn.type === 'topup') {
+        if (txn.amount_cents > 0) {
+          // Positive topup = money coming INTO wallet from external source
+          transactionType = 'wallet_deposit';
+          paymentMethod = description.includes('Stripe') ? 'Stripe' : 
+                         description.includes('Bank') ? 'Bank Transfer' : 
+                         description.includes('Airwallex') ? 'Airwallex' : 
+                         'External Payment';
+        } else {
+          // Negative topup = money going OUT of wallet to ad account
+          transactionType = 'ad_account_allocation';
+          paymentMethod = 'Wallet Balance';
+        }
+      } else if (txn.type === 'deposit') {
+        // WalletService creates 'deposit' type for wallet top-ups
+        transactionType = 'wallet_deposit';
+        paymentMethod = txn.metadata?.payment_method === 'stripe' ? 'Stripe' :
+                       txn.metadata?.payment_method === 'bank_transfer' ? 'Bank Transfer' :
+                       txn.metadata?.payment_method === 'crypto' ? 'Crypto' :
+                       'External Payment';
+      } else if (txn.type === 'topup_deduction' || txn.type === 'spend' || txn.type === 'fee') {
         paymentMethod = 'Wallet Balance';
       } else if (txn.type === 'bank_transfer') {
         paymentMethod = 'Bank Transfer';
@@ -138,12 +164,12 @@ export async function GET(request: NextRequest) {
       return {
         id: txn.transaction_id,
         display_id: txn.transaction_id ? `TXN-${txn.transaction_id.substring(0, 8).toUpperCase()}` : null,
-        type: txn.type,
+        type: transactionType,
         amount: txn.amount_cents / 100, // Convert cents to dollars
         currency: "USD",
         status: txn.status,
-        organizationName: txn.organizations?.[0]?.name || 'Unknown Organization',
-        description: txn.description || `${txn.type} transaction`,
+        organizationName: txn.organizations?.name || `Org-${txn.organization_id?.substring(0, 8) || 'Unknown'}`,
+        description: description,
         createdAt: txn.created_at,
         paymentMethod: paymentMethod,
         referenceNumber: null // Regular transactions don't have reference numbers
@@ -160,7 +186,7 @@ export async function GET(request: NextRequest) {
         amount: bt.requested_amount, // Already in dollars, don't divide by 100
         currency: "USD",
         status: bt.status,
-        organizationName: bt.organizations?.[0]?.name || 'Unknown Organization',
+        organizationName: bt.organizations?.name || `Org-${bt.organization_id?.substring(0, 8) || 'Unknown'}`,
         description: 'Bank Transfer',
         createdAt: bt.created_at,
         paymentMethod: 'Bank Transfer',

@@ -77,8 +77,8 @@ export async function GET(request: NextRequest) {
                 subscription_status: org.subscription_status,
                 current_period_start: org.current_period_start,
                 current_period_end: org.current_period_end,
-                balance_cents: availableBalance,
-                total_balance_cents: totalBalance,
+                balance_cents: totalBalance, // Fixed: Use total balance, not available balance
+                available_balance_cents: availableBalance,
                 reserved_balance_cents: reservedBalance,
                 business_managers_count: bmCountMap.get(org.organization_id) || 0
             };

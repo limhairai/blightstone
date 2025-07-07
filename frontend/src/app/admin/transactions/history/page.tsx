@@ -18,7 +18,7 @@ import { Search, Download, CheckCircle, X, Eye } from "lucide-react"
 interface Transaction {
   id: string
   display_id?: string
-  type: "topup" | "spend" | "refund" | "fee" | "bank_transfer" | "unmatched_transfer"
+  type: "wallet_deposit" | "ad_account_allocation" | "topup" | "spend" | "refund" | "fee" | "bank_transfer" | "unmatched_transfer"
   amount: number
   currency: string
   status: "completed" | "pending" | "failed" | "cancelled" | "unmatched" | "matched" | "ignored"
@@ -84,6 +84,8 @@ export default function TransactionHistoryPage() {
 
   const stats = useMemo(() => ({
     total: transactions.length,
+    wallet_deposit: transactions.filter(t => t.type === "wallet_deposit").length,
+    ad_account_allocation: transactions.filter(t => t.type === "ad_account_allocation").length,
     topup: transactions.filter(t => t.type === "topup").length,
     spend: transactions.filter(t => t.type === "spend").length,
     refund: transactions.filter(t => t.type === "refund").length,
@@ -163,6 +165,8 @@ export default function TransactionHistoryPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types ({stats.total})</SelectItem>
+              <SelectItem value="wallet_deposit">Wallet Deposit ({stats.wallet_deposit})</SelectItem>
+              <SelectItem value="ad_account_allocation">Ad Account Allocation ({stats.ad_account_allocation})</SelectItem>
               <SelectItem value="topup">Top-up ({stats.topup})</SelectItem>
               <SelectItem value="spend">Spend ({stats.spend})</SelectItem>
               <SelectItem value="refund">Refund ({stats.refund})</SelectItem>
@@ -240,13 +244,22 @@ export default function TransactionHistoryPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">
-                      {transaction.type.replace('_', ' ')}
+                      {transaction.type === 'wallet_deposit' ? 'Wallet Deposit' :
+                       transaction.type === 'ad_account_allocation' ? 'Ad Account Allocation' :
+                       transaction.type.replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="text-right font-medium">
-                      <div className={`${transaction.type === 'spend' || transaction.type === 'fee' ? 'text-red-600' : 'text-green-600'}`}>
-                        {transaction.type === 'spend' || transaction.type === 'fee' ? '-' : '+'}${Math.abs(transaction.amount).toFixed(2)}
+                      <div className={`${
+                        transaction.type === 'wallet_deposit' ? 'text-green-600' :
+                        transaction.type === 'ad_account_allocation' ? 'text-blue-600' :
+                        transaction.type === 'spend' || transaction.type === 'fee' ? 'text-red-600' : 
+                        transaction.amount < 0 ? 'text-red-600' : 'text-green-600'
+                      }`}>
+                        {transaction.type === 'wallet_deposit' ? '+' :
+                         transaction.type === 'ad_account_allocation' ? '→' :
+                         transaction.amount < 0 ? '-' : '+'}${Math.abs(transaction.amount).toFixed(2)}
                       </div>
                       <div className="text-xs text-muted-foreground uppercase">
                         {transaction.currency}

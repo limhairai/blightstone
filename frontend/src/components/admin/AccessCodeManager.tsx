@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Copy, Plus, Eye, Trash2, RefreshCw, Users, Clock, CheckCircle } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Copy, Plus, Eye, Trash2, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface AccessCode {
@@ -32,6 +32,9 @@ export default function AccessCodeManager({ organizationId, organizationName }: 
   const [accessCodes, setAccessCodes] = useState<AccessCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [createForm, setCreateForm] = useState({
     code_type: 'user_invite' as const,
     max_uses: 1,
@@ -151,287 +154,257 @@ To get started:
       return <Badge variant="outline">Used Up</Badge>;
     }
     
-    return <Badge variant="default" className="bg-green-500">Active</Badge>;
+    return <Badge variant="default">Active</Badge>;
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeDisplay = (type: string) => {
     switch (type) {
-      case 'admin_invite': return '👑';
-      case 'group_invite': return '👥';
-      default: return '👤';
+      case 'admin_invite': return 'Admin Invite';
+      case 'group_invite': return 'Group Invite';
+      default: return 'User Invite';
     }
   };
 
+  const filteredCodes = accessCodes.filter(code => {
+    const matchesSearch = searchTerm === '' || 
+      code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      getTypeDisplay(code.code_type).toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && code.is_active && new Date(code.expires_at) > new Date() && code.current_uses < code.max_uses) ||
+      (statusFilter === 'expired' && new Date(code.expires_at) < new Date()) ||
+      (statusFilter === 'used_up' && code.current_uses >= code.max_uses) ||
+      (statusFilter === 'inactive' && !code.is_active);
+    
+    const matchesType = typeFilter === 'all' || code.code_type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center">
-            <RefreshCw className="animate-spin h-6 w-6" />
-            <span className="ml-2">Loading access codes...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="animate-spin h-6 w-6 mr-2" />
+        <span>Loading access codes...</span>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Access Code Manager</h2>
-          <p className="text-gray-600">Generate secure access codes for Telegram bot access</p>
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search access codes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 max-w-sm"
+            />
+          </div>
+          
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="used_up">Used Up</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="user_invite">User Invite</SelectItem>
+              <SelectItem value="group_invite">Group Invite</SelectItem>
+              <SelectItem value="admin_invite">Admin Invite</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Access Code
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            {filteredCodes.length} codes shown
+          </div>
           
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Access Code</DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="code_type">Code Type</Label>
-                <Select
-                  value={createForm.code_type}
-                  onValueChange={(value: any) => setCreateForm(prev => ({ ...prev, code_type: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user_invite">👤 User Invite</SelectItem>
-                    <SelectItem value="group_invite">👥 Group Invite</SelectItem>
-                    <SelectItem value="admin_invite">👑 Admin Invite</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="max_uses">Maximum Uses</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={createForm.max_uses}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, max_uses: parseInt(e.target.value) || 1 }))}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="expires_hours">Expires In (Hours)</Label>
-                <Select
-                  value={createForm.expires_hours.toString()}
-                  onValueChange={(value) => setCreateForm(prev => ({ ...prev, expires_hours: parseInt(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1 Hour</SelectItem>
-                    <SelectItem value="6">6 Hours</SelectItem>
-                    <SelectItem value="24">24 Hours</SelectItem>
-                    <SelectItem value="72">3 Days</SelectItem>
-                    <SelectItem value="168">1 Week</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex gap-2 pt-4">
-                <Button onClick={createAccessCode} className="flex-1">
-                  Create Code
-                </Button>
-                <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-500" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Active Codes</p>
-                <p className="text-2xl font-bold">
-                  {accessCodes.filter(code => {
-                    const now = new Date();
-                    const expiresAt = new Date(code.expires_at);
-                    return code.is_active && expiresAt > now && code.current_uses < code.max_uses;
-                  }).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-500" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Total Redemptions</p>
-                <p className="text-2xl font-bold">
-                  {accessCodes.reduce((sum, code) => sum + code.current_uses, 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-orange-500" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Expired Codes</p>
-                <p className="text-2xl font-bold">
-                  {accessCodes.filter(code => new Date(code.expires_at) < new Date()).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Plus className="h-8 w-8 text-purple-500" />
-              <div className="ml-3">
-                <p className="text-sm font-medium text-gray-600">Total Codes</p>
-                <p className="text-2xl font-bold">{accessCodes.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Access Codes List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Access Codes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {accessCodes.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No access codes created yet.</p>
-              <Button 
-                onClick={() => setShowCreateDialog(true)}
-                className="mt-4"
-                variant="outline"
-              >
-                Create Your First Access Code
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Access Code
               </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {accessCodes.map((code) => (
-                <div key={code.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-2xl">{getTypeIcon(code.code_type)}</div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <code className="bg-gray-100 px-2 py-1 rounded font-mono text-lg font-bold">
-                            {code.code}
-                          </code>
-                          {getStatusBadge(code)}
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                          {code.code_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} • 
-                          Used {code.current_uses}/{code.max_uses} times • 
-                          Expires {new Date(code.expires_at).toLocaleDateString()}
-                        </p>
-                      </div>
+            </DialogTrigger>
+            
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Access Code</DialogTitle>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="code_type">Code Type</Label>
+                  <Select
+                    value={createForm.code_type}
+                    onValueChange={(value: any) => setCreateForm(prev => ({ ...prev, code_type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user_invite">User Invite</SelectItem>
+                      <SelectItem value="group_invite">Group Invite</SelectItem>
+                      <SelectItem value="admin_invite">Admin Invite</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="max_uses">Maximum Uses</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={createForm.max_uses}
+                    onChange={(e) => setCreateForm(prev => ({ ...prev, max_uses: parseInt(e.target.value) || 1 }))}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="expires_hours">Expires In (Hours)</Label>
+                  <Select
+                    value={createForm.expires_hours.toString()}
+                    onValueChange={(value) => setCreateForm(prev => ({ ...prev, expires_hours: parseInt(value) }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Hour</SelectItem>
+                      <SelectItem value="6">6 Hours</SelectItem>
+                      <SelectItem value="24">24 Hours</SelectItem>
+                      <SelectItem value="72">3 Days</SelectItem>
+                      <SelectItem value="168">1 Week</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button onClick={createAccessCode} className="flex-1">
+                    Create Code
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="border border-border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground">Code</TableHead>
+              <TableHead className="text-muted-foreground">Type</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Usage</TableHead>
+              <TableHead className="text-muted-foreground">Expires</TableHead>
+              <TableHead className="text-muted-foreground">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredCodes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  {accessCodes.length === 0 ? (
+                    <div className="space-y-2">
+                      <p>No access codes created yet.</p>
+                      <Button 
+                        onClick={() => setShowCreateDialog(true)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Create Your First Access Code
+                      </Button>
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
+                  ) : (
+                    'No codes match your filters.'
+                  )}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredCodes.map((code) => (
+                <TableRow key={code.id} className="border-border hover:bg-muted/30">
+                  <TableCell>
+                    <code className="bg-muted px-2 py-1 rounded font-mono text-sm font-medium">
+                      {code.code}
+                    </code>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">{getTypeDisplay(code.code_type)}</div>
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(code)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <span className="font-medium">{code.current_uses}</span>
+                      <span className="text-muted-foreground">/{code.max_uses}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(code.expires_at).toLocaleDateString()}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => copyToClipboard(code.code)}
+                        className="h-8 w-8 p-0"
                       >
                         <Copy className="h-4 w-4" />
                       </Button>
                       
                       <Button
                         size="sm"
-                        variant="outline"
+                        variant="ghost"
                         onClick={() => copyInviteMessage(code.code)}
+                        className="h-8 w-8 p-0"
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
                       
                       <Button
                         size="sm"
-                        variant="destructive"
+                        variant="ghost"
                         onClick={() => deactivateCode(code.id)}
+                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Instructions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>How to Use Access Codes</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">1</div>
-              <div>
-                <p className="font-medium">Create an access code</p>
-                <p className="text-sm text-gray-600">Choose the type and expiration settings</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-3">
-              <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">2</div>
-              <div>
-                <p className="font-medium">Share with your team</p>
-                <p className="text-sm text-gray-600">Copy the invitation message and send to users</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-3">
-              <div className="bg-blue-100 text-blue-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">3</div>
-              <div>
-                <p className="font-medium">Users redeem on Telegram</p>
-                <p className="text-sm text-gray-600">They send <code>/start CODE</code> to @adhubtechbot</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-3">
-              <div className="bg-green-100 text-green-600 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">✓</div>
-              <div>
-                <p className="font-medium">Instant access granted</p>
-                <p className="text-sm text-gray-600">Users get full access to their organization&apos;s data</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 } 

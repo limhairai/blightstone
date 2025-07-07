@@ -20,6 +20,8 @@ interface Organization {
   name: string
   plan_id: string
   balance_cents: number
+  available_balance_cents?: number
+  reserved_balance_cents?: number
   business_managers_count: number
   created_at: string
   subscription_status?: string
@@ -154,6 +156,11 @@ export default function OrganizationsPage() {
                     <TableCell>
                       <div className="text-right font-medium">
                         ${(org.balance_cents / 100).toFixed(2)}
+                        {org.reserved_balance_cents && org.reserved_balance_cents > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            Available: ${((org.available_balance_cents || 0) / 100).toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

@@ -234,7 +234,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             <Button
               type="submit"
               disabled={isSubmitting || isOnFreePlan || !canRequestAssets || hasReachedBMLimit}
-              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white hover:opacity-90 disabled:opacity-50"
+              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
