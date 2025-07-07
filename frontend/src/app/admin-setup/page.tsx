@@ -6,16 +6,16 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { toast } from "sonner";
-import { Shield, ArrowRight, CheckCircle } from "lucide-react";
+import { Shield, ArrowRight, CheckCircle, Users } from "lucide-react";
 import Link from "next/link";
 
-export default function PromoteAdminPage() {
+export default function AdminSetupPage() {
   const { user, session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const promoteToAdmin = async () => {
+  const createFirstAdmin = async () => {
     if (!email.trim()) {
       toast.error("Please enter an email address");
       return;
@@ -36,7 +36,7 @@ export default function PromoteAdminPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(`Successfully promoted ${email} to admin`);
+        toast.success(`Successfully created admin account for ${email}`);
         setSuccess(true);
         setEmail("");
         
@@ -45,7 +45,7 @@ export default function PromoteAdminPage() {
           window.location.href = "/admin";
         }, 3000);
       } else {
-        toast.error(data.error || `Failed to promote user (Status: ${response.status})`);
+        toast.error(data.error || `Failed to create admin account (Status: ${response.status})`);
       }
     } catch (error) {
       toast.error(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -62,8 +62,8 @@ export default function PromoteAdminPage() {
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Admin Created Successfully!</h1>
-            <p className="text-muted-foreground mt-2">Redirecting to admin panel...</p>
+            <h1 className="text-2xl font-semibold text-foreground">Admin Account Created!</h1>
+            <p className="text-muted-foreground mt-2">Redirecting to admin dashboard...</p>
           </div>
         </div>
       </div>
@@ -76,11 +76,25 @@ export default function PromoteAdminPage() {
         {/* Header */}
         <div className="text-center space-y-3">
           <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
-            <Shield className="h-6 w-6 text-foreground" />
+            <Users className="h-6 w-6 text-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Admin Bootstrap</h1>
-            <p className="text-muted-foreground">Create your first admin account</p>
+            <h1 className="text-2xl font-semibold text-foreground">Admin Setup</h1>
+            <p className="text-muted-foreground">Set up your first administrator account</p>
+          </div>
+        </div>
+
+        {/* Info Card */}
+        <div className="bg-muted/50 border border-border rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <Shield className="h-5 w-5 text-foreground mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">First Admin Setup</p>
+              <p className="text-xs text-muted-foreground">
+                Enter the email address of the user you want to promote to administrator. 
+                This user must already have an account.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -88,12 +102,12 @@ export default function PromoteAdminPage() {
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-sm font-medium">
-              Email Address
+              Administrator Email
             </Label>
             <Input
               id="email"
               type="email"
-              placeholder="admin@company.com"
+              placeholder="admin@yourcompany.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-11"
@@ -102,11 +116,11 @@ export default function PromoteAdminPage() {
           </div>
 
           <Button
-            onClick={promoteToAdmin}
+            onClick={createFirstAdmin}
             disabled={loading || !email.trim()}
             className="w-full h-11 bg-foreground hover:bg-foreground/90 text-background"
           >
-            {loading ? "Creating Admin..." : "Promote to Admin"}
+            {loading ? "Setting up admin..." : "Create Administrator"}
           </Button>
         </div>
 
@@ -116,10 +130,10 @@ export default function PromoteAdminPage() {
             Already have admin access?
           </p>
           <Link 
-            href="/admin/settings" 
+            href="/admin" 
             className="inline-flex items-center gap-2 text-sm text-foreground hover:underline"
           >
-            Manage Admin Team
+            Go to Admin Dashboard
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

@@ -10,12 +10,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { StatusBadge } from "../ui/status-badge"
 import { StatusDot } from "./status-dot"
 import { ErrorBoundary } from "../ui/error-boundary"
-import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
+
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
 
 import { CompactAccountsTable } from "./compact-accounts-table"
 
-import { useSetupWidget } from "../layout/app-shell"
+
 import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon, RefreshCw } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
@@ -25,8 +25,7 @@ import {
   formatRelativeTime,
   transactionColors
 } from "../../utils/format"
-import { checkEmptyState, shouldShowSetupElements, shouldShowEmailBanner } from "../../lib/state-utils"
-import { getSetupProgress } from "../../lib/state-utils"
+
 
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
 
@@ -75,11 +74,7 @@ export function DashboardView() {
     transactionsError,
   } = useDashboardData(currentOrganizationId)
 
-  // Use setup widget hook (MUST be called before any conditional logic)
-  const {
-    setupWidgetState,
-    setSetupWidgetState
-  } = useSetupWidget()
+  // Setup widget is now handled by AppShell - no local state needed
   
   const balanceChartRef = useRef<HTMLDivElement>(null)
 
@@ -316,32 +311,10 @@ export function DashboardView() {
   }))
   const accountsForTable = processedAccounts
 
-  // Setup progress tracking - always show as if we have data for demo
-  const setupProgress = useMemo(() => 
-    getSetupProgress(
-      !!user?.email_confirmed_at, // Email verified
-      realBalance > 0, // Has wallet balance (always true for demo)
-      businessManagers.length > 0, // Has created a business manager
-      accounts.length > 0 // Has created an ad account
-    ),
-    [user, realBalance, businessManagers, accounts]
-  )
-
-  // Create empty state conditions for banner logic
-  const emptyStateConditions = useMemo(() => 
-    checkEmptyState(
-      transactionsData.length,
-      accounts.length, 
-      realBalance,
-      !!user?.email_confirmed_at
-    ),
-    [transactionsData.length, accounts.length, realBalance, user?.email_confirmed_at]
-  )
-
-  // Replace the old onboarding logic with the advanced hook
-
-
-  const showEmailBanner = useMemo(() => shouldShowEmailBanner(emptyStateConditions), [emptyStateConditions])
+  // Simple email verification check
+  const showEmailBanner = useMemo(() => {
+    return !user?.email_confirmed_at
+  }, [user?.email_confirmed_at])
 
 
 
@@ -458,13 +431,7 @@ export function DashboardView() {
           <EmailVerificationBanner onResendEmail={handleResendEmail} />
         )}
 
-        {/* Setup Guide Widget */}
-        {showEmptyStateElements && (
-          <SetupGuideWidget
-            widgetState={setupWidgetState === "expanded" ? "expanded" : "collapsed"}
-            onStateChange={(state) => setSetupWidgetState(state)}
-          />
-        )}
+        {/* Setup Guide Widget is now handled by AppShell globally */}
 
         {/* Main dashboard layout - split into two columns */}
         <div className={`grid ${layoutTokens.gridCols.dashboardMain} ${layoutTokens.gaps.gridMedium}`}>

@@ -51,19 +51,29 @@ export function AppShell({ children }: AppShellProps) {
     progressData
   } = useAdvancedOnboarding()
 
+  // Debug logging for setup widget state (AFTER hook call)
+  console.log('AppShell Debug:', {
+    setupWidgetState,
+    shouldShowOnboarding,
+    progressData: progressData ? { completionPercentage: progressData.completionPercentage } : null,
+    shouldRenderWidget: progressData && progressData.completionPercentage < 100
+  });
+
+  // SIMPLIFIED LOGIC: Just manage widget state, don't overthink it
   useEffect(() => {
-    // Don't do anything while loading
     if (isLoading) return
     
-    // Auto-close if onboarding shouldn't show
-    if (!shouldShowOnboarding && setupWidgetState !== "closed") {
+    // If setup is complete, always close
+    if (progressData?.completionPercentage === 100) {
       setSetupWidgetState("closed")
-    } 
-    // Auto-open if onboarding should show and widget is closed
-    else if (shouldShowOnboarding && setupWidgetState === "closed") {
+      return
+    }
+    
+    // If user never dismissed and setup incomplete, show expanded
+    if (shouldShowOnboarding && setupWidgetState === "closed") {
       setSetupWidgetState("expanded")
     }
-  }, [shouldShowOnboarding, isLoading, setupWidgetState])
+  }, [shouldShowOnboarding, isLoading, progressData, setupWidgetState])
 
   useEffect(() => {
     if (session?.user?.app_metadata?.organization_id && session?.user?.app_metadata?.organization_name) {
@@ -114,13 +124,13 @@ export function AppShell({ children }: AppShellProps) {
             hasNotifications={false} 
             setupWidgetState={setupWidgetState}
             onSetupWidgetStateChange={setSetupWidgetState}
-            showEmptyStateElements={shouldShowOnboarding}
+            showEmptyStateElements={progressData ? progressData.completionPercentage < 100 : true}
           />
           <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>{children}</main>
         </div>
 
-        {/* Global Setup Guide Widget - only show when user needs onboarding */}
-        {shouldShowOnboarding && (
+        {/* Global Setup Guide Widget - Simple logic: show when incomplete */}
+        {progressData && progressData.completionPercentage < 100 && (
           <SetupGuideWidget 
             widgetState={setupWidgetState} 
             onStateChange={setSetupWidgetState}

@@ -74,6 +74,15 @@ export function Topbar({
   const { progressData } = useAdvancedOnboarding();
   const actualSetupPercentage = progressData?.completionPercentage || 0;
 
+  // Debug logging
+  console.log('Topbar Debug:', {
+    showEmptyStateElements,
+    setupWidgetState,
+    actualSetupPercentage,
+    progressData,
+    shouldShowButton: showEmptyStateElements && setupWidgetState === "closed" && actualSetupPercentage < 100
+  });
+
   // Avoid hydration mismatch
   useEffect(() => {
     setMounted(true)
@@ -110,12 +119,15 @@ export function Topbar({
       {/* Right: Controls */}
       <div className="flex items-center gap-2 md:gap-3 ml-auto">
         {/* Setup Guide Button with Circular Progress */}
-        {showEmptyStateElements && setupWidgetState === "closed" && (
+        {showEmptyStateElements && setupWidgetState === "closed" && actualSetupPercentage < 100 && (
           <Button
             variant="outline"
             size="sm"
             className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
-            onClick={() => onSetupWidgetStateChange?.("expanded")}
+            onClick={() => {
+              console.log('Setup guide button clicked, opening widget');
+              onSetupWidgetStateChange?.("expanded");
+            }}
           >
             <div className="relative w-4 h-4">
               {/* Background circle */}
@@ -127,21 +139,14 @@ export function Topbar({
                   cy="8"
                   r="6"
                   fill="none"
-                  stroke="currentColor"
+                  stroke="#b4a0ff"
                   strokeWidth="2"
                   strokeLinecap="round"
-                  className="text-[#b4a0ff]"
                   strokeDasharray={`${2 * Math.PI * 6}`}
                   strokeDashoffset={`${2 * Math.PI * 6 * (1 - actualSetupPercentage / 100)}`}
                   style={{ transition: 'stroke-dashoffset 0.3s ease' }}
                 />
               </svg>
-              {/* Center dot when complete */}
-              {actualSetupPercentage === 100 && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-[#b4a0ff] rounded-full"></div>
-                </div>
-              )}
             </div>
             <span className="font-medium text-foreground">Setup Guide</span>
           </Button>

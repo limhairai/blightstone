@@ -10,8 +10,8 @@ const fetcher = async (url: string) => {
   return response.json()
 }
 
-// This defines the structure of the data returned by our new API endpoint
-interface OnboardingProgress {
+// Simple onboarding data structure
+interface OnboardingData {
   progress: {
     hasVerifiedEmail: boolean;
     hasCreatedBusiness: boolean;
@@ -20,50 +20,51 @@ interface OnboardingProgress {
   };
   persistence: {
     hasExplicitlyDismissed: boolean;
-    accountCreatedAt: string;
   };
 }
 
-// These steps could be defined in a config file
+// Simple step definitions
 const ONBOARDING_STEPS = [
-  { id: 'email-verification', key: 'hasVerifiedEmail', title: 'Verify Your Email', description: 'Check your inbox for a verification link.' },
-  { id: 'business-setup', key: 'hasCreatedBusiness', title: 'Create a Business', description: 'Setup your first business profile.' },
-  { id: 'wallet-funding', key: 'hasFundedWallet', title: 'Fund Your Wallet', description: 'Add funds to start running ads.' },
-  { id: 'ad-account-setup', key: 'hasCreatedAdAccount', title: 'Link an Ad Account', description: 'Connect your first ad account.' },
+  { 
+    id: 'email-verification', 
+    key: 'hasVerifiedEmail', 
+    title: 'Verify Your Email', 
+    description: 'Check your inbox for a verification link.' 
+  },
+  { 
+    id: 'business-setup', 
+    key: 'hasCreatedBusiness', 
+    title: 'Create a Business', 
+    description: 'Setup your first business profile.' 
+  },
+  { 
+    id: 'wallet-funding', 
+    key: 'hasFundedWallet', 
+    title: 'Fund Your Wallet', 
+    description: 'Add funds to start running ads.' 
+  },
+  { 
+    id: 'ad-account-setup', 
+    key: 'hasCreatedAdAccount', 
+    title: 'Link an Ad Account', 
+    description: 'Connect your first ad account.' 
+  },
 ]
 
 export function useAdvancedOnboarding() {
   const { user } = useAuth()
 
-  // We only fetch data if the user is logged in.
-  const { data, error, isLoading, mutate } = useSWR<OnboardingProgress>(
+  const { data, error, isLoading, mutate } = useSWR<OnboardingData>(
     user ? '/api/onboarding-progress' : null,
     fetcher,
     {
-      // **PERFORMANCE OPTIMIZED** - Prevent excessive API calls
-      revalidateOnFocus: false,        // Don't revalidate when window gains focus
-      revalidateOnReconnect: false,    // Don't revalidate when connection is restored
-      revalidateOnMount: true,         // Revalidate on component mount to ensure fresh data
-      dedupingInterval: 5 * 60 * 1000, // Dedupe requests within 5 minutes
-      focusThrottleInterval: 10 * 60 * 1000, // Throttle focus revalidation to 10 minutes
-      errorRetryInterval: 60 * 1000,   // Retry failed requests every 60 seconds
-      errorRetryCount: 2,              // Maximum 2 retry attempts
-      shouldRetryOnError: (error: Error) => {
-        // Don't retry on 4xx errors (client errors)
-        if (error.message.includes('401') || error.message.includes('403') || error.message.includes('404')) {
-          return false
-        }
-        return true
-      },
-      onError: (error: Error) => {
-        // Only log errors in development
-        if (process.env.NODE_ENV === 'development') {
-          console.warn('Onboarding SWR Error:', error)
-        }
-      }
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 1 minute
     }
   )
 
+  // Calculate steps with completion status
   const steps = useMemo(() => {
     if (!data?.progress) return ONBOARDING_STEPS.map(step => ({ ...step, isCompleted: false }));
     
@@ -73,33 +74,21 @@ export function useAdvancedOnboarding() {
     }));
   }, [data]);
 
-  const completedSteps = useMemo(() => {
-    return steps.filter(step => step.isCompleted);
-  }, [steps]);
-
+  // Calculate completion percentage
   const completionPercentage = useMemo(() => {
-    if (steps.length === 0) return 0;
-    return Math.round((completedSteps.length / steps.length) * 100);
-  }, [completedSteps, steps]);
-
-  const isComplete = useMemo(() => {
-    return completionPercentage === 100;
-  }, [completionPercentage]);
-
-  const nextStep = useMemo(() => {
-    return steps.find(step => !step.isCompleted) || null;
+    const completedCount = steps.filter(step => step.isCompleted).length;
+    return Math.round((completedCount / steps.length) * 100);
   }, [steps]);
 
+  // Simple logic: show if incomplete AND not dismissed
   const shouldShowOnboarding = useMemo(() => {
     if (isLoading || !data) return false;
-    // Don't show if all steps are complete
-    if (isComplete) return false;
-    // Don't show if the user explicitly closed the widget
+    if (completionPercentage === 100) return false;
     if (data.persistence?.hasExplicitlyDismissed) return false;
-    
     return true;
-  }, [data, isLoading, isComplete]);
+  }, [data, isLoading, completionPercentage]);
 
+  // Dismiss onboarding
   const dismissOnboarding = async () => {
     try {
       const response = await fetch('/api/onboarding-progress', {
@@ -112,7 +101,6 @@ export function useAdvancedOnboarding() {
         throw new Error('Failed to dismiss onboarding');
       }
 
-      // Refresh the data to reflect the dismissal
       mutate();
     } catch (error) {
       console.error('Error dismissing onboarding:', error);
@@ -120,21 +108,26 @@ export function useAdvancedOnboarding() {
     }
   };
 
-  const progressData = useMemo(() => ({
-    completionPercentage,
-    steps,
-    isComplete
-  }), [completionPercentage, steps, isComplete]);
-
   return {
-    progressData,
-    isLoading: isLoading,
+    // Main data
+    progressData: {
+      completionPercentage,
+      steps,
+      isComplete: completionPercentage === 100
+    },
+    
+    // State
+    isLoading,
     isError: !!error,
     error,
-    setupProgress: data?.progress,
-    nextStep,
+    
+    // Actions
     shouldShowOnboarding,
+    dismissOnboarding,
     mutate,
-    dismissOnboarding
+    
+    // Legacy support (for existing code)
+    setupProgress: data?.progress,
+    nextStep: steps.find(step => !step.isCompleted) || null,
   }
 }

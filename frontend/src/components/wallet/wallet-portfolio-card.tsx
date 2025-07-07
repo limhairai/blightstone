@@ -278,24 +278,24 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                 onMouseLeave={() => setHoveredIndex(null)}
               />
             ))}
-
-            {/* Data points - only visible on hover */}
-            {hoveredIndex !== null && (
-              <circle
-                cx={(hoveredIndex / (balanceData.length - 1)) * 100}
-                cy={100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}
-                r="1.5"
-                fill="hsl(var(--primary))"
-                vectorEffect="non-scaling-stroke"
-                className="transition-all duration-200 pointer-events-none"
-              />
-            )}
           </svg>
+
+          {/* Hover dot - positioned outside SVG to maintain circular shape */}
+          {hoveredIndex !== null && (
+            <div
+              className="absolute w-3 h-3 rounded-full bg-primary border-2 border-background pointer-events-none z-10 transition-all duration-200"
+              style={{
+                left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
+                top: `${100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          )}
 
           {/* Hover tooltip */}
           {hoveredIndex !== null && (
             <div
-              className="absolute bg-popover border border-border rounded-md px-2 py-1 text-xs shadow-lg pointer-events-none z-10"
+              className="absolute bg-popover border border-border rounded-md px-2 py-1 text-xs shadow-lg pointer-events-none z-20"
               style={{
                 left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
                 top: `${100 - (balanceData[hoveredIndex].value / Math.max(...balanceData.map((p) => p.value))) * 80}%`,
@@ -317,17 +317,12 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
           </div>
           {reservedBalance > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Reserved</span>
+              <span className="text-sm text-muted-foreground">Processing</span>
               <span className="text-sm font-medium text-orange-400">
                 -{formatCurrency(reservedBalance)}
               </span>
             </div>
           )}
-
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Total Transactions</span>
-            <span className="text-sm font-medium text-foreground">{transactions.length}</span>
-          </div>
         </div>
       </CardContent>
     </Card>

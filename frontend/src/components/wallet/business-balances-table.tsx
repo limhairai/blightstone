@@ -38,10 +38,10 @@ export function BusinessBalancesTable() {
     {
       id: "unallocated",
       name: "Unallocated Balance",
-      description: "Available for ad campaigns and funding",
+      description: "Available for ad account funding",
       amount: unallocatedBalance,
       icon: <Wallet className="h-4 w-4" />,
-      color: "text-green-400"
+      color: "text-green-600"
     }
   ];
 
@@ -49,11 +49,11 @@ export function BusinessBalancesTable() {
   if (reservedBalance > 0) {
     balanceItems.push({
       id: "reserved",
-      name: "Reserved Balance",
-      description: "Pending topup requests awaiting admin approval",
+      name: "Processing Balance",
+      description: "Funds being allocated to accounts",
       amount: reservedBalance,
       icon: <Clock className="h-4 w-4" />,
-      color: "text-orange-400"
+      color: "text-orange-600"
     });
   }
   
