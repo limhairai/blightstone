@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
   try {
-    // Create Supabase client
+    // Use the same cookie pattern as other working endpoints
+    const cookieStore = cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name: string) {
-            return request.cookies.get(name)?.value
+            return cookieStore.get(name)?.value
           },
           set() {},
           remove() {},
@@ -25,19 +27,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ isAdmin: false }, { status: 401 })
     }
 
-    // Check if user is admin in the profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('is_superuser')
-      .eq('profile_id', user.id)
-      .single()
+    // Use the is_admin() function to avoid RLS recursion
+    // This function uses SECURITY DEFINER to bypass RLS policies
+    const { data: adminCheck, error: adminError } = await supabase
+      .rpc('is_admin', { user_id: user.id })
 
-    if (profileError) {
-      console.error('Error checking admin status:', profileError)
+    if (adminError) {
+      console.error('Error checking admin status:', adminError)
       return NextResponse.json({ isAdmin: false }, { status: 500 })
     }
 
-    const isAdmin = profile?.is_superuser === true
+    const isAdmin = adminCheck === true
 
     return NextResponse.json({ 
       isAdmin,

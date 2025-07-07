@@ -1,6 +1,5 @@
 import { useAuth } from "../contexts/AuthContext"
 import { useState, useEffect } from "react"
-import { supabase } from "../lib/stores/supabase-client"
 
 export function useAdminRoute() {
   const { user, session, loading: authLoading } = useAuth()
@@ -18,19 +17,15 @@ export function useAdminRoute() {
       }
 
       try {
-        // Check user profile in Supabase for admin status
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_superuser')
-          .eq('profile_id', user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError)
-          setCanViewAdmin(false)
+        // Use the API endpoint instead of direct database query to avoid RLS issues
+        const response = await fetch('/api/auth/admin-check')
+        
+        if (response.ok) {
+          const data = await response.json()
+          setCanViewAdmin(data.isAdmin === true)
         } else {
-          // User is an admin ONLY if they have the is_superuser flag
-          setCanViewAdmin(profile?.is_superuser === true)
+          console.error('Admin check API error:', response.status)
+          setCanViewAdmin(false)
         }
       } catch (err) {
         console.error('Admin check error:', err)
