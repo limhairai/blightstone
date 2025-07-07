@@ -465,8 +465,6 @@ export function AccountsManagement() {
 
       {selectedAccount && (
         <TopUpDialog
-          open={isTopUpDialogOpen}
-          onOpenChange={setIsTopUpDialogOpen}
           trigger={<></>}
           account={{
             id: selectedAccount.id,

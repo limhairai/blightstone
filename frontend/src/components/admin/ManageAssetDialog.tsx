@@ -44,7 +44,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           asset_id: asset.id,
-          organization_id: asset.organization_id,
+          organization_id: (asset as any).organization_id,
           cascade: isBusinessManager
         })
       })
@@ -117,6 +117,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
                 <br /><br />
                 This action cannot be undone, but assets can be reassigned later.
               </p>
+              <p className="text-sm text-muted-foreground">Organization: {(asset as any).organization_id || 'Not assigned'}</p>
             </div>
           </div>
         </div>

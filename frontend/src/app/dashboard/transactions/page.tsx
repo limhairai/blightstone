@@ -243,7 +243,7 @@ export default function TransactionsPage() {
     
     // For ad account transactions, try to get from metadata
     if (tx.metadata?.account_name || tx.ad_accounts?.name) {
-      return tx.metadata.account_name || tx.ad_accounts?.name
+      return tx.metadata?.account_name || tx.ad_accounts?.name
     }
     
     // Default to Wallet for wallet transactions
@@ -342,7 +342,7 @@ export default function TransactionsPage() {
       tx.status,
     ])
 
-    const csvContent = [headers, ...csvData].map((row) => row.map((field) => `"${field}"`).join(",")).join("\n")
+    const csvContent = [headers, ...csvData].map((row) => row.map((field: any) => `"${field}"`).join(",")).join("\n")
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
     const link = document.createElement("a")

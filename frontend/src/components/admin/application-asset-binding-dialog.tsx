@@ -457,7 +457,7 @@ export function ApplicationAssetBindingDialog({
                       {businessManagers.map((bm, index) => {
                         return (
                         <div 
-                          key={bm.id || bm.dolphin_id || index}
+                          key={bm.id || ('dolphin_id' in bm ? bm.dolphin_id : '') || index}
                           className={cn(
                             "flex items-center space-x-3 p-3 rounded-md border cursor-pointer transition-colors",
                             selectedBusinessManager === bm.id 

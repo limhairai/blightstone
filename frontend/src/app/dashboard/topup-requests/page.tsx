@@ -6,7 +6,7 @@ import { useOrganizationStore } from "../../../lib/stores/organization-store"
 import { Button } from "../../../components/ui/button"
 import { Badge } from "../../../components/ui/badge"
 import { Input } from "../../../components/ui/input"
-import { DataTable } from "../../../components/ui/data-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../../components/ui/dialog"
 import { Label } from "../../../components/ui/label"
@@ -108,131 +108,7 @@ export default function ClientTopupRequestsPage() {
     }
   }
 
-  const columns: ColumnDef<TopupRequest>[] = [
-    {
-      accessorKey: "ad_account_name",
-      header: "Account Details",
-      size: 200,
-      cell: ({ row }) => {
-        const request = row.original
-        return (
-          <div className="space-y-1">
-            <div className="font-medium">
-              {request.ad_account_name && request.ad_account_name !== 'Account Name Not Available' 
-                ? request.ad_account_name 
-                : 'Account Name Unavailable'}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              ID: {request.ad_account_id && request.ad_account_id !== 'Account ID Not Available' 
-                ? request.ad_account_id 
-                : 'ID Unavailable'}
-            </div>
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "business_manager",
-      header: "Business Manager",
-      size: 180,
-      cell: ({ row }) => {
-        const request = row.original
-        const bmName = request.metadata?.business_manager_name
-        return (
-          <div className="text-sm">
-            {bmName && bmName !== 'BM Not Available' ? bmName : 'Not Available'}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "bm_id",
-      header: "BM ID",
-      size: 120,
-      cell: ({ row }) => {
-        const request = row.original
-        const bmId = request.metadata?.business_manager_id
-        return (
-          <div className="text-xs text-muted-foreground font-mono">
-            {bmId && bmId !== 'BM ID Not Available' ? bmId : 'Not Available'}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "amount_cents",
-      header: "Amount",
-      size: 120,
-      cell: ({ row }) => {
-        const amountCents = row.getValue<number>("amount_cents")
-        return (
-          <div className="font-medium text-[#34D197]">
-            {formatCurrency(amountCents / 100)}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 120,
-      cell: ({ row }) => {
-        const status = row.getValue<TopupRequestStatus>("status")
-        const config = getStatusConfig(status)
-        const Icon = config.icon
-        return (
-          <Badge className={`capitalize ${config.color} flex items-center gap-1`}>
-            <Icon className="h-3 w-3" />
-            {status}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "created_at",
-      header: "Requested",
-      size: 120,
-      cell: ({ row }) => {
-        const date = new Date(row.getValue<string>("created_at"))
-        return (
-          <div className="text-sm text-muted-foreground">
-            {formatDistanceToNow(date, { addSuffix: true })}
-          </div>
-        )
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      size: 100,
-      cell: ({ row }) => {
-        const request = row.original
-        const canCancel = request.status === 'pending' // Only pending requests can be cancelled
-        
-        return (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleViewDetails(request)}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              View
-            </Button>
-            {canCancel && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleCancelRequest(request)}
-              >
-                Cancel
-              </Button>
-            )}
-          </div>
-        )
-      },
-    },
-  ]
+
 
   // Status filter options
   const statusOptions = [
@@ -321,17 +197,106 @@ export default function ClientTopupRequestsPage() {
       </div>
 
       {/* Data Table */}
-      <DataTable 
-        columns={columns} 
-        data={filteredRequests}
-        searchableColumns={[
-          {
-            id: "ad_account_name",
-            title: "Account Name",
-          },
-        ]}
-        enableColumnVisibility={false}
-      />
+      <div className="border border-border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground">Account Details</TableHead>
+              <TableHead className="text-muted-foreground">Business Manager</TableHead>
+              <TableHead className="text-muted-foreground">BM ID</TableHead>
+              <TableHead className="text-muted-foreground">Amount</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Requested</TableHead>
+              <TableHead className="text-muted-foreground">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredRequests.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No top-up requests found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredRequests.map((request) => {
+                const config = getStatusConfig(request.status);
+                const Icon = config.icon;
+                const canCancel = request.status === 'pending';
+                
+                return (
+                  <TableRow key={request.id} className="border-border hover:bg-muted/50">
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          {request.ad_account_name && request.ad_account_name !== 'Account Name Not Available' 
+                            ? request.ad_account_name 
+                            : 'Account Name Unavailable'}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          ID: {request.ad_account_id && request.ad_account_id !== 'Account ID Not Available' 
+                            ? request.ad_account_id 
+                            : 'ID Unavailable'}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {request.metadata?.business_manager_name && request.metadata.business_manager_name !== 'BM Not Available' 
+                          ? request.metadata.business_manager_name 
+                          : 'Not Available'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {request.metadata?.business_manager_id && request.metadata.business_manager_id !== 'BM ID Not Available' 
+                          ? request.metadata.business_manager_id 
+                          : 'Not Available'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-[#34D197]">
+                        {formatCurrency(request.amount_cents / 100)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`capitalize ${config.color} flex items-center gap-1`}>
+                        <Icon className="h-3 w-3" />
+                        {request.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(request.created_at), { addSuffix: true })}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(request)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Button>
+                        {canCancel && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancelRequest(request)}
+                          >
+                            Cancel
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       {/* Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
@@ -402,7 +367,7 @@ export default function ClientTopupRequestsPage() {
                 </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Requested By:</span>
-                    <span className="text-sm">{selectedRequest.requested_by_user?.email || 'Unknown'}</span>
+                    <span className="text-sm">{selectedRequest.requested_by || 'Unknown'}</span>
                   </div>
                 </div>
               </div>

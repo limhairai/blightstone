@@ -114,7 +114,7 @@ export function BalanceResetDialog({ trigger, account, accounts, onSuccess }: Ba
           source_account_id: account.adAccount,
           destination_type: formData.destination,
           destination_account_name: formData.destination === "ad_account" 
-            ? destinationAccounts.find(acc => acc.ad_account_id === formData.destinationAccountId)?.name
+            ? destinationAccounts.find((acc: any) => acc.ad_account_id === formData.destinationAccountId)?.name
             : "Wallet"
         }
       }

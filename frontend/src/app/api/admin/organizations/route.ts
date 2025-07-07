@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
     try {
-        // Fetch organizations with wallet and business manager data
+        // Fetch organizations first
         const { data: organizations, error } = await supabase
             .from('organizations')
             .select(`
@@ -18,14 +18,28 @@ export async function GET(request: NextRequest) {
                 plan_id,
                 subscription_status,
                 current_period_start,
-                current_period_end,
-                wallets(balance_cents, reserved_balance_cents)
+                current_period_end
             `);
-
+        
         if (error) {
-            console.error('Error fetching organizations for admin:', error);
+            console.error('Error fetching organizations:', error);
             throw error;
         }
+
+        // Fetch wallets separately
+        const { data: wallets, error: walletError } = await supabase
+            .from('wallets')
+            .select('organization_id, balance_cents, reserved_balance_cents');
+        
+        if (walletError) {
+            console.error('Error fetching wallets:', walletError);
+        }
+
+        // Create wallet map
+        const walletMap = new Map();
+        wallets?.forEach(wallet => {
+            walletMap.set(wallet.organization_id, wallet);
+        });
 
         // Get business manager counts for all organizations
         const { data: bmCounts, error: bmError } = await supabase
@@ -50,8 +64,9 @@ export async function GET(request: NextRequest) {
 
         // Transform organizations with additional data
         const transformedOrganizations = organizations?.map(org => {
-            const totalBalance = org.wallets?.balance_cents || 0;
-            const reservedBalance = org.wallets?.reserved_balance_cents || 0;
+            const wallet = walletMap.get(org.organization_id);
+            const totalBalance = wallet?.balance_cents || 0;
+            const reservedBalance = wallet?.reserved_balance_cents || 0;
             const availableBalance = totalBalance - reservedBalance;
             
             return {

@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
             };
         }
 
-        // Create topup request with fee tracking
+        // Create topup request with fee tracking - follows proper workflow
         const { data: topupRequest, error: insertError } = await supabaseAdmin
             .from('topup_requests')
             .insert({
@@ -96,14 +96,13 @@ export async function POST(request: NextRequest) {
                 ad_account_name: accountName || 'Unknown Account',
                 amount_cents: amount * 100,
                 currency: 'USD',
-                status: 'pending',
-                priority: 'high', // High priority for immediate processing
-                notes: `Immediate topup request for ad account: ${accountName || 'Unknown Account'} (${accountId})`,
+                status: 'pending', // Create as pending - admin will complete manually
+                priority: 'high',
+                notes: `Topup request for ad account: ${accountName || 'Unknown Account'} (${accountId})`,
                 fee_amount_cents: calculatedFeeData.fee_amount_cents,
                 total_deducted_cents: calculatedFeeData.total_deducted_cents,
                 plan_fee_percentage: calculatedFeeData.plan_fee_percentage,
                 metadata: {
-                    immediate_processing: true,
                     requested_via: 'ad_account_topup_api'
                 }
             })
@@ -123,29 +122,15 @@ export async function POST(request: NextRequest) {
             throw insertError;
         }
 
-        // For immediate processing, we can approve the request right away
-        // This simulates the old direct topup behavior
-        const { error: approveError } = await supabaseAdmin
-            .from('topup_requests')
-            .update({ 
-                status: 'completed',
-        
-                processed_by: user.id,
-                processed_at: new Date().toISOString()
-            })
-            .eq('request_id', topupRequest.request_id);
-
-        if (approveError) {
-            console.error('Error approving topup request:', approveError);
-            // Don't throw here - the request was created successfully
-        }
-
+        // Return success - request created and funds reserved
         return NextResponse.json({ 
             success: true, 
-            message: 'Account topped up successfully.',
+            message: 'Topup request submitted successfully. Funds have been reserved and will be processed by our team.',
             request_id: topupRequest.request_id,
-            amount_deducted: calculatedFeeData.total_deducted_cents / 100,
-            fee_applied: calculatedFeeData.fee_amount_cents / 100
+            amount_requested: amount,
+            amount_reserved: calculatedFeeData.total_deducted_cents / 100,
+            fee_applied: calculatedFeeData.fee_amount_cents / 100,
+            status: 'pending'
         });
     } catch (error) {
         console.error('Error in ad account topup:', error);

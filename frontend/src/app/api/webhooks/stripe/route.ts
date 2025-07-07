@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 import { WalletService } from '../../../../lib/wallet-service'
+import { revalidateTag } from 'next/cache'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-12-18.acacia'
+  apiVersion: '2025-05-28.basil'
 })
 
 const supabase = createClient(
@@ -14,6 +15,45 @@ const supabase = createClient(
 )
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!
+
+/**
+ * Invalidate subscription-related caches for immediate UI updates
+ */
+async function invalidateSubscriptionCache(organizationId: string) {
+  try {
+    // Method 1: Direct Next.js cache invalidation
+    revalidateTag(`subscription-${organizationId}`)
+    revalidateTag(`organization-${organizationId}`)
+    revalidateTag('subscriptions')
+    revalidateTag('organizations')
+    
+    // Method 2: Call internal cache invalidation endpoint for SWR
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      const response = await fetch(`${baseUrl}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          organizationId,
+          type: 'subscription'
+        })
+      })
+      
+      if (response.ok) {
+        console.log(`✅ SWR cache invalidation triggered for org: ${organizationId}`)
+      }
+    } catch (fetchError) {
+      console.warn('Failed to trigger SWR cache invalidation:', fetchError)
+    }
+    
+    console.log(`✅ Cache invalidated for organization: ${organizationId}`)
+  } catch (error) {
+    console.error('Failed to invalidate cache:', error)
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text()
@@ -134,8 +174,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       stripe_subscription_id: subscription.id,
       stripe_customer_id: subscription.customer as string,
       status: subscription.status,
-      current_period_start: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
-      current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : new Date().toISOString(),
+      current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
+      current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : new Date().toISOString(),
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
     })
@@ -151,8 +191,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       .update({
         plan_id: planId,
         subscription_status: subscription.status,
-        current_period_start: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
-        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : new Date().toISOString(),
+        current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
+        current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : new Date().toISOString(),
         trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
         updated_at: new Date().toISOString(),
       })
@@ -164,6 +204,10 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     }
 
     console.log('Successfully processed subscription.created for org:', organizationId)
+    
+    // CRITICAL: Invalidate cache immediately after subscription changes
+    await invalidateSubscriptionCache(organizationId)
+    
   } catch (error) {
     console.error('Error in handleSubscriptionCreated:', error)
     throw error
@@ -190,8 +234,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       .from('subscriptions')
       .update({
         status: subscription.status,
-        current_period_start: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
-        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : new Date().toISOString(),
+        current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
+        current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : new Date().toISOString(),
         trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
         cancel_at_period_end: subscription.cancel_at_period_end,
         canceled_at: subscription.canceled_at ? new Date(subscription.canceled_at * 1000).toISOString() : null,
@@ -209,8 +253,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       .from('organizations')
       .update({
         subscription_status: subscription.status,
-        current_period_start: subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : new Date().toISOString(),
-        current_period_end: subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : new Date().toISOString(),
+        current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
+        current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : new Date().toISOString(),
         trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
         updated_at: new Date().toISOString(),
       })
@@ -222,6 +266,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     }
 
     console.log('Successfully processed subscription.updated for org:', organizationId)
+    
+    // CRITICAL: Invalidate cache immediately after subscription changes
+    await invalidateSubscriptionCache(organizationId)
+    
   } catch (error) {
     console.error('Error in handleSubscriptionUpdated:', error)
     throw error
@@ -255,12 +303,15 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
       updated_at: new Date().toISOString(),
     })
     .eq('organization_id', organizationId)
+
+  // CRITICAL: Invalidate cache immediately after subscription changes
+  await invalidateSubscriptionCache(organizationId)
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     // Payment succeeded for a subscription
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string)
     const organizationId = subscription.metadata?.organization_id
 
     if (organizationId) {
@@ -276,9 +327,9 @@ async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  if (invoice.subscription) {
+  if ((invoice as any).subscription) {
     // Payment failed for a subscription
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+    const subscription = await stripe.subscriptions.retrieve((invoice as any).subscription as string)
     const organizationId = subscription.metadata?.organization_id
 
     if (organizationId) {

@@ -59,14 +59,14 @@ export async function GET(request: NextRequest) {
     const assets = Array.isArray(data) ? data : (data.assets || [])
     
     // Get profiles and extract team information
-    const profiles = assets.filter(asset => asset.type === 'profile')
-    const businessManagers = assets.filter(asset => asset.type === 'business_manager')
-    const adAccounts = assets.filter(asset => asset.type === 'ad_account')
+    const profiles = assets.filter((asset: any) => asset.type === 'profile')
+    const businessManagers = assets.filter((asset: any) => asset.type === 'business_manager')
+    const adAccounts = assets.filter((asset: any) => asset.type === 'ad_account')
     
     // Group profiles by team
     const teamMap = new Map()
     
-    profiles.forEach(profile => {
+    profiles.forEach((profile: any) => {
       const teamInfo = extractTeamFromProfile(profile.name)
       if (teamInfo) {
         const teamKey = teamInfo.team
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     })
     
     // Associate Business Managers and Ad Accounts with teams
-    businessManagers.forEach(bm => {
+    businessManagers.forEach((bm: any) => {
       const managingProfile = bm.metadata?.managing_profile
       if (managingProfile) {
         const teamInfo = extractTeamFromProfile(managingProfile)
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       }
     })
     
-    adAccounts.forEach(account => {
+    adAccounts.forEach((account: any) => {
       const managingProfile = account.metadata?.managing_profile
       if (managingProfile) {
         const teamInfo = extractTeamFromProfile(managingProfile)
@@ -113,10 +113,10 @@ export async function GET(request: NextRequest) {
     
     // Convert to teams array with statistics
     const teams = Array.from(teamMap.values()).map(team => {
-      const activeProfiles = team.profiles.filter(p => p.status === 'active').length
+      const activeProfiles = team.profiles.filter((p: any) => p.status === 'active').length
       const totalProfiles = team.profiles.length
-      const adminProfiles = team.profiles.filter(p => p.teamInfo.role === 'Admin').length
-      const backupProfiles = team.profiles.filter(p => p.teamInfo.role === 'Backup').length
+      const adminProfiles = team.profiles.filter((p: any) => p.teamInfo.role === 'Admin').length
+      const backupProfiles = team.profiles.filter((p: any) => p.teamInfo.role === 'Backup').length
       
       // Business Manager capacity logic
       const bmCount = team.businessManagers.length

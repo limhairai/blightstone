@@ -161,12 +161,7 @@ export function AccountsTab({ accounts, onCreateAccount }: AccountsTabProps) {
           </div>
         ) : (
           <>
-            <AccountsTable 
-              accounts={filteredAccounts}
-              selectedAccounts={selectedAccounts}
-              onSelectAccount={handleSelectAccount}
-              onSelectAll={handleSelectAll}
-            />
+            <AccountsTable />
             
             <div className="text-sm text-muted-foreground">
               Showing {filteredAccounts.length} of {accounts.length} accounts

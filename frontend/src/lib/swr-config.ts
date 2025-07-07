@@ -172,13 +172,15 @@ export function useSubscriptionSWR(organizationId: string | null) {
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
-      dedupingInterval: 1000, // Very short deduping interval for immediate responsiveness
-      revalidateOnFocus: true, // Revalidate when user focuses tab
+      dedupingInterval: 500, // Very short deduping for subscription changes
+      revalidateOnFocus: true, // Always revalidate when user focuses tab
       revalidateOnReconnect: true, // Revalidate when connection is restored
       revalidateOnMount: true, // Enable revalidation on mount to get fresh data
-      refreshInterval: 0, // No automatic polling - we handle refreshes manually
+      refreshInterval: 30000, // Poll every 30 seconds for subscription changes
       errorRetryCount: 5, // More retries for subscription data
-      errorRetryInterval: 2000, // Faster retry interval
+      errorRetryInterval: 1000, // Faster retry interval
+      // CRITICAL: Much shorter cache for subscription data
+      focusThrottleInterval: 1000, // Throttle focus revalidation to 1 second
     }
   )
 }

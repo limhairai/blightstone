@@ -106,7 +106,7 @@ export async function GET(
       const bmAdAccounts = adAccountsByBM.get(bmId) || [];
       
       // Calculate total spend for this business manager
-      const bmTotalSpend = bmAdAccounts.reduce((sum, adBinding) => {
+      const bmTotalSpend = bmAdAccounts.reduce((sum: number, adBinding: any) => {
         const amountSpent = adBinding.asset?.metadata?.amount_spent || 0;
         return sum + amountSpent;
       }, 0);

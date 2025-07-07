@@ -113,15 +113,15 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
               </TableCell>
             </TableRow>
           ) : (
-            transactions.map((transaction) => (
+            transactions.map((transaction: any) => (
               <TableRow key={transaction.id} className="border-b border-gray-200 dark:border-[#1A1A1A] hover:bg-gray-50 dark:hover:bg-[#1A1A1A]">
                 <TableCell className="text-gray-900 dark:text-gray-100">{transaction.date}</TableCell>
                 <TableCell className="text-gray-900 dark:text-gray-100">{transaction.description}</TableCell>
-                <TableCell className={`font-medium ${typeColors[transaction.type]}`}>
+                <TableCell className={`font-medium ${typeColors[transaction.type as keyof typeof typeColors] || 'text-foreground'}`}>
                   {transaction.amount}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={statusColors[transaction.status]}>
+                  <Badge variant="outline" className={transaction.status === 'completed' ? 'text-green-600' : transaction.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}>
                     {transaction.status}
                   </Badge>
                 </TableCell>

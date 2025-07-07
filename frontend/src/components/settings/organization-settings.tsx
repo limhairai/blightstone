@@ -110,7 +110,16 @@ export function OrganizationSettings() {
     const paymentSuccess = urlParams.get('payment');
     
     if (subscriptionSuccess === 'success' || paymentSuccess === 'success') {
-      // User returned from successful payment - refresh all data
+      // User returned from successful payment - force immediate cache invalidation
+      if (currentOrganizationId) {
+        // Import and trigger cache invalidation
+        import('@/hooks/useCacheInvalidation').then(({ triggerCacheInvalidation, invalidateSubscriptionCaches }) => {
+          triggerCacheInvalidation(currentOrganizationId, 'subscription');
+          invalidateSubscriptionCaches(currentOrganizationId);
+        });
+      }
+      
+      // Also do the manual refresh as backup
       handleManualRefresh();
       
       // Clean up URL params
@@ -120,7 +129,7 @@ export function OrganizationSettings() {
       // Show success message
       toast.success('Payment successful! Your plan has been updated.');
     }
-  }, [handleManualRefresh]);
+  }, [handleManualRefresh, currentOrganizationId]);
 
   // Auto-refresh subscription data when upgrade dialog closes
   const handleUpgradeDialogChange = (open: boolean) => {

@@ -3,7 +3,7 @@ import { Building2, CreditCard, Wallet, TrendingUp } from "lucide-react"
 import { useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 
 export function BusinessesMetrics() {
-  const { data: businesses = [], isLoading: businessesLoading } = useBusinessManagers(null)
+  const { data: businesses = [], isLoading: businessesLoading } = useBusinessManagers()
   const { data: accounts = [], isLoading: accountsLoading } = useAdAccounts(null)
   
   if (businessesLoading || accountsLoading) {
@@ -19,11 +19,11 @@ export function BusinessesMetrics() {
   }
   
   const totalBusinesses = businesses.length
-  const activeBusinesses = businesses.filter((b) => b.status === "active").length
-  const pendingBusinesses = businesses.filter((b) => b.status === "pending").length
-  const totalBalance = accounts.reduce((total, account) => total + (account.balance || 0), 0)
+  const activeBusinesses = businesses.filter((b: any) => b.status === "active").length
+  const pendingBusinesses = businesses.filter((b: any) => b.status === "pending").length
+  const totalBalance = accounts.reduce((total: any, account: any) => total + (account.balance || 0), 0)
   const totalAccounts = accounts.length
-  const totalSpend = accounts.reduce((total, account) => total + (account.spent || 0), 0)
+  const totalSpend = accounts.reduce((total: any, account: any) => total + (account.spent || 0), 0)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

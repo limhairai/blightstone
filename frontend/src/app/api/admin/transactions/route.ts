@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Fetch regular transactions
+    // Fetch regular transactions (include all transactions for admin view)
     const { data: transactions, error: transactionsError } = await supabase
       .from('transactions')
       .select(`
@@ -42,7 +42,6 @@ export async function GET(request: NextRequest) {
         amount_cents,
         status,
         description,
-        reference_number,
         created_at,
         organizations(name)
       `)
@@ -63,13 +62,12 @@ export async function GET(request: NextRequest) {
       .select(`
         request_id,
         requested_amount,
-        actual_amount,
         status,
         reference_number,
         created_at,
         processed_at,
         user_id,
-        organization:organizations(name)
+        organizations(name)
       `)
       .order('created_at', { ascending: false })
       .limit(500)
@@ -83,19 +81,24 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch user information for bank transfers
-    const userIds = bankTransfers?.map(bt => bt.user_id).filter(Boolean) || []
-    const { data: users, error: usersError } = await supabase
-      .from('profiles')
-      .select('profile_id, name, email')
-      .in('profile_id', userIds)
-    
-    if (usersError) {
-      console.error('Supabase users error:', usersError)
-      // Don't fail the request, just log the error
+    const userIds = (bankTransfers || []).map(bt => bt.user_id).filter(Boolean)
+    let users: any[] = []
+    if (userIds.length > 0) {
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('profile_id, name, email')
+        .in('profile_id', userIds)
+      
+      if (usersError) {
+        console.error('Supabase users error:', usersError)
+        // Don't fail the request, just log the error
+      } else {
+        users = usersData || []
+      }
     }
 
     // Create a user lookup map
-    const userLookup = (users || []).reduce((acc, user) => {
+    const userLookup = users.reduce((acc, user) => {
       acc[user.profile_id] = user
       return acc
     }, {} as Record<string, any>)
@@ -104,37 +107,48 @@ export async function GET(request: NextRequest) {
     const { data: unmatchedTransfers, error: unmatchedError } = await supabase
       .from('unmatched_transfers')
       .select(`
-        unmatched_id,
+        transfer_id,
         amount,
-        currency,
-        reference_text,
-        attempted_reference,
+        reference_provided,
         status,
-        created_at,
-        transfer_data
+        created_at
       `)
       .order('created_at', { ascending: false })
       .limit(100)
 
     if (unmatchedError) {
       console.error('Supabase unmatched transfers error:', unmatchedError)
-      // Don't fail the request, just log the error
+      return NextResponse.json(
+        { error: 'Failed to fetch unmatched transfers' },
+        { status: 500 }
+      )
     }
     
     // Transform regular transactions
-    const transformedTransactions = (transactions || []).map(txn => ({
-      id: txn.transaction_id,
-      display_id: txn.transaction_id ? `TXN-${txn.transaction_id.substring(0, 8).toUpperCase()}` : null,
-      type: txn.type,
-      amount: txn.amount_cents / 100, // Convert cents to dollars
-      currency: "USD",
-      status: txn.status,
-      organizationName: txn.organizations?.name || 'Unknown Organization',
-      description: txn.description || `${txn.type} transaction`,
-      createdAt: txn.created_at,
-      paymentMethod: 'Credit Card',
-      referenceNumber: txn.reference_number
-    }))
+    const transformedTransactions = (transactions || []).map(txn => {
+      // Determine payment method based on transaction type
+      let paymentMethod = 'Credit Card'; // Default for most transactions
+      
+      if (txn.type === 'topup' || txn.type === 'topup_deduction' || txn.type === 'spend' || txn.type === 'fee') {
+        paymentMethod = 'Wallet Balance';
+      } else if (txn.type === 'bank_transfer') {
+        paymentMethod = 'Bank Transfer';
+      }
+      
+      return {
+        id: txn.transaction_id,
+        display_id: txn.transaction_id ? `TXN-${txn.transaction_id.substring(0, 8).toUpperCase()}` : null,
+        type: txn.type,
+        amount: txn.amount_cents / 100, // Convert cents to dollars
+        currency: "USD",
+        status: txn.status,
+        organizationName: txn.organizations?.name || 'Unknown Organization',
+        description: txn.description || `${txn.type} transaction`,
+        createdAt: txn.created_at,
+        paymentMethod: paymentMethod,
+        referenceNumber: null // Regular transactions don't have reference numbers
+      }
+    })
 
     // Transform bank transfer requests
     const transformedBankTransfers = (bankTransfers || []).map(bt => {
@@ -143,10 +157,10 @@ export async function GET(request: NextRequest) {
         id: bt.request_id,
         display_id: bt.request_id ? `BT-${bt.request_id.substring(0, 8).toUpperCase()}` : null,
         type: 'bank_transfer' as const,
-        amount: bt.actual_amount || bt.requested_amount, // Already in dollars, don't divide by 100
+        amount: bt.requested_amount, // Already in dollars, don't divide by 100
         currency: "USD",
         status: bt.status,
-        organizationName: bt.organization?.name || 'Unknown Organization',
+        organizationName: bt.organizations?.name || 'Unknown Organization',
         description: 'Bank Transfer',
         createdAt: bt.created_at,
         paymentMethod: 'Bank Transfer',
@@ -158,17 +172,17 @@ export async function GET(request: NextRequest) {
 
     // Transform unmatched transfers
     const transformedUnmatchedTransfers = (unmatchedTransfers || []).map(ut => ({
-      id: ut.unmatched_id,
-      display_id: ut.unmatched_id ? `UM-${ut.unmatched_id.substring(0, 8).toUpperCase()}` : null,
+      id: ut.transfer_id,
+      display_id: ut.transfer_id ? `UM-${ut.transfer_id.substring(0, 8).toUpperCase()}` : null,
       type: 'unmatched_transfer' as const,
-      amount: ut.amount / 100, // Convert cents to dollars
-      currency: ut.currency || "USD",
+      amount: ut.amount, // Already in dollars from the schema
+      currency: "USD",
       status: ut.status,
       organizationName: 'Unmatched Transfer',
       description: 'Unmatched Transfer',
       createdAt: ut.created_at,
       paymentMethod: 'Bank Transfer (Unmatched)',
-      referenceNumber: ut.attempted_reference || ut.reference_text,
+      referenceNumber: ut.reference_provided,
       processedAt: null,
       requestedBy: 'Unknown'
     }))

@@ -10,8 +10,8 @@ import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
-import { DataTable } from "../../../../components/ui/data-table"
-import type { ColumnDef } from "@tanstack/react-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table"
+
 import { formatDistanceToNow } from "date-fns"
 import { Search, Download, CheckCircle, X, Eye } from "lucide-react"
 
@@ -84,7 +84,7 @@ export default function TransactionHistoryPage() {
 
   const stats = useMemo(() => ({
     total: transactions.length,
-    topup: transactions.filter(t => t.type === "topup").length,
+    topup: transactions.filter(t => t.type === "topup" || t.type === "topup_deduction").length,
     spend: transactions.filter(t => t.type === "spend").length,
     refund: transactions.filter(t => t.type === "refund").length,
     fee: transactions.filter(t => t.type === "fee").length,
@@ -108,223 +108,50 @@ export default function TransactionHistoryPage() {
 
 
   const getStatusColor = (status: string) => {
-    const colors = {
-      completed: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
-      pending: "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800",
-      failed: "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
-      cancelled: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700",
-      unmatched: "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800",
-      matched: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800",
-      ignored: "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+    switch (status) {
+      case "completed":
+        return "default"
+      case "pending":
+        return "secondary"
+      case "failed":
+        return "destructive"
+      case "cancelled":
+        return "outline"
+      case "unmatched":
+        return "secondary"
+      default:
+        return "outline"
     }
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700"
   }
 
-  const columns: ColumnDef<Transaction>[] = [
-    {
-      accessorKey: "display_id",
-      header: "ID",
-      size: 80,
-      cell: ({ row }) => {
-        const displayId = row.getValue<string>("display_id")
-        const id = row.original.id
-        return (
-          <div className="font-mono text-xs font-medium">
-            {displayId || (id ? `${id.substring(0, 8)}...` : 'No ID')}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "type",
-      header: "Type",
-      size: 80,
-      cell: ({ row }) => {
-        const type = row.getValue<string>("type")
-        const shortType = type === "bank_transfer" ? "Bank" : 
-                         type === "unmatched_transfer" ? "Unmatched" : 
-                         type.charAt(0).toUpperCase() + type.slice(1)
-        return (
-          <Badge variant="outline" className="text-xs">
-            {shortType}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "amount",
-      header: "Amount",
-      size: 90,
-      cell: ({ row }) => {
-        const amount = row.getValue<number>("amount")
-        const currency = row.original.currency
-        const type = row.original.type
-        const isNegative = type === "spend" || type === "fee"
-        const isPositive = type === "topup" || type === "refund" || type === "bank_transfer" || type === "unmatched_transfer"
-        return (
-          <div className={`font-medium text-sm ${isNegative ? "text-red-600 dark:text-red-400" : isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}>
-            {isNegative ? "-" : isPositive ? "+" : ""}{currency} {amount.toLocaleString()}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 80,
-      cell: ({ row }) => {
-        const status = row.getValue<string>("status")
-        return (
-          <Badge className={`text-xs ${getStatusColor(status)}`}>
-            {status}
-          </Badge>
-        )
-      },
-    },
-    {
-      accessorKey: "paymentMethod",
-      header: "Payment Method",
-      size: 120,
-      cell: ({ row }) => {
-        const transaction = row.original
-        const paymentMethod = transaction.paymentMethod || 'Unknown'
-        return (
-          <div className="space-y-1">
-            <div className="text-sm font-medium">{paymentMethod}</div>
-            {transaction.referenceNumber && (
-              <div className="text-xs text-muted-foreground font-mono truncate">
-                {transaction.referenceNumber.length > 20 
-                  ? `${transaction.referenceNumber.substring(0, 20)}...`
-                  : transaction.referenceNumber}
-              </div>
-            )}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "organizationName",
-      header: "Organization",
-      size: 140,
-      cell: ({ row }) => (
-        <div className="font-medium text-sm truncate">
-          {row.getValue("organizationName")}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "description",
-      header: "Description",
-      size: 120,
-      cell: ({ row }) => {
-        const description = row.getValue<string>("description")
-        const shortDescription = description.length > 30 
-          ? `${description.substring(0, 30)}...`
-          : description
-        return (
-          <div className="text-xs text-muted-foreground truncate" title={description}>
-            {shortDescription}
-          </div>
-        )
-      },
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Date",
-      size: 100,
-      cell: ({ row }) => {
-        const date = new Date(row.getValue<string>("createdAt"))
-        return (
-          <div className="text-xs text-muted-foreground">
-            {formatDistanceToNow(date, { addSuffix: true })}
-          </div>
-        )
-      },
-    },
-    {
-      id: "actions",
-      header: "Actions",
-      size: 120,
-      cell: ({ row }) => {
-        const transaction = row.original
-        
-        // Only show actions for bank transfers and unmatched transfers
-        if (transaction.type !== "bank_transfer" && transaction.type !== "unmatched_transfer") {
-          return null
-        }
-        
-        const handleTransferAction = async (action: 'completed' | 'failed' | 'ignored') => {
-          try {
-            const endpoint = transaction.type === "bank_transfer" 
-              ? `/api/admin/bank-transfers/${transaction.id}`
-              : `/api/admin/unmatched-transfers/${transaction.id}`
-            
-            const response = await fetch(endpoint, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token}`
-              },
-              body: JSON.stringify({ status: action })
-            })
-            
-            if (!response.ok) {
-              throw new Error(`Failed to update ${transaction.type.replace('_', ' ')}`)
-            }
-            
-            // Refresh the transactions
-            window.location.reload()
-            toast.success(`${transaction.type.replace('_', ' ')} ${action}`)
-          } catch (error) {
-            toast.error(`Failed to update ${transaction.type.replace('_', ' ')}`)
-          }
-        }
-        
-        return (
-          <div className="flex items-center gap-1">
-            {(transaction.status === "pending" || transaction.status === "unmatched") && (
-              <>
-                <Button
-                  size="sm"
-                  onClick={() => handleTransferAction('completed')}
-                  className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
-                >
-                  <CheckCircle className="h-3 w-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleTransferAction('failed')}
-                  className="h-6 text-xs px-2"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-                {transaction.type === "unmatched_transfer" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleTransferAction('ignored')}
-                    className="h-6 text-xs px-2"
-                  >
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                )}
-              </>
-            )}
-            {transaction.status !== "pending" && transaction.status !== "unmatched" && (
-              <div className="text-xs text-muted-foreground">
-                {transaction.status === "completed" ? "✓" : 
-                 transaction.status === "failed" ? "✗" : 
-                 transaction.status === "cancelled" ? "⊘" : 
-                 transaction.status === "ignored" ? "⊘" : 
-                 transaction.status}
-              </div>
-            )}
-          </div>
-        )
-      },
-    },
-  ]
+  const handleTransferAction = async (transaction: Transaction, action: 'completed' | 'failed' | 'ignored') => {
+    try {
+      const endpoint = transaction.type === "bank_transfer" 
+        ? `/api/admin/bank-transfers/${transaction.id}`
+        : `/api/admin/unmatched-transfers/${transaction.id}`
+      
+      const response = await fetch(endpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ status: action })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update ${transaction.type.replace('_', ' ')}`)
+      }
+      
+      // Refresh the transactions
+      window.location.reload()
+      toast.success(`${transaction.type.replace('_', ' ')} ${action}`)
+    } catch (error) {
+      toast.error(`Failed to update ${transaction.type.replace('_', ' ')}`)
+    }
+  }
+
+
 
   return (
     <div className="space-y-6">
@@ -382,10 +209,134 @@ export default function TransactionHistoryPage() {
       </div>
       
       <div className="rounded-md border overflow-x-auto">
-        <DataTable 
-          columns={columns} 
-          data={filteredTransactions} 
-        />
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Transaction ID</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 80 }}>Type</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 100 }}>Amount</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 80 }}>Status</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Payment Method</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 140 }}>Organization</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Description</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 100 }}>Date</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTransactions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  No transactions found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTransactions.map((transaction) => (
+                <TableRow key={transaction.id} className="border-border hover:bg-muted/30">
+                  <TableCell>
+                    <div className="font-mono text-xs">
+                      {transaction.display_id || transaction.id.substring(0, 8)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">
+                      {transaction.type.replace('_', ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-right font-medium">
+                      <div className={`${transaction.type === 'spend' || transaction.type === 'fee' ? 'text-red-600' : 'text-green-600'}`}>
+                        {transaction.type === 'spend' || transaction.type === 'fee' ? '-' : '+'}${Math.abs(transaction.amount).toFixed(2)}
+                      </div>
+                      <div className="text-xs text-muted-foreground uppercase">
+                        {transaction.currency}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusColor(transaction.status)}>
+                      {transaction.status.replace('_', ' ')}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="text-sm font-medium">{transaction.paymentMethod || 'N/A'}</div>
+                      {transaction.referenceNumber && (
+                        <div className="text-xs text-muted-foreground font-mono truncate">
+                          {transaction.referenceNumber.length > 20 
+                            ? `${transaction.referenceNumber.substring(0, 20)}...`
+                            : transaction.referenceNumber}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium text-sm truncate">
+                      {transaction.organizationName}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground truncate" title={transaction.description}>
+                      {transaction.description.length > 30 
+                        ? `${transaction.description.substring(0, 30)}...`
+                        : transaction.description}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(transaction.createdAt), { addSuffix: true })}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {/* Actions for bank transfers and unmatched transfers */}
+                    {(transaction.type === "bank_transfer" || transaction.type === "unmatched_transfer") && (
+                      <div className="flex items-center gap-1">
+                        {(transaction.status === "pending" || transaction.status === "unmatched") && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleTransferAction(transaction, 'completed')}
+                              className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                            >
+                              <CheckCircle className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleTransferAction(transaction, 'failed')}
+                              className="h-6 text-xs px-2"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                            {transaction.type === "unmatched_transfer" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleTransferAction(transaction, 'ignored')}
+                                className="h-6 text-xs px-2"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </>
+                        )}
+                        {transaction.status !== "pending" && transaction.status !== "unmatched" && (
+                          <div className="text-xs text-muted-foreground">
+                            {transaction.status === "completed" ? "✓" : 
+                             transaction.status === "failed" ? "✗" : 
+                             transaction.status === "cancelled" ? "⊘" : 
+                             transaction.status === "ignored" ? "⊘" : 
+                             transaction.status}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   )

@@ -12,6 +12,7 @@ import { formatCurrency } from "../../utils/format"
 import { ArrowUpRight, DollarSign, Check, Loader2, AlertTriangle } from "lucide-react"
 import { toast } from "sonner"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useAuth } from '@/contexts/AuthContext'
 
 interface AppAccount {
   id: string
@@ -37,6 +38,7 @@ export function WithdrawBalanceDialog({
   const [amount, setAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const { session } = useAuth()
 
   const { data: orgData, isLoading: isOrgLoading } = useSWR(
     currentOrganizationId ? `/api/organizations?id=${currentOrganizationId}` : null,

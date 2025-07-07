@@ -299,8 +299,6 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
       {/* Top Up Dialog */}
       {selectedAccountForTopUp && (
         <TopUpDialog
-          open={isTopUpDialogOpen}
-          onOpenChange={setIsTopUpDialogOpen}
           trigger={<></>}
           account={{
             id: selectedAccountForTopUp.id,

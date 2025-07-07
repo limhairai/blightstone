@@ -241,6 +241,26 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update topup request' }, { status: 500 });
     }
 
+    // Trigger cache invalidation for immediate UI updates when status changes
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      await fetch(`${baseUrl}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          organizationId: updatedRequest.organization_id,
+          type: 'wallet'
+        })
+      })
+      console.log(`✅ Wallet cache invalidated for org: ${updatedRequest.organization_id}`)
+    } catch (cacheError) {
+      console.error('Failed to invalidate wallet cache:', cacheError)
+      // Don't fail the request if cache invalidation fails
+    }
+
     return NextResponse.json({ 
       message: 'Topup request updated successfully',
       request: {
@@ -324,6 +344,8 @@ export async function POST(request: NextRequest) {
     if (request_type === 'topup' && (!fee_amount_cents || !plan_fee_percentage)) {
       // Calculate fee using subscription service
       try {
+        console.log(`🔍 DEBUG: Calculating fee for amount: $${amount_cents / 100} (${amount_cents} cents)`);
+        
         const feeResponse = await fetch(buildApiUrl('/subscriptions/calculate-fee'), {
           method: 'POST',
           headers: {
@@ -338,11 +360,15 @@ export async function POST(request: NextRequest) {
 
         if (feeResponse.ok) {
           const feeData = await feeResponse.json();
+          console.log(`🔍 DEBUG: Backend fee response:`, feeData);
+          
           calculatedFeeData = {
             fee_amount_cents: Math.round(feeData.fee_amount * 100),
             total_deducted_cents: Math.round(feeData.total_amount * 100),
             plan_fee_percentage: feeData.fee_percentage
           };
+          
+          console.log(`🔍 DEBUG: Calculated fee data:`, calculatedFeeData);
         } else {
           console.error('Fee calculation failed:', feeResponse.status, await feeResponse.text());
           // Use default fee calculation (3% like the old system)
@@ -353,6 +379,8 @@ export async function POST(request: NextRequest) {
             total_deducted_cents: amount_cents + defaultFeeAmount,
             plan_fee_percentage: defaultFeePercentage
           };
+          
+          console.log(`🔍 DEBUG: Using fallback fee calculation:`, calculatedFeeData);
         }
       } catch (error) {
         console.error('Error calculating fee:', error);
@@ -364,6 +392,8 @@ export async function POST(request: NextRequest) {
           total_deducted_cents: amount_cents + defaultFeeAmount,
           plan_fee_percentage: defaultFeePercentage
         };
+        
+        console.log(`🔍 DEBUG: Using fallback fee calculation after error:`, calculatedFeeData);
       }
     }
 
@@ -383,13 +413,18 @@ export async function POST(request: NextRequest) {
       request_type: request_type || 'topup'
     };
 
+    console.log(`🔍 DEBUG: Final insert data:`, {
+      amount_cents: insertData.amount_cents,
+      fee_amount_cents: insertData.fee_amount_cents,
+      total_deducted_cents: insertData.total_deducted_cents,
+      plan_fee_percentage: insertData.plan_fee_percentage
+    });
+
     // Add balance reset specific fields
     if (request_type === 'balance_reset') {
       insertData.transfer_destination_type = transfer_destination_type;
       insertData.transfer_destination_id = transfer_destination_id;
     }
-
-
 
     const { data: topupRequest, error: insertError } = await supabase
       .from('topup_requests')
@@ -408,6 +443,34 @@ export async function POST(request: NextRequest) {
       }
       
       return NextResponse.json({ error: 'Failed to create topup request' }, { status: 500 });
+    }
+
+    // Trigger comprehensive cache invalidation for immediate UI updates
+    try {
+      // Method 1: Call internal cache invalidation endpoint
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      await fetch(`${baseUrl}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          organizationId: organization_id,
+          type: 'wallet'
+        })
+      })
+      
+      // Method 2: Clear server-side cache for organizations endpoint
+      // This is critical because the wallet balance comes from /api/organizations
+      const orgCache = global.orgCache || new Map()
+      const userCacheKeys = Array.from(orgCache.keys()).filter(key => key.includes(organization_id))
+      userCacheKeys.forEach(key => orgCache.delete(key))
+      
+      console.log(`✅ Comprehensive wallet cache invalidated for org: ${organization_id}`)
+    } catch (cacheError) {
+      console.error('Failed to invalidate wallet cache:', cacheError)
+      // Don't fail the request if cache invalidation fails
     }
 
     return NextResponse.json({ 

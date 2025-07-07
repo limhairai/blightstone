@@ -48,7 +48,7 @@ export function AppShell({ children }: AppShellProps) {
   const {
     shouldShowOnboarding,
     isLoading,
-    completionPercentage
+    progressData
   } = useAdvancedOnboarding()
 
   useEffect(() => {

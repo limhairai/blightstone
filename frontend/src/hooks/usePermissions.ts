@@ -4,7 +4,7 @@ import { useOrganizationStore } from "../lib/stores/organization-store";
 import { authenticatedFetcher, useCurrentOrganization } from "../lib/swr-config";
 
 export function usePermissions() {
-  const { user, session, isLoading: isUserLoading } = useAuth();
+  const { user, session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
 
   // Use the proper useCurrentOrganization hook which has access checking built-in
@@ -15,14 +15,14 @@ export function usePermissions() {
     ([url, token]) => authenticatedFetcher(url, token)
   );
 
-  const isLoading = isUserLoading || isOrgLoading || areMembersLoading;
+  const isLoading = isOrgLoading || areMembersLoading;
   
   const currentOrganization = orgData?.organizations?.[0];
   const teamMembers = teamData?.members || [];
 
   const isAppAdmin = user?.app_metadata?.claims_admin === true;
   
-  const currentUserMember = teamMembers.find(m => m.user_id === user?.id);
+  const currentUserMember = teamMembers.find((m: any) => m.user_id === user?.id);
   const orgRole = currentUserMember?.role || null;
 
   const isOrgOwner = orgRole === 'owner';

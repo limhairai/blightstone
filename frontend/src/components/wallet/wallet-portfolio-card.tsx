@@ -29,14 +29,56 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
   const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
   const transactions = transactionsData?.transactions || [];
   
-  // Check if user has real data to show (honest assessment)
-  const hasRealData = totalBalance > 0 || transactions.length > 5;
-  
-  // For honest change calculation - only show positive change if we actually have data
-  const change24h = hasRealData ? 2.5 : 0; 
-  const changeAmount = (totalBalance * change24h) / 100;
+  // REAL performance calculation based on actual transaction history
+  const performanceData = useMemo(() => {
+    if (!transactions.length) {
+      return { changeAmount: 0, changePercentage: 0, hasRealData: false };
+    }
 
-  // Generate HONEST balance data based on actual account history
+    // Calculate time boundary based on selected filter
+    const now = new Date();
+    const timeMap = {
+      "7 Days": 7,
+      "1 Month": 30,
+      "3 Months": 90,
+      "1 Year": 365
+    };
+    
+    const daysBack = timeMap[timeFilter as keyof typeof timeMap] || 7;
+    const cutoffDate = new Date(now.getTime() - (daysBack * 24 * 60 * 60 * 1000));
+    
+    // Filter transactions within the time period
+    const periodTransactions = transactions.filter(tx => {
+      const txDate = new Date(tx.created_at);
+      return txDate >= cutoffDate;
+    });
+    
+    if (!periodTransactions.length) {
+      return { changeAmount: 0, changePercentage: 0, hasRealData: false };
+    }
+    
+    // Calculate net change from transactions in period
+    const netChange = periodTransactions.reduce((sum, tx) => {
+      const amount = tx.amount_cents / 100; // Convert to dollars
+      return sum + amount; // Positive = money in, negative = money out
+    }, 0);
+    
+    // Calculate percentage change
+    const balanceAtStartOfPeriod = totalBalance - netChange;
+    const changePercentage = balanceAtStartOfPeriod > 0 
+      ? (netChange / balanceAtStartOfPeriod) * 100 
+      : 0;
+    
+    return {
+      changeAmount: netChange,
+      changePercentage: changePercentage,
+      hasRealData: true
+    };
+  }, [transactions, timeFilter, totalBalance]);
+
+  const { changeAmount, changePercentage, hasRealData } = performanceData;
+
+  // Generate REAL balance data based on actual transaction history
   const balanceData = useMemo(() => {
     const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
     
@@ -65,28 +107,24 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       }
     })
     
-    // For new accounts: show zero until today, then current balance
-    // This is HONEST - no fake historical buildup
-    if (transactions.length <= 5) {
-      timePoints.forEach((point, i) => {
-        // Only show current balance at the very last point (today)
-        if (i === dataPoints - 1) {
-          point.value = totalBalance
-        }
-        // All other points remain zero (honest representation)
-      })
-    } else {
-      // For accounts with transaction history, we'd build actual historical balance
-      // For now, still show honest data: zero until today
-      timePoints.forEach((point, i) => {
-        if (i === dataPoints - 1) {
-          point.value = totalBalance
-        }
-      })
-    }
+    // Calculate actual balance at each point based on transaction history
+    timePoints.forEach((point, i) => {
+      // For each point, calculate balance by working backwards from current balance
+      const transactionsAfterPoint = transactions.filter(tx => {
+        const txDate = new Date(tx.created_at);
+        return txDate > point.pointDate;
+      });
+      
+      // Current balance minus all transactions that happened after this point
+      const balanceAtPoint = transactionsAfterPoint.reduce((balance, tx) => {
+        return balance - (tx.amount_cents / 100); // Subtract future transactions
+      }, totalBalance);
+      
+      point.value = Math.max(0, balanceAtPoint); // Ensure non-negative
+    });
     
     return timePoints
-  }, [totalBalance, timeFilter, transactions.length])
+  }, [totalBalance, timeFilter, transactions])
 
   // Time filter options
   const timeFilterOptions = [
@@ -110,7 +148,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
   if (error) return <div>Failed to load wallet data.</div>
 
-  const isPositive = change24h >= 0
+  const isPositive = changePercentage >= 0
 
   return (
     <Card className="bg-gradient-to-br from-card to-card/80 border-border overflow-hidden flex-1">
@@ -152,12 +190,12 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                     <TrendingDown className="h-4 w-4 text-red-400" />
                   )}
                   <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                    {formatCurrency(Math.abs(changeAmount))} ({isPositive ? '+' : ''}{change24h.toFixed(1)}%) this month
+                    {formatCurrency(Math.abs(changeAmount))} ({isPositive ? '+' : ''}{changePercentage.toFixed(1)}%) {timeFilter.toLowerCase()}
                   </span>
                 </>
               ) : (
                 <span className="text-sm text-muted-foreground">
-                  No change data yet
+                  No transaction history yet
                 </span>
               )}
             </div>

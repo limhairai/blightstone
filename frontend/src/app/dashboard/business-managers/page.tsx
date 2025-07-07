@@ -19,6 +19,7 @@ export default function BusinessManagersPage() {
     if (!bms || !Array.isArray(bms)) return []
     return bms.map((bm: any) => ({
       id: bm.id,
+      organization_id: currentOrganizationId || '',
       name: bm.name,
       status: bm.status,
       created_at: bm.created_at,
@@ -28,7 +29,7 @@ export default function BusinessManagersPage() {
       asset_id: bm.asset_id,
       is_application: bm.is_application
     }))
-  }, [bms])
+  }, [bms, currentOrganizationId])
 
   const totalManagers = businessManagers.length
   const activeManagers = businessManagers.filter((bm) => bm.status === "active").length

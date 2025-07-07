@@ -82,7 +82,7 @@ export function CompactAccountsTable({
 
     if (searchQuery) {
       filtered = filtered.filter(
-        (account) =>
+        (account: any) =>
           account.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           account.business.toLowerCase().includes(searchQuery.toLowerCase()) ||
           account.adAccount.includes(searchQuery) ||
@@ -92,11 +92,11 @@ export function CompactAccountsTable({
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((account) => account.status === statusFilter)
+      filtered = filtered.filter((account: any) => account.status === statusFilter)
     }
 
     if (businessFilter !== "all") {
-      filtered = filtered.filter((account) => account.business === businessFilter)
+      filtered = filtered.filter((account: any) => account.business === businessFilter)
     }
 
     return filtered
@@ -104,7 +104,7 @@ export function CompactAccountsTable({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedAccounts(filteredAccounts.map((account) => account.id))
+      setSelectedAccounts(filteredAccounts.map((account: any) => account.id))
     } else {
       setSelectedAccounts([])
     }
@@ -200,7 +200,7 @@ export function CompactAccountsTable({
           </span>
           <TopUpDialog
             accounts={selectedAccounts.map(id => {
-              const account = filteredAccounts.find(acc => acc.id === id)!;
+              const account = filteredAccounts.find((acc: any) => acc.id === id)!;
               return {
                 id: account.id,
                 name: account.name,
@@ -264,7 +264,7 @@ export function CompactAccountsTable({
 
         {/* Table Body */}
         <div className="divide-y divide-border">
-          {filteredAccounts.map((account) => (
+          {filteredAccounts.map((account: any) => (
             <div
               key={account.id}
               className={cn(

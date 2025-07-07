@@ -274,7 +274,7 @@ async function handlePaymentIntentSuccess(paymentIntent: any) {
     const result = await WalletService.processTopup({
       organizationId,
       amount: walletCredit,
-      paymentMethod: 'airwallex',
+      paymentMethod: 'bank_transfer',
       transactionId: paymentIntent.id,
       metadata: {
         payment_method: paymentIntent.latest_payment_attempt?.payment_method?.type,
@@ -355,7 +355,7 @@ function verifyAirwallexSignature(body: string, signature: string | null): boole
   try {
     // Airwallex uses HMAC SHA256 for signature verification
     const expectedSignature = crypto
-      .createHmac('sha256', webhookSecret)
+      .createHmac('sha256', webhookSecret!)
       .update(body)
       .digest('hex')
     

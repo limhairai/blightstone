@@ -22,6 +22,7 @@ import { useOrganizationStore } from "../../lib/stores/organization-store"
 import { useBusinessManagers } from "@/lib/swr-config"
 import { useSWRConfig } from "swr"
 import { useAuth } from "@/contexts/AuthContext"
+import { useSubscription } from "@/hooks/useSubscription"
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
@@ -32,18 +33,23 @@ interface CreateAdAccountDialogProps {
 export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: CreateAdAccountDialogProps) {
   const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
+  const { usage, checkLimit } = useSubscription();
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { mutate } = useSWRConfig();
 
   // Fetch business managers with organization ID
-  const { data: businessManagers, isLoading: areBusinessManagersLoading } = useBusinessManagers(currentOrganizationId);
+  const { data: businessManagers, isLoading: areBusinessManagersLoading } = useBusinessManagers();
 
   const approvedBusinessManagers = Array.isArray(businessManagers) ? businessManagers : [];
 
   // Find the specific BM if bmId is provided
   const selectedBM = bmId ? approvedBusinessManagers.find((bm: any) => bm.id === bmId) : null;
+
+  // Check if user has reached ad account limit
+  const canAddMoreAccounts = checkLimit('adAccounts', usage?.adAccounts || 0)
+  const hasReachedAccountLimit = !canAddMoreAccounts
 
   const [formData, setFormData] = useState({
     business_manager_id: bmId || "",
@@ -56,6 +62,14 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
     if (!formData.business_manager_id) {
         toast.error("Please select a business manager.");
         return;
+    }
+
+    // Check ad account limit
+    if (hasReachedAccountLimit) {
+      toast.error("Plan Limit Reached", {
+        description: "You have reached the maximum number of ad accounts for your current plan. Please upgrade to add more ad accounts.",
+      });
+      return;
     }
     
     setIsLoading(true)
@@ -202,11 +216,24 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
                     </Select>
                 </div>
 
+                {hasReachedAccountLimit && (
+                  <div className="bg-muted/50 p-4 rounded-lg border border-border">
+                    <h4 className="text-sm font-medium text-foreground mb-2">Plan Limit Reached</h4>
+                    <p className="text-xs text-muted-foreground">
+                      You have reached the maximum number of ad accounts for your current plan. Please upgrade to add more ad accounts.
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex justify-end space-x-2 pt-4">
                     <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
                     Cancel
                     </Button>
-                    <Button type="submit" disabled={isLoading}>
+                    <Button 
+                      type="submit" 
+                      disabled={isLoading || hasReachedAccountLimit}
+                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white hover:opacity-90 disabled:opacity-50"
+                    >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Request Account
                     </Button>

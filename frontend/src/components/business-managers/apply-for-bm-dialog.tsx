@@ -32,8 +32,17 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { session } = useAuth()
-  const { subscriptionData } = useSubscription()
+  const { subscriptionData, usage, checkLimit } = useSubscription()
   const { currentOrganizationId } = useOrganizationStore()
+
+  // Check if organization is on free plan or cannot request assets
+  const isOnFreePlan = subscriptionData?.free || subscriptionData?.subscriptionStatus === 'free'
+  const canRequestAssets = subscriptionData?.canRequestAssets !== false
+  const subscriptionMessage = subscriptionData?.message
+  
+  // Check if user has reached business manager limit
+  const canAddMoreBMs = checkLimit('businessManagers', usage?.businessManagers || 0)
+  const hasReachedBMLimit = !canAddMoreBMs && !isOnFreePlan
 
   const [formData, setFormData] = useState({
     website: "",
@@ -48,11 +57,26 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Check subscription status before allowing submission
+    if (isOnFreePlan || !canRequestAssets) {
+      toast.error("Upgrade Required", {
+        description: subscriptionMessage || "Please upgrade your plan to apply for business managers.",
+      });
+      return;
+    }
+
+    // Check business manager limit
+    if (hasReachedBMLimit) {
+      toast.error("Plan Limit Reached", {
+        description: "You have reached the maximum number of business managers for your current plan. Please upgrade to add more business managers.",
+      });
+      return;
+    }
+
     // Validate form
-    const validationErrors = validateBusinessManagerApplicationForm(formData)
-    if (validationErrors.length > 0) {
-      showValidationErrors(validationErrors)
-      return
+    if (!formData.website.trim()) {
+      toast.error('Website is required');
+      return;
     }
 
     setIsSubmitting(true)
@@ -76,15 +100,15 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
       }
 
       // Submit application
-      const response = await fetch('/api/bm-applications', {
+      const response = await fetch('/api/applications', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`,
         },
         body: JSON.stringify({
+          type: 'business_manager',
           website_url: formData.website,
-          organization_id: organizationId,
         }),
       })
 
@@ -129,8 +153,8 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="w-12 h-12 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-3">
-              <Check className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center mb-3">
+              <Check className="w-6 h-6 text-foreground" />
             </div>
             <h3 className="text-base font-medium text-foreground mb-1">Application Submitted</h3>
             <p className="text-sm text-muted-foreground">
@@ -148,7 +172,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
       <DialogContent className="sm:max-w-lg bg-card border-border max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
-            <Building2 className="h-5 w-5 text-[#c4b5fd]" />
+            <Building2 className="h-5 w-5 text-muted-foreground" />
             Apply for Business Manager
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
@@ -174,29 +198,43 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             </p>
           </div>
 
-          <div className="bg-muted/30 p-4 rounded-lg border border-border">
-            <h4 className="text-sm font-medium text-foreground mb-2">What happens next?</h4>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Your application will be reviewed within 1-3 business days</li>
-                              <li>• Once approved, you&apos;ll receive your Business Manager ID</li>
-              <li>• You can then start creating ad accounts and campaigns</li>
-            </ul>
-          </div>
+          {(isOnFreePlan || !canRequestAssets || hasReachedBMLimit) ? (
+            <div className="bg-muted/50 p-4 rounded-lg border border-border">
+              <h4 className="text-sm font-medium text-foreground mb-2">
+                {hasReachedBMLimit ? "Plan Limit Reached" : "Upgrade Required"}
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                {hasReachedBMLimit 
+                  ? "You have reached the maximum number of business managers for your current plan. Please upgrade to add more business managers."
+                  : (subscriptionMessage || "Business manager applications are available on paid plans only. Please upgrade your plan to continue.")
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="bg-muted/30 p-4 rounded-lg border border-border">
+              <h4 className="text-sm font-medium text-foreground mb-2">What happens next?</h4>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Your application will be reviewed within 1-3 business days</li>
+                <li>• Once approved, you&apos;ll receive your Business Manager ID</li>
+                <li>• You can then start creating ad accounts and campaigns</li>
+              </ul>
+            </div>
+          )}
 
-          <div className="flex justify-end space-x-2 pt-4">
+          <div className="flex justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isSubmitting}
-              className="border-border text-foreground hover:bg-accent"
+              className="bg-background border-border text-foreground hover:bg-muted"
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !formData.website}
-              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+              disabled={isSubmitting || isOnFreePlan || !canRequestAssets || hasReachedBMLimit}
+              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white hover:opacity-90 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

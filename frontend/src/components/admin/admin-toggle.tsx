@@ -19,7 +19,12 @@ export function AdminToggle() {
   const toggleAdmin = () => {
     const newValue = !isAdmin
     setIsAdmin(newValue)
-    setCookie("isAdmin", newValue ? "true" : "false", { maxAge: 60 * 60 * 24 * 7 }) // 1 week
+    setCookie("isAdmin", newValue ? "true" : "false", { 
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    } as any)
 
     // Redirect to appropriate dashboard
     if (newValue) {

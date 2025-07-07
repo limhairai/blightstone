@@ -68,12 +68,12 @@ export const PRICING_PLANS: PricingPlan[] = [
     billingInterval: 'monthly',
     features: [
       '3 Business Managers',
-      '21 Ad Accounts',
+      '15 Ad Accounts',
       '5 Team Members',
       '3% ad spend fee'
     ],
     limits: {
-      accountsLimit: 21,
+      accountsLimit: 15,
       usersLimit: 5
     },
     feeRate: 0.03, // 3%
@@ -84,18 +84,18 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'scale',
     name: 'Scale',
-    description: 'For scaling teams',
+    description: 'For scaling businesses',
     basePrice: 499,
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
       '10 Business Managers',
-      '70 Ad Accounts',
+      '50 Ad Accounts',
       '15 Team Members',
       '1.5% ad spend fee'
     ],
     limits: {
-      accountsLimit: 70,
+      accountsLimit: 50,
       usersLimit: 15
     },
     feeRate: 0.015, // 1.5%

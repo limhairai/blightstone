@@ -75,7 +75,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
           {/* Organization Avatar */}
           <div className="w-12 h-12 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg">
             {currentOrganization?.name 
-              ? currentOrganization.name.split(' ').map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase()
+              ? currentOrganization.name.split(' ').map((word: string) => word.charAt(0)).join('').slice(0, 2).toUpperCase()
               : 'ORG'
             }
           </div>

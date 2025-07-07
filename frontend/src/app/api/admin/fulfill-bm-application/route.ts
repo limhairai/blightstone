@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
             try {
                 // Create bindings for all selected ad accounts
                 // We trust the frontend filtering, but add basic validation
-                const adAccountBindings = selected_ad_accounts.map(accountId => ({
+                const adAccountBindings = selected_ad_accounts.map((accountId: string) => ({
                     asset_id: accountId,
                     organization_id: organization_id,
                     status: 'active',

@@ -37,18 +37,17 @@ export function AccountProvisioningTable() {
   const [createAccountDialogOpen, setCreateAccountDialogOpen] = useState(false);
 
   // Filter only approved businesses
-  const approvedBusinesses = allBusinesses.filter(business => business.status === "approved" || business.status === "active");
+  const approvedBusinesses = allBusinesses.filter((business: any) => business.status === "approved" || business.status === "active");
 
   // Apply search and filters
-  const filteredBusinesses = approvedBusinesses.filter((business) => {
-    const matchesSearch = business.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (business.type || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
+  const filteredBusinesses = approvedBusinesses.filter((business: any) => {
+    const matchesSearch = !searchTerm || business.name.toLowerCase().includes(searchTerm.toLowerCase());
     let matchesStatus = true;
-    if (statusFilter === "with_accounts") {
-      matchesStatus = allAccounts.filter(acc => acc.business_id === business.id).length > 0;
-    } else if (statusFilter === "no_accounts") {
-      matchesStatus = allAccounts.filter(acc => acc.business_id === business.id).length === 0;
+    
+    if (statusFilter === "with-accounts") {
+      matchesStatus = allAccounts.filter((acc: any) => acc.business_id === business.id).length > 0;
+    } else if (statusFilter === "without-accounts") {
+      matchesStatus = allAccounts.filter((acc: any) => acc.business_id === business.id).length === 0;
     }
     
     return matchesSearch && matchesStatus;
@@ -77,11 +76,11 @@ export function AccountProvisioningTable() {
   };
 
   const getTotalSpend = (accounts: any[]) => {
-    return accounts.reduce((total, acc) => total + acc.spent, 0);
+    return accounts.reduce((total: number, acc: any) => total + acc.spent, 0);
   };
 
   const getTotalBalance = (accounts: any[]) => {
-    return accounts.reduce((total, acc) => total + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0);
+    return accounts.reduce((total: number, acc: any) => total + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0);
   };
 
   if (isLoading) {
@@ -109,8 +108,8 @@ export function AccountProvisioningTable() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Businesses</SelectItem>
-            <SelectItem value="with_accounts">With Ad Accounts</SelectItem>
-            <SelectItem value="no_accounts">No Ad Accounts</SelectItem>
+            <SelectItem value="with-accounts">With Ad Accounts</SelectItem>
+            <SelectItem value="without-accounts">No Ad Accounts</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -136,7 +135,7 @@ export function AccountProvisioningTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredBusinesses.map((business) => (
+              filteredBusinesses.map((business: any) => (
                 <TableRow key={business.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -155,7 +154,7 @@ export function AccountProvisioningTable() {
                   <TableCell>
                     <div className="space-y-1">
                       {(() => {
-                        const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
+                        const businessAccounts = allAccounts.filter((acc: any) => acc.business_id === business.id);
                         return (
                           <>
                             <div className="text-sm font-medium text-foreground">
@@ -163,7 +162,7 @@ export function AccountProvisioningTable() {
                             </div>
                             {businessAccounts.length > 0 && (
                               <div className="flex flex-wrap gap-1">
-                                {businessAccounts.slice(0, 2).map((account, index) => (
+                                {businessAccounts.slice(0, 2).map((account: any, index: any) => (
                                   <div key={account.id} className="flex items-center gap-1">
                                     {getAccountStatusBadge(account.status)}
                                   </div>
@@ -186,8 +185,8 @@ export function AccountProvisioningTable() {
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
                         ${(() => {
-                          const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
-                          const totalSpend = businessAccounts.reduce((total, acc) => total + (acc.spent || 0), 0);
+                          const businessAccounts = allAccounts.filter((acc: any) => acc.business_id === business.id);
+                          const totalSpend = businessAccounts.reduce((total: any, acc: any) => total + (acc.spent || 0), 0);
                           return totalSpend.toLocaleString();
                         })()}
                       </span>
@@ -199,8 +198,8 @@ export function AccountProvisioningTable() {
                       <CreditCard className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
                         ${(() => {
-                          const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
-                          const totalBalance = businessAccounts.reduce((total, acc) => total + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0);
+                          const businessAccounts = allAccounts.filter((acc: any) => acc.business_id === business.id);
+                          const totalBalance = businessAccounts.reduce((total: any, acc: any) => total + (acc.balance_cents ? acc.balance_cents / 100 : 0), 0);
                           return totalBalance.toLocaleString();
                         })()}
                       </span>
@@ -211,7 +210,7 @@ export function AccountProvisioningTable() {
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
                       {(() => {
-                        const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
+                        const businessAccounts = allAccounts.filter((acc: any) => acc.business_id === business.id);
                         return businessAccounts.length > 0 ? (
                           <span>Recent activity</span>
                         ) : (
@@ -234,7 +233,7 @@ export function AccountProvisioningTable() {
                       </Button>
                       
                       {(() => {
-                        const businessAccounts = allAccounts.filter(acc => acc.business_id === business.id);
+                        const businessAccounts = allAccounts.filter((acc: any) => acc.business_id === business.id);
                         return businessAccounts.length > 0 && (
                           <Button
                             variant="ghost"

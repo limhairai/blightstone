@@ -10,7 +10,7 @@ export default function AccountMetrics() {
   const { currentOrganizationId } = useOrganizationStore();
   
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
-  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers(currentOrganizationId);
+  const { data: bizData, isLoading: isBizLoading } = useBusinessManagers();
   const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
 
   const totalAccounts = accData?.accounts?.length ?? 0;
@@ -26,18 +26,24 @@ export default function AccountMetrics() {
       value: totalAccounts.toString(),
       icon: CreditCard,
       trend: null,
+      limit: undefined,
+      percentage: undefined,
     },
     {
       title: "Businesses",
       value: businesses.toString(),
       icon: FolderKanban,
       trend: null,
+      limit: undefined,
+      percentage: undefined,
     },
     {
       title: "Total balance",
       value: `$${formatCurrency(totalBalance)} USD`,
       icon: Wallet,
       trend: null,
+      limit: undefined,
+      percentage: undefined,
     },
   ]
 

@@ -37,7 +37,7 @@ export function DashboardSidebar() {
       // Get organization initials (e.g., "My Company" -> "MC")
       return organization.name
         .split(' ')
-        .map(word => word.charAt(0))
+        .map((word: any) => word.charAt(0))
         .join('')
         .slice(0, 2)
         .toUpperCase()
@@ -47,7 +47,7 @@ export function DashboardSidebar() {
     if (user?.user_metadata?.name) {
       return user.user_metadata.name
         .split(' ')
-        .map(word => word.charAt(0))
+        .map((word: any) => word.charAt(0))
         .join('')
         .slice(0, 2)
         .toUpperCase()

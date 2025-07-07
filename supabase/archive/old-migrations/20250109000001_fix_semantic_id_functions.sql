@@ -1,18 +1,5 @@
 -- Fix semantic ID functions that are using incorrect column names
 -- This fixes the "column ab.asset_ref_id does not exist" errors
--- Also update plans table to use semantic ID (plan_id instead of id)
-
--- First, update plans table to use semantic ID
-ALTER TABLE public.plans RENAME COLUMN id TO plan_id;
-
--- Update foreign key references to plans table
-ALTER TABLE public.organizations DROP CONSTRAINT IF EXISTS organizations_plan_id_fkey;
-ALTER TABLE public.organizations ADD CONSTRAINT organizations_plan_id_fkey 
-    FOREIGN KEY (plan_id) REFERENCES public.plans(plan_id);
-
-ALTER TABLE public.subscriptions DROP CONSTRAINT IF EXISTS subscriptions_plan_id_fkey;
-ALTER TABLE public.subscriptions ADD CONSTRAINT subscriptions_plan_id_fkey 
-    FOREIGN KEY (plan_id) REFERENCES public.plans(plan_id);
 
 -- Fix get_available_assets function
 CREATE OR REPLACE FUNCTION public.get_available_assets(

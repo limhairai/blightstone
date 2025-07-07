@@ -8,7 +8,12 @@ const supabase = createClient(
 
 // **PERFORMANCE**: Simple in-memory cache for organizations
 const orgCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 10 * 1000; // Reduced to 10 seconds for immediate wallet balance updates
+const CACHE_DURATION = 5 * 1000; // Reduced to 5 seconds for immediate wallet balance updates
+
+// Export cache for external invalidation
+if (typeof global !== 'undefined') {
+  global.orgCache = orgCache;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -142,8 +147,10 @@ export async function GET(request: NextRequest) {
     // **OPTIMIZED**: Map organizations with business manager counts
     const mappedOrgs = organizations.map(org => {
       // Calculate available balance (total - reserved)
-      const totalBalance = org.wallets?.balance_cents || 0;
-      const reservedBalance = org.wallets?.reserved_balance_cents || 0;
+      // Handle both array and object formats from Supabase
+      const wallet = Array.isArray(org.wallets) ? org.wallets[0] : org.wallets;
+      const totalBalance = wallet?.balance_cents || 0;
+      const reservedBalance = wallet?.reserved_balance_cents || 0;
       const availableBalance = totalBalance - reservedBalance;
 
       return {
@@ -157,10 +164,11 @@ export async function GET(request: NextRequest) {
         balance: availableBalance / 100,
         total_balance_cents: totalBalance,
         reserved_balance_cents: reservedBalance,
-        wallets: {
+        wallets: wallet ? {
+          wallet_id: wallet.wallet_id,
           balance_cents: totalBalance,
           reserved_balance_cents: reservedBalance
-        }
+        } : null
       };
     });
 

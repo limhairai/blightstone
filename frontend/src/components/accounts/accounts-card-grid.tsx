@@ -131,8 +131,6 @@ export function AccountsCardGrid({ accounts, onViewAccount }: AccountsCardGridPr
       </div>
       {selectedAccountForTopUp && (
         <TopUpDialog
-          open={isTopUpDialogOpen}
-          onOpenChange={setIsTopUpDialogOpen}
           trigger={<></>}
           account={{
             id: selectedAccountForTopUp.id,

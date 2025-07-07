@@ -28,9 +28,15 @@ export function AdminView() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedOrg, setSelectedOrg] = useState<any>(null)
 
-  const filteredOrganizations = organizations.filter(org =>
-    org.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredOrganizations = organizations.filter((org: any) =>
+    org.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    org.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Add placeholder values for undefined variables
+  const totalUsers = organizations.length;
+  const totalRevenue = 0; // Placeholder - implement actual revenue calculation
+  const supportTickets = 0; // Placeholder - implement actual support tickets count
 
   if (orgsLoading) {
     return (
@@ -163,7 +169,7 @@ export function AdminView() {
 
                 {/* Organizations List */}
                 <div className={layout.stackSmall}>
-                  {filteredOrganizations.map((org) => (
+                  {filteredOrganizations.map((org: any) => (
                     <div
                       key={org.id}
                       className={`${layout.flexBetween} p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors cursor-pointer`}
@@ -264,10 +270,10 @@ export function AdminView() {
                   Total registered users: {totalUsers}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Admin users: {organizations.filter(m => m.role === 'admin').length}
+                  Admin users: {organizations.filter((m: any) => m.role === 'admin').length}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Organization owners: {organizations.filter(m => m.role === 'owner').length}
+                  Organization owners: {organizations.filter((m: any) => m.role === 'owner').length}
                 </p>
               </div>
             </CardContent>
@@ -306,7 +312,7 @@ export function AdminView() {
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div className="space-y-2">
-              {organizations.slice(0, 5).map((org) => (
+              {organizations.slice(0, 5).map((org: any) => (
                 <div key={org.id} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-xs">{org.name}</p>

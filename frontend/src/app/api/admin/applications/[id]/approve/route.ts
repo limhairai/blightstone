@@ -60,17 +60,38 @@ export async function POST(
     }
 
     // Transform response to frontend format (camelCase)
-    return NextResponse.json({
+    const response = {
       success: true,
       application: {
         applicationId: application.application_id,
         status: application.status,
         approvedBy: application.approved_by,
         approvedAt: application.approved_at,
-
         updatedAt: application.updated_at
       }
-    })
+    }
+
+    // Trigger cache invalidation for immediate UI updates
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}`
+      await fetch(`${baseUrl}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          organizationId: application.organization_id,
+          type: 'business-manager'
+        })
+      })
+      console.log(`✅ Business manager cache invalidated for org: ${application.organization_id}`)
+    } catch (cacheError) {
+      console.error('Failed to invalidate business manager cache:', cacheError)
+      // Don't fail the approval if cache invalidation fails
+    }
+
+    return NextResponse.json(response)
 
   } catch (error) {
     console.error('Error in approve application API:', error)

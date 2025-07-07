@@ -8,6 +8,7 @@ import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { useCacheInvalidation } from "../../hooks/useCacheInvalidation"
 
 // PageTitle Context
 const PageTitleContext = createContext<{
@@ -58,6 +59,9 @@ function isAdminPage(pathname: string): boolean {
 function AppRouter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
+  
+  // Enable cache invalidation for immediate subscription updates
+  useCacheInvalidation();
 
   // While the authentication state is loading, show a loader to prevent a flash of the wrong content.
   if (authLoading) {
@@ -65,7 +69,7 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   }
   
   const isAuthenticated = !!user;
-  const isProtectedPage = !isPublicOrAuthPage(pathname);
+  const isProtectedPage = pathname ? !isPublicOrAuthPage(pathname) : true;
 
   // If trying to access a protected page without being authenticated,
   // return null immediately. The middleware will handle the redirect.
@@ -78,7 +82,7 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   // The AppDataProvider is included to provide necessary data for the authenticated experience.
   // Exception: Admin pages have their own layout and should not be wrapped in AppShell.
   if (isAuthenticated && isProtectedPage) {
-    if (isAdminPage(pathname)) {
+    if (pathname && isAdminPage(pathname)) {
       // Admin pages handle their own layout and don't need AppShell
       return <>{children}</>;
     }

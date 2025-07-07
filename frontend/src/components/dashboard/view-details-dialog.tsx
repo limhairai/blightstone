@@ -22,18 +22,18 @@ export function ViewDetailsDialog({ account, open, onOpenChange }: ViewDetailsDi
   }
 
   // Map AppAccount status to StatusBadge status
-  const mapAccountStatusToBadgeStatus = (status: AppAccount['status']): "active" | "pending" | "inactive" | "suspended" | "error" => {
+  function mapAccountStatusToBadgeStatus(status: string): "error" | "pending" | "active" | "suspended" {
     switch (status) {
-      case 'active':
-        return 'active'
-      case 'pending':
-        return 'pending'
-      case 'inactive':
-        return 'inactive'
-      case 'suspended':
-        return 'suspended'
+      case "active":
+        return "active";
+      case "pending":
+        return "pending";
+      case "suspended":
+        return "suspended";
+      case "inactive":
+        return "suspended"; // Map inactive to suspended since StatusBadge doesn't support inactive
       default:
-        return 'error'
+        return "error";
     }
   }
 

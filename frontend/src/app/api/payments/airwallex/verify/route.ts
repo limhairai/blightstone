@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-client-id': process.env.AIRWALLEX_CLIENT_ID,
-        'x-api-key': process.env.AIRWALLEX_API_KEY,
+        'x-client-id': process.env.AIRWALLEX_CLIENT_ID!,
+        'x-api-key': process.env.AIRWALLEX_API_KEY!,
       },
     })
 
@@ -97,15 +97,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Update wallet balance using WalletService
-    const walletService = new WalletService()
-    await walletService.addFunds(
-      orgMember.organization_id,
-      paymentIntent.amount,
-      paymentIntent.currency,
-      'airwallex',
-      payment_intent_id,
-      'Wallet top-up via Airwallex'
-    )
+    const result = await WalletService.processTopup({
+      organizationId: orgMember.organization_id,
+      amount: paymentIntent.amount,
+      paymentMethod: 'stripe',
+      transactionId: paymentIntent.id,
+      metadata: {
+        payment_intent_id: payment_intent_id,
+        client_secret: client_secret
+      },
+      description: 'Wallet top-up via Airwallex'
+    })
 
     // Update payment intent status in our database
     await supabase

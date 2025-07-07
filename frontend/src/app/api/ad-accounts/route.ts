@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     // Create a lookup map for business manager info: dolphin_id -> {name, id}
     const bmLookup = new Map();
     if (businessManagers) {
-      businessManagers.forEach(bm => {
+      businessManagers.forEach((bm: any) => {
         bmLookup.set(bm.dolphin_id, {
           name: bm.name,
           id: bm.dolphin_id

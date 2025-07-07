@@ -12,10 +12,10 @@ export function ApplicationsStats() {
   
   // Calculate application statistics using proper admin statuses
   const totalApplications = businesses.length;
-  const pendingApplications = businesses.filter(b => b.status === "pending").length;
-  const approvedApplications = businesses.filter(b => b.status === "approved" || b.status === "active").length;
-  const rejectedApplications = businesses.filter(b => b.status === "rejected").length;
-  const underReviewApplications = businesses.filter(b => b.status === "under_review").length;
+  const pendingApplications = businesses.filter((b: any) => b.status === "pending").length;
+  const approvedApplications = businesses.filter((b: any) => b.status === "approved" || b.status === "active").length;
+  const rejectedApplications = businesses.filter((b: any) => b.status === "rejected").length;
+  const underReviewApplications = businesses.filter((b: any) => b.status === "under_review").length;
 
   const stats = [
     {

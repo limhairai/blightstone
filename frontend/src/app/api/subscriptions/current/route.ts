@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { unstable_cache } from 'next/cache'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -136,9 +137,12 @@ export async function GET(request: NextRequest) {
       canRequestAssets
     })
 
-    // Add caching headers to reduce API calls
-    response.headers.set('Cache-Control', 'public, max-age=300, s-maxage=300') // 5 minutes
+    // Add caching headers - much shorter cache for subscription data
+    response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=30') // 30 seconds for subscription data
     response.headers.set('Vary', 'Authorization')
+    
+    // Add cache tags for revalidation
+    response.headers.set('Cache-Tag', `subscription-${organizationId},organization-${organizationId},subscriptions`)
 
     return response
 

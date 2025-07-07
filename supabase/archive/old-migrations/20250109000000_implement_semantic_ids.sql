@@ -357,19 +357,11 @@ $$;
 -- =====================================================
 
 -- Update RLS policies that reference profiles.id to use profile_id
+-- Note: Only updating policies for tables that exist at this point
 DROP POLICY IF EXISTS "Admins can manage all onboarding states" ON public.onboarding_states;
-DROP POLICY IF EXISTS "Admins can manage all topup requests" ON public.topup_requests;
 
--- Recreate policies with semantic IDs
+-- Recreate policies with semantic IDs for existing tables
 CREATE POLICY "Admins can manage all onboarding states" ON public.onboarding_states
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles p 
-            WHERE p.profile_id = auth.uid() AND p.is_superuser = true
-        )
-    );
-
-CREATE POLICY "Admins can manage all topup requests" ON public.topup_requests
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM public.profiles p 

@@ -9,6 +9,7 @@ import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { toast } from "sonner"
 import { useSWRConfig } from "swr"
+import { useAuth } from '@/contexts/AuthContext'
 
 type WidgetState = "expanded" | "collapsed" | "closed"
 
@@ -23,6 +24,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   const router = useRouter()
   const { currentOrganizationId } = useOrganizationStore()
   const { mutate } = useSWRConfig()
+  const { session } = useAuth()
   
   const {
     progressData,
@@ -136,8 +138,11 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
             </div>
             <div className="w-full bg-muted rounded-full h-1 mb-2">
               <div 
-                className="bg-gradient-to-r from-violet-400 to-pink-400 h-1 rounded-full transition-all duration-300" 
-                style={{ width: `${completionPercentage}%` }}
+                className="h-1 rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${completionPercentage}%`,
+                  background: 'linear-gradient(90deg, #b4a0ff 0%, #ffb4a0 100%)'
+                }}
               />
             </div>
             <div className="text-sm text-muted-foreground">
@@ -179,8 +184,11 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-violet-400 to-pink-400 h-2 rounded-full transition-all duration-500" 
-                style={{ width: `${completionPercentage}%` }}
+                className="h-2 rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${completionPercentage}%`,
+                  background: 'linear-gradient(90deg, #b4a0ff 0%, #ffb4a0 100%)'
+                }}
               />
             </div>
             <div className="text-xs text-muted-foreground mt-1">

@@ -98,7 +98,7 @@ export const AccountService = {
         bm_id: businessId,
         user_id: user.user?.id,
         name: accountData.name,
-        account_id: accountData.accountId || `acc_${Date.now()}`,
+        account_id: (accountData as any).accountId || `acc_${Date.now()}`,
         status: accountData.status || 'pending',
         balance: accountData.balance || 0,
   
@@ -201,10 +201,10 @@ export const TransactionService = {
         wallet_id: walletId,
         organization_id: organizationId,
         type: transactionData.type,
-        amount_cents: Math.round(transactionData.amount * 100), // Convert to cents
+        amount_cents: Math.round((transactionData as any).amount * 100), // Convert to cents
         description: transactionData.description,
         status: transactionData.status || 'completed',
-        reference: transactionData.reference
+        reference: (transactionData as any).reference
       })
       .select()
       .single()
@@ -270,7 +270,7 @@ export const OrganizationService = {
       .insert({
         owner_id: userId,
         name: organizationData.name,
-        plan_id: organizationData.plan || 'free'
+        plan_id: (organizationData as any).plan || 'free'
       })
       .select()
       .single()
@@ -373,7 +373,7 @@ export const UserService = {
         id: userId,
         name: profileData.name,
         email: profileData.email,
-        avatar_url: profileData.avatar
+        avatar_url: (profileData as any).avatarUrl || (profileData as any).avatar
       })
       .select()
       .single()
@@ -598,40 +598,45 @@ function convertSupabaseAccountToAppAccount(supabaseAccount: any): AppAccount {
     id: supabaseAccount.id,
     name: supabaseAccount.name,
     status: supabaseAccount.status,
-    balance: parseFloat(supabaseAccount.balance) || 0,
+    balance: supabaseAccount.balance_cents ? supabaseAccount.balance_cents / 100 : 0,
+    spent: supabaseAccount.spent_cents ? supabaseAccount.spent_cents / 100 : 0,
+
     dateAdded: supabaseAccount.created_at,
-    businessId: supabaseAccount.bm_id,
-    accountId: supabaseAccount.account_id,
-    
-    spent: parseFloat(supabaseAccount.spent) || 0,
-    
+    business: supabaseAccount.bm_id,
   }
 }
 
 function convertSupabaseTransactionToAppTransaction(supabaseTransaction: any): AppTransaction {
   return {
     id: supabaseTransaction.id,
+    organization_id: supabaseTransaction.organization_id,
+    wallet_id: supabaseTransaction.wallet_id,
+    business_id: supabaseTransaction.business_id,
     type: supabaseTransaction.type,
-    amount: supabaseTransaction.amount_cents / 100, // Convert from cents
-    date: supabaseTransaction.created_at,
-    description: supabaseTransaction.description,
+    amount_cents: supabaseTransaction.amount_cents,
     status: supabaseTransaction.status,
-    reference: supabaseTransaction.reference
+    description: supabaseTransaction.description,
+    metadata: supabaseTransaction.metadata,
+    transaction_date: supabaseTransaction.created_at,
+    created_at: supabaseTransaction.created_at,
+    updated_at: supabaseTransaction.updated_at
   }
 }
 
 function convertSupabaseOrganizationToAppOrganization(supabaseOrg: any): AppOrganization {
-  // Fix: wallets is an object, not an array!
-  const balance = supabaseOrg.wallets?.balance_cents / 100 || 0
-
-  
   return {
     id: supabaseOrg.id,
     name: supabaseOrg.name,
-    plan: supabaseOrg.plan_id || 'free',
-    balance,
+    owner_id: supabaseOrg.owner_id,
+    plan_id: supabaseOrg.plan_id || 'free',
+    avatar_url: supabaseOrg.avatar_url,
+    balance: supabaseOrg.balance_cents ? supabaseOrg.balance_cents / 100 : 0,
+    current_team_members_count: supabaseOrg.current_team_members_count || 0,
+    current_businesses_count: supabaseOrg.current_businesses_count || 0,
+    current_ad_accounts_count: supabaseOrg.current_ad_accounts_count || 0,
+    current_monthly_spend_cents: supabaseOrg.current_monthly_spend_cents || 0,
     created_at: supabaseOrg.created_at,
-    avatar: supabaseOrg.avatar_url
+    updated_at: supabaseOrg.updated_at
   }
 }
 
@@ -639,41 +644,23 @@ function convertSupabaseTeamMemberToTeamMember(supabaseTeamMember: any): TeamMem
   const profile = supabaseTeamMember.profiles
   
   return {
-    id: profile.profile_id,
-    name: profile.name || 'Unknown',
-    email: profile.email || '',
-    role: supabaseTeamMember.role,
-    status: 'active', // Default status
-    joined: supabaseTeamMember.joined_at,
-    avatar: profile.avatar_url,
-    signInCount: 0, // Not tracked in current schema
-    authentication: 'email', // Default
-    permissions: {
-      canManageTeam: supabaseTeamMember.role === 'owner' || supabaseTeamMember.role === 'admin',
-      canManageBusinesses: supabaseTeamMember.role === 'owner' || supabaseTeamMember.role === 'admin',
-      canManageAccounts: supabaseTeamMember.role === 'owner' || supabaseTeamMember.role === 'admin',
-      canManageWallet: supabaseTeamMember.role === 'owner',
-      canViewAnalytics: true
-    }
+    id: supabaseTeamMember.id,
+    name: profile?.name || 'Unknown',
+    email: profile?.email || '',
+    role: supabaseTeamMember.role
   }
 }
 
 function convertSupabaseProfileToUserProfile(supabaseProfile: any): UserProfile {
   return {
-    id: supabaseProfile.profile_id,
-    name: supabaseProfile.name || '',
-    email: supabaseProfile.email || '',
-    avatar: supabaseProfile.avatar_url,
-    phone: supabaseProfile.phone,
-    timezone: supabaseProfile.timezone || 'America/New_York',
-    language: supabaseProfile.language || 'en',
-    role: supabaseProfile.role || 'client',
+    id: supabaseProfile.id,
+    name: supabaseProfile.name,
+    email: supabaseProfile.email,
+    role: supabaseProfile.role,
     is_superuser: supabaseProfile.is_superuser || false,
-    notifications: {
-      email: true,
-      push: true,
-      sms: false
-    }
+    avatar_url: supabaseProfile.avatar_url,
+    created_at: supabaseProfile.created_at,
+    updated_at: supabaseProfile.updated_at
   }
 }
 

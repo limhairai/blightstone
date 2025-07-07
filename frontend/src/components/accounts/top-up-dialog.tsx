@@ -215,12 +215,22 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
         onSuccess()
       }
 
-      // Refresh wallet balance and organization data
+      // Comprehensive cache invalidation for immediate UI updates
       if (currentOrganizationId) {
         await Promise.all([
+          // Organizations API cache (main wallet balance source)
           mutate(`/api/organizations?id=${currentOrganizationId}`),
           mutate('/api/organizations'),
-          mutate(`org-${currentOrganizationId}`)
+          // SWR hook cache keys
+          mutate(`org-${currentOrganizationId}`),
+          mutate('organizations'),
+          // Transactions cache
+          mutate('transactions'),
+          mutate('/api/transactions'),
+          // Topup requests cache
+          mutate('/api/topup-requests'),
+          // Force revalidation with cache busting
+          mutate([`/api/organizations?id=${currentOrganizationId}`, session?.access_token], undefined, { revalidate: true }),
         ]);
       }
 

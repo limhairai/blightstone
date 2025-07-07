@@ -26,6 +26,7 @@ import useSWR from 'swr'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useAdminRoute } from '@/hooks/useAdminRoute'
+import { useAdvancedOnboarding } from '@/hooks/useAdvancedOnboarding'
 
 import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
 
@@ -69,14 +70,18 @@ export function Topbar({
   const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
   const planName = currentPlan?.name || 'Free';
 
+  // Get setup progress data
+  const { progressData } = useAdvancedOnboarding();
+  const actualSetupPercentage = progressData?.completionPercentage || 0;
+
   // Avoid hydration mismatch
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Calculate setup progress percentage
+  // Calculate setup progress percentage - use real data instead of hardcoded
   const calculateSetupProgress = () => {
-    if (!setupProgress) return 75
+    if (!setupProgress) return actualSetupPercentage
     const completed = Object.values(setupProgress).filter(item => item.completed).length
     return Math.round((completed / Object.keys(setupProgress).length) * 100)
   }
@@ -85,7 +90,7 @@ export function Topbar({
 
   // Use real user data from auth context - Fix hardcoded values
   const userInitial = user?.user_metadata?.name 
-    ? user.user_metadata.name.split(' ').map(n => n.charAt(0)).join('').slice(0, 2).toUpperCase()
+    ? user.user_metadata.name.split(' ').map((n: any) => n.charAt(0)).join('').slice(0, 2).toUpperCase()
     : user?.email?.charAt(0).toUpperCase() || 'U'
   const userEmail = user?.email || ''
   const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
@@ -105,14 +110,39 @@ export function Topbar({
       {/* Right: Controls */}
       <div className="flex items-center gap-2 md:gap-3 ml-auto">
         {/* Setup Guide Button with Circular Progress */}
-        {showEmptyStateElements && (
+        {showEmptyStateElements && setupWidgetState === "closed" && (
           <Button
             variant="outline"
             size="sm"
             className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
-            onClick={() => onSetupWidgetStateChange?.(setupWidgetState === "expanded" ? "collapsed" : "expanded")}
+            onClick={() => onSetupWidgetStateChange?.("expanded")}
           >
-                            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+            <div className="relative w-4 h-4">
+              {/* Background circle */}
+              <div className="w-4 h-4 rounded-full bg-muted border border-border"></div>
+              {/* Progress circle */}
+              <svg className="absolute inset-0 w-4 h-4 -rotate-90" viewBox="0 0 16 16">
+                <circle
+                  cx="8"
+                  cy="8"
+                  r="6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className="text-[#b4a0ff]"
+                  strokeDasharray={`${2 * Math.PI * 6}`}
+                  strokeDashoffset={`${2 * Math.PI * 6 * (1 - actualSetupPercentage / 100)}`}
+                  style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+                />
+              </svg>
+              {/* Center dot when complete */}
+              {actualSetupPercentage === 100 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 bg-[#b4a0ff] rounded-full"></div>
+                </div>
+              )}
+            </div>
             <span className="font-medium text-foreground">Setup Guide</span>
           </Button>
         )}

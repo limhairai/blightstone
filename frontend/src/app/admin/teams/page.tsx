@@ -11,7 +11,7 @@ import { Input } from "../../../components/ui/input"
 import { Users, CheckCircle, AlertTriangle, Clock, Search, Plus } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
 import { cn } from "../../../lib/utils"
-import { DataTable } from "../../../components/ui/data-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
 import { Button } from "../../../components/ui/button"
 import {
   Dialog,
@@ -123,70 +123,7 @@ export default function TeamsPage() {
     )
   }
 
-  const columns = [
-    {
-      accessorKey: "name",
-      header: "Team",
-      size: 250,
-      cell: ({ row }: { row: { original: Team } }) => {
-        const team = row.original
-        return (
-          <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => handleTeamClick(team)}>
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
-              <Users className="h-4 w-4 text-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium truncate">{team.name}</div>
-              <div className="text-sm text-muted-foreground truncate">
-                {team.profilesCount} profiles ({team.adminProfiles} admin, {team.backupProfiles} backup)
-              </div>
-            </div>
-          </div>
-        )
-      },
-    },
-    { 
-      accessorKey: "businessManagers", 
-      header: "Business Managers", 
-      size: 150, 
-      cell: ({ row }: { row: { original: Team } }) => (
-        <div>
-          <div className="font-medium">{row.original.businessManagersCount}/{row.original.bmCapacity}</div>
-          <div className="text-sm text-muted-foreground">BM capacity</div>
-        </div>
-      ) 
-    },
-    { 
-      accessorKey: "utilization", 
-      header: "Utilization", 
-      size: 120, 
-      cell: ({ row }: { row: { original: Team } }) => (
-        <div className="text-center">
-          <div className={`font-medium ${row.original.bmUtilization >= 90 ? "text-[#F56565]" : row.original.bmUtilization >= 70 ? "text-[#FFC857]" : "text-[#34D197]"}`}>
-            {row.original.bmUtilization}%
-          </div>
-          <div className="text-xs text-muted-foreground">BM utilization</div>
-        </div>
-      ) 
-    },
-    { 
-      accessorKey: "adAccounts", 
-      header: "Ad Accounts", 
-      size: 120, 
-      cell: ({ row }: { row: { original: Team } }) => (
-        <div>
-          <div className="font-medium">{row.original.adAccountsCount}</div>
-          <div className="text-sm text-muted-foreground">total accounts</div>
-        </div>
-      ) 
-    },
-    { 
-      accessorKey: "status", 
-      header: "Status", 
-      size: 120, 
-      cell: ({ row }: { row: { original: Team } }) => getStatusBadge(row.original.status) 
-    },
-  ]
+
 
   return (
     <div className="space-y-6">
@@ -210,12 +147,69 @@ export default function TeamsPage() {
         </div>
       </div>
 
-      <DataTable 
-        columns={columns} 
-        data={filteredTeams} 
-        searchKey="name"
-        searchPlaceholder="Search teams..."
-      />
+      <div className="border border-border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground">Team</TableHead>
+              <TableHead className="text-muted-foreground">Business Managers</TableHead>
+              <TableHead className="text-muted-foreground">Utilization</TableHead>
+              <TableHead className="text-muted-foreground">Ad Accounts</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTeams.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  No teams found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTeams.map((team) => (
+                <TableRow key={team.id} className="border-border hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => handleTeamClick(team)}>
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                        <Users className="h-4 w-4 text-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">{team.name}</div>
+                        <div className="text-sm text-muted-foreground truncate">
+                          {team.profilesCount} profiles ({team.adminProfiles} admin, {team.backupProfiles} backup)
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{team.businessManagersCount}/{team.bmCapacity}</div>
+                      <div className="text-sm text-muted-foreground">BM capacity</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-center">
+                      <div className={`font-medium ${team.bmUtilization >= 90 ? "text-[#F56565]" : team.bmUtilization >= 70 ? "text-[#FFC857]" : "text-[#34D197]"}`}>
+                        {team.bmUtilization}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">BM utilization</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{team.adAccountsCount}</div>
+                      <div className="text-sm text-muted-foreground">total accounts</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(team.status)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       
       {/* Team Details Dialog */}
       {selectedTeam && (

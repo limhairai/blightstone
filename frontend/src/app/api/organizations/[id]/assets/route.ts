@@ -31,7 +31,7 @@ export async function GET(
     }
 
     // Transform to match frontend expectations and group by type
-    const transformedAssets = assets?.map(asset => ({
+    const transformedAssets = assets?.map((asset: any) => ({
       id: asset.asset_id || asset.id,
       asset_id: asset.asset_id || asset.id,
       type: asset.type,
@@ -46,9 +46,9 @@ export async function GET(
 
     // Group assets by type for easier frontend consumption
     const groupedAssets = {
-      business_managers: transformedAssets.filter(a => a.type === 'business_manager'),
-      ad_accounts: transformedAssets.filter(a => a.type === 'ad_account'),
-      profiles: transformedAssets.filter(a => a.type === 'profile')
+      business_managers: transformedAssets.filter((a: any) => a.type === 'business_manager'),
+      ad_accounts: transformedAssets.filter((a: any) => a.type === 'ad_account'),
+      profiles: transformedAssets.filter((a: any) => a.type === 'profile')
     }
 
     return NextResponse.json({

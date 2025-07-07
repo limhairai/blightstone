@@ -376,7 +376,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           if (organizations.length > 0) {
             // If we already have a current org ID and it's in the list, keep it
-            if (currentOrganizationId && organizations.find(o => o.id === currentOrganizationId)) {
+            if (currentOrganizationId && organizations.find((o: any) => o.id === currentOrganizationId)) {
               orgInitialized.current = true;
               return;
             }
@@ -384,8 +384,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // If the profile organization is in the list, use it
             // Note: profile.organization_id matches the database organization_id field
             // but API returns organizations with id field (mapped from organization_id)
-            if (profile?.organization_id && organizations.find(o => o.id === profile.organization_id)) {
-              const profileOrg = organizations.find(o => o.id === profile.organization_id);
+            if (profile?.organization_id && organizations.find((o: any) => o.id === profile.organization_id)) {
+              const profileOrg = organizations.find((o: any) => o.id === profile.organization_id);
               setOrganization(profileOrg!.id, profileOrg!.name);
               orgInitialized.current = true;
               return;

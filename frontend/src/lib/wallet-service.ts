@@ -39,7 +39,7 @@ export class WalletService {
       }
 
       const amountCents = Math.round(request.amount * 100)
-      const newBalanceCents = wallet.balanceCents + amountCents
+      const newBalanceCents = (wallet.balanceCents || 0) + amountCents
 
       // Update wallet balance
       const { error: updateError } = await supabase
@@ -78,6 +78,26 @@ export class WalletService {
       if (transactionError) {
         console.error('Error creating transaction record:', transactionError)
         // Don't fail the topup if transaction record fails, but log it
+      }
+
+      // Trigger cache invalidation for immediate UI updates
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+        await fetch(`${baseUrl}/api/cache/invalidate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+          },
+          body: JSON.stringify({
+            organizationId: request.organizationId,
+            type: 'wallet'
+          })
+        })
+        console.log(`✅ Wallet cache invalidated for org: ${request.organizationId}`)
+      } catch (cacheError) {
+        console.error('Failed to invalidate wallet cache:', cacheError)
+        // Don't fail the topup if cache invalidation fails
       }
 
       return {
@@ -121,12 +141,13 @@ export class WalletService {
     }
 
     // Create wallet if it doesn't exist
-// console.log('Creating wallet for organization:', organizationId)
+    console.log('Creating wallet for organization:', organizationId)
     const { data: newWallet, error: createError } = await supabase
       .from('wallets')
       .insert({
         organization_id: organizationId,
-        balance_cents: 0
+        balance_cents: 0,
+        reserved_balance_cents: 0
       })
       .select('wallet_id, balance_cents')
       .single()

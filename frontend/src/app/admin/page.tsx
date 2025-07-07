@@ -41,7 +41,7 @@ export default function AdminDashboard() {
 
         // Fetch ALL data in parallel for better performance
         const [applicationsResponse, topupResponse] = await Promise.all([
-          fetch('/api/bm-applications'),
+          fetch('/api/admin/applications?status=pending,processing'),
           fetch('/api/topup-requests', {
             headers: {
               'Authorization': `Bearer ${session?.access_token}`
@@ -52,18 +52,18 @@ export default function AdminDashboard() {
         // Process applications
         if (applicationsResponse.ok) {
           const applicationsData = await applicationsResponse.json()
-          const applicationsList = Array.isArray(applicationsData) ? applicationsData : []
+          const applicationsList = applicationsData.applications || []
           setApplications(applicationsList)
 
           // Add recent business applications
           applicationsList
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 3)
             .forEach(application => {
               activities.push({
                 type: "application",
-                message: `New application for ${application.website_url}`,
-                time: formatTimeAgo(application.created_at),
+                message: `New application for ${application.websiteUrl}`,
+                time: formatTimeAgo(application.createdAt),
                 status: application.status || "pending"
               })
             })
@@ -208,42 +208,63 @@ export default function AdminDashboard() {
           <CardContent className="pt-6">
             <div className="space-y-4">
               {recentActivity.length > 0 ? (
-                recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        {activity.type === "application" && <FileText className="h-4 w-4 text-blue-500" />}
-                        {activity.type === "topup" && <CreditCard className="h-4 w-4 text-green-500" />}
-                        {activity.type === "team" && <Users className="h-4 w-4 text-purple-500" />}
-                        {activity.type === "asset" && <Database className="h-4 w-4 text-orange-500" />}
+                recentActivity.map((activity, index) => {
+                  // Determine the navigation URL based on activity type
+                  const getActivityUrl = (activityType: string) => {
+                    switch (activityType) {
+                      case "application":
+                        return "/admin/applications"
+                      case "topup":
+                        return "/admin/transactions/topups"
+                      case "team":
+                        return "/admin/teams"
+                      case "asset":
+                        return "/admin/assets"
+                      default:
+                        return "/admin"
+                    }
+                  }
+
+                  return (
+                    <Link key={index} href={getActivityUrl(activity.type)}>
+                      <div className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer rounded-sm px-2 -mx-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-shrink-0">
+                            {activity.type === "application" && <FileText className="h-4 w-4 text-blue-500" />}
+                            {activity.type === "topup" && <CreditCard className="h-4 w-4 text-green-500" />}
+                            {activity.type === "team" && <Users className="h-4 w-4 text-purple-500" />}
+                            {activity.type === "asset" && <Database className="h-4 w-4 text-orange-500" />}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{activity.message}</p>
+                            <p className="text-xs text-muted-foreground">{activity.time}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {activity.status === "pending" && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Pending
+                            </Badge>
+                          )}
+                          {activity.status === "completed" && (
+                            <Badge variant="default" className="flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              Completed
+                            </Badge>
+                          )}
+                          {activity.status === "active" && (
+                            <Badge variant="default" className="flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              Active
+                            </Badge>
+                          )}
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{activity.message}</p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
-                      </div>
-                    </div>
-                    <div>
-                      {activity.status === "pending" && (
-                        <Badge variant="secondary" className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Pending
-                        </Badge>
-                      )}
-                      {activity.status === "completed" && (
-                        <Badge variant="default" className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Completed
-                        </Badge>
-                      )}
-                      {activity.status === "active" && (
-                        <Badge variant="default" className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          Active
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                ))
+                    </Link>
+                  )
+                })
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />

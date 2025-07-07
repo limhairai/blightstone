@@ -66,6 +66,35 @@ export async function POST(
       )
     }
 
+    // Get the application to find the organization_id for cache invalidation
+    const { data: application, error: appError } = await supabase
+      .from('application')
+      .select('organization_id')
+      .eq('application_id', id)
+      .single()
+
+    // Trigger cache invalidation for immediate UI updates
+    if (application && !appError) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}`
+        await fetch(`${baseUrl}/api/cache/invalidate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+          },
+          body: JSON.stringify({
+            organizationId: application.organization_id,
+            type: 'business-manager'
+          })
+        })
+        console.log(`✅ Business manager cache invalidated for org: ${application.organization_id}`)
+      } catch (cacheError) {
+        console.error('Failed to invalidate business manager cache:', cacheError)
+        // Don't fail the fulfillment if cache invalidation fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       assets_bound: result.assets_bound,

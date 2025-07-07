@@ -11,7 +11,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true, // Temporarily ignore TS errors to get app running
+    ignoreBuildErrors: false, // Enforce TypeScript errors for production readiness
   },
   
   // Basic image optimization

@@ -143,14 +143,14 @@ export function AccountsTable() {
     setSelectedAccounts(
       selectedAccounts.length === accounts.length 
         ? [] 
-        : accounts.map(account => account.id)
+        : accounts.map((account: any) => account.id)
     )
   }
   
   const isAllSelected = accounts.length > 0 && selectedAccounts.length === accounts.length
 
   if (isLoading) return <LoadingState />
-  if (error) return <ErrorState message="Failed to load ad accounts." />
+  if (error) return <ErrorState title="Error" description="Failed to load ad accounts." />
 
   return (
     <div className="space-y-4">

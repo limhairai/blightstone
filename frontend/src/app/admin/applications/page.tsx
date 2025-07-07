@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataTable } from "@/components/ui/data-table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -295,118 +295,7 @@ export default function AdminApplicationsPage() {
     });
   };
 
-  const createColumns = (statusFilter: string) => [
-    {
-      accessorKey: "organizationName",
-      header: "Organization",
-      size: 250,
-      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => {
-        const application = row.original;
-        const requestTypeInfo = getRequestTypeInfo(application);
-        return (
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
-              {requestTypeInfo.icon}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium truncate">{application.organizationName}</div>
-              <div className="text-sm text-muted-foreground truncate">{application.websiteUrl}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "requestType",
-      header: "Request Type",
-      size: 200,
-      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => {
-        const application = row.original;
-        const requestTypeInfo = getRequestTypeInfo(application);
-        return (
-          <div className="space-y-1">
-            <Badge variant={requestTypeInfo.variant}>
-              <div className="flex items-center gap-1">
-                {requestTypeInfo.icon}
-                {requestTypeInfo.label}
-              </div>
-            </Badge>
-            {application.targetBmDolphinId && (
-              <div className="text-xs text-muted-foreground font-mono">
-                Target: {application.targetBmDolphinId}
-              </div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "createdAt",
-      header: "Applied",
-      size: 150,
-      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => (
-        <div className="text-sm">{formatDate(row.original.createdAt)}</div>
-      ),
-    },
-    // Only show status column if we're showing all statuses
-    ...(statusFilter === 'all' ? [{
-      accessorKey: "status",
-      header: "Status",
-      size: 120,
-      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => 
-        getStatusBadge(row.original.status),
-    }] : []),
-    {
-      accessorKey: "actions",
-      header: "Actions",
-      size: 200,
-      cell: ({ row }: { row: { original: ApplicationWithDetails } }) => {
-        const application = row.original;
-        const isProcessing = processingId === application.applicationId;
-        
-        return (
-          <div className="flex gap-2">
-            {application.status === 'pending' && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleReject(application)}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Reject'
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => handleApprove(application)}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    'Approve'
-                  )}
-                </Button>
-              </>
-            )}
-            {application.status === 'processing' && (
-              <Button
-                size="sm"
-                onClick={() => handleFulfill(application)}
-                className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-              >
-                Mark as Fulfilled
-              </Button>
-            )}
-          </div>
-        );
-      },
-    },
-  ];
+
 
   if (isLoading) {
     return (
@@ -468,12 +357,98 @@ export default function AdminApplicationsPage() {
                 No {status} applications found.
               </div>
             ) : (
-              <DataTable 
-                columns={createColumns(status)} 
-                data={filterApplications(status)} 
-                searchKey="organizationName"
-                searchPlaceholder="Search applications..."
-              />
+              <div className="border border-border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border hover:bg-muted/50">
+                      <TableHead className="text-muted-foreground">Organization</TableHead>
+                      <TableHead className="text-muted-foreground">Request Type</TableHead>
+                      <TableHead className="text-muted-foreground">Applied</TableHead>
+                      <TableHead className="text-muted-foreground">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filterApplications(status).map((application) => {
+                      const requestTypeInfo = getRequestTypeInfo(application);
+                      const isProcessing = processingId === application.applicationId;
+                      
+                      return (
+                        <TableRow key={application.applicationId} className="border-border hover:bg-muted/50">
+                          <TableCell>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                                {requestTypeInfo.icon}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="font-medium truncate">{application.organizationName}</div>
+                                <div className="text-sm text-muted-foreground truncate">{application.websiteUrl}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <Badge variant={requestTypeInfo.variant}>
+                                <div className="flex items-center gap-1">
+                                  {requestTypeInfo.icon}
+                                  {requestTypeInfo.label}
+                                </div>
+                              </Badge>
+                              {application.targetBmDolphinId && (
+                                <div className="text-xs text-muted-foreground font-mono">
+                                  Target: {application.targetBmDolphinId}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">{formatDate(application.createdAt)}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {application.status === 'pending' && (
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleReject(application)}
+                                    disabled={isProcessing}
+                                  >
+                                    {isProcessing ? (
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      'Reject'
+                                    )}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleApprove(application)}
+                                    disabled={isProcessing}
+                                  >
+                                    {isProcessing ? (
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      'Approve'
+                                    )}
+                                  </Button>
+                                </>
+                              )}
+                              {application.status === 'processing' && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleFulfill(application)}
+                                  className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                                >
+                                  Mark as Fulfilled
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </TabsContent>
         ))}

@@ -41,7 +41,7 @@ export function ProvisioningPipeline() {
 
   // Filter businesses in provisioning states using proper admin statuses
   const provisioningBusinesses = businesses.filter(
-    (business) => business.status === "provisioning" || business.status === "ready" || business.status === "under_review"
+    (business: any) => business.status === "provisioning" || business.status === "ready" || business.status === "under_review"
   );
 
   const getProvisioningStatusBadge = (status: string) => {
@@ -176,7 +176,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">
-              {provisioningBusinesses.filter(b => b.status === "provisioning").length}
+              {provisioningBusinesses.filter((b: any) => b.status === "provisioning").length}
             </div>
           </CardContent>
         </Card>
@@ -187,7 +187,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {provisioningBusinesses.filter(b => b.status === "under_review").length}
+              {provisioningBusinesses.filter((b: any) => b.status === "under_review").length}
             </div>
           </CardContent>
         </Card>
@@ -198,7 +198,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {provisioningBusinesses.filter(b => b.status === "ready").length}
+              {provisioningBusinesses.filter((b: any) => b.status === "ready").length}
             </div>
           </CardContent>
         </Card>
@@ -209,7 +209,7 @@ export function ProvisioningPipeline() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {businesses.filter(b => b.status === "approved" || b.status === "active").length}
+              {businesses.filter((b: any) => b.status === "approved" || b.status === "active").length}
             </div>
           </CardContent>
         </Card>
@@ -243,7 +243,7 @@ export function ProvisioningPipeline() {
                   </TableCell>
                 </TableRow>
               ) : (
-                provisioningBusinesses.map((business) => (
+                provisioningBusinesses.map((business: any) => (
                   <TableRow key={business.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">

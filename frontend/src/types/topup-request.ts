@@ -1,5 +1,6 @@
 export interface TopupRequest {
   id: string
+  display_id: string
   organization_id: string
   requested_by: string
   ad_account_id: string

@@ -97,7 +97,7 @@ export function RecentTransactions({ limit = 5 }: RecentTransactionsProps) {
   }
 
   const getAmountColor = (type: string) => {
-    return type === "deposit" ? transactionColors.deposit.text : "text-foreground"
+    return type === "deposit" ? "text-green-600" : "text-foreground"
   }
 
   const getAmountPrefix = (type: string) => {

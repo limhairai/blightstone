@@ -36,14 +36,14 @@ export function useThrottle<T extends any[]>(
 }
 
 // Memoized component wrapper for expensive computations
-export function useMemoizedComponent<T>(
+export function useMemoizedComponent<T extends Record<string, any>>(
   component: React.ComponentType<T>,
   props: T,
   deps: React.DependencyList
 ) {
   return useMemo(() => {
-    return React.createElement(component as any, props)
-  }, deps)
+    return React.createElement(component as any, props);
+  }, deps);
 }
 
 // Intersection observer hook for lazy loading

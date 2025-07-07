@@ -50,7 +50,7 @@ CREATE POLICY "Admins can view all organizations" ON public.organizations
     FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profile_id = auth.uid() AND role = 'admin'
+            WHERE id = auth.uid() AND role = 'admin'
         )
     );
 
@@ -58,7 +58,7 @@ CREATE POLICY "Admins can update all organizations" ON public.organizations
     FOR UPDATE USING (
         EXISTS (
             SELECT 1 FROM public.profiles
-            WHERE profile_id = auth.uid() AND role = 'admin'
+            WHERE id = auth.uid() AND role = 'admin'
         )
     );
 
@@ -102,7 +102,7 @@ CREATE POLICY "Admins can manage all memberships" ON public.organization_members
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM public.profiles 
-            WHERE profile_id = auth.uid() AND is_superuser = true
+            WHERE id = auth.uid() AND is_superuser = true
         )
     );
 
@@ -117,10 +117,10 @@ DROP POLICY IF EXISTS "Admins can update all profiles" ON public.profiles;
 DROP POLICY IF EXISTS "Service role can manage all profiles" ON public.profiles;
 
 CREATE POLICY "Users can view their own profile" ON public.profiles
-    FOR SELECT USING (profile_id = auth.uid());
+    FOR SELECT USING (id = auth.uid());
 
 CREATE POLICY "Users can update their own profile" ON public.profiles
-    FOR UPDATE USING (profile_id = auth.uid());
+    FOR UPDATE USING (id = auth.uid());
 
 CREATE POLICY "Admins can view all profiles" ON public.profiles
     FOR SELECT USING (

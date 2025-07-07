@@ -33,7 +33,7 @@ const ONBOARDING_STEPS = [
 ]
 
 export function useAdvancedOnboarding() {
-  const { user, isLoading: isAuthLoading } = useAuth()
+  const { user } = useAuth()
 
   // We only fetch data if the user is logged in.
   const { data, error, isLoading, mutate } = useSWR<OnboardingProgress>(
@@ -64,8 +64,6 @@ export function useAdvancedOnboarding() {
     }
   )
 
-  const loading = isAuthLoading || isLoading;
-
   const steps = useMemo(() => {
     if (!data?.progress) return ONBOARDING_STEPS.map(step => ({ ...step, isCompleted: false }));
     
@@ -93,14 +91,14 @@ export function useAdvancedOnboarding() {
   }, [steps]);
 
   const shouldShowOnboarding = useMemo(() => {
-    if (loading || !data) return false;
+    if (isLoading || !data) return false;
     // Don't show if all steps are complete
     if (isComplete) return false;
     // Don't show if the user explicitly closed the widget
     if (data.persistence?.hasExplicitlyDismissed) return false;
     
     return true;
-  }, [data, loading, isComplete]);
+  }, [data, isLoading, isComplete]);
 
   const dismissOnboarding = async () => {
     try {
@@ -130,7 +128,7 @@ export function useAdvancedOnboarding() {
 
   return {
     progressData,
-    isLoading: loading,
+    isLoading: isLoading,
     isError: !!error,
     error,
     setupProgress: data?.progress,

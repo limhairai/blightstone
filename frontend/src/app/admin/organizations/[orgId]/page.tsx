@@ -8,7 +8,7 @@ import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
-import { DataTable } from "../../../../components/ui/data-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table"
 import { Building, ArrowLeft, Search, RefreshCw } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
@@ -99,67 +99,7 @@ export default function OrganizationDetailPage() {
     return <div className="flex items-center justify-center p-8">Organization not found</div>
   }
 
-  const columns = [
-    {
-      accessorKey: "name",
-      header: "Business Manager",
-      size: 300,
-      cell: ({ row }: { row: { original: BusinessManager; getValue: (key: string) => any } }) => (
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
-            <Building className="h-4 w-4 text-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium truncate">{row.getValue("name")}</div>
-            <div className="text-xs text-muted-foreground">
-              {row.original.adAccountsCount} ad accounts
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "dolphin_business_manager_id",
-      header: "Business Manager ID",
-      size: 200,
-      cell: ({ row }: { row: { original: BusinessManager } }) => (
-        <div className="font-mono text-sm">
-          {row.original.dolphin_business_manager_id ? 
-            `${row.original.dolphin_business_manager_id.substring(0, 12)}...` : 
-            'N/A'
-          }
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 100,
-      cell: ({ row }: { row: { getValue: (key: string) => any } }) => <StatusBadge status={row.getValue("status")} size="sm" />,
-    },
-    {
-      accessorKey: "adAccountsCount",
-      header: "Ad Accounts",
-      size: 120,
-      cell: ({ row }: { row: { original: BusinessManager } }) => (
-        <div className="text-center font-medium">
-          {row.original.adAccountsCount}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "actions",
-      header: "",
-      size: 50,
-      cell: ({ row }: { row: { original: BusinessManager } }) => (
-        <Link href={`/admin/organizations/${orgId}/business-managers/${row.original.id}`}>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </Link>
-      ),
-    },
-  ]
+
 
   return (
     <div className="space-y-6">
@@ -204,18 +144,85 @@ export default function OrganizationDetailPage() {
               </SelectContent>
             </Select>
             
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search business managers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-[250px]"
+              />
+            </div>
+            
             <div className="text-sm text-muted-foreground">
               {filteredBusinessManagers.length} business managers shown
             </div>
           </div>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={filteredBusinessManagers}
-          searchKey="name"
-          searchPlaceholder="Search business managers..."
-        />
+        <div className="border border-border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-muted/50">
+                <TableHead className="text-muted-foreground">Business Manager</TableHead>
+                <TableHead className="text-muted-foreground">Business Manager ID</TableHead>
+                <TableHead className="text-muted-foreground">Status</TableHead>
+                <TableHead className="text-muted-foreground">Ad Accounts</TableHead>
+                <TableHead className="text-muted-foreground"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredBusinessManagers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    No business managers found for this organization.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredBusinessManagers.map((bm) => (
+                  <TableRow key={bm.id} className="border-border hover:bg-muted/50">
+                    <TableCell>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                          <Building className="h-4 w-4 text-foreground" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{bm.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {bm.adAccountsCount} ad accounts
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-mono text-sm">
+                        {bm.dolphin_business_manager_id ? 
+                          `${bm.dolphin_business_manager_id.substring(0, 12)}...` : 
+                          'N/A'
+                        }
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge status={bm.status} size="sm" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-center font-medium">
+                        {bm.adAccountsCount}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/admin/organizations/${orgId}/business-managers/${bm.id}`}>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   )

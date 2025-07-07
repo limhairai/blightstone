@@ -66,7 +66,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
   // Fetch organizations with authentication
   const { data: orgData, error: orgError } = useSWR<any>(
     session?.access_token ? ['/api/organizations', session.access_token] : null,
-    ([url, token]) => fetcher(url, token),
+    ([url, token]: [string, string]) => fetcher(url, token),
     { revalidateOnFocus: false }
   );
   const organizations = orgData?.organizations;
@@ -74,7 +74,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
   // Fetch all assets to determine relationships
   const { data: allAssetsData } = useSWR<any>(
     session?.access_token ? ['/api/admin/dolphin-assets/all-assets', session.access_token] : null,
-    ([url, token]) => fetcher(url, token),
+    ([url, token]: [string, string]) => fetcher(url, token),
     { revalidateOnFocus: false }
   );
   const allAssets = allAssetsData?.assets || [];
@@ -111,7 +111,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
   const { data: bmData, error: bmError, isLoading: isBmLoading } = useSWR<any>(
     selectedOrgId && isAdAccount && session?.access_token ? 
       [`/api/admin/organizations/${selectedOrgId}/business-managers`, session.access_token] : null,
-    ([url, token]) => fetcher(url, token),
+    ([url, token]: [string, string]) => fetcher(url, token),
     { revalidateOnFocus: false }
   );
 
@@ -305,7 +305,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
                 <Checkbox 
                   id="auto-bind" 
                   checked={autoBindRelated} 
-                  onCheckedChange={setAutoBindRelated}
+                  onCheckedChange={(checked) => setAutoBindRelated(checked === true)}
                 />
                 <Label htmlFor="auto-bind" className="text-sm font-medium">
                   Auto-bind related ad accounts ({relatedAdAccounts.length})

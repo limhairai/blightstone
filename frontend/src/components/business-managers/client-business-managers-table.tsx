@@ -178,13 +178,13 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={cn("w-10 h-10 rounded-lg flex-shrink-0", getBusinessAvatarClasses(manager.name, currentMode), "flex items-center justify-center font-bold")}>
+                  <div className={cn("w-10 h-10 rounded-lg flex-shrink-0", getBusinessAvatarClasses("md"), "flex items-center justify-center font-bold")}>
                     {getInitials(manager.name)}
                   </div>
                   <div>
                     <div className="font-semibold text-foreground">{manager.name}</div>
                     <div className="text-muted-foreground text-xs flex items-center gap-2">
-                      <StatusBadge status={manager.status} />
+                      <StatusBadge status={manager.status as "active" | "pending" | "suspended" | "error" | "inactive" | "restricted" | "paused"} />
                       <span>•</span>
                       <span>ID: {manager.dolphin_business_manager_id || 'N/A'}</span>
                       <span>•</span>

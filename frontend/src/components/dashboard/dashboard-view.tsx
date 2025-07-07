@@ -113,7 +113,7 @@ export function DashboardView() {
   useEffect(() => {
     if (userOrgsData?.length > 0 && currentOrganizationId) {
       // Verify current org still exists in the user's organizations
-      const currentOrgExists = userOrgsData.find(org => org.id === currentOrganizationId);
+      const currentOrgExists = userOrgsData.find((org: any) => org.id === currentOrganizationId);
       if (!currentOrgExists) {
         // Current org doesn't exist, switch to the first available organization
         setCurrentOrganizationId(userOrgsData[0].id);
@@ -126,7 +126,7 @@ export function DashboardView() {
 
   // Use real-time balance from state management - ensure no NaN values
   const realBalance = Number.isFinite(organization?.balance_cents) ? (organization.balance_cents / 100) : 0;
-  const monthlySpend = accounts.reduce((sum, acc) => sum + (acc.spent ?? 0), 0);
+  const monthlySpend = accounts.reduce((sum: any, acc: any) => sum + (acc.spent ?? 0), 0);
 
   // Check if user has real data to show (honest assessment)
   const hasRealData = realBalance > 0 || monthlySpend > 0
@@ -303,12 +303,12 @@ export function DashboardView() {
       amount: (tx.amount_cents || 0) / 100,
       type: tx.type || 'transfer',
       date: tx.created_at ? new Date(tx.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
-      account: tx.metadata?.to_account_name || tx.metadata?.from_account_name || tx.metadata?.account_name || 'Unknown',
+      account: tx.metadata?.to_account_name || tx.metadata?.from_account_name || tx.metadata?.account_name || tx.metadata?.ad_account_name || tx.organizationName || 'Account',
       timestamp: tx.created_at || new Date().toISOString()
     }))
   }, [transactionsData])
 
-  const processedAccounts = accounts.map(account => ({
+  const processedAccounts = accounts.map((account: any) => ({
     ...account,
     spendLimit: account.spend_limit || 5000, // Default spend limit
     spend: account.spent || 0,

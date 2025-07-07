@@ -15,11 +15,11 @@ export function ProvisioningStats() {
   const isLoading = isBizLoading || isAccLoading;
   
   // Calculate provisioning statistics using proper admin statuses
-  const approvedBusinesses = businesses.filter(b => b.status === "approved" || b.status === "active").length;
+  const approvedBusinesses = businesses.filter((b: any) => b.status === "approved" || b.status === "active").length;
   const totalAccounts = accounts.length;
-  const activeAccounts = accounts.filter(acc => acc.status === "active").length;
-  const pendingAccounts = accounts.filter(acc => acc.status === "pending").length;
-  const totalSpend = accounts.reduce((total, account) => total + (account.spent || 0), 0);
+  const activeAccounts = accounts.filter((acc: any) => acc.status === "active").length;
+  const pendingAccounts = accounts.filter((acc: any) => acc.status === "pending").length;
+  const totalSpend = accounts.reduce((total: any, account: any) => total + (account.spent || 0), 0);
 
   const stats = [
     {

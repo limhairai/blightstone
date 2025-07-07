@@ -89,7 +89,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatar_url || undefined} alt="Admin" />
+                <AvatarImage src={(user as any)?.avatar_url || user?.user_metadata?.avatar_url || undefined} alt="Admin" />
                 <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-white">
                   {userInitial}
                 </AvatarFallback>

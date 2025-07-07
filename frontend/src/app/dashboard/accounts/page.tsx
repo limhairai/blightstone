@@ -16,12 +16,12 @@ export default function AccountsPage() {
   const { currentOrganizationId } = useOrganizationStore();
   const searchParams = useSearchParams()
   const router = useRouter()
-  const bmId = searchParams.get('bm_id')
-  const initialBusinessFilter = searchParams.get("business") || "all"
+  const bmId = searchParams?.get('bm_id')
+  const initialBusinessFilter = searchParams?.get("business") || "all"
   const [businessFilter, setBusinessFilter] = useState<string>(initialBusinessFilter)
 
   // Fetch business managers for filter options with organization ID
-  const { data: businessManagers } = useBusinessManagers(currentOrganizationId);
+  const { data: businessManagers } = useBusinessManagers();
 
   const businessManagerOptions = useMemo(() => {
     if (!Array.isArray(businessManagers)) return [];

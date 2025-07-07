@@ -18,9 +18,9 @@ export function AccountsMetrics() {
   }
   
   const totalAccounts = accounts.length
-  const activeAccounts = accounts.filter((account) => account.status === "active").length
-  const totalBalance = accounts.reduce((total, account) => total + (account.balance || 0), 0)
-  const totalSpent = accounts.reduce((total, account) => total + (account.spent || 0), 0)
+  const activeAccounts = accounts.filter((account: any) => account.status === "active").length
+  const totalBalance = accounts.reduce((total: any, account: any) => total + (account.balance || 0), 0)
+  const totalSpent = accounts.reduce((total: any, account: any) => total + (account.spent || 0), 0)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

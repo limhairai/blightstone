@@ -208,8 +208,8 @@ export function BusinessesTable() {
                 All Industries
               </SelectItem>
               {uniqueIndustries.map((industry) => (
-                <SelectItem key={industry} value={industry!} className="text-popover-foreground hover:bg-accent">
-                  {industry}
+                <SelectItem key={String(industry)} value={String(industry)} className="text-popover-foreground hover:bg-accent">
+                  {String(industry)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -277,7 +277,7 @@ export function BusinessesTable() {
 
       {!isLoading && !error && view === "grid" ? (
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-          {businesses.map((business) => (
+          {businesses.map((business: any) => (
             <div
               key={business.id}
               onClick={(e) => handleBusinessClick(business, e)}
@@ -294,7 +294,7 @@ export function BusinessesTable() {
       
       {!isLoading && !error && view === "list" ? (
         <div className="space-y-3">
-          {businesses.map((business) => (
+          {businesses.map((business: any) => (
             <div
               key={business.id}
               onClick={(e) => handleBusinessClick(business, e)}
@@ -310,7 +310,7 @@ export function BusinessesTable() {
       ) : null}
 
       {!isLoading && !error && businesses.length === 0 && (
-        <div className={layout.centeredContent}>
+        <div className="flex items-center justify-center p-8">
           <div className="text-center">
             <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium text-foreground mb-2">No businesses found</h3>

@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
       requestId, 
       action, // 'approve' | 'reject'
       actualAmount, // Amount actually received (may differ from requested)
-
       bankReference // Bank transaction reference
     } = await request.json()
 
@@ -44,35 +43,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the bank transfer request
-    const { data: request, error: requestError } = await supabase
+    const { data: bankRequest, error: requestError } = await supabase
       .from('bank_transfer_requests')
       .select('*')
       .eq('request_id', requestId)
       .single()
 
-    if (requestError || !request) {
+    if (requestError || !bankRequest) {
       return NextResponse.json({ error: 'Bank transfer request not found' }, { status: 404 })
     }
 
-    if (request.status !== 'pending') {
+    if (bankRequest.status !== 'pending') {
       return NextResponse.json({ error: 'Request already processed' }, { status: 400 })
     }
 
     if (action === 'approve') {
-      const amountToCredit = actualAmount || request.requested_amount
+      const amountToCredit = actualAmount || bankRequest.requested_amount
 
       // Process wallet topup
       const result = await WalletService.processTopup({
-        organizationId: request.organization_id,
+        organizationId: bankRequest.organization_id,
         amount: amountToCredit,
         paymentMethod: 'bank_transfer',
         transactionId: `bank_${requestId}`,
-        metadata: {
-          bank_transfer_request_id: requestId,
-          bank_reference: bankReference,
-          requested_amount: request.requested_amount,
-          actual_amount: amountToCredit
-        },
+                  metadata: {
+            bank_transfer_request_id: requestId,
+            bank_reference: bankReference,
+            requested_amount: bankRequest.requested_amount,
+            actual_amount: amountToCredit
+          },
         description: `Bank Transfer - $${amountToCredit.toFixed(2)}`
       })
 

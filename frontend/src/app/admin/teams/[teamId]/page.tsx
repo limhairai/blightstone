@@ -8,7 +8,7 @@ import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
-import { DataTable } from "../../../../components/ui/data-table"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table"
 import { Building2, ArrowLeft, Search } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
@@ -152,56 +152,7 @@ export default function TeamDetailPage() {
     })
   }, [teamOrganizations, selectedStatus, selectedPlan, searchTerm])
 
-  const columns = [
-    {
-      accessorKey: "name",
-      header: "Organization",
-      size: 250,
-      cell: ({ row }: { row: { original: Organization; getValue: (key: string) => any } }) => (
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
-            <Building2 className="h-4 w-4 text-foreground" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium truncate">{row.getValue("name")}</div>
-            <div className="text-xs text-muted-foreground truncate">{row.original.industry}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      size: 100,
-      cell: ({ row }: { row: { getValue: (key: string) => any } }) => <StatusBadge status={row.getValue("status")} size="sm" />,
-    },
-    {
-      accessorKey: "plan",
-      header: "Plan",
-      size: 120,
-      cell: ({ row }: { row: { getValue: (key: string) => any } }) => (
-        <Badge variant="secondary" className="truncate capitalize">
-          {row.getValue("plan")}
-        </Badge>
-      ),
-    },
-    {
-      accessorKey: "adAccountsCount",
-      header: "Accounts",
-      size: 80,
-      cell: ({ row }: { row: { original: Organization } }) => <div className="text-center font-medium">{row.original.adAccountsCount}</div>,
-    },
-    {
-      accessorKey: "actions",
-      header: "",
-      size: 50,
-      cell: ({ row }: { row: { original: Organization } }) => (
-        <Link href={`/admin/teams/${teamId}/organizations/${row.original.id}`} className="inline-flex">
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </Link>
-      ),
-    },
-  ]
+
 
   if (!currentTeam) {
     return (
@@ -290,12 +241,60 @@ export default function TeamDetailPage() {
           </div>
         </div>
 
-        <DataTable
-          columns={columns}
-          data={filteredOrganizations}
-          searchKey="name"
-          searchPlaceholder="Search organizations..."
-        />
+        <div className="border border-border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground">Organization</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Plan</TableHead>
+              <TableHead className="text-muted-foreground">Accounts</TableHead>
+              <TableHead className="text-muted-foreground"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredOrganizations.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  No organizations found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredOrganizations.map((org) => (
+                <TableRow key={org.id} className="border-border hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="h-4 w-4 text-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium truncate">{org.name}</div>
+                        <div className="text-xs text-muted-foreground truncate">{org.industry}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={org.status} size="sm" />
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="truncate capitalize">
+                      {org.plan}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-center font-medium">{org.adAccountsCount}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Link href={`/admin/teams/${teamId}/organizations/${org.id}`} className="inline-flex">
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </Link>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       </div>
     </div>
   )

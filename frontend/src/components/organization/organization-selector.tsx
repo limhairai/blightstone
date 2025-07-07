@@ -46,7 +46,7 @@ export function OrganizationSelector() {
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations() // For dropdown list
   const { data: currentOrgData, isLoading: isCurrentOrgLoading, error: currentOrgError } = useCurrentOrganization(currentOrganizationId) // For current org display
   // Only fetch business managers if we have a current organization - reduces unnecessary API calls
-  const { data: bizData, isLoading: isBizLoading, error: bizError } = useBusinessManagers(currentOrganizationId)
+  const { data: bizData, isLoading: isBizLoading, error: bizError } = useBusinessManagers()
   
   const allOrganizations = orgData?.organizations || [];
   const allBusinessManagers = Array.isArray(bizData) ? bizData : [];
@@ -104,7 +104,7 @@ export function OrganizationSelector() {
     
     // Fallback: try to find current org in the organizations list
     if (currentOrganizationId && allOrganizations.length > 0) {
-      const fallbackOrg = allOrganizations.find(org => org.id === currentOrganizationId);
+      const fallbackOrg = allOrganizations.find((org: any) => org.id === currentOrganizationId);
       if (fallbackOrg) {
         return {
           id: fallbackOrg.id,
@@ -134,7 +134,7 @@ export function OrganizationSelector() {
   const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const organizations: Organization[] = useMemo(() => {
-    return allOrganizations.map(org => ({
+    return allOrganizations.map((org: any) => ({
       id: org.id,
       name: org.name,
       avatar: org.avatar,
@@ -331,7 +331,7 @@ export function OrganizationSelector() {
           <Button
             variant="outline"
             className="w-full justify-between bg-background border-border text-foreground hover:bg-accent"
-            disabled={componentIsLoading || globalLoading}
+            disabled={Boolean(componentIsLoading || globalLoading)}
           >
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-2">
