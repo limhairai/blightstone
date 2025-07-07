@@ -141,7 +141,7 @@ export function AdminAccessCheck({ children }: AdminAccessCheckProps) {
             Return to Dashboard
           </Button>
           <Button 
-            onClick={() => window.location.href = '/promote-admin'} 
+            onClick={() => window.location.href = '/admin-setup'} 
             variant="ghost"
             size="sm"
             className="w-full text-muted-foreground hover:text-foreground"

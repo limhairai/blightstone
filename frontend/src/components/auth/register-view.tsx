@@ -211,13 +211,6 @@ export function RegisterView() {
               >
                 {loading ? "Creating account..." : "Create Account"}
               </Button>
-              
-              {/* Debug info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="text-xs text-muted-foreground text-center mt-2">
-                  Loading: {loading.toString()} | Error: {error || 'none'}
-                </div>
-              )}
             </div>
           </form>
 
