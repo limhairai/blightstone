@@ -58,7 +58,9 @@ export const PRODUCTION_CSP: CSPConfig = {
     "https://vitals.vercel-insights.com",
     process.env.NODE_ENV === "development" ? "ws://localhost:*" : "",
     process.env.NODE_ENV === "development" ? "http://localhost:*" : "",
-    process.env.NEXT_PUBLIC_API_URL || "https://api.adhub.com"
+    process.env.NEXT_PUBLIC_API_URL || "https://api.adhub.com",
+    "https://api-staging.adhub.tech", // Explicitly allow staging API
+    "https://api.adhub.com" // Explicitly allow production API
   ].filter(Boolean),
   'frame-src': [
     "'self'",
