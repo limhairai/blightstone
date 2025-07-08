@@ -83,7 +83,7 @@ export default function AccountPerformance() {
       text.setAttribute("dy", "0.32em")
       text.setAttribute("text-anchor", "end")
       text.setAttribute("class", "chart-label")
-      text.textContent = `$${value}`
+                  text.textContent = `${value}`
       g.appendChild(text)
     }
 

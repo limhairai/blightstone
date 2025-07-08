@@ -119,7 +119,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     }
     
     if (numAmount < MINIMUM_TOP_UP_AMOUNT) {
-      return `Minimum top up amount is $${MINIMUM_TOP_UP_AMOUNT}.`;
+      return `Minimum top up amount is ${MINIMUM_TOP_UP_AMOUNT}.`;
     }
 
     // Check if total amount (including fee) exceeds wallet balance

@@ -39,7 +39,7 @@ export default function AccountMetrics() {
     },
     {
       title: "Total balance",
-      value: `$${formatCurrency(totalBalance)} USD`,
+      value: `${formatCurrency(totalBalance)} USD`,
       icon: Wallet,
       trend: null,
       limit: undefined,
@@ -109,7 +109,7 @@ export default function AccountMetrics() {
         ctx.moveTo(padding.left, y)
         ctx.lineTo(width - padding.right, y)
         ctx.stroke()
-        ctx.fillText(`$${value}`, padding.left - 5, y)
+        ctx.fillText(`${value}`, padding.left - 5, y)
       }
 
       const barWidth = (chartWidth / data.length) * 0.6

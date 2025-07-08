@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Button } from "../ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from "../ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+
 import { Input } from "../ui/input"
 import { Separator } from "../ui/separator"
 import { Badge } from "../ui/badge"
@@ -14,8 +14,7 @@ import { cn } from "../../lib/utils"
 import { useOrganizationStore } from "../../lib/stores/organization-store"
 import { useAuth } from "../../contexts/AuthContext"
 import { useOrganizations, useCurrentOrganization, useBusinessManagers } from "../../lib/swr-config"
-import { getInitials } from "../../utils/format"
-import { getAvatarClasses } from "../../lib/design-tokens"
+
 
 interface Organization {
   id: string
@@ -334,20 +333,8 @@ export function OrganizationSelector() {
             disabled={Boolean(componentIsLoading || globalLoading)}
           >
             <div className="flex items-center">
-              <Avatar className="h-6 w-6 mr-2">
-                {selectedOrg.avatar ? (
-                  <AvatarImage src={selectedOrg.avatar} alt={selectedOrg.name} />
-                ) : (
-                  <AvatarFallback className={cn(getAvatarClasses('sm', currentTheme), "animate-pulse")}>
-                    {getInitials(selectedOrg.name)}
-                  </AvatarFallback>
-                )}
-              </Avatar>
               <div className="flex flex-col items-start">
                 <span className="truncate max-w-[150px] text-foreground text-sm font-medium">{selectedOrg.name}</span>
-                <span className="text-xs text-muted-foreground">
-                  {selectedOrg.businessCount} {selectedOrg.businessCount === 1 ? "Business Manager" : "Business Managers"}
-                </span>
               </div>
             </div>
             {componentIsLoading || globalLoading ? (
@@ -391,15 +378,7 @@ export function OrganizationSelector() {
                     onMouseLeave={handleOrgMouseLeave}
                     onClick={() => handleOrganizationClick(org)}
                   >
-                    <Avatar className="h-8 w-8 mr-3">
-                      {org.avatar ? (
-                        <AvatarImage src={org.avatar} alt={org.name} />
-                      ) : (
-                        <AvatarFallback className={cn(getAvatarClasses('sm', currentTheme), "animate-pulse")}>
-                          {getInitials(org.name)}
-                        </AvatarFallback>
-                      )}
-                    </Avatar>
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-foreground truncate">{org.name}</p>
@@ -409,7 +388,6 @@ export function OrganizationSelector() {
                       </div>
                       <div className="flex items-center text-xs text-muted-foreground">
                         <span className="mr-2">{org.role}</span>
-                        <span>{org.businessCount} {org.businessCount === 1 ? "Business Manager" : "Business Managers"}</span>
                       </div>
                     </div>
                   </DropdownMenuItem>

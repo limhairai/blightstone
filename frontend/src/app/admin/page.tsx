@@ -83,7 +83,7 @@ export default function AdminDashboard() {
             .forEach((request: any) => {
               activities.push({
                 type: "topup",
-                message: `Topup request: $${(request.amount_cents / 100).toFixed(2)} for ${request.ad_account_name}`,
+                message: `Topup request: ${(request.amount_cents / 100).toFixed(2)} for ${request.ad_account_name}`,
                 time: formatTimeAgo(request.created_at),
                 status: request.status || "pending"
               })

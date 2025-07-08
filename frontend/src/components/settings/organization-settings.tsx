@@ -389,29 +389,23 @@ export function OrganizationSettings() {
 
           {/* Danger Zone */}
           <Card className="bg-card border border-red-800/30">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-red-400 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Danger Zone
-              </CardTitle>
-              <CardDescription className="text-sm text-muted-foreground">
-                These actions are permanent and cannot be undone.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between py-3 px-4 bg-red-950/10 rounded-lg border border-red-800/20">
+            <CardHeader className="py-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium text-foreground">Delete Organization</div>
-                  <div className="text-xs text-muted-foreground">
-                    Permanently delete this organization and all associated data
-                  </div>
+                  <CardTitle className="text-base font-semibold text-red-400 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Danger Zone
+                  </CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground">
+                    These actions are permanent and cannot be undone.
+                  </CardDescription>
                 </div>
                 <Button variant="destructive" size="sm" onClick={() => setDeleteOrgOpen(true)}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
               </div>
-            </CardContent>
+            </CardHeader>
           </Card>
         </div>
 
@@ -432,12 +426,9 @@ export function OrganizationSettings() {
             <CardContent className="space-y-4">
               {/* Plan Details */}
               <div className={`p-4 ${gradientTokens.light} rounded-lg border ${gradientTokens.border}`}>
-                <Badge className={gradientTokens.primary}>
-                  Current Plan
-                </Badge>
                 <div className="flex items-baseline gap-2 mb-3">
                   <span className="text-2xl font-bold text-foreground">
-                    {currentPlan.id === 'free' ? 'Free' : `$${currentPlan.monthlyPrice}`}
+                    {currentPlan.id === 'free' ? 'Free' : `${currentPlan.monthlyPrice}`}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {currentPlan.id === 'free' ? 'Forever' : '/ month'}
@@ -447,24 +438,21 @@ export function OrganizationSettings() {
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Next payment</span>
                     <span className="text-foreground font-medium">
-                      {currentPlan.id === 'free' ? 'N/A' : (organization?.billing?.nextPayment || "N/A")}
+                      {currentPlan.id === 'free' ? 'N/A' : (
+                        subscriptionData?.current_period_end 
+                          ? new Date(subscriptionData.current_period_end).toLocaleDateString('en-US', { 
+                              month: 'short', 
+                              day: 'numeric', 
+                              year: 'numeric' 
+                            })
+                          : 'N/A'
+                      )}
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Billing cycle</span>
                     <span className="text-foreground font-medium">
-                      {currentPlan.id === 'free' ? 'N/A' : (organization?.billing?.billingCycle || "monthly")}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Plan features</span>
-                    <span className="text-foreground font-medium">See upgrade dialog</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Payment method</span>
-                    <span className="text-foreground font-medium">
-                      {currentPlan.id === 'free' ? 'Not required' : (organization?.billing?.paymentMethod?.type ? 
-                        `**** ${organization.billing.paymentMethod.last4}` : 'Not set')}
+                      {currentPlan.id === 'free' ? 'N/A' : 'Monthly'}
                     </span>
                   </div>
                 </div>

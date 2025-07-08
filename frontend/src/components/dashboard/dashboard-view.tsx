@@ -16,7 +16,7 @@ import { EmailVerificationBanner } from "../onboarding/email-verification-banner
 import { CompactAccountsTable } from "./compact-accounts-table"
 
 
-import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowRight, ArrowDownIcon, ArrowUpIcon, RefreshCw } from "lucide-react"
+import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowDownIcon, ArrowUpIcon, RefreshCw, ArrowRight } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
@@ -458,10 +458,13 @@ export function DashboardView() {
                   <TabsContent value="balance" className="mt-0">
                     <div className="p-4 pt-3">
                       <div className={typographyTokens.patterns.mutedMedium}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                      <div className={typographyTokens.patterns.balanceLarge}>${formatCurrency(realBalance)}</div>
-
-                      {/* Time filter dropdown and refresh indicator */}
-                      <div className="flex justify-end items-center gap-2 mb-2">
+                      
+                      {/* Balance amount with aligned controls */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div className={typographyTokens.patterns.balanceLarge}>{formatCurrency(realBalance)}</div>
+                        
+                        {/* Time filter dropdown and refresh indicator */}
+                        <div className="flex items-center gap-2">
                         {/* Auto-refresh indicator and manual refresh */}
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -494,10 +497,11 @@ export function DashboardView() {
                             ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </div>
                       
                       {/* Interactive balance chart with real data */}
-                      <div key={chartKey} className="mt-2 h-[160px] w-full relative" ref={balanceChartRef}>
+                      <div key={chartKey} className="mt-0 h-[160px] w-full relative" ref={balanceChartRef}>
                         <div className="absolute inset-0 bottom-5">
                           {/* Gradient background - always show for visual consistency */}
                           <div className="absolute bottom-0 left-0 right-0 h-[80px] bg-gradient-to-t from-[#b4a0ff33] to-transparent rounded-md"></div>
@@ -505,11 +509,12 @@ export function DashboardView() {
                           {/* Interactive balance line chart */}
                           <svg className="absolute inset-0 h-full w-full z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
                             <path
-                              d={`M ${balanceData.map((point, i) => {
+                              d={balanceData.map((point, i) => {
                                 const maxValue = Math.max(...balanceData.map(p => p.value), 1); // Ensure at least 1 to avoid division by zero
                                 const yPos = hasRealData ? 100 - (point.value / maxValue) * 60 : 30; // Show flat line at 30% for empty state (higher up, more visible)
-                                return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
-                              }).join(' L ')}`}
+                                const x = (i / (balanceData.length - 1)) * 100;
+                                return i === 0 ? `M ${x},${yPos}` : `L ${x},${yPos}`;
+                              }).join(' ')}
                               fill="none"
                               stroke={hasRealData ? "url(#balanceLineGradient)" : "#b4a0ff"}
                               strokeWidth={hasRealData ? "1.5" : "3"}
@@ -547,7 +552,7 @@ export function DashboardView() {
                                 }`} />
                                 {hoveredBalanceIndex === i && (
                                   <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-background border rounded px-2 py-1 text-xs whitespace-nowrap shadow-lg z-30">
-                                    <div className="font-medium">${formatCurrency(point.value)}</div>
+                                    <div className="font-medium">{formatCurrency(point.value)}</div>
                                     <div className="text-muted-foreground">{point.date}</div>
                                   </div>
                                 )}
@@ -569,7 +574,7 @@ export function DashboardView() {
 
                       <div className="flex justify-between items-center mt-4 pt-3 border-t">
                         <div className={typographyTokens.patterns.mutedMedium}>Available to spend</div>
-                        <div className={typographyTokens.patterns.balanceSmall}>${formatCurrency(realBalance)}</div>
+                        <div className={typographyTokens.patterns.balanceSmall}>{formatCurrency(realBalance)}</div>
                       </div>
                     </div>
                   </TabsContent>
@@ -577,10 +582,13 @@ export function DashboardView() {
                   <TabsContent value="spend" className="mt-0">
                     <div className="p-4 pt-3">
                       <div className={typographyTokens.patterns.mutedMedium}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                      <div className={typographyTokens.patterns.balanceLarge}>${formatCurrency(monthlySpend)}</div>
-
-                      {/* Time filter dropdown and refresh indicator */}
-                      <div className="flex justify-end items-center gap-2 mb-2">
+                      
+                      {/* Spend amount with aligned controls */}
+                      <div className="flex justify-between items-center mb-4">
+                        <div className={typographyTokens.patterns.balanceLarge}>{formatCurrency(monthlySpend)}</div>
+                        
+                        {/* Time filter dropdown and refresh indicator */}
+                        <div className="flex items-center gap-2">
                         {/* Auto-refresh indicator and manual refresh */}
                         <div className="flex items-center gap-2">
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -613,10 +621,11 @@ export function DashboardView() {
                             ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        </div>
                       </div>
 
                       {/* Interactive spend bar chart with real data */}
-                      <div key={`spend-${chartKey}`} className="mt-2 h-[160px] w-full relative">
+                      <div key={`spend-${chartKey}`} className="mt-0 h-[160px] w-full relative">
                         <div className="absolute inset-0 bottom-5">
                           <div className="h-full flex items-end justify-between px-1">
                             {/* Interactive spend bars */}
@@ -642,7 +651,7 @@ export function DashboardView() {
                                 />
                                 {hoveredSpendIndex === i && (
                                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-background border rounded px-2 py-1 text-xs whitespace-nowrap shadow-lg z-20">
-                                    <div className="font-medium">${formatCurrency(point.value)}</div>
+                                    <div className="font-medium">{formatCurrency(point.value)}</div>
                                     <div className="text-muted-foreground">{point.date}</div>
                                   </div>
                                 )}
@@ -664,7 +673,7 @@ export function DashboardView() {
 
                       <div className="flex justify-between items-center mt-4 pt-3 border-t">
                         <div className={typographyTokens.patterns.mutedMedium}>Total spend this month</div>
-                        <div className={typographyTokens.patterns.balanceSmall}>${formatCurrency(monthlySpend)}</div>
+                        <div className={typographyTokens.patterns.balanceSmall}>{formatCurrency(monthlySpend)}</div>
                       </div>
                     </div>
                   </TabsContent>
@@ -746,7 +755,7 @@ export function DashboardView() {
                         </div>
                         <div className="text-right">
                           <div className={`font-medium text-sm ${transaction.amount > 0 ? "text-[#34D197]" : "text-foreground"}`}>
-                            {transaction.amount > 0 ? "+$" : "$"}{formatCurrency(Math.abs(transaction.amount))}
+                            {transaction.amount > 0 ? "+" : ""}{formatCurrency(Math.abs(transaction.amount))}
                           </div>
                           <div className="text-xs text-muted-foreground">{transaction.account}</div>
                         </div>
@@ -766,11 +775,7 @@ export function DashboardView() {
               <h2 className="text-lg font-semibold">Accounts</h2>
               <span className="text-sm text-muted-foreground">{accounts.length}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => router.push('/dashboard/accounts')}>
-                See all accounts <ArrowRight className="h-4 w-4" />
-              </Button>
-            </div>
+
           </div>
 
           <CompactAccountsTable

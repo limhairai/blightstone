@@ -89,7 +89,7 @@ export function WithdrawBalanceDialog({
       mutate(['/api/ad-accounts', session?.access_token]);
       
       setShowSuccess(true)
-      toast.success(`$${formatCurrency(valueToWithdraw)} has been withdrawn from ${account.name}`, {
+      toast.success(`${formatCurrency(valueToWithdraw)} has been withdrawn from ${account.name}`, {
         description: "Withdrawal Successful!"
       })
 

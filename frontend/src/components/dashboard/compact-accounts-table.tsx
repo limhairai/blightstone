@@ -123,11 +123,7 @@ export function CompactAccountsTable({
 
   const isAllSelected = filteredAccounts.length > 0 && selectedAccounts.length === filteredAccounts.length
 
-  const getQuotaUsageColor = (percentage: number) => {
-    if (percentage >= 90) return "bg-red-500"
-    if (percentage >= 75) return "bg-yellow-500"
-    return "bg-emerald-500"
-  }
+
 
   const handleRowClick = (account: any, e: React.MouseEvent) => {
     // Don't open transactions if clicking on checkbox or buttons
@@ -238,7 +234,7 @@ export function CompactAccountsTable({
         {/* Table Header */}
         <div
           className="grid gap-4 px-6 py-4 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "40px 2.5fr 0.3fr 1.5fr 1fr 1fr 1fr 1fr 1fr 120px" }}
+          style={{ gridTemplateColumns: "40px 200px 20px 180px 150px 150px 100px 100px 120px 120px" }}
         >
           <div className="flex items-center">
             <Checkbox
@@ -247,14 +243,14 @@ export function CompactAccountsTable({
               className="border-border data-[state=checked]:bg-[#c4b5fd] data-[state=checked]:border-[#c4b5fd]"
             />
           </div>
-          <div>NAME</div>
+          <div className="flex items-center">NAME</div>
           <div></div>
-          <div>BUSINESS</div>
-          <div>AD ACCOUNT</div>
-          <div>BM ID</div>
-          <div>TIMEZONE</div>
-          <div>STATUS</div>
-          <div>BALANCE</div>
+          <div className="flex items-center">BUSINESS</div>
+          <div className="flex items-center">AD ACCOUNT</div>
+          <div className="flex items-center">BM ID</div>
+          <div className="flex items-center">TIMEZONE</div>
+          <div className="flex items-center">STATUS</div>
+          <div className="flex items-center">BALANCE</div>
           <div></div>
         </div>
 
@@ -267,7 +263,7 @@ export function CompactAccountsTable({
                 "grid gap-4 px-6 py-5 hover:bg-muted/50 transition-colors group cursor-pointer border-b border-border",
                 selectedAccounts.includes(account.id) && "bg-muted/30",
               )}
-              style={{ gridTemplateColumns: "40px 2.5fr 0.3fr 1.5fr 1fr 1fr 1fr 1fr 1fr 120px" }}
+              style={{ gridTemplateColumns: "40px 200px 20px 180px 150px 150px 100px 100px 120px 120px" }}
               onClick={(e) => handleRowClick(account, e)}
             >
               {/* Checkbox */}
@@ -282,15 +278,6 @@ export function CompactAccountsTable({
               {/* Name */}
               <div className="flex flex-col justify-center min-w-0">
                 <div className="font-medium text-foreground truncate">{account.name}</div>
-                <div className="flex items-center gap-2 mt-2">
-                  <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={cn("h-full transition-all duration-300", getQuotaUsageColor(account.quotaUsage))}
-                      style={{ width: `${Math.min(account.quotaUsage, 100)}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground font-medium">{account.quotaUsage}%</span>
-                </div>
               </div>
               <div></div>
 

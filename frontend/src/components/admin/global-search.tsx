@@ -82,7 +82,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
               id: org.organization_id,
               type: 'organization',
               name: org.name,
-              subtitle: `${org.business_managers_count || 0} BMs • $${((org.balance_cents || 0) / 100).toFixed(2)} balance • ID: ${org.organization_id.slice(0, 8)}`,
+              subtitle: `${org.business_managers_count || 0} BMs • ${((org.balance_cents || 0) / 100).toFixed(2)} balance • ID: ${org.organization_id.slice(0, 8)}`,
               href: `/admin/organizations/${org.organization_id}`,
               status: org.subscription_status || 'active'
             })
@@ -118,7 +118,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                 id: asset.asset_id,
                 type: 'ad_account',
                 name: asset.name,
-                subtitle: `${asset.organization_name} • $${balance.toFixed(2)} balance`,
+                subtitle: `${asset.organization_name} • ${balance.toFixed(2)} balance`,
                 organization_name: asset.organization_name,
                 href: `/admin/organizations/${asset.organization_id}`,
                 status: asset.status,

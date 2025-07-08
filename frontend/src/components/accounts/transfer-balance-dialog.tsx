@@ -131,7 +131,7 @@ export function TransferBalanceDialog({ trigger, account, onSuccess, open: contr
 
       setShowSuccess(true)
       toast.success("Transfer Request Submitted!", {
-        description: `Your transfer request for $${formatCurrency(parseFloat(formData.amount))} has been submitted for review.`,
+        description: `Your transfer request for ${formatCurrency(parseFloat(formData.amount))} has been submitted for review.`,
       })
 
       // Call the callback

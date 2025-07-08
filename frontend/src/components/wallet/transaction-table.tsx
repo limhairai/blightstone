@@ -30,7 +30,7 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
     id: t.id,
     date: new Date(t.created_at).toLocaleDateString(),
     description: t.description || 'Transaction',
-    amount: `$${Math.abs(t.amount_cents / 100).toFixed(2)}`,
+          amount: `${Math.abs(t.amount_cents / 100).toFixed(2)}`,
     status: t.status || 'completed',
     type: t.type || 'deposit'
   })) || []

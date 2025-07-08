@@ -52,7 +52,7 @@ export function ProvisioningStats() {
     },
     {
       label: "Total Spend",
-      value: `$${(totalSpend / 1000).toFixed(1)}k`,
+      value: `${(totalSpend / 1000).toFixed(1)}k`,
       icon: AlertTriangle,
       color: "text-orange-600",
       bgColor: "bg-orange-50",

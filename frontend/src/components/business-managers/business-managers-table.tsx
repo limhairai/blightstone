@@ -10,18 +10,12 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { BusinessManagersViewToggle } from "@/components/business-managers/business-managers-view-toggle"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/utils/format"
-import { Search, ArrowRight, Building2, Copy, MoreHorizontal, Loader2 } from "lucide-react"
+import { Search, ArrowRight, Building2, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessManager } from "@/types/business"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
-import { toast } from "sonner"
+
+
 
 interface BusinessManagersTableProps {
   businessManagers: BusinessManager[]
@@ -89,11 +83,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
     return getInitials(name)
   }
 
-  const copyBmId = (bmId: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    navigator.clipboard.writeText(bmId)
-    toast.success("Business Manager ID copied to clipboard!")
-  }
+
 
 
 
@@ -175,44 +165,21 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#c4b5fd] to-[#ffc4b5] flex items-center justify-center">
-                    <span className="text-white font-semibold">{getManagerInitial(manager.name)}</span>
+                    <span className="text-black font-semibold">{getManagerInitial(manager.name)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-foreground truncate">{manager.name}</h3>
-                      <StatusBadge status={manager.status as any} size="sm" />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {manager.is_application ? 'Application' : 'Business Manager'}
+                      {manager.is_application ? 'Application' : ''}
                     </p>
                   </div>
-
-                  {/* Quick Actions */}
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 rounded-md hover:bg-accent dropdown-trigger"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            e.preventDefault()
-                          }}
-                        >
-                          <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {manager.dolphin_business_manager_id && (
-                          <DropdownMenuItem onClick={(e) => copyBmId(manager.dolphin_business_manager_id!, e)}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy BM ID
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                  <div className="flex items-center">
+                    <StatusBadge status={manager.status as any} size="sm" />
                   </div>
+
+
                 </div>
               </div>
 
@@ -220,14 +187,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               <div className="mb-3 flex items-center min-h-[24px]">
                 {manager.dolphin_business_manager_id ? (
                   <div className="flex items-center gap-1 bg-muted/40 px-2 py-1 rounded text-xs text-muted-foreground">
-                    <span>BM ID:</span>
-                    <code className="text-xs">{manager.dolphin_business_manager_id}</code>
-                    <button
-                      onClick={(e) => copyBmId(manager.dolphin_business_manager_id!, e)}
-                      className="p-0.5 hover:bg-accent rounded transition-colors ml-1"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
+                    <code className="text-xs">BM:{manager.dolphin_business_manager_id}</code>
                   </div>
                 ) : (
                   <div></div>
@@ -271,29 +231,22 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                 {/* Left: Manager Info */}
                 <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#c4b5fd] to-[#ffc4b5] flex items-center justify-center">
-                    <span className="text-white font-semibold">{getManagerInitial(manager.name)}</span>
+                    <span className="text-black font-semibold">{getManagerInitial(manager.name)}</span>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <h3 className="font-semibold text-foreground truncate">{manager.name}</h3>
-                      <StatusBadge status={manager.status as any} size="sm" />
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{manager.is_application ? 'Application' : 'Business Manager'}</span>
+                      <span>{manager.is_application ? 'Application' : ''}</span>
                       <span>•</span>
                       <span>Created {new Date(manager.created_at).toLocaleDateString()}</span>
                       {manager.dolphin_business_manager_id && (
                         <>
                           <span>•</span>
                           <div className="flex items-center gap-1">
-                            <code className="bg-muted px-1 py-0.5 rounded text-xs">{manager.dolphin_business_manager_id}</code>
-                            <button
-                              onClick={(e) => copyBmId(manager.dolphin_business_manager_id!, e)}
-                              className="p-0.5 hover:bg-accent rounded transition-colors"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </button>
+                            <code className="bg-muted px-1 py-0.5 rounded text-xs">BM:{manager.dolphin_business_manager_id}</code>
                           </div>
                         </>
                       )}
@@ -308,21 +261,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                     <div className="font-semibold text-foreground text-lg">{manager.ad_account_count || 0}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0 dropdown-trigger" onClick={(e) => e.stopPropagation()}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {manager.dolphin_business_manager_id && (
-                          <DropdownMenuItem onClick={(e) => copyBmId(manager.dolphin_business_manager_id!, e)}>
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy BM ID
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <StatusBadge status={manager.status as any} size="sm" />
                     <ArrowRight className="h-5 w-5 text-muted-foreground" />
                   </div>
                 </div>

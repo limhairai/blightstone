@@ -5,12 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { toast } from "sonner"
-import { Upload, Trash2 } from "lucide-react"
 import { useAuth } from "../../contexts/AuthContext"
-import { getInitials } from "../../lib/utils"
 
 interface ProfileData {
   name: string;
@@ -152,26 +149,6 @@ export function AccountSettings() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Profile Picture */}
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={profileData.avatar_url || ""} alt="Profile" />
-                              <AvatarFallback className="text-lg bg-gradient-to-br from-[#b4a0ff] to-[#ffb4a0] text-white">
-                {getInitials(profileData.name || formData.email)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="space-y-2">
-              <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Photo
-              </Button>
-              <Button variant="outline" size="sm" className="border-border text-muted-foreground hover:bg-accent">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Remove
-              </Button>
-            </div>
-          </div>
-
           {/* Form Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

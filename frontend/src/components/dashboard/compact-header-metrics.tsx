@@ -33,7 +33,7 @@ export function CompactHeaderMetrics() {
   const metrics = [
     {
       title: "Total Balance",
-      value: `$${formatCurrency(totalBalance)}`,
+      value: `${formatCurrency(totalBalance)}`,
       icon: DollarSign,
       color: "text-green-600",
       bgColor: "bg-green-50 dark:bg-green-950/20",
@@ -47,7 +47,7 @@ export function CompactHeaderMetrics() {
     },
     {
       title: "Monthly Spend",
-      value: `$${formatCurrency(totalSpent)}`,
+      value: `${formatCurrency(totalSpent)}`,
       icon: TrendingUp,
       color: "text-purple-600",
       bgColor: "bg-purple-50 dark:bg-purple-950/20",

@@ -7,7 +7,7 @@ import { useSWRConfig, mutate } from 'swr'
 import { useAuth } from "@/contexts/AuthContext"
 import { WalletPortfolioCard } from "../../../components/wallet/wallet-portfolio-card"
 import { WalletFundingPanel } from "../../../components/wallet/wallet-funding-panel"
-import { BusinessBalancesTable } from "../../../components/wallet/business-balances-table"
+import { TransactionsHistory } from "../../../components/wallet/transactions-history"
 import { layout } from "../../../lib/layout-utils"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { refreshAfterBusinessManagerChange, invalidateOrganizationCache } from "@/lib/subscription-utils"
@@ -150,8 +150,8 @@ export default function WalletPage() {
         </div>
       </div>
 
-      {/* Business Balances Table */}
-      <BusinessBalancesTable />
+      {/* Transactions History */}
+      <TransactionsHistory />
     </div>
   )
 } 

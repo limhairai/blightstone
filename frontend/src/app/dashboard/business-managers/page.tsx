@@ -3,7 +3,7 @@
 import { BusinessManagersTable } from "@/components/business-managers/business-managers-table"
 import { ApplyForBmDialog } from "@/components/business-managers/apply-for-bm-dialog"
 import { Button } from "@/components/ui/button"
-import { Plus, Building2 } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useBusinessManagers } from '@/lib/swr-config'
@@ -31,47 +31,38 @@ export default function BusinessManagersPage() {
     }))
   }, [bms, currentOrganizationId])
 
-  const totalManagers = businessManagers.length
   const activeManagers = businessManagers.filter((bm) => bm.status === "active").length
-  const totalAccounts = businessManagers.reduce((total, bm) => total + (bm.ad_account_count || 0), 0)
+  const activeAccounts = businessManagers.filter((bm) => bm.status === "active").reduce((total, bm) => total + (bm.ad_account_count || 0), 0)
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Metrics and Add Button */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-foreground bg-accent">
-              <Building2 className="h-4 w-4 mr-2" />
-              Business Managers
-            </Button>
+        {/* Left: Metrics */}
+        <div className="flex items-start gap-12 text-sm">
+          <div className="flex flex-col">
+            <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+              Total Business Managers
+            </span>
+            <div className="text-foreground font-semibold text-lg">
+              {activeManagers}
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">Total Ad Accounts</span>
+            <div className="text-foreground font-semibold text-lg">{activeAccounts}</div>
           </div>
         </div>
 
+        {/* Right: Add Button */}
         <ApplyForBmDialog
           onSuccess={() => mutate()}
         >
           <Button className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">
             <Plus className="mr-2 h-4 w-4" />
-            Apply for Business Manager
+            Add
           </Button>
         </ApplyForBmDialog>
-      </div>
-
-      {/* Compact Metrics */}
-      <div className="flex items-center gap-8 text-sm">
-        <div>
-          <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium">
-            Total Business Managers
-          </span>
-          <div className="text-foreground font-semibold">
-            {totalManagers} ({activeManagers} active)
-          </div>
-        </div>
-        <div>
-          <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium">Total Ad Accounts</span>
-          <div className="text-foreground font-semibold">{totalAccounts}</div>
-        </div>
       </div>
 
       {/* Business Managers Table */}

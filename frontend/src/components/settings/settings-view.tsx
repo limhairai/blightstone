@@ -333,7 +333,7 @@ export function SettingsView() {
                     <>
                       <div className="text-center mb-3">
                         <div className="text-3xl font-bold">
-                          {currentPlan.id === 'free' ? 'Free' : `$${currentPlan.monthlyPrice}`}
+                          {currentPlan.id === 'free' ? 'Free' : `${currentPlan.monthlyPrice}`}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {currentPlan.id === 'free' ? 'Forever' : 'per month'}
