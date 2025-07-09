@@ -35,6 +35,11 @@ export async function POST(
       .single()
 
     if (appError || !application) {
+      console.error('Application lookup failed:', {
+        appError,
+        application,
+        applicationId: id
+      })
       return NextResponse.json({ error: 'Application not found' }, { status: 404 })
     }
 
@@ -47,6 +52,12 @@ export async function POST(
       .single()
 
     if (orgError || !orgMembership) {
+      console.error('Organization membership check failed:', {
+        orgError,
+        orgMembership,
+        userId: user.id,
+        organizationId: application.organization_id
+      })
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
@@ -109,6 +120,10 @@ export async function POST(
 
   } catch (error) {
     console.error('Error in cancel application API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 } 
