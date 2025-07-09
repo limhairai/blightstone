@@ -174,6 +174,26 @@ export async function POST(request: NextRequest) {
     // Transform response to frontend format
     const transformedBindings = newBindings?.map(transformBindingToFrontend) || [];
 
+    // Trigger cache invalidation for immediate UI updates
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}`
+      await fetch(`${baseUrl}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          organizationId: organizationId,
+          type: 'business-manager'
+        })
+      })
+      console.log(`✅ Business manager cache invalidated for org: ${organizationId}`)
+    } catch (cacheError) {
+      console.error('Failed to invalidate business manager cache:', cacheError)
+      // Don't fail the binding if cache invalidation fails
+    }
+
     return NextResponse.json({
       message: "Assets bound successfully",
       bindings: transformedBindings,
@@ -224,13 +244,25 @@ export async function GET(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const { assetId } = await request.json();
+    const { assetId, organizationId } = await request.json();
 
     if (!assetId) {
         return NextResponse.json({ error: 'Asset ID is required' }, { status: 400 });
     }
 
     try {
+        // Get organization ID if not provided
+        let orgId = organizationId;
+        if (!orgId) {
+            const { data: binding } = await supabase
+                .from('asset_binding')
+                .select('organization_id')
+                .eq('asset_id', assetId)
+                .eq('status', 'active')
+                .single();
+            orgId = binding?.organization_id;
+        }
+
         // Use NEW schema (asset_binding table) with semantic IDs
         const { error: deleteError } = await supabase
             .from('asset_binding')
@@ -240,6 +272,28 @@ export async function DELETE(request: NextRequest) {
 
         if (deleteError) {
             throw new Error(`Failed to unbind asset: ${deleteError.message}`);
+        }
+
+        // Trigger cache invalidation for immediate UI updates
+        if (orgId) {
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}`
+                await fetch(`${baseUrl}/api/cache/invalidate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+                    },
+                    body: JSON.stringify({
+                        organizationId: orgId,
+                        type: 'business-manager'
+                    })
+                })
+                console.log(`✅ Business manager cache invalidated for org: ${orgId}`)
+            } catch (cacheError) {
+                console.error('Failed to invalidate business manager cache:', cacheError)
+                // Don't fail the unbinding if cache invalidation fails
+            }
         }
 
         return NextResponse.json({ message: 'Asset unbound successfully.' });

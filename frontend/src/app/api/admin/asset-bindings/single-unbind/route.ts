@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get organization ID before unbinding
+    const { data: binding } = await supabase
+      .from('asset_binding')
+      .select('organization_id')
+      .eq('asset_id', asset_id)
+      .eq('status', 'active')
+      .single();
+
     // Unbind the specific asset
     const { error: unbindError } = await supabase
       .from('asset_binding')
@@ -66,6 +74,28 @@ export async function POST(request: NextRequest) {
         { message: "Failed to unbind asset", error: unbindError.message },
         { status: 500 }
       );
+    }
+
+    // Trigger cache invalidation for immediate UI updates
+    if (binding?.organization_id) {
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}`
+        await fetch(`${baseUrl}/api/cache/invalidate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+          },
+          body: JSON.stringify({
+            organizationId: binding.organization_id,
+            type: 'business-manager'
+          })
+        })
+        console.log(`✅ Business manager cache invalidated for org: ${binding.organization_id}`)
+      } catch (cacheError) {
+        console.error('Failed to invalidate business manager cache:', cacheError)
+        // Don't fail the unbinding if cache invalidation fails
+      }
     }
 
     return NextResponse.json({

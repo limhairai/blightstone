@@ -3,7 +3,7 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { Building2, Search } from "lucide-react"
+import { Building2, Search, RefreshCw } from "lucide-react"
 import { Button } from "../../../components/ui/button"
 import { Input } from "../../../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
@@ -45,8 +45,15 @@ export default function OrganizationsPage() {
   // Use SWR for better caching and performance
   const { data, error, isLoading, mutate } = useSWR(
     session?.access_token ? ['/api/admin/organizations', session.access_token] : null,
-    ([url, token]) => fetcher(url, token)
-    // Using global SWR config for consistency
+    ([url, token]) => fetcher(url, token),
+    {
+      // Force refresh on focus to catch binding/unbinding changes
+      revalidateOnFocus: true,
+      // Reduce deduping to catch rapid changes
+      dedupingInterval: 2000,
+      // Refresh interval for admin panel
+      refreshInterval: 30000 // 30 seconds
+    }
   )
 
   const organizations = data?.organizations || []
@@ -87,6 +94,16 @@ export default function OrganizationsPage() {
               <SelectItem value="custom">Custom</SelectItem>
             </SelectContent>
           </Select>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => mutate()}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
         
         <div className="text-sm text-muted-foreground">{filteredOrganizations.length} organizations total</div>
