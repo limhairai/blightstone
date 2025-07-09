@@ -124,15 +124,10 @@ export async function GET(
       };
     });
 
-    const response = NextResponse.json({
+    return NextResponse.json({
       organization,
       businessManagers: businessManagersWithStats,
     })
-    
-    // Add caching headers for better performance
-    response.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
-    
-    return response
   } catch (error: any) {
     console.error('Error fetching organization details:', error)
     return NextResponse.json(
