@@ -10,7 +10,8 @@ const plans = [
     maxTeamMembers: 2,
     maxBusinesses: 1,
     maxAdAccounts: 5,
-    features: ['Basic Support', 'Standard Features']
+    monthlyTopupLimit: 3000, // $3,000 monthly top-up limit
+    features: ['Basic Support', 'Standard Features', '$3,000 monthly top-up limit']
   },
   {
     id: 'growth',
@@ -21,7 +22,8 @@ const plans = [
     maxTeamMembers: 5,
     maxBusinesses: 3,
     maxAdAccounts: 21,
-    features: ['Priority Support', 'Advanced Analytics', 'Team Collaboration']
+    monthlyTopupLimit: 6000, // $6,000 monthly top-up limit
+    features: ['Priority Support', 'Advanced Analytics', 'Team Collaboration', '$6,000 monthly top-up limit']
   },
   {
     id: 'scale',
@@ -32,7 +34,8 @@ const plans = [
     maxTeamMembers: 15,
     maxBusinesses: 10,
     maxAdAccounts: 70,
-    features: ['Dedicated Support', 'Custom Integrations', 'Advanced Reporting']
+    monthlyTopupLimit: null, // Unlimited
+    features: ['Dedicated Support', 'Custom Integrations', 'Advanced Reporting', 'Unlimited monthly top-ups']
   },
   {
     id: 'custom',
@@ -43,7 +46,8 @@ const plans = [
     maxTeamMembers: -1,
     maxBusinesses: -1,
     maxAdAccounts: -1,
-    features: ['24/7 Support', 'Custom Features', 'Unlimited Everything'],
+    monthlyTopupLimit: null, // Unlimited
+    features: ['24/7 Support', 'Custom Features', 'Unlimited Everything', 'Unlimited monthly top-ups'],
     isCustom: true
   }
 ]

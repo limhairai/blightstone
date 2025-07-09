@@ -428,27 +428,26 @@ export function OrganizationSettings() {
               <div className={`p-4 ${gradientTokens.light} rounded-lg border ${gradientTokens.border}`}>
                 <div className="flex items-baseline gap-2 mb-3">
                   <span className="text-2xl font-bold text-foreground">
-                    {currentPlan.id === 'free' ? 'Free' : `${currentPlan.monthlyPrice}`}
+                    {currentPlan.id === 'free' ? 'Free' : `$${currentPlan.monthlyPrice}`}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {currentPlan.id === 'free' ? 'Forever' : '/ month'}
                   </span>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Next payment</span>
-                    <span className="text-foreground font-medium">
-                      {currentPlan.id === 'free' ? 'N/A' : (
-                        subscriptionData?.current_period_end 
-                          ? new Date(subscriptionData.current_period_end).toLocaleDateString('en-US', { 
-                              month: 'short', 
-                              day: 'numeric', 
-                              year: 'numeric' 
-                            })
-                          : 'N/A'
-                      )}
-                    </span>
-                  </div>
+                  {/* Only show next payment if we have actual subscription data */}
+                  {subscriptionData?.current_period_end && currentPlan.id !== 'free' && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Next payment</span>
+                      <span className="text-foreground font-medium">
+                        {new Date(subscriptionData.current_period_end).toLocaleDateString('en-US', { 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Billing cycle</span>
                     <span className="text-foreground font-medium">

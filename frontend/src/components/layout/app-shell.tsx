@@ -90,8 +90,7 @@ export function AppShell({ children }: AppShellProps) {
       "/dashboard/businesses": "Businesses",
       "/dashboard/business-managers": "Business Managers",
       "/dashboard/wallet": "Wallet",
-      "/dashboard/transactions": "Transactions",
-      "/dashboard/topup-requests": "Top-up Requests",
+      "/dashboard/topup-requests": "Transactions",
       "/dashboard/accounts": "Ad Accounts",
       "/dashboard/settings": "Settings",
     }

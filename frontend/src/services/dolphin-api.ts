@@ -334,7 +334,8 @@ export const convertDolphinCABToAppAccount = (cab: DolphinAdAccount): any => {
     businessManagerId: cab.business_id,
     managingProfileId: cab.account_id,
     currency: cab.currency,
-    spendLimit: cab.spend_cap || 0,
+    // Convert spend_cap from cents to dollars (Dolphin API returns cents)
+    spendLimit: (cab.spend_cap || 0) / 100,
     
     // Metrics
     spend: cab.spend || 0,

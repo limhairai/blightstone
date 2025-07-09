@@ -71,7 +71,7 @@ export function OptimizedBillingView({
     switch (status) {
       case 'completed':
       case 'active': 
-        return <CheckCircle className="h-3 w-3 text-green-600" />;
+        return <CheckCircle className="h-3 w-3 text-[#34D197]" />;
       case 'pending': 
         return <AlertTriangle className="h-3 w-3 text-yellow-600" />;
       case 'failed':
@@ -107,7 +107,7 @@ export function OptimizedBillingView({
       
       <div className="flex items-center gap-4 text-xs">
         <div className="text-right">
-                          <div className={`font-medium ${tx.type === 'deposit' || tx.type === 'refund' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          <div className={`font-medium ${tx.type === 'deposit' || tx.type === 'refund' ? 'text-[#34D197] dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {tx.type === 'deposit' || tx.type === 'refund' ? '+' : '-'}{formatCurrency(tx.amount)}
           </div>
           <div className="text-muted-foreground text-xs">
@@ -200,7 +200,7 @@ export function OptimizedBillingView({
       <div className="grid grid-cols-6 gap-2 text-xs">
         <Card className="p-2">
           <div className="text-center">
-                            <div className="text-sm font-bold text-green-600 dark:text-green-400">$2.4M</div>
+                            <div className="text-sm font-bold text-[#34D197] dark:text-green-400">$2.4M</div>
             <div className="text-muted-foreground text-xs">Balance</div>
           </div>
         </Card>
@@ -218,7 +218,7 @@ export function OptimizedBillingView({
         </Card>
         <Card className="p-2">
           <div className="text-center">
-            <div className="text-sm font-bold text-green-600">1,198</div>
+            <div className="text-sm font-bold text-[#34D197]">1,198</div>
             <div className="text-muted-foreground text-xs">Active</div>
           </div>
         </Card>

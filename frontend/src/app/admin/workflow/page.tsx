@@ -302,10 +302,10 @@ export default function WorkflowPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-[#34D197]">{stats.active.toLocaleString()}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <Play className="h-6 w-6 text-green-600" />
+                <Play className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
           </CardContent>
@@ -319,7 +319,7 @@ export default function WorkflowPage() {
                 <p className="text-2xl font-bold">{stats.avgSuccessRate.toFixed(1)}%</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+                <CheckCircle className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
           </CardContent>
@@ -344,10 +344,10 @@ export default function WorkflowPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Healthy</p>
-                <p className="text-2xl font-bold text-green-600">{stats.healthyWorkflows}</p>
+                <p className="text-2xl font-bold text-[#34D197]">{stats.healthyWorkflows}</p>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+                <CheckCircle className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
           </CardContent>

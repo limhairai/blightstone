@@ -39,7 +39,7 @@ export function ApplicationDetailsDialog({
     const statusConfig = {
       pending: { label: "Pending Review", variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
       under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-orange-600" },
-      active: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      active: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
       rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
     };
 
@@ -202,7 +202,7 @@ export function ApplicationDetailsDialog({
               {/* Approval */}
               {application.status === "active" && (
                 <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="h-8 w-8 bg-green-600 rounded-full flex items-center justify-center">
+                  <div className="h-8 w-8 bg-[#34D197] rounded-full flex items-center justify-center">
                     <CheckCircle className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex-1">

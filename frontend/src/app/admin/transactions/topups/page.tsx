@@ -271,7 +271,7 @@ export default function TopupRequestsPage() {
           <div className={`font-medium text-xs ${
             isBalanceReset 
               ? 'text-purple-600 dark:text-purple-400' 
-              : 'text-green-600 dark:text-green-400'
+              : 'text-[#34D197] dark:text-green-400'
           }`}>
             {formatCurrency(amountCents / 100)}
           </div>
@@ -397,7 +397,7 @@ export default function TopupRequestsPage() {
                 <Button
                   size="sm"
                   onClick={() => openProcessDialog(request, 'completed')}
-                  className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                  className="bg-[#34D197] hover:bg-[#2BB87A] h-6 text-xs px-2"
                 >
                   <CheckCircle className="h-3 w-3" />
                 </Button>
@@ -409,7 +409,7 @@ export default function TopupRequestsPage() {
                 <Button
                   size="sm"
                   onClick={() => openProcessDialog(request, 'completed')}
-                  className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                  className="bg-[#34D197] hover:bg-[#2BB87A] h-6 text-xs px-2"
                 >
                   <CheckCircle className="h-3 w-3" />
                 </Button>
@@ -547,7 +547,7 @@ export default function TopupRequestsPage() {
                       <div className={`font-medium text-xs ${
                         isBalanceReset 
                           ? 'text-purple-600 dark:text-purple-400' 
-                          : 'text-green-600 dark:text-green-400'
+                          : 'text-[#34D197] dark:text-green-400'
                       }`}>
                         {formatCurrency(request.amount_cents / 100)}
                       </div>
@@ -620,7 +620,7 @@ export default function TopupRequestsPage() {
                             <Button
                               size="sm"
                               onClick={() => openProcessDialog(request, 'completed')}
-                              className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                              className="bg-[#34D197] hover:bg-[#2BB87A] h-6 text-xs px-2"
                             >
                               <CheckCircle className="h-3 w-3" />
                             </Button>
@@ -632,7 +632,7 @@ export default function TopupRequestsPage() {
                             <Button
                               size="sm"
                               onClick={() => openProcessDialog(request, 'completed')}
-                              className="bg-green-600 hover:bg-green-700 h-6 text-xs px-2"
+                              className="bg-[#34D197] hover:bg-[#2BB87A] h-6 text-xs px-2"
                             >
                               <CheckCircle className="h-3 w-3" />
                             </Button>

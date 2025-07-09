@@ -40,35 +40,35 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false });
 
-    // If not admin, filter by user's organizations (RLS will also apply)
-    if (!isAdmin) {
-      // Get organizations where user is owner
-      const { data: ownedOrgs, error: ownedError } = await supabase
-        .from('organizations')
-        .select('organization_id')
-        .eq('owner_id', user.id);
+    // SECURITY FIX: Always filter by user's organizations, regardless of admin status
+    // Admin status should only affect admin panel, not client dashboard
+    // Get organizations where user is owner
+    const { data: ownedOrgs, error: ownedError } = await supabase
+      .from('organizations')
+      .select('organization_id')
+      .eq('owner_id', user.id);
 
-      // Get organizations where user is a member
-      const { data: memberOrgs, error: memberError } = await supabase
-        .from('organization_members')
-        .select('organization_id')
-        .eq('user_id', user.id);
+    // Get organizations where user is a member
+    const { data: memberOrgs, error: memberError } = await supabase
+      .from('organization_members')
+      .select('organization_id')
+      .eq('user_id', user.id);
 
-      if (ownedError || memberError) {
-        console.error('Error fetching user organizations:', ownedError || memberError);
-        return NextResponse.json({ error: 'Failed to fetch organizations' }, { status: 500 });
-      }
-
-      const ownedOrgIds = ownedOrgs?.map(org => org.organization_id) || [];
-      const memberOrgIds = memberOrgs?.map(org => org.organization_id) || [];
-      const allOrgIds = [...new Set([...ownedOrgIds, ...memberOrgIds])];
-
-      if (allOrgIds.length === 0) {
-        return NextResponse.json([]);
-      }
-
-      query = query.in('organization_id', allOrgIds);
+    if (ownedError || memberError) {
+      console.error('Error fetching user organizations:', ownedError || memberError);
+      return NextResponse.json({ error: 'Failed to fetch organizations' }, { status: 500 });
     }
+
+    const ownedOrgIds = ownedOrgs?.map(org => org.organization_id) || [];
+    const memberOrgIds = memberOrgs?.map(org => org.organization_id) || [];
+    const allOrgIds = [...new Set([...ownedOrgIds, ...memberOrgIds])];
+
+    if (allOrgIds.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Always filter by user's organizations - admin or not
+    query = query.in('organization_id', allOrgIds);
 
     const { data: requests, error: requestsError } = await query;
 
@@ -331,6 +331,34 @@ export async function POST(request: NextRequest) {
     // Validate minimum amount for balance reset requests
     if (request_type === 'balance_reset' && amount_cents < 100) { // $1 minimum for balance reset
       return NextResponse.json({ error: 'Minimum balance reset amount is $1' }, { status: 400 });
+    }
+
+    // Check top-up limits for topup requests
+    if (request_type === 'topup') {
+      const { data: limitCheck, error: limitError } = await supabase
+        .rpc('can_make_topup_request', {
+          org_id: organization_id,
+          request_amount_cents: amount_cents
+        });
+
+      if (limitError) {
+        console.error('Error checking topup limits:', limitError);
+        return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
+      }
+
+      if (!limitCheck.allowed) {
+        const limitInDollars = limitCheck.limit ? `$${(limitCheck.limit / 100).toLocaleString()}` : 'unlimited';
+        const usageInDollars = `$${(limitCheck.current_usage / 100).toLocaleString()}`;
+        
+        return NextResponse.json({ 
+          error: `Monthly top-up limit exceeded. Your plan allows ${limitInDollars} per month, and you've already used ${usageInDollars} this month.`,
+          limitInfo: {
+            limit: limitCheck.limit ? limitCheck.limit / 100 : null,
+            currentUsage: limitCheck.current_usage / 100,
+            available: limitCheck.available ? limitCheck.available / 100 : null
+          }
+        }, { status: 400 });
+      }
     }
 
     // Get organization's current plan for fee calculation if not provided

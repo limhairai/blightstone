@@ -103,11 +103,49 @@ export async function GET(request: NextRequest) {
     // Check if on free plan
     const isOnFreePlan = orgData.plan_id === 'free'
 
-    // Get usage data - simplified for now
+    // Get actual usage data
+    // Count team members
+    const { count: teamMembersCount } = await supabase
+      .from('organization_members')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+
+    // Count active business managers
+    const { count: activeBMCount } = await supabase
+      .from('asset_binding')
+      .select('*, asset!inner(type)', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('asset.type', 'business_manager')
+      .eq('status', 'active')
+
+    // Count pending business manager applications
+    const { count: pendingBMCount } = await supabase
+      .from('application')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('request_type', 'new_business_manager')
+      .in('status', ['pending', 'processing'])
+
+    // Count active ad accounts
+    const { count: activeAdAccountsCount } = await supabase
+      .from('asset_binding')
+      .select('*, asset!inner(type)', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('asset.type', 'ad_account')
+      .eq('status', 'active')
+
+    // Count pending ad account applications
+    const { count: pendingAdAccountsCount } = await supabase
+      .from('application')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+      .eq('request_type', 'additional_accounts')
+      .in('status', ['pending', 'processing'])
+
     const usage = {
-      teamMembers: 1, // TODO: Count from organization_members
-      businessManagers: 0, // TODO: Count from business_managers
-      adAccounts: 0 // TODO: Count from ad_accounts
+      teamMembers: teamMembersCount || 1, // At least 1 (the owner)
+      businessManagers: (activeBMCount || 0) + (pendingBMCount || 0), // Include pending applications
+      adAccounts: (activeAdAccountsCount || 0) + (pendingAdAccountsCount || 0) // Include pending applications
     }
 
     // Determine capabilities based on plan

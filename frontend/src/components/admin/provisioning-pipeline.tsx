@@ -48,11 +48,11 @@ export function ProvisioningPipeline() {
     const statusConfig = {
       not_started: { label: "Not Started", variant: "secondary" as const, icon: Clock, color: "text-gray-600" },
       hk_provider_submitted: { label: "HK Provider Submitted", variant: "default" as const, icon: ExternalLink, color: "text-blue-600" },
-      hk_provider_approved: { label: "HK Provider Approved", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      hk_provider_approved: { label: "HK Provider Approved", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
       bm_assigned: { label: "BM Assigned", variant: "default" as const, icon: Building2, color: "text-purple-600" },
       account_created: { label: "Account Created", variant: "default" as const, icon: CreditCard, color: "text-indigo-600" },
       client_invited: { label: "Client Invited", variant: "default" as const, icon: Users, color: "text-orange-600" },
-      completed: { label: "Completed", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      completed: { label: "Completed", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.not_started;
@@ -208,7 +208,7 @@ export function ProvisioningPipeline() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[#34D197]">
               {businesses.filter((b: any) => b.status === "approved" || b.status === "active").length}
             </div>
           </CardContent>

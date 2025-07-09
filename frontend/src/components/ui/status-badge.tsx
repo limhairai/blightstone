@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
 interface StatusBadgeProps {
-  status: "active" | "pending" | "inactive" | "suspended" | "restricted" | "error" | "paused"
+  status: "active" | "pending" | "inactive" | "suspended" | "restricted" | "error" | "paused" | "rejected" | "processing"
   size?: "sm" | "md"
 }
 
@@ -20,6 +20,17 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
           label: "Pending",
           className:
             "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800",
+        }
+      case "processing":
+        return {
+          label: "Processing",
+          className:
+            "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
+        }
+      case "rejected":
+        return {
+          label: "Rejected",
+          className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
         }
       case "error":
         return {

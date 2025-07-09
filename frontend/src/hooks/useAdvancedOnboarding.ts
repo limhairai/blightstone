@@ -1,6 +1,7 @@
 import useSWR from 'swr'
 import { useAuth } from '../contexts/AuthContext'
 import { useMemo } from 'react'
+import { staticConfig } from '@/lib/swr-config'
 
 const fetcher = async (url: string) => {
   const response = await fetch(url)
@@ -57,11 +58,7 @@ export function useAdvancedOnboarding() {
   const { data, error, isLoading, mutate } = useSWR<OnboardingData>(
     user ? '/api/onboarding-progress' : null,
     fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 60000, // 1 minute
-    }
+    staticConfig // Use static config for onboarding data that doesn't change often
   )
 
   // Calculate steps with completion status

@@ -87,7 +87,7 @@ export function ApplicationReviewDialog({
       approve: {
         label: "Approve Application",
         icon: CheckCircle,
-        className: "bg-green-600 hover:bg-green-700 text-white",
+        className: "bg-[#34D197] hover:bg-[#2BB87A] text-white",
       },
       reject: {
         label: "Reject Application",
@@ -210,7 +210,7 @@ export function ApplicationReviewDialog({
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                   <span className="text-sm font-medium">Website Verification</span>
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge variant="default" className="bg-[#34D197]">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Verified
                   </Badge>
@@ -218,7 +218,7 @@ export function ApplicationReviewDialog({
                 
                 <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                   <span className="text-sm font-medium">Industry Compliance</span>
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge variant="default" className="bg-[#34D197]">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Compliant
                   </Badge>
@@ -246,7 +246,7 @@ export function ApplicationReviewDialog({
                   onClick={() => setActiveTab("approve")}
                   className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                     activeTab === "approve"
-                      ? "bg-green-600 text-white"
+                      ? "bg-[#34D197] text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >

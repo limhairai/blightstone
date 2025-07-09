@@ -16,6 +16,17 @@ from ...core.supabase_client import get_supabase_client
 from ...schemas.user import UserRead as User
 from ...services.dolphin_service import DolphinCloudAPI
 from ...core.config import settings
+try:
+    import sys
+    import os
+    backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+    if backend_root not in sys.path:
+        sys.path.insert(0, backend_root)
+    from tasks.background import auto_sync_dolphin_assets, auto_sync_scheduler
+except ImportError as e:
+    logger.error(f"Failed to import auto-sync components: {e}")
+    auto_sync_dolphin_assets = None
+    auto_sync_scheduler = None
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -289,6 +300,62 @@ async def discover_dolphin_assets(
     except Exception as e:
         logger.error(f"Error in asset discovery: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Asset discovery failed: {str(e)}")
+
+@router.post("/sync/auto")
+async def trigger_auto_sync(
+    current_user: User = Depends(require_superuser)
+):
+    """Manually trigger the auto-sync process"""
+    if not auto_sync_dolphin_assets:
+        raise HTTPException(status_code=503, detail="Auto-sync service not available")
+    
+    try:
+        logger.info("🔄 Manual auto-sync triggered by admin")
+        await auto_sync_dolphin_assets()
+        return {
+            "success": True,
+            "message": "Auto-sync completed successfully",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"🔄 Manual auto-sync failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Auto-sync failed: {str(e)}")
+
+@router.get("/sync/status")
+async def get_sync_status(
+    current_user: User = Depends(require_superuser)
+):
+    """Get the status of the auto-sync scheduler and last actual sync time"""
+    try:
+        supabase = get_supabase_client()
+        
+        # Get the most recent sync timestamp from the database
+        last_sync_response = supabase.table("asset").select("last_synced_at").order("last_synced_at", desc=True).limit(1).execute()
+        
+        last_sync_time = None
+        if last_sync_response.data and len(last_sync_response.data) > 0:
+            last_sync_time = last_sync_response.data[0].get("last_synced_at")
+        
+        if not auto_sync_scheduler:
+            return {
+                "scheduler_running": False,
+                "next_sync_in_hours": 3.5,
+                "sync_interval": "3.5 hours",
+                "last_sync": last_sync_time,
+                "last_check": datetime.now(timezone.utc).isoformat(),
+                "status": "Auto-sync service not available"
+            }
+        
+        return {
+            "scheduler_running": auto_sync_scheduler.running,
+            "next_sync_in_hours": 3.5,  # Fixed interval
+            "sync_interval": "3.5 hours",
+            "last_sync": last_sync_time,
+            "last_check": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"🔄 Failed to get sync status: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get sync status: {str(e)}")
 
 @router.post("/sync/discover-debug")
 async def discover_dolphin_assets_debug(

@@ -7,4 +7,5 @@ export interface BusinessManager {
   ad_account_count?: number;
   dolphin_business_manager_id?: string;
   is_application?: boolean;
+  application_id?: string; // For applications, this contains the application ID
 }

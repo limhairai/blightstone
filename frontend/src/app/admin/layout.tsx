@@ -1,18 +1,14 @@
 "use client";
 
-import React, { createContext, useContext } from "react";
+import React from "react";
 import { AdminAccessCheck } from "../../components/admin/admin-access-check"
 import { AdminSidebar } from "../../components/admin/admin-sidebar";
 import { AdminTopbar } from "../../components/admin/admin-topbar";
+import { AdminProvider } from "../../contexts/AdminContext";
 // Removed dev tools for production
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-
-// Create a context to share admin status across all admin pages
-const AdminContext = createContext<{ isAdmin: boolean }>({ isAdmin: false });
-
-export const useAdminContext = () => useContext(AdminContext);
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -73,7 +69,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   }, [getPageInfo]);
 
   return (
-    <AdminContext.Provider value={{ isAdmin: true }}>
+    <AdminProvider>
       <div className="flex h-screen bg-background">
         {/* Admin Sidebar */}
         <AdminSidebar />
@@ -93,7 +89,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         
         {/* Removed duplicate Toaster - using root layout's DynamicToaster */}
       </div>
-    </AdminContext.Provider>
+    </AdminProvider>
   );
 }
 

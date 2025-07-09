@@ -75,17 +75,8 @@ export default function AdminApplicationsPage() {
   // Fetch applications with SWR (only pending and processing)
   const { data: applicationsData, error, mutate, isLoading } = useSWR(
     '/api/admin/applications?status=pending,processing',
-    fetcher,
-    {
-      refreshInterval: 0, // No automatic polling - manual refresh only
-      revalidateOnFocus: true, // Revalidate when window gains focus
-      revalidateOnReconnect: true, // Revalidate when connection is restored
-      revalidateOnMount: true, // Always get fresh data on mount
-      errorRetryCount: 3,
-      errorRetryInterval: 2000,
-      dedupingInterval: 1000, // Very short deduping interval for immediate responsiveness
-      focusThrottleInterval: 1000,
-    }
+    fetcher
+    // Using global SWR config for consistency
   );
 
   const applications = applicationsData?.applications || [];

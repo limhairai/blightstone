@@ -121,7 +121,7 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
                   {transaction.amount}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={transaction.status === 'completed' ? 'text-green-600' : transaction.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}>
+                  <Badge variant="outline" className={transaction.status === 'completed' ? 'text-[#34D197]' : transaction.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}>
                     {transaction.status}
                   </Badge>
                 </TableCell>

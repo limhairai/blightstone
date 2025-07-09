@@ -130,7 +130,7 @@ export function AdminClientTransactions({ clientId }: { clientId: string }) {
   const getTypeIcon = (type: TransactionType) => {
     switch (type) {
       case "deposit":
-        return <ArrowDownToLine className="h-4 w-4 text-green-600" />
+        return <ArrowDownToLine className="h-4 w-4 text-[#34D197]" />
       case "withdrawal":
         return <ArrowUpFromLine className="h-4 w-4 text-amber-600" />
       case "transfer":

@@ -27,6 +27,7 @@ export interface PricingPlan {
     monthlySpend?: number
     accountsLimit?: number
     usersLimit?: number
+    monthlyTopupLimit?: number | null // null means unlimited
   }
   feeRate: number
   isActive: boolean
@@ -49,11 +50,13 @@ export const PRICING_PLANS: PricingPlan[] = [
       '1 Business Manager',
       '5 Ad Accounts',
       '2 Team Members',
-      '6% ad spend fee'
+      '6% ad spend fee',
+      '$3,000 monthly top-up limit'
     ],
     limits: {
       accountsLimit: 5,
-      usersLimit: 2
+      usersLimit: 2,
+      monthlyTopupLimit: 3000 // $3,000 monthly top-up limit
     },
     feeRate: 0.06, // 6%
     isActive: true,
@@ -70,11 +73,13 @@ export const PRICING_PLANS: PricingPlan[] = [
       '3 Business Managers',
       '15 Ad Accounts',
       '5 Team Members',
-      '3% ad spend fee'
+      '3% ad spend fee',
+      '$6,000 monthly top-up limit'
     ],
     limits: {
       accountsLimit: 15,
-      usersLimit: 5
+      usersLimit: 5,
+      monthlyTopupLimit: 6000 // $6,000 monthly top-up limit
     },
     feeRate: 0.03, // 3%
     isActive: true,
@@ -92,11 +97,13 @@ export const PRICING_PLANS: PricingPlan[] = [
       '10 Business Managers',
       '50 Ad Accounts',
       '15 Team Members',
-      '1.5% ad spend fee'
+      '1.5% ad spend fee',
+      'Unlimited monthly top-ups'
     ],
     limits: {
       accountsLimit: 50,
-      usersLimit: 15
+      usersLimit: 15,
+      monthlyTopupLimit: null // Unlimited
     },
     feeRate: 0.015, // 1.5%
     isActive: true,
@@ -113,11 +120,13 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Unlimited Business Managers',
       'Unlimited Ad Accounts',
       'Unlimited Team Members',
-      '1% ad spend fee'
+      '1% ad spend fee',
+      'Unlimited monthly top-ups'
     ],
     limits: {
       accountsLimit: -1, // unlimited
-      usersLimit: -1 // unlimited
+      usersLimit: -1, // unlimited
+      monthlyTopupLimit: null // Unlimited
     },
     feeRate: 0.01, // 1%
     isActive: true,

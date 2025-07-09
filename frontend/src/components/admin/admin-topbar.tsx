@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X, Search } from 'lucide-react';
+import { ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown, Menu, X, Search, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPlaceholderUrl } from '@/lib/config/assets';
 import { GlobalSearch } from './global-search';
@@ -25,11 +25,38 @@ interface AdminTopbarProps {
 export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, signOut: authSignOut } = useAuth();
+  const { user, signOut: authSignOut, session } = useAuth();
   const { theme, setTheme } = useTheme();
+  const [syncStatus, setSyncStatus] = useState<any>(null);
   
   const userEmail = user?.email || 'admin@adhub.com';
   const userInitial = user?.email?.charAt(0).toUpperCase() || "A";
+
+  // Fetch sync status
+  useEffect(() => {
+    const fetchSyncStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/dolphin-assets/sync/status', {
+          headers: {
+            'Authorization': `Bearer ${session?.access_token}`
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSyncStatus(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch sync status:', err);
+      }
+    };
+
+    if (session) {
+      fetchSyncStatus();
+      // Refresh sync status every 30 seconds
+      const interval = setInterval(fetchSyncStatus, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session]);
 
   // Get page title from pathname if not provided
   const getPageTitle = () => {
@@ -57,6 +84,29 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
     }
   };
 
+  // Format last sync time with detailed timestamp
+  const formatLastSync = (dateString?: string) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    // Show relative time for recent syncs, but include exact time for clarity
+    if (diffInMinutes < 1) {
+      return `Just now (${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
+    }
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago (${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
+    }
+    if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours}h ago (${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
+    }
+    
+    // For older dates, show the full date and time
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+  };
+
   return (
     <div className="sticky top-0 z-50 h-16 border-b border-border/20 flex items-center justify-between px-3 md:px-6 bg-card/80 backdrop-blur-md">
       {/* Left: Page Title */}
@@ -82,7 +132,13 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
           />
         </div>
         
-        {/* Removed notification bell - was fake/non-functional */}
+        {/* Last Autosync Timestamp */}
+        {syncStatus && (
+          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
+            <RefreshCw className="h-4 w-4" />
+            <span>Last sync: {formatLastSync(syncStatus.last_sync)}</span>
+          </div>
+        )}
 
         {/* Admin Profile Dropdown */}
         <DropdownMenu>

@@ -228,7 +228,7 @@ Processing time: 1-3 business days`
           <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
             <p>• Bank transfers typically take 1-3 business days to process</p>
             <p>• Your wallet will be credited automatically when the transfer is received</p>
-                            <p>• Contact support if your transfer doesn&apos;t appear within 4 business days</p>
+                            <p>• Contact support if your transfer doesn&apos;t appear within 3 business days</p>
             {currentDetails.referenceNumber && (
               <p className="font-medium text-foreground">
                 • Include reference number &quot;{currentDetails.referenceNumber}&quot; in your transfer memo

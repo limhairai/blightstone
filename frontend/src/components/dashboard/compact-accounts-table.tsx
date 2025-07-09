@@ -55,9 +55,14 @@ export function CompactAccountsTable({
     if (!accounts?.accounts || !Array.isArray(accounts.accounts)) return [];
     
     return accounts.accounts.map((account: any) => {
-      // Use balance_cents and spend_cents from API, convert to dollars
+      // Use balance_cents, spend_cents, and spend_cap_cents from API, convert to dollars
       const balanceDollars = (account.balance_cents || 0) / 100;
       const spentDollars = (account.spend_cents || 0) / 100;
+      const spendCapDollars = (account.spend_cap_cents || 0) / 100;
+      
+      // Calculate available spend: spend_cap - amount_spent
+      // This is the key calculation - how much the client can still spend
+      const availableSpend = spendCapDollars > 0 ? Math.max(0, spendCapDollars - spentDollars) : balanceDollars;
       
       // Calculate quota info - if we have balance and spent, we can infer quota
       const quota = balanceDollars + spentDollars;
@@ -70,8 +75,10 @@ export function CompactAccountsTable({
         business: account.business_manager_name || 'Unknown',
         bmId: account.business_manager_id || null,
         status: account.status,
-        balance: balanceDollars,
+        balance: balanceDollars, // Keep original balance for backward compatibility
+        availableSpend: availableSpend, // NEW: Available spend calculation
         spent: spentDollars,
+        spendCap: spendCapDollars, // NEW: Spend cap for reference
         quota: quota,
         quotaUsage: quotaUsage,
         timezone: account.timezone || 'UTC',
@@ -204,7 +211,8 @@ export function CompactAccountsTable({
                 id: account.id,
                 name: account.name,
                 adAccount: account.adAccount,
-                balance: account.balance,
+                balance: account.balance, // Keep original balance for backward compatibility
+                availableSpend: account.availableSpend,
                 currency: account.currency,
                 business: account.business,
                 bmId: account.bmId
@@ -250,7 +258,7 @@ export function CompactAccountsTable({
           <div className="flex items-center">BM ID</div>
           <div className="flex items-center">TIMEZONE</div>
           <div className="flex items-center">STATUS</div>
-          <div className="flex items-center">BALANCE</div>
+          <div className="flex items-center">AVAILABLE SPEND</div>
           <div></div>
         </div>
 
@@ -314,9 +322,9 @@ export function CompactAccountsTable({
                 <StatusBadge status={account.status as any} size="sm" />
               </div>
 
-              {/* Balance */}
+              {/* Available Spend */}
               <div className="flex items-center">
-                <span className="text-sm font-medium text-foreground">${formatCurrency(account.balance)}</span>
+                <span className="text-sm font-medium text-foreground">${formatCurrency(account.availableSpend)}</span>
               </div>
 
               {/* Actions */}
@@ -327,7 +335,7 @@ export function CompactAccountsTable({
                     id: account.id,
                     name: account.name,
                     adAccount: account.adAccount,
-                    balance: account.balance,
+                    balance: account.availableSpend, // Use availableSpend as balance
                     currency: account.currency,
                     business: account.business,
                     bmId: account.bmId
@@ -392,7 +400,7 @@ export function CompactAccountsTable({
                           id: account.id,
                           name: account.name,
                           adAccount: account.adAccount,
-                          balance: account.balance,
+                          balance: account.availableSpend, // Use availableSpend as balance
                           currency: account.currency,
                           business: account.business,
                           bmId: account.bmId
@@ -410,7 +418,7 @@ export function CompactAccountsTable({
                           id: account.id,
                           name: account.name,
                           adAccount: account.adAccount,
-                          balance: account.balance,
+                          balance: account.availableSpend, // Use availableSpend as balance
                           currency: account.currency,
                           business: account.business,
                           bmId: account.bmId

@@ -59,12 +59,8 @@ export function useServerPagination<T = any>({
 
   const { data, error, mutate } = useSWR(
     enabled ? buildUrl() : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 5000, // 5 seconds
-    }
+    fetcher
+    // Using global SWR config for consistency
   );
 
   const loading = !data && !error;

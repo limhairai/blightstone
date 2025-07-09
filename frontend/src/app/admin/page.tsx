@@ -8,7 +8,6 @@ import { Button } from "../../components/ui/button"
 import { Badge } from "../../components/ui/badge"
 import { 
   CheckCircle, 
-  RefreshCw, 
   Building2, 
   Users, 
   FileText, 
@@ -16,11 +15,7 @@ import {
   ArrowRight, 
   Clock, 
   CreditCard, 
-  Database,
-  Plus,
-  Settings,
-  BarChart3,
-  Shield
+  BarChart3
 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
@@ -32,6 +27,8 @@ export default function AdminDashboard() {
   const [recentActivity, setRecentActivity] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+
 
   // Fetch real data with optimized parallel requests
   useEffect(() => {
@@ -233,7 +230,7 @@ export default function AdminDashboard() {
                             {activity.type === "application" && <FileText className="h-4 w-4 text-blue-500" />}
                             {activity.type === "topup" && <CreditCard className="h-4 w-4 text-green-500" />}
                             {activity.type === "team" && <Users className="h-4 w-4 text-purple-500" />}
-                            {activity.type === "asset" && <Database className="h-4 w-4 text-orange-500" />}
+                            {activity.type === "asset" && <BarChart3 className="h-4 w-4 text-orange-500" />}
                           </div>
                           <div>
                             <p className="text-sm font-medium">{activity.message}</p>

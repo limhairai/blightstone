@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 
 import { Label } from "@/components/ui/label"
 // Removed old useToast - using toast from sonner instead
-import { Check, Loader2, Wallet, DollarSign, Calculator, AlertTriangle } from "lucide-react"
+import { Check, Loader2, Wallet, DollarSign, Calculator, AlertTriangle, X } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { formatCurrency } from "@/utils/format"
 import { toast } from "sonner"
@@ -23,6 +23,9 @@ import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
 import { useSWRConfig } from 'swr'
+import { useTopupLimits } from '@/hooks/useTopupLimits'
+
+
 
 const MINIMUM_TOP_UP_AMOUNT = 500;
 
@@ -64,6 +67,12 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   })
   const [feeCalculation, setFeeCalculation] = useState<any>(null)
   const [isCalculatingFee, setIsCalculatingFee] = useState(false)
+
+  // Get top-up limit information
+  const { limitInfo, isLoading: isLoadingLimits } = useTopupLimits(
+    currentOrganizationId,
+    formData.amount ? parseFloat(formData.amount) : undefined
+  )
 
   // Get wallet balance from SWR hook (same as topbar)
   const walletBalance = orgData?.organizations?.[0]?.balance_cents ? orgData.organizations[0].balance_cents / 100 : 0
@@ -126,6 +135,13 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     const totalAmount = feeCalculation?.total_amount || numAmount
     if (totalAmount > walletBalance) {
       return `Total amount including fees (${formatCurrency(totalAmount)}) exceeds your wallet balance of ${formatCurrency(walletBalance)}`;
+    }
+
+    // Check top-up limits
+    if (limitInfo && !limitInfo.allowed) {
+      const limitText = limitInfo.limit ? `$${limitInfo.limit.toLocaleString()}` : 'unlimited';
+      const usageText = `$${limitInfo.currentUsage.toLocaleString()}`;
+      return `Monthly top-up limit exceeded. Your ${limitInfo.planName} plan allows ${limitText} per month, and you've used ${usageText} this month.`;
     }
     
     return null;
@@ -254,13 +270,13 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     return (
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent className="sm:max-w-md bg-card border-border">
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
-              <Check className="w-8 h-8 text-foreground" />
+        <DialogContent className="sm:max-w-xl bg-card border-border">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
+              <Check className="w-8 h-8 text-green-400" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">Request Submitted</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
+            <h3 className="text-xl font-semibold text-foreground mb-3">Request Submitted</h3>
+            <p className="text-sm text-muted-foreground max-w-md">
               {isMultipleAccounts 
                 ? `Your top up requests for ${targetAccounts.length} accounts have been submitted for review.`
                 : "Your top up request has been submitted for review. You'll be notified once it's processed."
@@ -278,188 +294,229 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg bg-card border-border">
-        <DialogHeader>
-          <DialogTitle className="text-foreground flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-[#c4b5fd]" />
-            {isMultipleAccounts ? `Top Up ${targetAccounts.length} Accounts` : "Top Up Account"}
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            {isMultipleAccounts 
-              ? "Request a top up for the selected ad accounts."
-              : "Request a top up for this ad account."
-            }
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-4xl bg-card border-border h-[500px] p-0">
+
 
         {/* Free Plan Upgrade Warning */}
         {isOnFreePlan && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
-            <div className="flex items-center gap-2 text-blue-700">
+          <div className="mx-6 mt-4 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-blue-400">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-sm font-medium">Upgrade Required</span>
             </div>
-            <p className="text-sm text-blue-600 mt-1">
+            <p className="text-sm text-blue-300 mt-1">
               {subscriptionMessage || "You're on the free plan. Upgrade to access topup functionality and all features."}
             </p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Account Summary */}
-          <div className="bg-muted/30 p-4 rounded-lg border border-border">
-            <h4 className="text-sm font-medium text-foreground mb-3">
-              {isMultipleAccounts ? "Selected Accounts" : "Account Details"}
-            </h4>
-            {isMultipleAccounts ? (
-              <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  {targetAccounts.length} accounts selected
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Total Current Balance: </span>
-                  <span className="font-medium text-foreground">${formatCurrency(totalCurrentBalance)}</span>
-                </div>
+        {/* Main Content */}
+        <div className="flex-1 p-4 pb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+            {/* Left Column - Account & Balance Info */}
+            <div className="space-y-4 flex flex-col">
+              {/* Account Summary */}
+              <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
+                <h3 className="text-sm font-medium text-foreground mb-3">
+                  {isMultipleAccounts ? "Selected Accounts" : "Account Details"}
+                </h3>
+                {isMultipleAccounts ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Accounts:</span>
+                      <span className="text-sm font-medium text-foreground">{targetAccounts.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Total Balance:</span>
+                      <span className="text-sm font-medium text-foreground">${formatCurrency(totalCurrentBalance)}</span>
+                    </div>
+                  </div>
+                ) : account ? (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Account:</span>
+                      <span className="text-sm font-medium text-foreground">{account.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Balance:</span>
+                      <span className="text-sm font-medium text-foreground">${formatCurrency(account.balance)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-muted-foreground">ID:</span>
+                      <code className="text-xs bg-muted/50 px-2 py-1 rounded text-muted-foreground">{account.adAccount}</code>
+                    </div>
+                  </div>
+                ) : null}
               </div>
-            ) : account ? (
-              <div className="space-y-2">
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Account: </span>
-                  <span className="font-medium text-foreground">{account.name}</span>
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Current Balance: </span>
-                  <span className="font-medium text-foreground">${formatCurrency(account.balance)}</span>
-                </div>
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Account ID: </span>
-                  <code className="text-xs bg-muted px-1 py-0.5 rounded">{account.adAccount}</code>
-                </div>
-              </div>
-            ) : null}
-          </div>
 
-          {/* Wallet Balance */}
-          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
-            <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Available Balance</span>
-            </div>
-            <div className="text-lg font-semibold">
-              {isLoadingBalance ? (
-                <div className="h-6 w-20 bg-muted animate-pulse rounded" />
-              ) : (
-                formatCurrency(walletBalance)
+              {/* Wallet Balance */}
+              <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
+                <div className="flex items-center gap-2 mb-3">
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-medium text-foreground">Wallet Balance</h3>
+                </div>
+                <div className="text-2xl font-bold text-foreground">
+                  {isLoadingBalance ? (
+                    <div className="h-8 w-32 bg-muted animate-pulse rounded" />
+                  ) : (
+                    `$${formatCurrency(walletBalance)}`
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Available for top-ups</p>
+              </div>
+
+              {/* Monthly Limits */}
+              {limitInfo && (
+                <div className="bg-muted/20 p-4 rounded-lg border border-muted/40 flex-1 flex flex-col">
+                  <h3 className="text-sm font-medium text-foreground mb-3">Monthly Limits</h3>
+                  {limitInfo.hasLimit ? (
+                    <div className="space-y-3 flex-1 flex flex-col">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Monthly Limit:</span>
+                        <span className="text-sm font-medium text-foreground">${limitInfo.limit?.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Used:</span>
+                        <span className="text-sm font-medium text-foreground">${limitInfo.currentUsage.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Available:</span>
+                        <span className="text-sm font-medium text-green-400">${limitInfo.available?.toLocaleString()}</span>
+                      </div>
+                      
+
+
+                      {limitInfo.available !== null && limitInfo.available <= 1000 && (
+                        <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded text-xs text-orange-400">
+                          <strong>Low limit remaining!</strong> Consider upgrading to Scale plan for unlimited top-ups.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-green-400">
+                      <Check className="h-4 w-4" />
+                      <span className="text-sm">Unlimited top-ups ({limitInfo.planName})</span>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="amount" className="text-foreground">
-              Top Up Amount (USD) *
-            </Label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="amount"
-                type="number"
-                step="1"
-                min={MINIMUM_TOP_UP_AMOUNT}
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                placeholder={`${MINIMUM_TOP_UP_AMOUNT}.00`}
-                required
-                disabled={isOnFreePlan}
-                className={`pl-10 bg-background border-border text-foreground ${
-                  amountError ? 'border-red-500' : ''
-                } ${isOnFreePlan ? 'opacity-50 cursor-not-allowed' : ''}`}
-              />
-            </div>
-            {amountError && (
-              <p className="text-xs text-red-500">{amountError}</p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Minimum amount: ${MINIMUM_TOP_UP_AMOUNT}. {isMultipleAccounts 
-                ? "This amount will be added to each selected account."
-                : "Amount to add to the account balance."
-              }
-            </p>
-          </div>
+            {/* Right Column - Top-up Form */}
+            <div className="space-y-4 flex flex-col">
+              <form onSubmit={handleSubmit} className="space-y-4 flex-1 flex flex-col">
 
-          {/* Fee Calculation Display */}
-          {formData.amount && parseFloat(formData.amount) > 0 && !isOnFreePlan && (
-            <div className="p-4 bg-muted/50 border border-border rounded-md space-y-2">
-              <div className="flex items-center gap-2 text-foreground font-medium">
-                <Calculator className="h-4 w-4" />
-                Cost Breakdown
-              </div>
-              
-              {isCalculatingFee ? (
-                <div className="text-sm text-muted-foreground">Calculating fees...</div>
-              ) : feeCalculation ? (
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Top-up Amount:</span>
-                    <span className="text-foreground">{formatCurrency(feeCalculation.base_amount)}</span>
+                {/* Amount Input */}
+                <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
+                  <Label htmlFor="amount" className="text-sm font-medium text-foreground mb-3 block">
+                    Top-up Amount (USD)
+                  </Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="1"
+                      min={MINIMUM_TOP_UP_AMOUNT}
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      placeholder={`${MINIMUM_TOP_UP_AMOUNT}.00`}
+                      required
+                      disabled={isOnFreePlan}
+                      className={`pl-12 h-12 text-lg bg-background border-border text-foreground ${
+                        amountError ? 'border-red-500' : ''
+                      } ${isOnFreePlan ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    />
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Platform Fee ({feeCalculation.fee_percentage}%):</span>
-                    <span className="text-orange-500">+{formatCurrency(feeCalculation.fee_amount)}</span>
-                  </div>
-                  <div className="flex justify-between font-medium text-foreground border-t border-border pt-1">
-                    <span>Total Deducted:</span>
-                    <span>{formatCurrency(feeCalculation.total_amount)}</span>
-                  </div>
+                  {amountError && (
+                    <p className="text-xs text-red-400 mt-2">{amountError}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Minimum: ${MINIMUM_TOP_UP_AMOUNT}. {isMultipleAccounts 
+                      ? "Amount added to each selected account."
+                      : "Amount added to account balance."
+                    }
+                  </p>
                 </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">Enter amount to see fee calculation</div>
-              )}
+
+                {/* Fee Calculation - Always Reserve Space */}
+                <div className="bg-muted/20 p-4 rounded-lg border border-muted/40 min-h-[120px]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calculator className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium text-foreground">Cost Breakdown</h3>
+                  </div>
+                  
+                  {!formData.amount || parseFloat(formData.amount) <= 0 || isOnFreePlan ? (
+                    <div className="text-sm text-muted-foreground">
+                      Enter an amount to see cost breakdown
+                    </div>
+                  ) : isCalculatingFee ? (
+                    <div className="text-sm text-muted-foreground">
+                      Calculating fees...
+                    </div>
+                  ) : feeCalculation ? (
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Top-up amount:</span>
+                        <span className="text-sm font-medium text-foreground">${formatCurrency(feeCalculation.base_amount)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Platform fee ({feeCalculation.fee_percentage}%):</span>
+                        <span className="text-sm font-medium text-orange-400">+${formatCurrency(feeCalculation.fee_amount)}</span>
+                      </div>
+                      <div className="border-t border-muted/40 pt-2 mt-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-foreground">Total deducted:</span>
+                          <span className="text-sm font-bold text-foreground">${formatCurrency(feeCalculation.total_amount)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      Unable to calculate fees
+                    </div>
+                  )}
+                </div>
+
+                {/* Processing Info */}
+                <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
+                  <p className="text-sm text-muted-foreground">
+                    Requests are processed within 2-3 hours during business hours
+                  </p>
+                </div>
+
+                {/* Submit Button - Push to bottom */}
+                <div className="mt-auto">
+                  <Button
+                    type="submit"
+                  disabled={
+                    isLoading || 
+                    !!amountError || 
+                    !formData.amount || 
+                    isCalculatingFee ||
+                    isOnFreePlan ||
+                    (feeCalculation && feeCalculation.total_amount > walletBalance) ||
+                    (limitInfo && !limitInfo.allowed)
+                  }
+                  className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0 h-12 text-base font-medium"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting Request...
+                    </>
+                  ) : (
+                    <>
+                      <Wallet className="mr-2 h-4 w-4" />
+                      {isOnFreePlan ? "Upgrade Required" : isMultipleAccounts ? "Top Up Accounts" : "Top Up Account"}
+                    </>
+                                      )}
+                  </Button>
+                </div>
+                </form>
             </div>
-          )}
-
-          <div className="bg-muted/30 p-4 rounded-lg border border-border">
-            <h4 className="text-sm font-medium text-foreground mb-2">What happens next?</h4>
-            <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Your top up request will be processed within the next 2-3 hours</li>
-            </ul>
           </div>
-
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              disabled={isLoading}
-              className="border-border text-foreground hover:bg-accent"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                isLoading || 
-                !!amountError || 
-                !formData.amount || 
-                isCalculatingFee ||
-                isOnFreePlan ||
-                (feeCalculation && feeCalculation.total_amount > walletBalance)
-              }
-              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                <>
-                  <Wallet className="mr-2 h-4 w-4" />
-                  {isOnFreePlan ? "Upgrade Required" : "Submit Request"}
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

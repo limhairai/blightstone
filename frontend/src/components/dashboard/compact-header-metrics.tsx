@@ -18,10 +18,12 @@ export function CompactHeaderMetrics() {
   const activeAccounts = accounts.filter((account: any) => account.status === "active").length;
   const pendingAccounts = accounts.filter((account: any) => account.status === "pending").length;
   
-  // Calculate total balance using Dolphin's balance field directly
-  const totalBalance = accounts.reduce((total: number, account: any) => {
-    // Use balance_cents from API response (already converted from Dolphin's balance field)
-    return total + ((account.balance_cents || 0) / 100);
+  // Calculate total available spend using spend_cap - amount_spent
+  const totalAvailableSpend = accounts.reduce((total: number, account: any) => {
+    const spendCap = (account.spend_cap_cents || 0) / 100;
+    const spent = (account.spend_cents || 0) / 100;
+    const availableSpend = spendCap > 0 ? Math.max(0, spendCap - spent) : (account.balance_cents || 0) / 100;
+    return total + availableSpend;
   }, 0);
 
   // Calculate total spent
@@ -32,10 +34,10 @@ export function CompactHeaderMetrics() {
 
   const metrics = [
     {
-      title: "Total Balance",
-      value: `${formatCurrency(totalBalance)}`,
+      title: "Available Spend",
+      value: `${formatCurrency(totalAvailableSpend)}`,
       icon: DollarSign,
-      color: "text-green-600",
+              color: "text-[#34D197]",
       bgColor: "bg-green-50 dark:bg-green-950/20",
     },
     {

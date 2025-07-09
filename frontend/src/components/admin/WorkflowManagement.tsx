@@ -91,7 +91,7 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
       case 'document_prep': return <User className="h-3 w-3 text-yellow-600" />;
       case 'submitted': return <ArrowRight className="h-3 w-3 text-purple-600" />;
       case 'under_review': return <Eye className="h-3 w-3 text-orange-600" />;
-      case 'approved': return <CheckCircle className="h-3 w-3 text-green-600" />;
+      case 'approved': return <CheckCircle className="h-3 w-3 text-[#34D197]" />;
       case 'rejected': return <XCircle className="h-3 w-3 text-red-600" />;
       default: return <Clock className="h-3 w-3 text-gray-400" />;
     }
@@ -115,7 +115,7 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
     if (hoursRemaining < 0) return { status: 'overdue', color: 'text-red-600', text: 'Overdue' };
     if (hoursRemaining < 2) return { status: 'urgent', color: 'text-orange-600', text: `${Math.ceil(hoursRemaining)}h left` };
     if (hoursRemaining < 24) return { status: 'warning', color: 'text-yellow-600', text: `${Math.ceil(hoursRemaining)}h left` };
-    return { status: 'ok', color: 'text-green-600', text: `${Math.ceil(hoursRemaining / 24)}d left` };
+    return { status: 'ok', color: 'text-[#34D197]', text: `${Math.ceil(hoursRemaining / 24)}d left` };
   };
 
   // Compact application row - optimized for high density
@@ -204,7 +204,7 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
         </Card>
         <Card className="p-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-green-600">{metrics.avgProcessingTime}d</div>
+            <div className="text-lg font-bold text-[#34D197]">{metrics.avgProcessingTime}d</div>
             <div className="text-muted-foreground">Avg Processing</div>
           </div>
         </Card>

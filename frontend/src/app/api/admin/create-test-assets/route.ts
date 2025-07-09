@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
           business_manager_id: 'BM_001_TEST',
           business_manager_name: 'Test Business Manager 1',
           ad_account_id: '123456789',
-          spend_cap: 1000,
+          spend_cap: 100000, // $1000 in cents
           amount_spent: 250,
           timezone_id: 'America/New_York'
         }
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           business_manager_id: 'BM_001_TEST',
           business_manager_name: 'Test Business Manager 1',
           ad_account_id: '123456790',
-          spend_cap: 500,
+          spend_cap: 50000, // $500 in cents
           amount_spent: 100,
           timezone_id: 'America/New_York'
         }
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
           business_manager_id: 'BM_001_TEST',
           business_manager_name: 'Test Business Manager 1',
           ad_account_id: '123456791',
-          spend_cap: 750,
+          spend_cap: 75000, // $750 in cents
           amount_spent: 300,
           timezone_id: 'America/New_York'
         }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
           business_manager_id: 'BM_002_TEST',
           business_manager_name: 'Test Business Manager 2', 
           ad_account_id: '123456792',
-          spend_cap: 2000,
+          spend_cap: 200000, // $2000 in cents
           amount_spent: 500,
           timezone_id: 'America/Los_Angeles'
         }
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           business_manager_id: 'BM_002_TEST',
           business_manager_name: 'Test Business Manager 2',
           ad_account_id: '123456793', 
-          spend_cap: 1500,
+          spend_cap: 150000, // $1500 in cents
           amount_spent: 750,
           timezone_id: 'America/Los_Angeles'
         }

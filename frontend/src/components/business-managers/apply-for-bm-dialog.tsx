@@ -117,20 +117,14 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
         throw new Error(errorData.error || 'Failed to submit application')
       }
 
-      // Show success and refresh immediately
+      const result = await response.json()
+
+      // Show success toast
       toast.success("Application submitted successfully!", {
         description: "Your business manager application is now under review."
       })
       
-      // Immediate cache refresh after successful submission
-      if (currentOrganizationId) {
-        await refreshAfterBusinessManagerChange(currentOrganizationId)
-      }
-      
-      // Force refresh of business managers data immediately using SWR mutate
-      await mutate('business-managers')
-      
-      // Also call the onSuccess callback
+      // Refresh the data
       if (onSuccess) {
         onSuccess()
       }

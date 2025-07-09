@@ -24,6 +24,8 @@ interface AdAccount {
   totalSpend: number
   timezone: string
   metadata?: any
+  spend_cap_cents?: number
+  spend_cents?: number
 }
 
 interface BusinessManager {
@@ -208,23 +210,28 @@ export default function BusinessManagerDetailPage() {
               <tr>
                 <th className="text-left p-4 font-medium">Ad Account</th>
                 <th className="text-left p-4 font-medium">Status</th>
-                <th className="text-right p-4 font-medium">Balance</th>
-                <th className="text-right p-4 font-medium">Total Spend</th>
+                <th className="text-right p-4 font-medium">Available Spend</th>
                 <th className="text-left p-4 font-medium">Timezone</th>
               </tr>
             </thead>
             <tbody>
               {filteredAdAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center p-8 text-muted-foreground">
+                  <td colSpan={4} className="text-center p-8 text-muted-foreground">
                     No ad accounts found
                   </td>
                 </tr>
               ) : (
                 filteredAdAccounts.map((account) => {
-                  const spendCap = account.metadata?.spend_cap || 0;
-                  const amountSpent = account.metadata?.amount_spent || 0;
-                  const calculatedBalance = spendCap - amountSpent;
+                  // Calculate available spend using Dolphin API data: spend_cap - amount_spent
+                  const spendCapCents = account.spend_cap_cents || 0;
+                  const spentCents = account.spend_cents || 0;
+                  
+                  const spendCapDollars = spendCapCents / 100;
+                  const spentDollars = spentCents / 100;
+                  
+                  // Available spend = spend_cap - amount_spent (direct from Dolphin)
+                  const availableSpend = spendCapDollars > 0 ? Math.max(0, spendCapDollars - spentDollars) : 0;
                   
                   return (
                     <tr key={account.id} className="border-t hover:bg-muted/50">
@@ -243,10 +250,7 @@ export default function BusinessManagerDetailPage() {
                         <StatusBadge status={account.status} size="sm" />
                       </td>
                       <td className="p-4 text-right font-mono">
-                        {formatCurrency(calculatedBalance)}
-                      </td>
-                      <td className="p-4 text-right font-mono">
-                        {formatCurrency(amountSpent)}
+                        {formatCurrency(availableSpend)}
                       </td>
                       <td className="p-4 text-sm text-muted-foreground">
                         {account.timezone || 'UTC'}

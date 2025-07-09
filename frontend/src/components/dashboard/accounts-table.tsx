@@ -227,7 +227,7 @@ export function AccountsTable() {
               <th className="p-2 text-left">Business Manager</th>
               <th className="p-2 text-left">BM ID</th>
               <th className="p-2 text-left">Status</th>
-              <th className="p-2 text-right">Balance</th>
+              <th className="p-2 text-right">Available Spend</th>
               <th className="p-2 text-right">Spend</th>
               <th className="p-2 text-left">Timezone</th>
               <th className="p-2 w-10"></th>
@@ -253,7 +253,7 @@ export function AccountsTable() {
                 </td>
                 <td className="p-2"><StatusBadge status={account.status} /></td>
                 <td className="p-2 text-right font-mono">
-                  {formatCurrency((account.balance_cents || 0) / 100)}
+                  {formatCurrency(Math.max(0, ((account.spend_cap_cents || 0) / 100) - ((account.spend_cents || 0) / 100)))}
                 </td>
                 <td className="p-2 text-right font-mono">
                   {formatCurrency((account.spend_cents || 0) / 100)}

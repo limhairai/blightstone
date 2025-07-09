@@ -113,7 +113,11 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                 status: asset.status
               })
             } else if (asset.type === 'ad_account') {
-              const balance = asset.metadata?.spend_cap - asset.metadata?.amount_spent || 0
+              // Convert spend_cap from cents to dollars (Dolphin API returns cents)
+              const spendCapCents = asset.metadata?.spend_cap || 0;
+              const spendCap = spendCapCents / 100;
+              const amountSpent = asset.metadata?.amount_spent || 0;
+              const balance = spendCap - amountSpent;
               searchResults.push({
                 id: asset.asset_id,
                 type: 'ad_account',

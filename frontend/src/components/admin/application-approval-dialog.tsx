@@ -66,7 +66,7 @@ export function ApplicationApprovalDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
+            <CheckCircle className="h-5 w-5 text-[#34D197]" />
             Approve Application
           </DialogTitle>
         </DialogHeader>
@@ -74,7 +74,7 @@ export function ApplicationApprovalDialog({
         <div className="space-y-4">
           <div className="p-4 bg-green-100/50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center gap-2 mb-2">
-              <Building2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <Building2 className="h-4 w-4 text-[#34D197] dark:text-green-400" />
               <span className="font-medium text-green-800 dark:text-green-200">Application Details</span>
             </div>
             <div className="space-y-2 text-sm">
@@ -120,7 +120,7 @@ export function ApplicationApprovalDialog({
           <Button 
             onClick={handleApprove} 
             disabled={isSubmitting}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-[#34D197] hover:bg-[#2BB87A]"
           >
             {isSubmitting ? (
               <>

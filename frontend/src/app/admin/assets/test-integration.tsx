@@ -162,7 +162,7 @@ export function DolphinIntegrationTest() {
       case 'pending':
         return <Loader2 className="h-4 w-4 animate-spin" />;
       case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-[#34D197]" />;
       case 'error':
         return <AlertTriangle className="h-4 w-4 text-red-600" />;
     }
@@ -173,7 +173,7 @@ export function DolphinIntegrationTest() {
       case 'pending':
         return <Badge variant="secondary">Running</Badge>;
       case 'success':
-        return <Badge variant="default" className="bg-green-600">Success</Badge>;
+        return <Badge variant="default" className="bg-[#34D197]">Success</Badge>;
       case 'error':
         return <Badge variant="destructive">Failed</Badge>;
     }

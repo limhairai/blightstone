@@ -10,15 +10,15 @@ import { StatusBadge } from "@/components/ui/status-badge"
 import { BusinessManagersViewToggle } from "@/components/business-managers/business-managers-view-toggle"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/utils/format"
-import { Search, ArrowRight, Building2, Loader2 } from "lucide-react"
+import { Search, ArrowRight, Building2, Loader2, X, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessManager } from "@/types/business"
-
-
-
+import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "sonner"
+import { mutate } from "swr"
 
 interface BusinessManagersTableProps {
-  businessManagers: BusinessManager[]
+  businessManagers: any[]
   loading: boolean
   onRefresh: () => void
 }
@@ -28,7 +28,9 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("activity")
   const [view, setView] = useState<"grid" | "list">("list")
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
 
+  const { session } = useAuth()
   const router = useRouter()
 
   const filteredManagers = useMemo(() => {
@@ -83,9 +85,108 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
     return getInitials(name)
   }
 
+  const handleCancelApplication = async (manager: BusinessManager, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent row click
+    
+    if (!session?.access_token) {
+      toast.error('Authentication required')
+      return
+    }
+    
+    if (!manager.application_id) {
+      toast.error('Application ID not found')
+      return
+    }
+    
+    setCancellingId(manager.id)
+    
+    try {
+      const response = await fetch(`/api/applications/${manager.application_id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to cancel application')
+      }
+      
+      const result = await response.json()
+      
+      if (manager.status === 'rejected') {
+        toast.success('Application deleted successfully')
+      } else {
+        toast.success('Application cancelled successfully')
+      }
+      
+      // Refresh the data
+      onRefresh()
+      
+    } catch (error) {
+      console.error('Error cancelling application:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel application')
+    } finally {
+      setCancellingId(null)
+    }
+  }
 
-
-
+  const getActionButtons = (manager: BusinessManager) => {
+    // Only show action buttons for applications (not active business managers)
+    if (!manager.is_application) {
+      return null
+    }
+    
+    const canCancel = ['pending', 'processing'].includes(manager.status)
+    const canDelete = manager.status === 'rejected'
+    
+    if (!canCancel && !canDelete) {
+      return null
+    }
+    
+    const isProcessing = cancellingId === manager.id
+    
+    return (
+      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        {canCancel && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              handleCancelApplication(manager, e)
+            }}
+            disabled={isProcessing}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground border-border hover:bg-muted/50"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <X className="h-3 w-3" />
+            )}
+            <span className="ml-1">Cancel</span>
+          </Button>
+        )}
+        {canDelete && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => handleCancelApplication(manager, e)}
+            disabled={isProcessing}
+            className="h-7 px-2 text-xs text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Trash2 className="h-3 w-3" />
+            )}
+            <span className="ml-1">Delete</span>
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -118,6 +219,9 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               </SelectItem>
               <SelectItem value="processing" className="text-popover-foreground hover:bg-accent">
                 Processing
+              </SelectItem>
+              <SelectItem value="rejected" className="text-popover-foreground hover:bg-accent">
+                Rejected
               </SelectItem>
               <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
                 Suspended
@@ -158,7 +262,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                 "hover:shadow-md hover:border-border/60 hover:bg-card/80",
                 manager.status === "active" 
                   ? "cursor-pointer hover:border-[#c4b5fd]/30" 
-                  : "cursor-not-allowed opacity-60",
+                  : "cursor-default",
               )}
             >
               {/* Header */}
@@ -178,8 +282,6 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                   <div className="flex items-center">
                     <StatusBadge status={manager.status as any} size="sm" />
                   </div>
-
-
                 </div>
               </div>
 
@@ -195,7 +297,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               </div>
 
               {/* Metrics */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="flex flex-col items-center justify-center p-2 bg-muted/30 rounded-md">
                   <div className="text-xs text-muted-foreground mb-1">Ad Accounts</div>
                   <div className="font-semibold text-foreground text-lg">{manager.ad_account_count || 0}</div>
@@ -206,8 +308,14 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                 </div>
               </div>
 
-              <div className="mt-3 flex justify-end">
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+              {/* Action buttons or navigation arrow */}
+              <div className="flex justify-between items-center">
+                <div className="flex-1">
+                  {getActionButtons(manager)}
+                </div>
+                {manager.status === "active" && (
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                )}
               </div>
             </div>
           ))}
@@ -224,7 +332,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                 "hover:shadow-md hover:border-border/60 hover:bg-card/80",
                 manager.status === "active" 
                   ? "cursor-pointer hover:border-[#c4b5fd]/30" 
-                  : "cursor-not-allowed opacity-60",
+                  : "cursor-default",
               )}
             >
               <div className="flex items-center justify-between">
@@ -262,7 +370,12 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                   </div>
                   <div className="flex items-center gap-2">
                     <StatusBadge status={manager.status as any} size="sm" />
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getActionButtons(manager)}
+                    {manager.status === "active" && (
+                      <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -288,8 +401,6 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
       <div className="text-xs text-muted-foreground">
         Showing {filteredManagers.length} of {businessManagers.length} business managers
       </div>
-
-
     </div>
   )
 } 

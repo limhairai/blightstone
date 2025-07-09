@@ -22,12 +22,15 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
   // Use optimized hooks instead of direct SWR calls
   const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
-  const { data: transactionsData } = useTransactions();
+  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions();
 
   const organization = data?.organizations?.[0];
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
   const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
   const transactions = transactionsData?.transactions || [];
+  
+  // Consider the component loading if either data source is loading
+  const isDataLoading = isLoading || transactionsLoading;
   
   // REAL performance calculation based on actual transaction history
   const performanceData = useMemo(() => {
@@ -141,7 +144,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
     { value: "1 Year", label: "1 Year" }
   ]
   
-  if (isLoading) {
+  if (isDataLoading) {
     return (
       <Card className="flex-1">
         <CardContent className="p-6">
@@ -225,25 +228,26 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
         {/* Balance Chart */}
         <div className="h-48 w-full relative">
-          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            {/* Grid lines */}
-            <defs>
-              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" opacity="0.3" />
-              </pattern>
-              <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
-              </linearGradient>
-              <linearGradient id="balanceFill" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
-              </linearGradient>
-            </defs>
-            <rect width="100" height="100" fill="url(#grid)" />
+          {!isDataLoading ? (
+            <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {/* Grid lines */}
+              <defs>
+                <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
+                  <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" opacity="0.3" />
+                </pattern>
+                <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+                </linearGradient>
+                <linearGradient id="balanceFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.1" />
+                </linearGradient>
+              </defs>
+              <rect width="100" height="100" fill="url(#grid)" />
 
             {/* Balance line */}
-            {balanceData.length > 1 && (
+            {balanceData.length > 0 && (
               <>
                 <path
                   d={`M ${balanceData
@@ -295,10 +299,15 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                 />
               );
             })}
-          </svg>
+            </svg>
+          ) : (
+            <div className="absolute inset-0 h-full w-full flex items-center justify-center">
+              <Skeleton className="h-full w-full" />
+            </div>
+          )}
 
           {/* Hover dot - positioned outside SVG to maintain circular shape */}
-          {hoveredIndex !== null && (
+          {!isDataLoading && hoveredIndex !== null && (
             <div
               className="absolute w-3 h-3 rounded-full bg-primary border-2 border-background pointer-events-none z-10 transition-all duration-200"
               style={{
@@ -313,7 +322,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
           )}
 
           {/* Hover tooltip */}
-          {hoveredIndex !== null && (
+          {!isDataLoading && hoveredIndex !== null && (
             <div
               className="absolute bg-popover border border-border rounded-md px-2 py-1 text-xs shadow-lg pointer-events-none z-20"
               style={{

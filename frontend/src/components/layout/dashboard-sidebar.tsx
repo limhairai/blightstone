@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { AdHubLogo } from "../core/AdHubLogo"
 import { cn } from "../../lib/utils"
-import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, TrendingUp, Users } from "lucide-react"
+import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useAuth } from '@/contexts/AuthContext'
@@ -68,8 +68,7 @@ export function DashboardSidebar() {
       ],
     },
     { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
-    { name: "Top-up Requests", href: "/dashboard/topup-requests", icon: TrendingUp },
-    { name: "Transactions", href: "/dashboard/transactions", icon: Receipt },
+    { name: "Transactions", href: "/dashboard/topup-requests", icon: Receipt },
 
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]

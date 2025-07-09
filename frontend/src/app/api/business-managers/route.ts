@@ -59,13 +59,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: assetsError.message }, { status: 500 });
     }
 
-    // Get pending/processing applications for that org (only new BM requests)
+    // Get pending/processing/rejected applications for that org (only new BM requests)
+    // Exclude cancelled applications from the results
     const { data: pendingApps, error: appsError } = await supabase
       .from('application')
       .select('*')
       .eq('organization_id', organizationId)
       .eq('request_type', 'new_business_manager')
-      .in('status', ['pending', 'processing']);
+      .in('status', ['pending', 'processing', 'rejected']);
 
     if (appsError) {
       console.error('Error fetching pending applications:', appsError);
@@ -119,11 +120,11 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Format pending applications as "pending" business managers
+    // Format pending/processing/rejected applications as business managers
     const formattedPendingApps = (pendingApps || []).map((app: any) => ({
       id: `app-${app.application_id || app.id || 'unknown'}`,
       name: app.name || `Application ${(app.application_id || app.id || 'unknown').toString().substring(0, 8)}...`,
-      status: app.status === 'pending' ? 'pending' : app.status === 'processing' ? 'processing' : 'pending',
+      status: app.status === 'pending' ? 'pending' : app.status === 'processing' ? 'processing' : app.status === 'rejected' ? 'rejected' : 'pending',
       created_at: app.created_at,
       ad_account_count: 0,
       dolphin_business_manager_id: null,
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps], {
       headers: {
-        'Cache-Control': 'private, max-age=30, s-maxage=30', // Reduced to 30 seconds for immediate responsiveness
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Vary': 'Authorization'
       }
     });

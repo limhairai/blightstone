@@ -45,14 +45,8 @@ export default function OrganizationsPage() {
   // Use SWR for better caching and performance
   const { data, error, isLoading, mutate } = useSWR(
     session?.access_token ? ['/api/admin/organizations', session.access_token] : null,
-    ([url, token]) => fetcher(url, token),
-    {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 30000, // 30 seconds
-      errorRetryCount: 3,
-      errorRetryInterval: 2000,
-    }
+    ([url, token]) => fetcher(url, token)
+    // Using global SWR config for consistency
   )
 
   const organizations = data?.organizations || []

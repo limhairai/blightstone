@@ -44,7 +44,7 @@ export function TransactionsHistory({ limit = 10, showFilters = true }: Transact
     switch (type) {
       case 'deposit':
       case 'topup':
-        return "text-green-600"
+        return "text-[#34D197]"
       case 'withdrawal':
         return "text-red-600"
       case 'transfer':
@@ -55,16 +55,19 @@ export function TransactionsHistory({ limit = 10, showFilters = true }: Transact
     }
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusDotColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <Badge variant="outline" className="text-green-600 border-green-600/20 bg-green-50 dark:bg-green-950/20">Completed</Badge>
-      case 'pending':
-        return <Badge variant="outline" className="text-yellow-600 border-yellow-600/20 bg-yellow-50 dark:bg-yellow-950/20">Pending</Badge>
-      case 'failed':
-        return <Badge variant="outline" className="text-red-600 border-red-600/20 bg-red-50 dark:bg-red-950/20">Failed</Badge>
+      case "completed":
+      case "fulfilled":
+        return "bg-[#34D197]"
+      case "pending":
+      case "processing":
+        return "bg-[#FFC857]"
+      case "failed":
+      case "cancelled":
+        return "bg-[#F56565]"
       default:
-        return <Badge variant="outline" className="text-muted-foreground">{status}</Badge>
+        return "bg-gray-500"
     }
   }
 
@@ -183,7 +186,12 @@ export function TransactionsHistory({ limit = 10, showFilters = true }: Transact
                       </div>
                       <div className="text-xs text-muted-foreground">USD</div>
                     </div>
-                    {getStatusBadge(transaction.status || 'completed')}
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">
+                        {(transaction.status || 'completed').charAt(0).toUpperCase() + (transaction.status || 'completed').slice(1)}
+                      </span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${getStatusDotColor(transaction.status || 'completed')}`}></div>
+                    </div>
                   </div>
                 </div>
               ))}

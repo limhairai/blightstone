@@ -22,6 +22,7 @@ interface Plan {
   maxTeamMembers: number
   maxBusinesses: number
   maxAdAccounts: number
+  monthlyTopupLimit?: number | null // Add topup limit field
   features: string[]
   stripe_price_id?: string | null
   isCustom?: boolean
@@ -138,6 +139,30 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
       features.push(`${plan.maxTeamMembers} Team Members`)
     }
     
+    // Add monthly topup limit based on plan ID (fallback if API doesn't provide it)
+    const getTopupLimit = (planId: string) => {
+      switch (planId) {
+        case 'starter':
+          return 3000
+        case 'growth':
+          return 6000
+        case 'scale':
+        case 'custom':
+        case 'enterprise':
+          return null // unlimited
+        default:
+          return plan.monthlyTopupLimit
+      }
+    }
+    
+    const topupLimit = plan.monthlyTopupLimit !== undefined ? plan.monthlyTopupLimit : getTopupLimit(plan.id)
+    
+    if (topupLimit === null || topupLimit === undefined) {
+      features.push('Unlimited Monthly Top-ups')
+    } else {
+      features.push(`$${topupLimit.toLocaleString()} Monthly Top-up Limit`)
+    }
+    
     // Add parsed features from database
     if (plan.features && Array.isArray(plan.features)) {
       features.push(...plan.features)
@@ -250,19 +275,26 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                       : "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
                   }`}
                   variant={isCurrent ? "outline" : "default"}
-                  disabled={isCurrent || !canUpgrade || isUpgrading || (!plan.stripe_price_id && !plan.isCustom)}
-                  onClick={() => handleSelectPlan(plan.id)}
+                  disabled={isCurrent || isUpgrading || (!plan.stripe_price_id && !plan.isCustom)}
+                  onClick={() => {
+                    if (plan.isCustom) {
+                      // For custom/enterprise plans, open contact form or redirect to contact
+                      window.open('mailto:sales@adhub.com?subject=Enterprise Plan Inquiry', '_blank')
+                    } else {
+                      handleSelectPlan(plan.id)
+                    }
+                  }}
                 >
                   {isCurrent 
                     ? "Current Plan" 
-                    : !canUpgrade 
-                      ? "Downgrade" 
-                      : isUpgrading 
-                        ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-                        : plan.isCustom
-                          ? "Contact Sales"
-                          : !plan.stripe_price_id
-                            ? "Not Available"
+                    : isUpgrading 
+                      ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
+                      : plan.isCustom
+                        ? "Contact Sales"
+                        : !plan.stripe_price_id
+                          ? "Not Available"
+                          : !canUpgrade && !plan.isCustom
+                            ? "Downgrade"
                             : "Select Plan"
                   }
                 </Button>

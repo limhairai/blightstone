@@ -92,7 +92,7 @@ export function DenseInfrastructureView({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle className="h-3 w-3 text-green-600" />;
+      case 'active': return <CheckCircle className="h-3 w-3 text-[#34D197]" />;
       case 'restricted': return <AlertTriangle className="h-3 w-3 text-yellow-600" />;
       case 'suspended': return <XCircle className="h-3 w-3 text-red-600" />;
       default: return <Minus className="h-3 w-3 text-gray-400" />;
@@ -302,7 +302,7 @@ export function DenseInfrastructureView({
         </Card>
         <Card className="p-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-green-600">
+            <div className="text-lg font-bold text-[#34D197]">
               {businessManagers.filter(bm => bm.status === 'active').length}
             </div>
             <div className="text-muted-foreground">Active</div>

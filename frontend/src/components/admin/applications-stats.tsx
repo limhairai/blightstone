@@ -43,7 +43,7 @@ export function ApplicationsStats() {
       label: "Approved",
       value: approvedApplications,
       icon: CheckCircle,
-      color: "text-green-600",
+      color: "text-[#34D197]",
       bgColor: "bg-green-50",
     },
     {

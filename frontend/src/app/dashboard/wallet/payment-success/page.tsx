@@ -30,9 +30,9 @@ export default function PaymentSuccessPage() {
       <Card>
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+            <CheckCircle className="w-8 h-8 text-[#34D197]" />
           </div>
-          <CardTitle className="text-2xl text-green-600">Payment Successful!</CardTitle>
+          <CardTitle className="text-2xl text-[#34D197]">Payment Successful!</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           {amount && (

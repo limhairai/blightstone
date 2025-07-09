@@ -47,9 +47,10 @@ export async function invalidateOrganizationCache(organizationId: string) {
       mutate(`/api/organizations?id=${organizationId}`, undefined, { revalidate: true }),
       mutate('organizations', undefined, { revalidate: true }),
       mutate(`org-${organizationId}`, undefined, { revalidate: true }),
-      // Business managers and applications
-      mutate('business-managers', undefined, { revalidate: true }),
-      mutate('/api/business-managers', undefined, { revalidate: true }),
+      // Business managers and applications - use array-based cache key
+      mutate((key) => {
+        return Array.isArray(key) && key[0] === '/api/business-managers'
+      }, undefined, { revalidate: true }),
       mutate('ad-accounts', undefined, { revalidate: true }),
       mutate('/api/ad-accounts', undefined, { revalidate: true }),
       // Transactions
@@ -72,9 +73,6 @@ export async function invalidateOrganizationCache(organizationId: string) {
 export async function invalidateBusinessManagerCache(organizationId?: string) {
   try {
     const cacheKeys = [
-      // Business managers
-      'business-managers',
-      '/api/business-managers',
       // Ad accounts
       'ad-accounts',
       '/api/ad-accounts',
@@ -92,7 +90,14 @@ export async function invalidateBusinessManagerCache(organizationId?: string) {
       )
     }
 
-    await Promise.all(cacheKeys.map(key => mutate(key)))
+    await Promise.all([
+      // Business managers with array-based cache key
+      mutate((key) => {
+        return Array.isArray(key) && key[0] === '/api/business-managers'
+      }, undefined, { revalidate: true }),
+      // Other cache keys
+      ...cacheKeys.map(key => mutate(key))
+    ])
     
     return true
   } catch (error) {

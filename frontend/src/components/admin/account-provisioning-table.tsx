@@ -55,7 +55,7 @@ export function AccountProvisioningTable() {
 
   const getAccountStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { label: "Active", variant: "default" as const, color: "text-green-600" },
+      active: { label: "Active", variant: "default" as const, color: "text-[#34D197]" },
       pending: { label: "Pending", variant: "secondary" as const, color: "text-yellow-600" },
       paused: { label: "Paused", variant: "outline" as const, color: "text-gray-600" },
       error: { label: "Error", variant: "destructive" as const, color: "text-red-600" },

@@ -123,8 +123,7 @@ export function DashboardView() {
   const realBalance = Number.isFinite(organization?.balance_cents) ? (organization.balance_cents / 100) : 0;
   const monthlySpend = accounts.reduce((sum: any, acc: any) => sum + (acc.spent ?? 0), 0);
 
-  // Check if user has real data to show (honest assessment)
-  const hasRealData = realBalance > 0 || monthlySpend > 0
+  // We always have real data now - no more demo data
 
   // ALL USEMEMO AND USEEFFECT HOOKS MUST BE BEFORE EARLY RETURNS
   // Generate HONEST balance data based on actual account history
@@ -169,6 +168,14 @@ export function DashboardView() {
         if (i === dataPoints - 1) {
           point.value = realBalance
         }
+      })
+    }
+    
+    // Ensure we always have at least some data to show a line
+    if (timePoints.every(point => point.value === 0)) {
+      // If all values are zero, set a minimal value to show a flat line
+      timePoints.forEach(point => {
+        point.value = 1 // Use 1 to ensure line is visible
       })
     }
     
@@ -508,31 +515,30 @@ export function DashboardView() {
                           
                           {/* Interactive balance line chart */}
                           <svg className="absolute inset-0 h-full w-full z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path
-                              d={balanceData.map((point, i) => {
-                                const maxValue = Math.max(...balanceData.map(p => p.value), 1); // Ensure at least 1 to avoid division by zero
-                                const yPos = hasRealData ? 100 - (point.value / maxValue) * 60 : 30; // Show flat line at 30% for empty state (higher up, more visible)
-                                const x = (i / (balanceData.length - 1)) * 100;
-                                return i === 0 ? `M ${x},${yPos}` : `L ${x},${yPos}`;
-                              }).join(' ')}
-                              fill="none"
-                              stroke={hasRealData ? "url(#balanceLineGradient)" : "#b4a0ff"}
-                              strokeWidth={hasRealData ? "1.5" : "3"}
-                              vectorEffect="non-scaling-stroke"
-                              opacity={hasRealData ? "1" : "1"}
-                            />
-                            <defs>
-                              <linearGradient id="balanceLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stopColor="#b4a0ff" />
-                                <stop offset="100%" stopColor="#ffb4a0" />
-                              </linearGradient>
-                            </defs>
+                            {/* Balance line */}
+                            {balanceData.length > 0 && (
+                              <path
+                                d={`M ${balanceData
+                                  .map(
+                                    (point, i) => {
+                                      const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
+                                      const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 60 : 50; // Default to middle if no value
+                                      return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                                    }
+                                  )
+                                  .join(" L ")}`}
+                                fill="none"
+                                stroke="#b4a0ff"
+                                strokeWidth="3"
+                                vectorEffect="non-scaling-stroke"
+                              />
+                            )}
                           </svg>
 
                           {/* Interactive hover points - positioned exactly on the line */}
                           {balanceData.map((point, i) => {
                             const maxValue = Math.max(...balanceData.map(p => p.value), 1); // Ensure at least 1 to avoid division by zero
-                            const yPosition = hasRealData ? 100 - (point.value / maxValue) * 60 : 30; // Show flat line at 30% for empty state (higher up, more visible)
+                            const yPosition = maxValue > 0 ? 100 - (point.value / maxValue) * 60 : 50; // Default to middle if no value
                             return (
                               <div
                                 key={i}
@@ -644,9 +650,9 @@ export function DashboardView() {
                                       : 'bg-gradient-to-t from-[#b4a0ff]/70 to-[#ffb4a0]/70'
                                   }`}
                                   style={{ 
-                                    height: hasRealData 
+                                    height: monthlySpend > 0 
                                       ? `${Math.max(4, (point.value / Math.max(...spendData.map(p => p.value), 1)) * 100)}%`
-                                      : '4px' // Show minimal bars for empty state
+                                      : '4px' // Show minimal bars for zero spend
                                   }}
                                 />
                                 {hoveredSpendIndex === i && (

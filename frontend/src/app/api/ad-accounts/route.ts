@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
         // Use Dolphin's balance field directly instead of calculated balance
         balance_cents: Math.round((metadata.balance || 0) * 100),
         spend_cents: Math.round((metadata.amount_spent || 0) * 100),
-        // Also include spend_cap for reference
-        spend_cap_cents: Math.round((metadata.spend_cap || 0) * 100),
+        // spend_cap from Facebook/Dolphin - handle missing metadata gracefully
+        spend_cap_cents: metadata.spend_cap || 0,
         binding_status: 'active',
         last_sync_at: asset.last_synced_at,
         

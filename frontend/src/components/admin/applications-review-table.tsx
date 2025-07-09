@@ -125,7 +125,7 @@ export function ApplicationsReviewTable() {
     const statusConfig = {
       pending: { label: "Pending", variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
       under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-orange-600" },
-      approved: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-green-600" },
+      approved: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
       rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
     };
 

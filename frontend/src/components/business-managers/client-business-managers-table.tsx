@@ -108,6 +108,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="active">Active</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
               <SelectItem value="suspended">Suspended</SelectItem>
             </SelectContent>

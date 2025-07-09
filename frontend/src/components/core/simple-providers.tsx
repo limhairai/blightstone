@@ -8,6 +8,9 @@ import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+
+import { SWRConfig } from 'swr'
+import { swrConfig } from '@/lib/swr-config'
 import { useCacheInvalidation } from "../../hooks/useCacheInvalidation"
 
 // PageTitle Context
@@ -102,12 +105,14 @@ export function SimpleProviders({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <TooltipProvider>
         <QueryClientProvider client={new QueryClient()}>
-          <AuthProvider>
-            <PageTitleProvider>
-              <AppRouter>{children}</AppRouter>
-            </PageTitleProvider>
-          </AuthProvider>
-        </QueryClientProvider>
+          <SWRConfig value={swrConfig}>
+            <AuthProvider>
+              <PageTitleProvider>
+                <AppRouter>{children}</AppRouter>
+              </PageTitleProvider>
+            </AuthProvider>
+                                  </SWRConfig>
+          </QueryClientProvider>
       </TooltipProvider>
     </ThemeProvider>
   );

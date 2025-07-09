@@ -169,7 +169,7 @@ export default function AccountMetrics() {
                   )}
                 </h3>
                 {metric.trend && (
-                  <span className="ml-2 flex items-center text-xs font-medium text-green-600">
+                  <span className="ml-2 flex items-center text-xs font-medium text-[#34D197]">
                     {metric.trend > 0 ? "+" : ""}
                     {metric.trend}%
                     <ArrowUpRight className="ml-1 h-3 w-3" />

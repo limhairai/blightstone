@@ -19,8 +19,13 @@ export function AccountsMetrics() {
   
   const totalAccounts = accounts.length
   const activeAccounts = accounts.filter((account: any) => account.status === "active").length
-  const totalBalance = accounts.reduce((total: any, account: any) => total + (account.balance || 0), 0)
-  const totalSpent = accounts.reduce((total: any, account: any) => total + (account.spent || 0), 0)
+  const totalAvailableSpend = accounts.reduce((total: any, account: any) => {
+    const spendCap = (account.spend_cap_cents || 0) / 100;
+    const spent = (account.spend_cents || 0) / 100;
+    const availableSpend = spendCap > 0 ? Math.max(0, spendCap - spent) : (account.balance_cents || 0) / 100;
+    return total + availableSpend;
+  }, 0)
+  const totalSpent = accounts.reduce((total: any, account: any) => total + ((account.spend_cents || 0) / 100), 0)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -46,19 +51,19 @@ export function AccountsMetrics() {
         </div>
       </div>
 
-      {/* Total Balance */}
+      {/* Total Available Spend */}
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="flex justify-between items-start mb-2">
           <div className="h-8 w-8 rounded-md bg-emerald-500/10 flex items-center justify-center">
             <Wallet className="h-4 w-4 text-emerald-500" />
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold">${formatCurrency(totalBalance)}</div>
+            <div className="text-2xl font-bold">${formatCurrency(totalAvailableSpend)}</div>
             <div className="text-xs text-muted-foreground">USD</div>
           </div>
         </div>
         <div className="mt-3">
-          <div className="text-sm font-medium">Total Balance</div>
+          <div className="text-sm font-medium">Available Spend</div>
           <div className="text-xs text-muted-foreground mt-1">Across all accounts</div>
         </div>
       </div>

@@ -85,7 +85,7 @@ function PaymentForm({ paymentIntent }: { paymentIntent: PaymentIntent }) {
     return (
       <div className="text-center py-8">
         <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-green-600 mb-2">Payment Successful!</h2>
+        <h2 className="text-2xl font-bold text-[#34D197] mb-2">Payment Successful!</h2>
         <p className="text-muted-foreground mb-4">
           Your wallet has been topped up with ${paymentIntent.amount.toFixed(2)}
         </p>
@@ -268,7 +268,7 @@ export default function PaymentPage() {
               <hr className="border-border" />
               <div className="flex justify-between font-semibold">
               ./scripts/dev/start-dev-servers.sh                <span>You&apos;ll Receive:</span>
-                <span className="text-green-600">${netAmount.toFixed(2)}</span>
+                <span className="text-[#34D197]">${netAmount.toFixed(2)}</span>
               </div>
             </div>
 

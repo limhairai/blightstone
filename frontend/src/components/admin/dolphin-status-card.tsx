@@ -67,7 +67,7 @@ export function DolphinStatusCard() {
     if (!healthStatus) return null;
 
     const config = {
-      healthy: { label: 'Connected & Authenticated', variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
+      healthy: { label: 'Connected & Authenticated', variant: 'default' as const, icon: CheckCircle, color: 'text-[#34D197]' },
       partial: { label: 'Connected (No Auth)', variant: 'secondary' as const, icon: AlertTriangle, color: 'text-yellow-600' },
       unhealthy: { label: 'Authentication Failed', variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' },
       error: { label: 'Connection Error', variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' }

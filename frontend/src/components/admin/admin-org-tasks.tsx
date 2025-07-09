@@ -187,7 +187,7 @@ export function AdminOrgTasks({ orgId, isSuperuser }: { orgId: string, isSuperus
                   )}
                 </div>
                 <div className="flex gap-2 items-center">
-                  <span className={task.status === "completed" ? "text-green-600 text-xs" : "text-yellow-600 text-xs"}>{task.status}</span>
+                  <span className={task.status === "completed" ? "text-[#34D197] text-xs" : "text-yellow-600 text-xs"}>{task.status}</span>
                   {editingTaskId !== task.id && (
                     <>
                       {task.status !== "completed" && (

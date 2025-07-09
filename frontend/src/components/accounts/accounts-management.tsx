@@ -126,12 +126,7 @@ export function AccountsManagement() {
             >
               Summary
             </TabsTrigger>
-            <TabsTrigger
-              value="meta"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-[#b4a0ff] data-[state=active]:text-white rounded-none px-3 py-1 text-xs"
-            >
-              Transactions
-            </TabsTrigger>
+
           </TabsList>
 
           <Link href="/account-application">

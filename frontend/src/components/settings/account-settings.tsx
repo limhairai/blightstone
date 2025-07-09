@@ -27,7 +27,6 @@ export function AccountSettings() {
     lastName: "",
     email: "",
     phone: "",
-    timezone: "UTC",
     language: "en",
   })
 
@@ -45,7 +44,6 @@ export function AccountSettings() {
         lastName,
         email: profile.email || user.email || "",
         phone: user.user_metadata?.phone || "",
-        timezone: "UTC",
         language: "en",
       })
 
@@ -115,7 +113,6 @@ export function AccountSettings() {
         lastName,
         email: profile.email || user.email || "",
         phone: user.user_metadata?.phone || "",
-        timezone: "UTC",
         language: "en",
       })
     }
@@ -191,25 +188,6 @@ export function AccountSettings() {
                 className="bg-background border-border text-foreground"
                 placeholder="Not provided"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="timezone" className="text-foreground">Timezone</Label>
-              <Select
-                value={formData.timezone}
-                onValueChange={(value) => setFormData({ ...formData, timezone: value })}
-                disabled={!isEditing}
-              >
-                <SelectTrigger className="bg-background border-border text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="UTC">UTC</SelectItem>
-                  <SelectItem value="EST">Eastern Time</SelectItem>
-                  <SelectItem value="PST">Pacific Time</SelectItem>
-                  <SelectItem value="CET">Central European Time</SelectItem>
-                  <SelectItem value="JST">Japan Standard Time</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
