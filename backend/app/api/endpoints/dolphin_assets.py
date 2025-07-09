@@ -1275,4 +1275,95 @@ async def debug_dolphin_associations(
         
     except Exception as e:
         logger.error(f"Error in Dolphin associations diagnosis: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Diagnosis failed: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Diagnosis failed: {str(e)}")
+
+@router.get("/debug/raw-account-data")
+async def debug_raw_account_data(
+    account_name: str = Query(..., description="Account name to search for (e.g., 'AdHub-Heavenfelt-01-1006')"),
+    current_user: User = Depends(require_superuser)
+):
+    """
+    Debug endpoint to examine raw Dolphin API data for a specific ad account.
+    This helps identify BM association issues.
+    """
+    try:
+        dolphin_api = DolphinCloudAPI()
+        
+        # Get raw data from both endpoints
+        profiles_data = await dolphin_api.get_fb_accounts()
+        cabs_data = await dolphin_api.get_fb_cabs()
+        
+        # Find the specific account
+        target_account = None
+        for cab in cabs_data:
+            if (cab.get("name") == account_name or 
+                cab.get("id") == account_name or 
+                cab.get("ad_account_id") == account_name):
+                target_account = cab
+                break
+        
+        if not target_account:
+            return {
+                "error": f"Account '{account_name}' not found",
+                "searched_in": len(cabs_data),
+                "available_accounts": [cab.get("name") for cab in cabs_data[:10]]  # First 10 for reference
+            }
+        
+        # Also find any profiles that might manage this account
+        managing_profiles = []
+        for profile in profiles_data:
+            # Check if this profile has any BMs that might contain this account
+            profile_bms = profile.get("bm", [])
+            for bm in profile_bms:
+                managing_profiles.append({
+                    "profile_name": profile.get("name"),
+                    "bm_id": bm.get("id"),
+                    "bm_name": bm.get("name"),
+                    "cabs_count": bm.get("cabs_count", 0)
+                })
+        
+        result = {
+            "account_found": {
+                "name": target_account.get("name"),
+                "id": target_account.get("id"),
+                "ad_account_id": target_account.get("ad_account_id"),
+                "status": target_account.get("status"),
+                "balance": target_account.get("balance"),
+                "currency": target_account.get("currency"),
+                
+                # BM association data - this is the key part
+                "bm_field": target_account.get("bm", []),
+                "business_field": target_account.get("business"),
+                "business_id_field": target_account.get("business_id"),
+                
+                # Managing profiles
+                "accounts_field": target_account.get("accounts", []),
+                
+                # Full raw data for complete analysis
+                "raw_data": target_account
+            },
+            "potential_managing_profiles": managing_profiles,
+            "analysis": {
+                "has_bm_data": len(target_account.get("bm", [])) > 0,
+                "has_business_data": target_account.get("business") is not None,
+                "has_business_id": target_account.get("business_id") is not None,
+                "managing_profiles_count": len(target_account.get("accounts", [])),
+                "bm_association_status": "FOUND" if len(target_account.get("bm", [])) > 0 else "MISSING"
+            },
+            "recommendations": []
+        }
+        
+        # Add specific recommendations based on findings
+        if len(target_account.get("bm", [])) == 0:
+            result["recommendations"].extend([
+                "This ad account has no BM association in Dolphin's CAB data",
+                "Check if the account is properly assigned to a Business Manager in Facebook",
+                "Verify that your Dolphin profiles have admin access to the relevant Business Manager",
+                "This might be a permissions issue - the account exists but BM relationship is not visible"
+            ])
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in raw account data debug: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Debug failed: {str(e)}") 
