@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react"
 import { layout } from "../../lib/layout-utils"
 import { contentTokens } from "../../lib/content-tokens"
 import { Button } from "../ui/button"
+import { gradientTokens } from "../../lib/design-tokens"
 import { Database, Download, Plus, Search, ChevronRight } from "lucide-react"
 import { Avatar, AvatarFallback } from "../ui/avatar"
 import { StatusBadge } from "../ui/status-badge"
@@ -177,7 +178,7 @@ export function AdminView() {
                     >
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-white text-xs font-semibold">
+                          <AvatarFallback className={`${gradientTokens.avatar} text-xs font-semibold`}>
                             {org.name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>

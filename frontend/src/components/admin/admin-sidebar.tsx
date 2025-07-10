@@ -22,6 +22,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { gradientTokens } from "../../lib/design-tokens"
 
 interface SidebarItem {
   name: string
@@ -112,15 +113,15 @@ export function AdminSidebar({ className }: { className?: string }) {
       {/* Header */}
       <div className="flex h-16 items-center border-b border-border px-4">
         {collapsed ? (
-          <Button variant="ghost" size="icon" className="mx-auto rounded-full hover:bg-accent">
-            <span className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-sm font-semibold text-transparent">
+          <div className={`h-8 w-8 rounded-full ${gradientTokens.avatar} flex items-center justify-center`}>
+            <span className="text-sm font-semibold">
               AP
             </span>
-          </Button>
+          </div>
         ) : (
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5]">
-              <span className="text-sm font-semibold text-black">AP</span>
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${gradientTokens.avatar}`}>
+              <span className="text-sm font-semibold">AP</span>
             </div>
             <div>
               <p className="text-sm font-semibold text-foreground">Admin Panel</p>

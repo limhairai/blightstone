@@ -73,7 +73,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           {/* Organization Avatar */}
-                          <div className="w-12 h-12 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-xl flex items-center justify-center text-black font-bold text-lg shadow-lg">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg ${gradientTokens.avatar}`}>
             {currentOrganization?.name 
               ? currentOrganization.name.split(' ').map((word: string) => word.charAt(0)).join('').slice(0, 2).toUpperCase()
               : 'ORG'

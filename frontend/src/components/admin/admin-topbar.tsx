@@ -17,6 +17,7 @@ import { ExternalLink, Shield, User, Settings, Moon, Sun, Monitor, LogOut, Crown
 import { useAuth } from '../../contexts/AuthContext';
 import { getPlaceholderUrl } from '@/lib/config/assets';
 import { GlobalSearch } from './global-search';
+import { gradientTokens } from '../../lib/design-tokens';
 
 interface AdminTopbarProps {
   pageTitle?: string;
@@ -146,7 +147,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
             <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={(user as any)?.avatar_url || user?.user_metadata?.avatar_url || undefined} alt="Admin" />
-                <AvatarFallback className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] text-white">
+                <AvatarFallback className={gradientTokens.avatar}>
                   {userInitial}
                 </AvatarFallback>
               </Avatar>

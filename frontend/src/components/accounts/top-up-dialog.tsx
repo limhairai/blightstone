@@ -294,7 +294,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl bg-card border-border h-[500px] p-0">
+      <DialogContent className="sm:max-w-4xl bg-card border-border max-h-[90vh] p-0">
 
 
         {/* Free Plan Upgrade Warning */}
@@ -311,10 +311,10 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
         )}
 
         {/* Main Content */}
-        <div className="flex-1 p-4 pb-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <div className="flex-1 p-4 pb-8 overflow-y-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Account & Balance Info */}
-            <div className="space-y-4 flex flex-col">
+            <div className="space-y-4">
               {/* Account Summary */}
               <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
                 <h3 className="text-sm font-medium text-foreground mb-3">
@@ -367,10 +367,10 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
 
               {/* Monthly Limits */}
               {limitInfo && (
-                <div className="bg-muted/20 p-4 rounded-lg border border-muted/40 flex-1 flex flex-col">
+                <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
                   <h3 className="text-sm font-medium text-foreground mb-3">Monthly Limits</h3>
                   {limitInfo.hasLimit ? (
-                    <div className="space-y-3 flex-1 flex flex-col">
+                    <div className="space-y-3">
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Monthly Limit:</span>
                         <span className="text-sm font-medium text-foreground">${limitInfo.limit?.toLocaleString()}</span>
@@ -383,14 +383,6 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                         <span className="text-sm text-muted-foreground">Available:</span>
                         <span className="text-sm font-medium text-green-400">${limitInfo.available?.toLocaleString()}</span>
                       </div>
-                      
-
-
-                      {limitInfo.available !== null && limitInfo.available <= 1000 && (
-                        <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded text-xs text-orange-400">
-                          <strong>Low limit remaining!</strong> Consider upgrading to Scale plan for unlimited top-ups.
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-green-400">
@@ -400,11 +392,13 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                   )}
                 </div>
               )}
+
+
             </div>
 
             {/* Right Column - Top-up Form */}
-            <div className="space-y-4 flex flex-col">
-              <form onSubmit={handleSubmit} className="space-y-4 flex-1 flex flex-col">
+            <div className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
 
                 {/* Amount Input */}
                 <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
@@ -485,8 +479,8 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                   </p>
                 </div>
 
-                {/* Submit Button - Push to bottom */}
-                <div className="mt-auto">
+                {/* Submit Button */}
+                <div>
                   <Button
                     type="submit"
                   disabled={
