@@ -165,26 +165,6 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setAmount('100')}
-                disabled={isLoading}
-                className="border-border text-foreground hover:bg-accent"
-              >
-                $100
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount('500')}
-                disabled={isLoading}
-                className="border-border text-foreground hover:bg-accent"
-              >
-                $500
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
                 onClick={() => setAmount('1000')}
                 disabled={isLoading}
                 className="border-border text-foreground hover:bg-accent"
@@ -195,11 +175,31 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
                 type="button"
                 variant="outline"
                 size="sm"
+                onClick={() => setAmount('2000')}
+                disabled={isLoading}
+                className="border-border text-foreground hover:bg-accent"
+              >
+                $2000
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setAmount('5000')}
                 disabled={isLoading}
                 className="border-border text-foreground hover:bg-accent"
               >
                 $5000
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAmount('10000')}
+                disabled={isLoading}
+                className="border-border text-foreground hover:bg-accent"
+              >
+                $10000
               </Button>
             </div>
           </div>

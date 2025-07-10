@@ -47,13 +47,13 @@ export default function AssetsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [diagnosticResults, setDiagnosticResults] = useState<any>(null)
   const [showDiagnostic, setShowDiagnostic] = useState(false)
-  const [syncStatus, setSyncStatus] = useState<any>(null)
+  // Removed syncStatus state - no longer needed
 
   const loadAssets = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      // Remove cache busting for better performance - let browser cache handle it
+      // Simple fetch without cache busting
       const response = await fetch(`/api/admin/dolphin-assets/all-assets`)
       if (!response.ok) throw new Error(`Failed to load assets: ${response.statusText}`)
       const data = await response.json()
@@ -66,18 +66,6 @@ export default function AssetsPage() {
       toast.error("Failed to load assets. Please try again.")
     } finally {
       setLoading(false)
-    }
-  }, [])
-
-  const loadSyncStatus = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/dolphin-assets/sync/status')
-      if (response.ok) {
-        const data = await response.json()
-        setSyncStatus(data)
-      }
-    } catch (err) {
-      console.error('Failed to fetch sync status:', err)
     }
   }, [])
 
@@ -172,8 +160,8 @@ export default function AssetsPage() {
 
   useEffect(() => {
     loadAssets()
-    loadSyncStatus()
-  }, [loadAssets, loadSyncStatus])
+    // Removed loadSyncStatus() - no need for constant polling
+  }, [loadAssets])
 
   const stats = useMemo<AssetStats>(() => ({
     profiles: assets.filter(a => a.type === 'profile').length,
@@ -404,26 +392,7 @@ export default function AssetsPage() {
               Diagnose BM Issues
             </Button>
             
-            {/* Sync Status Indicator */}
-            {syncStatus && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  {syncStatus.scheduler_running ? (
-                    <>
-                      <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                      <span>Auto-sync active</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="h-2 w-2 bg-red-500 rounded-full"></div>
-                      <span>Auto-sync inactive</span>
-                    </>
-                  )}
-                </div>
-                <span>•</span>
-                <span>Next sync: {syncStatus.next_sync_in_hours}h</span>
-              </div>
-            )}
+            {/* Sync Status Indicator - Removed */}
           </div>
         </div>
         <Card className="mt-4">

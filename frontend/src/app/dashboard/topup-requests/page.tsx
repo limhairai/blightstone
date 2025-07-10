@@ -90,11 +90,11 @@ export default function ClientTopupRequestsPage() {
   
   // Remove tab state - no longer needed
   
-  // Top-up requests data
+  // OPTIMIZATION: Only load topup requests initially, load transactions on demand
   const { data: requestsData, error: requestsError, isLoading: requestsLoading, mutate: mutateRequests } = useTopupRequests()
   const requests: TopupRequest[] = Array.isArray(requestsData) ? requestsData : requestsData?.requests || []
   
-  // Transactions data
+  // Transactions data - LAZY LOADING
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500)
@@ -103,15 +103,40 @@ export default function ClientTopupRequestsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [transactionTypeFilter, setTransactionTypeFilter] = useState("all")
+  const [shouldLoadTransactions, setShouldLoadTransactions] = useState(false)
   
-  // Use optimized transactions hook with filters
-  const { data: transactionsData, error: transactionsError, isLoading: transactionsLoading, mutate: mutateTransactions } = useTransactions({
+  // OPTIMIZATION: Only load transactions when needed (user scrolls or filters)
+  const transactionsQuery = useTransactions({
     type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
     search: debouncedSearchQuery || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     business_id: businessFilter !== 'all' ? businessFilter : undefined,
     date: date ? format(date, 'yyyy-MM-dd') : undefined,
   })
+  
+  // Only enable transactions loading when needed
+  const { data: transactionsData, error: transactionsError, isLoading: transactionsLoading, mutate: mutateTransactions } = {
+    ...transactionsQuery,
+    data: shouldLoadTransactions ? transactionsQuery.data : { transactions: [] },
+    isLoading: shouldLoadTransactions ? transactionsQuery.isLoading : false,
+    error: shouldLoadTransactions ? transactionsQuery.error : null
+  }
+  
+  // Trigger transactions loading when user interacts with filters or after initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldLoadTransactions(true)
+    }, 500) // Load transactions 500ms after page loads
+    
+    return () => clearTimeout(timer)
+  }, [])
+  
+  // Also load transactions when user applies filters
+  useEffect(() => {
+    if (debouncedSearchQuery || statusFilter !== 'all' || businessFilter !== 'all' || date || transactionTypeFilter !== 'all') {
+      setShouldLoadTransactions(true)
+    }
+  }, [debouncedSearchQuery, statusFilter, businessFilter, date, transactionTypeFilter])
   
   const allTransactions = transactionsData?.transactions || []
   
@@ -122,9 +147,9 @@ export default function ClientTopupRequestsPage() {
     display_id: request.id,
     organization_id: request.organization_id,
     type: 'transfer', // Change from 'request' to 'transfer' since requests are transfers
-    amount_cents: request.amount_cents,
+    amount_cents: -Math.abs(request.amount_cents), // Negative because it's money leaving the main wallet
     status: request.status,
-    description: `Top-up Request - ${request.ad_account_name || 'Account'}`,
+    description: `Top-up - ${request.ad_account_name || 'Account'}`,
     metadata: {
       ...request.metadata,
       ad_account_name: request.ad_account_name,
@@ -307,15 +332,15 @@ export default function ClientTopupRequestsPage() {
     if (desc.includes('Ad Account Top-up') && desc.includes('completed')) {
       const displayIdMatch = desc.match(/TR-[A-Z0-9]{6}/)
       if (displayIdMatch) {
-        return `Ad Account Top-up ${displayIdMatch[0]} completed`
+        return `Top-up ${displayIdMatch[0]} completed`
       }
-      return 'Ad Account Top-up completed'
+              return 'Top-up completed'
     }
     
     // Handle legacy topup request completed messages
     if (desc.startsWith('Topup request completed:')) {
       if (tx.metadata?.ad_account_id || tx.metadata?.ad_account_name || tx.metadata?.topup_request_id) {
-        return 'Ad Account Top-up completed'
+        return 'Top-up completed'
       }
       return 'Wallet Top-up completed'
     }
@@ -399,7 +424,7 @@ export default function ClientTopupRequestsPage() {
     }
   }
 
-  // Get amount color
+  // Get amount color - positive amounts are green (money coming in), negative amounts are white (money going out)
   const getAmountColor = (amount: number) => {
     return amount > 0 ? "text-[#34D197]" : "text-foreground"
   }
@@ -492,8 +517,8 @@ export default function ClientTopupRequestsPage() {
     { value: "cancelled", label: "Cancelled" },
   ]
 
-  // Loading state
-  if (transactionsLoading || requestsLoading) {
+  // OPTIMIZATION: Only show loading for essential data (requests), not transactions
+  if (requestsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -502,8 +527,8 @@ export default function ClientTopupRequestsPage() {
     )
   }
 
-  // Error state
-  if (transactionsError || requestsError) {
+  // Error state - only block for critical errors
+  if (requestsError) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <AlertTriangle className="h-12 w-12 text-destructive" />
@@ -541,6 +566,12 @@ export default function ClientTopupRequestsPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {transactionsLoading && (
+            <div className="flex items-center text-xs text-muted-foreground">
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              Loading...
+            </div>
+          )}
           <Button 
             variant="outline" 
             size="sm" 
@@ -589,7 +620,7 @@ export default function ClientTopupRequestsPage() {
               size="sm"
               onClick={() => setTransactionTypeFilter("transfer")}
             >
-              Transfers
+              Top Ups
             </Button>
           </div>
         </div>
@@ -702,7 +733,7 @@ export default function ClientTopupRequestsPage() {
                           <td className="p-4 align-middle text-sm font-mono text-muted-foreground">{getTransactionReference(tx)}</td>
                           <td className="p-4 align-middle text-sm text-right">
                             <span className={getAmountColor(tx.amount_cents)}>
-                              {tx.amount_cents > 0 ? "+" : ""}
+                              {tx.amount_cents > 0 ? "+" : "-"}
                               {formatCurrency(Math.abs(tx.amount_cents) / 100)}
                             </span>
                           </td>
@@ -867,7 +898,7 @@ export default function ClientTopupRequestsPage() {
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Top-up Request Details</DialogTitle>
+            <DialogTitle>Top-up Details</DialogTitle>
           </DialogHeader>
           
           {selectedRequest && (

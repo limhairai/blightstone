@@ -68,14 +68,8 @@ export default function TeamsPage() {
   // Use SWR for better caching and performance
   const { data, error, isLoading, mutate } = useSWR(
     session?.access_token ? ['/api/admin/teams', session.access_token] : null,
-    ([url, token]) => fetcher(url, token),
-    {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 30000, // 30 seconds
-      errorRetryCount: 3,
-      errorRetryInterval: 2000,
-    }
+    ([url, token]) => fetcher(url, token)
+    // Using default SWR configuration for simplicity
   )
 
   const teams = data?.teams || []

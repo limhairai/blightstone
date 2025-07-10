@@ -19,6 +19,10 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: "https://staging.adhub.tech,https://www.staging.adhub.tech"
+      - key: DOLPHIN_API_URL
+        value: https://cloud.dolphin.tech
+      - key: DOLPHIN_API_KEY
+        sync: false  # Set manually in Render dashboard - same as production Dolphin token
 
   # Staging Frontend
   - type: web

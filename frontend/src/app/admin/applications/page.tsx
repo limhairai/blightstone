@@ -110,16 +110,11 @@ export default function AdminApplicationsPage() {
         throw new Error('Failed to approve application');
       }
 
-      // Show success and immediately refresh the data
+      // Show success and refresh data
       toast.success('Application approved successfully');
       
-      // Comprehensive cache invalidation for immediate UI updates
-      await Promise.all([
-        mutate(), // Refresh admin applications
-        mutate('/api/admin/applications'),
-        mutate('business-managers'),
-        mutate('/api/business-managers'),
-      ]);
+      // Simple cache refresh - let SWR handle the rest
+      mutate();
 
     } catch (error) {
       console.error('Error approving application:', error);
@@ -152,16 +147,11 @@ export default function AdminApplicationsPage() {
         throw new Error('Failed to reject application');
       }
 
-      // Show success and immediately refresh the data
+      // Show success and refresh data
       toast.success('Application rejected successfully');
       
-      // Comprehensive cache invalidation for immediate UI updates
-      await Promise.all([
-        mutate(), // Refresh admin applications
-        mutate('/api/admin/applications'),
-        mutate('business-managers'),
-        mutate('/api/business-managers'),
-      ]);
+      // Simple cache refresh - let SWR handle the rest
+      mutate();
 
     } catch (error) {
       console.error('Error rejecting application:', error);
@@ -215,15 +205,8 @@ export default function AdminApplicationsPage() {
     // Show success message
     toast.success('Application fulfilled successfully');
     
-    // Comprehensive cache invalidation for immediate UI updates
-    await Promise.all([
-      mutate(), // Refresh admin applications
-      mutate('/api/admin/applications'),
-      mutate('business-managers'),
-      mutate('/api/business-managers'),
-      mutate('ad-accounts'),
-      mutate('/api/ad-accounts'),
-    ]);
+    // Simple cache refresh - let SWR handle the rest
+    mutate();
     
     setSelectedApplication(null);
     setDialogOpen(false);

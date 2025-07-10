@@ -59,9 +59,10 @@ export async function GET(request: NextRequest) {
   const searchQuery = searchParams.get('search');
 
   try {
+    // OPTIMIZATION: Only select needed fields to reduce data transfer
     let query = supabaseAdmin
       .from('transactions')
-      .select('*', { count: 'exact' })
+      .select('transaction_id, organization_id, type, amount_cents, status, description, metadata, created_at, updated_at', { count: 'exact' })
       .eq('organization_id', organizationId);
 
     if (status && status !== 'all') {
@@ -103,9 +104,10 @@ export async function GET(request: NextRequest) {
       currentPage: page,
     });
     
-    // **PERFORMANCE**: Add caching headers
-    response.headers.set('Cache-Control', 'private, max-age=60, s-maxage=60'); // Cache for 1 minute
+    // **PERFORMANCE**: Add aggressive caching headers for better performance
+    response.headers.set('Cache-Control', 'private, max-age=30, s-maxage=30, stale-while-revalidate=60'); // Cache for 30s, stale for 60s
     response.headers.set('Vary', 'Authorization');
+    response.headers.set('ETag', `transactions-${organizationId}-${Date.now()}`); // Add ETag for better caching
     
     return response;
 

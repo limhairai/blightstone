@@ -251,16 +251,16 @@ export function DashboardView() {
     if (desc.includes('Ad Account Top-up') && desc.includes('completed')) {
       const displayIdMatch = desc.match(/TR-[A-Z0-9]{6}/)
       if (displayIdMatch) {
-        return `Ad Account Top-up ${displayIdMatch[0]} completed`
+        return `Top Up ${displayIdMatch[0]} completed`
       }
-      return 'Ad Account Top-up completed'
+      return 'Top Up completed'
     }
     
     // Handle legacy topup request completed messages - need to distinguish wallet vs ad account
     if (desc.startsWith('Topup request completed:')) {
       // Check if this is an ad account transaction by looking at metadata
       if (tx.metadata?.ad_account_id || tx.metadata?.ad_account_name || tx.metadata?.topup_request_id) {
-        return 'Ad Account Top-up completed'
+        return 'Top Up completed'
       }
       // Otherwise it's a wallet transaction
       return 'Wallet Top-up completed'

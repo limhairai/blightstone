@@ -73,7 +73,7 @@ export const contentTokens = {
     exported: "Data exported successfully",
     imported: "Data imported successfully",
     funded: "Account funded successfully",
-    transferred: "Transfer completed",
+    transferred: "Top Up completed",
     paused: "Account paused",
     resumed: "Account resumed",
     archived: "Account archived",
@@ -270,7 +270,7 @@ export const contentTokens = {
   financial: {
     addFunds: "Add Funds", 
     withdraw: "Withdraw",
-    transfer: "Transfer",
+    transfer: "Top Up",
     consolidate: "Consolidate",
     distribute: "Distribute",
     fundWallet: "Fund Wallet",
