@@ -17,6 +17,7 @@ import { useCurrentOrganization } from "@/lib/swr-config"
 import { useSubscription } from "@/hooks/useSubscription"
 import { gradientTokens } from "../../../lib/design-tokens"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useSWRConfig } from "swr"
 
 interface SettingsLayoutProps {
   children: React.ReactNode
@@ -27,6 +28,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const { setPageTitle } = usePageTitle()
   const { currentOrganizationId } = useOrganizationStore();
   const { session } = useAuth();
+  const { mutate: globalMutate } = useSWRConfig();
   
   // Use the optimized hook
   const { data, error, isLoading, mutate } = useCurrentOrganization(currentOrganizationId);
@@ -90,6 +92,18 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       
       // Refresh the organization data
       await mutate();
+      
+      // Invalidate all organization-related SWR caches (including admin panel)
+      globalMutate((key) => {
+        if (typeof key === 'string') {
+          return key.includes('/api/organizations') || key.includes('/api/admin/organizations');
+        }
+        if (Array.isArray(key)) {
+          return key.some(k => typeof k === 'string' && (k.includes('/api/organizations') || k.includes('/api/admin/organizations')));
+        }
+        return false;
+      });
+      
       toast.success("Organization name updated successfully");
       setIsEditingName(false);
     } catch (error) {
