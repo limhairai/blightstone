@@ -27,7 +27,7 @@ export default function AccountsPage() {
     if (!Array.isArray(businessManagers)) return [];
     // Only show active business managers, not applications
     return businessManagers
-      .filter((bm: any) => bm.status === 'active')
+      .filter((bm: any) => !bm.is_application && bm.status === 'active')
       .map((bm: any) => ({
         id: bm.id,
         name: bm.name || bm.metadata?.business_manager || `BM ${bm.id}`,

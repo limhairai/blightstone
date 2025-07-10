@@ -195,7 +195,7 @@ export function CompactAccountsTable({
         onStatusChange={setStatusFilter}
         businessFilter={businessFilter}
         onBusinessChange={onBusinessFilterChange}
-        businessManagers={Array.isArray(businessManagers) ? businessManagers : []}
+        businessManagers={Array.isArray(businessManagers) ? businessManagers.filter((bm: any) => !bm.is_application && bm.status === 'active') : []}
       />
 
       {/* Bulk Actions */}

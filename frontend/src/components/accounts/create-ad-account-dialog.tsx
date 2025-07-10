@@ -42,7 +42,10 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
   // Fetch business managers with organization ID
   const { data: businessManagers, isLoading: areBusinessManagersLoading } = useBusinessManagers();
 
-  const approvedBusinessManagers = Array.isArray(businessManagers) ? businessManagers : [];
+  // Filter out applications and only show approved/active business managers
+  const approvedBusinessManagers = Array.isArray(businessManagers) 
+    ? businessManagers.filter((bm: any) => !bm.is_application && bm.status === 'active')
+    : [];
 
   // Find the specific BM if bmId is provided
   const selectedBM = bmId ? approvedBusinessManagers.find((bm: any) => bm.id === bmId) : null;
