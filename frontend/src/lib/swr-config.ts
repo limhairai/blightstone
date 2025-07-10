@@ -128,6 +128,8 @@ export function useTransactions(filters?: {
   status?: string
   business_id?: string
   date?: string
+  page?: number
+  limit?: number
 }) {
   const { session } = useAuth()
   
@@ -135,7 +137,9 @@ export function useTransactions(filters?: {
     if (!filters) return ''
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) params.set(key, value)
+      if (value !== undefined && value !== null) {
+        params.set(key, value.toString())
+      }
     })
     return params.toString()
   }, [filters])

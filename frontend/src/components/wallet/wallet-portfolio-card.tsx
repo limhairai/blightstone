@@ -29,12 +29,12 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
   const reservedBalance = (organization?.reserved_balance_cents ?? 0) / 100;
   const transactions = transactionsData?.transactions || [];
   
-  // Consider the component loading if either data source is loading
-  const isDataLoading = isLoading || transactionsLoading;
+  // Consider the component loading if either data source is loading OR if we have no organization data yet
+  const isDataLoading = isLoading || transactionsLoading || !organization;
   
   // REAL performance calculation based on actual transaction history
   const performanceData = useMemo(() => {
-    if (!transactions.length) {
+    if (!organization || !transactions.length) {
       return { changeAmount: 0, changePercentage: 0, hasRealData: false };
     }
 
@@ -77,12 +77,17 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       changePercentage: changePercentage,
       hasRealData: true
     };
-  }, [transactions, timeFilter, totalBalance]);
+  }, [transactions, timeFilter, totalBalance, organization]);
 
   const { changeAmount, changePercentage, hasRealData } = performanceData;
 
   // Generate REAL balance data based on actual transaction history
   const balanceData = useMemo(() => {
+    // Don't calculate chart data if we don't have organization data yet
+    if (!organization) {
+      return [];
+    }
+    
     const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
     
     // Generate time points
@@ -134,7 +139,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
     }
     
     return timePoints
-  }, [totalBalance, timeFilter, transactions])
+  }, [totalBalance, timeFilter, transactions, organization])
 
   // Time filter options
   const timeFilterOptions = [

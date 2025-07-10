@@ -6,9 +6,12 @@ import Link from "next/link"
 import { usePageTitle } from "../../../components/core/simple-providers"
 import { usePathname } from "next/navigation"
 import { Badge } from "../../../components/ui/badge"
-import { Copy } from 'lucide-react'
+import { Copy, Edit, Check, X } from 'lucide-react'
 import { Button } from "../../../components/ui/button"
-import { useEffect } from "react"
+import { Input } from "../../../components/ui/input"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
+import { useAuth } from "@/contexts/AuthContext"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
 import { useSubscription } from "@/hooks/useSubscription"
@@ -23,18 +26,79 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
   const { currentOrganizationId } = useOrganizationStore();
+  const { session } = useAuth();
   
   // Use the optimized hook
-  const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
+  const { data, error, isLoading, mutate } = useCurrentOrganization(currentOrganizationId);
   const currentOrganization = data?.organizations?.[0];
   
   // Use subscription hook for plan data
   const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
   const planName = currentPlan?.name || 'Free';
 
+  // Organization name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     setPageTitle("Settings")
   }, [setPageTitle])
+
+  // Initialize editing name when organization changes
+  useEffect(() => {
+    if (currentOrganization?.name) {
+      setEditingName(currentOrganization.name);
+    }
+  }, [currentOrganization?.name]);
+
+  const handleStartEditing = () => {
+    setEditingName(currentOrganization?.name || '');
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditing = () => {
+    setEditingName(currentOrganization?.name || '');
+    setIsEditingName(false);
+  };
+
+  const handleSaveName = async () => {
+    if (!editingName.trim()) {
+      toast.error("Organization name cannot be empty");
+      return;
+    }
+
+    if (editingName.trim() === currentOrganization?.name) {
+      setIsEditingName(false);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/organizations?id=${currentOrganizationId}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ name: editingName.trim() })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update organization name");
+      }
+      
+      // Refresh the organization data
+      await mutate();
+      toast.success("Organization name updated successfully");
+      setIsEditingName(false);
+    } catch (error) {
+      console.error('Error updating organization name:', error);
+      toast.error("Failed to update organization name");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const tabs = [
     { name: "Organization", href: "/dashboard/settings" },
@@ -83,22 +147,56 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
           {/* Organization Info */}
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">
-                {currentOrganization?.name || 'Organization Settings'}
-              </h1>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 hover:bg-accent"
-                onClick={() => {
-                  if (currentOrganization?.organization_id) {
-                    navigator.clipboard.writeText(currentOrganization.organization_id);
-                    // You could add a toast here if needed
-                  }
-                }}
-              >
-                <Copy className="h-3 w-3 text-muted-foreground" />
-              </Button>
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    className="text-2xl font-bold h-9 border-border focus:border-primary"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSaveName();
+                      } else if (e.key === 'Escape') {
+                        handleCancelEditing();
+                      }
+                    }}
+                    autoFocus
+                    disabled={isSaving}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
+                    onClick={handleSaveName}
+                    disabled={isSaving}
+                  >
+                    <Check className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                    onClick={handleCancelEditing}
+                    disabled={isSaving}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {currentOrganization?.name || 'Organization Settings'}
+                  </h1>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 hover:bg-accent"
+                    onClick={handleStartEditing}
+                  >
+                    <Edit className="h-3 w-3 text-muted-foreground" />
+                  </Button>
+                </>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               Manage your organization preferences and team settings

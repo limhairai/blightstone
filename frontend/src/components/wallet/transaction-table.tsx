@@ -47,10 +47,15 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
     failed: "bg-red-100/80 text-red-800 border-red-300/50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-700/50",
   }
 
-  const typeColors = {
-    deposit: "text-[#34D197]",
-    withdrawal: "text-red-600 dark:text-red-400",
-    transfer: "text-blue-600 dark:text-blue-400",
+  const getTransactionColor = (type: string, amount: number) => {
+    // From wallet perspective: money coming IN is green, money going OUT is white/neutral
+    if (amount > 0) {
+      // Money coming into wallet (deposits, refunds)
+      return "text-[#34D197]"
+    } else {
+      // Money leaving wallet (ad account topups, withdrawals)
+      return "text-foreground"
+    }
   }
 
   if (isLoading && !propTransactions) {
@@ -117,7 +122,7 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
               <TableRow key={transaction.id} className="border-b border-gray-200 dark:border-[#1A1A1A] hover:bg-gray-50 dark:hover:bg-[#1A1A1A]">
                 <TableCell className="text-gray-900 dark:text-gray-100">{transaction.date}</TableCell>
                 <TableCell className="text-gray-900 dark:text-gray-100">{transaction.description}</TableCell>
-                <TableCell className={`font-medium ${typeColors[transaction.type as keyof typeof typeColors] || 'text-foreground'}`}>
+                <TableCell className={`font-medium ${getTransactionColor(transaction.type, parseFloat(transaction.amount))}`}>
                   {transaction.amount}
                 </TableCell>
                 <TableCell>
