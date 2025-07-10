@@ -92,3 +92,7 @@ node_modules/
 test-results/
 playwright-report/
 .DS_Store
+# Environment files
+frontend/.env.local
+backend/.env
+telegram-bot/.env
