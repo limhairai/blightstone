@@ -2,3 +2,12 @@
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Build artifacts
+.next/
+node_modules/
+test-results/
+coverage/
+tsconfig.tsbuildinfo
+.vercel/
+.swc/

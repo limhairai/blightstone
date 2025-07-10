@@ -1,8 +1,0 @@
-      } else {
-        // ✅ PRODUCTION GUARD: Ensure no demo data in production
-        PRODUCTION_GUARD.assertNotDemo()
-        PRODUCTION_GUARD.assertSupabase()
-        
-        // Load production data from Supabase
-        console.log('🔗 Loading production data from Supabase...')
-        try {
