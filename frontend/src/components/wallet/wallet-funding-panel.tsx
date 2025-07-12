@@ -61,7 +61,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
       return;
     }
 
-    if (paymentMethod === 'binance_pay') {
+    if (paymentMethod === 'crypto') {
       // Validate amount first
       const amountNum = parseFloat(amount)
       if (isNaN(amountNum) || amountNum <= 0) {
@@ -142,7 +142,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
     switch (paymentMethod) {
       case 'bank_transfer':
         return 50
-      case 'binance_pay':
+      case 'crypto':
         return 10
       default:
         return 10
@@ -153,7 +153,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
     switch (paymentMethod) {
       case 'bank_transfer':
         return 50000
-      case 'binance_pay':
+      case 'crypto':
         return 10000
       default:
         return undefined
@@ -164,7 +164,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
     switch (paymentMethod) {
       case 'bank_transfer':
         return 'Minimum: $50.00 • Maximum: $50,000.00'
-      case 'binance_pay':
+      case 'crypto':
         return 'Minimum: $10.00 • Maximum: $10,000.00'
       default:
         return 'Minimum amount: $10.00'
@@ -237,10 +237,10 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="binance_pay" id="binance_pay" />
-                <Label htmlFor="binance_pay" className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="crypto" id="crypto" />
+                <Label htmlFor="crypto" className="flex items-center gap-2 cursor-pointer">
                   <Wallet className="h-4 w-4" />
-                  Binance Pay (Crypto)
+                  Crypto
                 </Label>
               </div>
             </RadioGroup>
@@ -254,8 +254,8 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {paymentMethod === 'bank_transfer' 
               ? 'Get Bank Transfer Details' 
-              : paymentMethod === 'binance_pay'
-                ? 'Pay with Binance Pay'
+              : paymentMethod === 'crypto'
+                ? 'Pay with Crypto'
                 : `Add ${formatCurrency(parseFloat(amount) || 0)} to Wallet`
             }
           </Button>

@@ -123,7 +123,7 @@ async function handleBinancePayment(paymentData: any, status: string) {
       const result = await WalletService.processTopup({
         organizationId: order.organization_id,
         amount: order.amount_usd,
-        paymentMethod: 'binance_pay',
+        paymentMethod: 'crypto',
         transactionId: transactionId,
         metadata: {
           binance_pay_order_id: merchantTradeNo,
