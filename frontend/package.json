@@ -11,7 +11,7 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit",
-    "test": "jest --config=../config/jest.config.js",
+    "test": "jest",
     "test:watch": "jest --config=../config/jest.config.js --watch",
     "test:coverage": "jest --config=../config/jest.config.js --coverage",
     "test:unit": "jest --config=../config/jest.config.js --testPathPattern='__tests__' --testPathIgnorePatterns='integration|e2e'",
