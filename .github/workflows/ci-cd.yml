@@ -65,9 +65,18 @@ jobs:
         run: |
           echo "NEXT_PUBLIC_API_URL=${{ github.ref == 'refs/heads/main' && 'https://api.adhub.tech' || 'https://api-staging.adhub.tech' }}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_APP_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SITE_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_BASE_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-supabase-url.supabase.co' }}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}" >> $GITHUB_ENV
           echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY || 'placeholder-service-key' }}" >> $GITHUB_ENV
+          echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY || 'sk_test_placeholder_key_for_build' }}" >> $GITHUB_ENV
+          echo "AIRWALLEX_API_URL=https://api.airwallex.com" >> $GITHUB_ENV
+          echo "AIRWALLEX_CLIENT_ID=${{ secrets.AIRWALLEX_CLIENT_ID || 'placeholder-client-id' }}" >> $GITHUB_ENV
+          echo "AIRWALLEX_API_KEY=${{ secrets.AIRWALLEX_API_KEY || 'placeholder-api-key' }}" >> $GITHUB_ENV
+          echo "BINANCE_PAY_API_URL=https://bpay.binanceapi.com" >> $GITHUB_ENV
+          echo "BINANCE_PAY_API_KEY=${{ secrets.BINANCE_PAY_API_KEY || 'placeholder-binance-key' }}" >> $GITHUB_ENV
+          echo "BINANCE_PAY_SECRET_KEY=${{ secrets.BINANCE_PAY_SECRET_KEY || 'placeholder-binance-secret' }}" >> $GITHUB_ENV
           echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN || '' }}" >> $GITHUB_ENV
           echo "SENTRY_ORG=${{ secrets.SENTRY_ORG || '' }}" >> $GITHUB_ENV
           echo "SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT || '' }}" >> $GITHUB_ENV
