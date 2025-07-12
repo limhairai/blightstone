@@ -61,17 +61,20 @@ jobs:
           echo "SUPABASE_URL secret exists: ${{ secrets.SUPABASE_URL != '' }}"
           echo "SUPABASE_ANON_KEY secret exists: ${{ secrets.SUPABASE_ANON_KEY != '' }}"
           
+      - name: Set environment variables
+        run: |
+          echo "NEXT_PUBLIC_API_URL=${{ github.ref == 'refs/heads/main' && 'https://api.adhub.tech' || 'https://api-staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-supabase-url.supabase.co' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY || 'placeholder-service-key' }}" >> $GITHUB_ENV
+          echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN || '' }}" >> $GITHUB_ENV
+          echo "SENTRY_ORG=${{ secrets.SENTRY_ORG || '' }}" >> $GITHUB_ENV
+          echo "SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT || '' }}" >> $GITHUB_ENV
+          echo "SENTRY_SILENT=true" >> $GITHUB_ENV
+          
       - name: Build frontend
         run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: ${{ github.ref == 'refs/heads/main' && 'https://api.adhub.tech' || 'https://api-staging.adhub.tech' }}
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-supabase-url.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
-          NEXT_PUBLIC_APP_URL: ${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN || '' }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG || '' }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT || '' }}
-          SENTRY_SILENT: true
 
   backend-tests:
     name: Backend Tests
