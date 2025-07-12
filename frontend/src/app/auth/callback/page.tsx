@@ -27,10 +27,10 @@ export default function AuthCallbackPage() {
 
         if (data.session) {
           // User is now authenticated
-          toast.success("Your account has been verified. Welcome to AdHub!", {
+          toast.success("Your account has been verified. Let's get you set up!", {
             description: "Email Confirmed!"
           })
-          router.push('/dashboard')
+          router.push('/onboarding')
         } else {
           // No session found
           toast.error("Please try signing in with your credentials.", {

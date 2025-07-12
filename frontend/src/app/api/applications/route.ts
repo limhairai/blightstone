@@ -176,6 +176,46 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Website URL is required for business manager applications.' }, { status: 400 });
             }
 
+            // Check if organization can add more promotion URLs
+            const { data: canAddPromotionUrl, error: urlLimitError } = await supabaseService
+                .rpc('check_plan_limits', {
+                    org_id: organization_id,
+                    limit_type: 'promotion_urls'
+                });
+
+            if (urlLimitError) {
+                console.error('Error checking promotion URL limits:', urlLimitError);
+                return NextResponse.json({ error: 'Failed to check promotion URL limits.' }, { status: 500 });
+            }
+
+            if (!canAddPromotionUrl) {
+                return NextResponse.json({ 
+                    error: 'Plan Limit Reached',
+                    message: 'You have reached the maximum number of promotion URLs for your current plan. Please upgrade to add more promotion URLs.'
+                }, { status: 403 });
+            }
+
+            // Check if this promotion URL is already in use by this organization
+            const { data: existingUrl, error: urlCheckError } = await supabaseService
+                .from('promotion_urls')
+                .select('url_id')
+                .eq('organization_id', organization_id)
+                .eq('url', website_url)
+                .eq('is_active', true)
+                .single();
+
+            if (urlCheckError && urlCheckError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                console.error('Error checking existing promotion URL:', urlCheckError);
+                return NextResponse.json({ error: 'Failed to validate promotion URL.' }, { status: 500 });
+            }
+
+            if (existingUrl) {
+                return NextResponse.json({ 
+                    error: 'Promotion URL Already Used',
+                    message: 'This promotion URL is already in use by your organization. Please use a different URL.'
+                }, { status: 409 });
+            }
+
             // Get organization name for application naming using service role
             const { data: orgNameData, error: orgError } = await supabaseService
                 .from('organizations')
@@ -221,6 +261,21 @@ export async function POST(request: NextRequest) {
             if (error) {
                 console.error('Database error creating business manager application:', error);
                 return NextResponse.json({ error: 'Failed to create business manager application.' }, { status: 500 });
+            }
+
+            // Add promotion URL to tracking table
+            const { error: urlInsertError } = await supabaseService
+                .from('promotion_urls')
+                .insert({
+                    organization_id,
+                    url: website_url,
+                    is_active: true
+                });
+
+            if (urlInsertError) {
+                console.error('Error tracking promotion URL:', urlInsertError);
+                // Don't fail the application creation, but log the error
+                console.warn('Business manager application created but promotion URL tracking failed');
             }
 
             return NextResponse.json({ success: true, application: data });

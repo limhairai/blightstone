@@ -14,6 +14,7 @@ import { ErrorBoundary } from "../ui/error-boundary"
 import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
 
 import { CompactAccountsTable } from "./compact-accounts-table"
+import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
 
 
 import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowDownIcon, ArrowUpIcon, RefreshCw, ArrowRight } from "lucide-react"
@@ -48,6 +49,10 @@ export function DashboardView() {
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
 
+  // Check onboarding status - RESTORED
+  const { shouldShowOnboarding, progressData, isLoading: onboardingLoading } = useAdvancedOnboarding()
+  
+  // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
   const [showEmptyStateElements, setShowEmptyStateElements] = useState(false)
   const { currentOrganizationId, setCurrentOrganizationId, onboardingDismissed, setOnboardingDismissed } = useOrganizationStore();
   const { mutate } = useSWRConfig();
@@ -242,6 +247,8 @@ export function DashboardView() {
   
   // Force re-render key based on balance and time filter
   const chartKey = `${realBalance}-${timeFilter}-${transactionsData.length}`
+
+  // Onboarding check removed - always show dashboard
 
   // Clean up transaction description for better readability
   const getCleanDescription = (tx: any) => {
@@ -792,7 +799,6 @@ export function DashboardView() {
           />
         </div>
       </div>
-      
 
 
     </ErrorBoundary>

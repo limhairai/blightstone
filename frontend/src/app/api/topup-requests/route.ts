@@ -333,31 +333,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Minimum balance reset amount is $1' }, { status: 400 });
     }
 
-    // Check top-up limits for topup requests
+    // Check top-up limits for topup requests (only if feature is enabled)
     if (request_type === 'topup') {
-      const { data: limitCheck, error: limitError } = await supabase
-        .rpc('can_make_topup_request', {
-          org_id: organization_id,
-          request_amount_cents: amount_cents
-        });
+      // Import the feature flag
+      const { shouldEnableTopupLimits } = await import('@/lib/config/pricing-config');
+      
+      if (shouldEnableTopupLimits()) {
+        const { data: limitCheck, error: limitError } = await supabase
+          .rpc('can_make_topup_request', {
+            org_id: organization_id,
+            request_amount_cents: amount_cents
+          });
 
-      if (limitError) {
-        console.error('Error checking topup limits:', limitError);
-        return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
-      }
+        if (limitError) {
+          console.error('Error checking topup limits:', limitError);
+          return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
+        }
 
-      if (!limitCheck.allowed) {
-        const limitInDollars = limitCheck.limit ? `$${(limitCheck.limit / 100).toLocaleString()}` : 'unlimited';
-        const usageInDollars = `$${(limitCheck.current_usage / 100).toLocaleString()}`;
-        
-        return NextResponse.json({ 
-          error: `Monthly top-up limit exceeded. Your plan allows ${limitInDollars} per month, and you've already used ${usageInDollars} this month.`,
-          limitInfo: {
-            limit: limitCheck.limit ? limitCheck.limit / 100 : null,
-            currentUsage: limitCheck.current_usage / 100,
-            available: limitCheck.available ? limitCheck.available / 100 : null
-          }
-        }, { status: 400 });
+        if (!limitCheck.allowed) {
+          const limitInDollars = limitCheck.limit ? `$${(limitCheck.limit / 100).toLocaleString()}` : 'unlimited';
+          const usageInDollars = `$${(limitCheck.current_usage / 100).toLocaleString()}`;
+          
+          return NextResponse.json({ 
+            error: `Monthly top-up limit exceeded. Your plan allows ${limitInDollars} per month, and you've already used ${usageInDollars} this month.`,
+            limitInfo: {
+              limit: limitCheck.limit ? limitCheck.limit / 100 : null,
+              currentUsage: limitCheck.current_usage / 100,
+              available: limitCheck.available ? limitCheck.available / 100 : null
+            }
+          }, { status: 400 });
+        }
       }
     }
 
@@ -370,37 +375,54 @@ export async function POST(request: NextRequest) {
     };
 
     if (request_type === 'topup' && (!fee_amount_cents || !plan_fee_percentage)) {
-      // Calculate fee using subscription service
-      try {
-        console.log(`🔍 DEBUG: Calculating fee for amount: $${amount_cents / 100} (${amount_cents} cents)`);
-        
-        const feeResponse = await fetch(buildApiUrl('/subscriptions/calculate-fee'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            organization_id,
-            amount: amount_cents / 100
-          })
-        });
+      // Import the feature flag
+      const { shouldEnableAdSpendFees, getPlanPricing } = await import('@/lib/config/pricing-config');
+      
+      if (shouldEnableAdSpendFees()) {
+        // Calculate fee using subscription service
+        try {
+          console.log(`🔍 DEBUG: Calculating fee for amount: $${amount_cents / 100} (${amount_cents} cents)`);
+          
+          const feeResponse = await fetch(buildApiUrl('/subscriptions/calculate-fee'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              organization_id,
+              amount: amount_cents / 100
+            })
+          });
 
-        if (feeResponse.ok) {
-          const feeData = await feeResponse.json();
-          console.log(`🔍 DEBUG: Backend fee response:`, feeData);
-          
-          calculatedFeeData = {
-            fee_amount_cents: Math.round(feeData.fee_amount * 100),
-            total_deducted_cents: Math.round(feeData.total_amount * 100),
-            plan_fee_percentage: feeData.fee_percentage
-          };
-          
-          console.log(`🔍 DEBUG: Calculated fee data:`, calculatedFeeData);
-        } else {
-          console.error('Fee calculation failed:', feeResponse.status, await feeResponse.text());
-          // Use default fee calculation (3% like the old system)
-          const defaultFeePercentage = 3.0;
+          if (feeResponse.ok) {
+            const feeData = await feeResponse.json();
+            console.log(`🔍 DEBUG: Backend fee response:`, feeData);
+            
+            calculatedFeeData = {
+              fee_amount_cents: Math.round(feeData.fee_amount * 100),
+              total_deducted_cents: Math.round(feeData.total_amount * 100),
+              plan_fee_percentage: feeData.fee_percentage
+            };
+            
+            console.log(`🔍 DEBUG: Calculated fee data:`, calculatedFeeData);
+          } else {
+            console.error('Fee calculation failed:', feeResponse.status, await feeResponse.text());
+            // Use default fee calculation (1% for new pricing model)
+            const defaultFeePercentage = 1.0;
+            const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
+            calculatedFeeData = {
+              fee_amount_cents: defaultFeeAmount,
+              total_deducted_cents: amount_cents + defaultFeeAmount,
+              plan_fee_percentage: defaultFeePercentage
+            };
+            
+            console.log(`🔍 DEBUG: Using fallback fee calculation:`, calculatedFeeData);
+          }
+        } catch (error) {
+          console.error('Error calculating fee:', error);
+          // Use default fee calculation (1% for new pricing model)
+          const defaultFeePercentage = 1.0;
           const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
           calculatedFeeData = {
             fee_amount_cents: defaultFeeAmount,
@@ -408,20 +430,17 @@ export async function POST(request: NextRequest) {
             plan_fee_percentage: defaultFeePercentage
           };
           
-          console.log(`🔍 DEBUG: Using fallback fee calculation:`, calculatedFeeData);
+          console.log(`🔍 DEBUG: Using fallback fee calculation after error:`, calculatedFeeData);
         }
-      } catch (error) {
-        console.error('Error calculating fee:', error);
-        // Use default fee calculation (3% like the old system)
-        const defaultFeePercentage = 3.0;
-        const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
+      } else {
+        // No fees in new pricing model
         calculatedFeeData = {
-          fee_amount_cents: defaultFeeAmount,
-          total_deducted_cents: amount_cents + defaultFeeAmount,
-          plan_fee_percentage: defaultFeePercentage
+          fee_amount_cents: 0,
+          total_deducted_cents: amount_cents,
+          plan_fee_percentage: 0
         };
         
-        console.log(`🔍 DEBUG: Using fallback fee calculation after error:`, calculatedFeeData);
+        console.log(`🔍 DEBUG: No fees applied (feature disabled):`, calculatedFeeData);
       }
     }
 

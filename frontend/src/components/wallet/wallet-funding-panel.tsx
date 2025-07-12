@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Loader2, CreditCard, Building2 } from 'lucide-react'
+import { Loader2, CreditCard, Building2, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
@@ -15,6 +15,7 @@ import { useSWRConfig } from 'swr'
 import { formatCurrency } from '@/utils/format'
 import { refreshAfterBusinessManagerChange } from '@/lib/subscription-utils'
 import { BankTransferDialog } from './bank-transfer-dialog'
+import { BinancePayDialog } from './binance-pay-dialog'
 
 interface WalletFundingPanelProps {
   onSuccess?: () => void
@@ -28,6 +29,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
   const [paymentMethod, setPaymentMethod] = useState('credit_card')
   const [loading, setLoading] = useState(false)
   const [showBankTransferDialog, setShowBankTransferDialog] = useState(false)
+  const [showBinancePayDialog, setShowBinancePayDialog] = useState(false)
 
   // Use optimized hook instead of direct SWR call
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
@@ -58,6 +60,27 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
       setShowBankTransferDialog(true)
       return;
     }
+
+    if (paymentMethod === 'binance_pay') {
+      // Validate amount first
+      const amountNum = parseFloat(amount)
+      if (isNaN(amountNum) || amountNum <= 0) {
+        toast.error('Please enter a valid amount')
+        return
+      }
+      if (amountNum < 10) {
+        toast.error('Minimum Binance Pay amount is $10')
+        return
+      }
+      if (amountNum > 10000) {
+        toast.error('Maximum Binance Pay amount is $10,000')
+        return
+      }
+      
+      // Open Binance Pay dialog with the amount
+      setShowBinancePayDialog(true)
+      return;
+    }
     
     const amountNum = parseFloat(amount)
     if (isNaN(amountNum) || amountNum <= 0) {
@@ -71,55 +94,80 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
     }
 
     setLoading(true)
-
+    
     try {
-      if (paymentMethod === 'credit_card') {
-        // Handle Credit Card Checkout
-        const response = await fetch('/api/payments/create-checkout-session', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`
-          },
-          body: JSON.stringify({ 
-            amount: amountNum,
-            wallet_credit: amountNum,
-            success_url: `${window.location.origin}/dashboard/wallet?payment=success`,
-            cancel_url: `${window.location.origin}/dashboard/wallet?payment=cancelled`
-          })
+      // Create Stripe checkout session for credit card payments
+      const response = await fetch('/api/payments/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: amountNum,
+          organizationId: currentOrganizationId,
+          returnUrl: `${window.location.origin}/dashboard/wallet`
         })
+      })
 
-        if (!response.ok) {
-          throw new Error('Failed to create payment session')
-        }
-
-        const { checkout_url } = await response.json()
-        
-        // Store payment amount for optimistic update after successful payment
-        sessionStorage.setItem('pending_payment_amount', amountNum.toString())
-        sessionStorage.setItem('pending_payment_timestamp', Date.now().toString())
-        
-        // Preemptively refresh cache since we know payment will succeed
-        if (currentOrganizationId) {
-          await refreshAfterBusinessManagerChange(currentOrganizationId)
-        }
-        
-        window.location.href = checkout_url
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session')
       }
+
+      // Redirect to Stripe checkout
+      window.location.href = data.url
+      
     } catch (error) {
-      console.error('Payment error:', error)
-      toast.error('Failed to initiate payment. Please try again.')
+      console.error('Error creating checkout session:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to process payment')
+    } finally {
       setLoading(false)
     }
   }
 
   const handleBankTransferSuccess = () => {
     setShowBankTransferDialog(false)
-    setAmount('') // Reset form
+    setAmount('')
     onSuccess?.()
-    // Refresh organization data to show updated balance
-    if (currentOrganizationId) {
-      mutate(`/api/organizations/${currentOrganizationId}`)
+    toast.success('Bank transfer request submitted successfully')
+  }
+
+  const handleBinancePaySuccess = () => {
+    setShowBinancePayDialog(false)
+    setAmount('')
+    onSuccess?.()
+    toast.success('Binance Pay payment completed successfully')
+  }
+
+  const getMinAmount = () => {
+    switch (paymentMethod) {
+      case 'bank_transfer':
+        return 50
+      case 'binance_pay':
+        return 10
+      default:
+        return 10
+    }
+  }
+
+  const getMaxAmount = () => {
+    switch (paymentMethod) {
+      case 'bank_transfer':
+        return 50000
+      case 'binance_pay':
+        return 10000
+      default:
+        return undefined
+    }
+  }
+
+  const getAmountDescription = () => {
+    switch (paymentMethod) {
+      case 'bank_transfer':
+        return 'Minimum: $50.00 • Maximum: $50,000.00'
+      case 'binance_pay':
+        return 'Minimum: $10.00 • Maximum: $10,000.00'
+      default:
+        return 'Minimum amount: $10.00'
     }
   }
 
@@ -143,70 +191,37 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
               placeholder="100.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              min={paymentMethod === 'bank_transfer' ? "50" : "10"}
-              max={paymentMethod === 'bank_transfer' ? "50000" : undefined}
+              min={getMinAmount()}
+              max={getMaxAmount()}
               step="0.01"
               required
-              disabled={isLoading}
+              disabled={loading}
             />
             <p className="text-xs text-muted-foreground">
-              {paymentMethod === 'bank_transfer' 
-                ? 'Minimum: $50.00 • Maximum: $50,000.00' 
-                : 'Minimum amount: $10.00'
-              }
+              {getAmountDescription()}
             </p>
           </div>
 
           {/* Quick Amount Buttons */}
-          <div className="space-y-2">
-            <Label>Quick Amounts</Label>
-            <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            {[100, 500, 1000].map((quickAmount) => (
               <Button
+                key={quickAmount}
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setAmount('1000')}
-                disabled={isLoading}
-                className="border-border text-foreground hover:bg-accent"
+                onClick={() => setAmount(quickAmount.toString())}
+                disabled={loading}
+                className="text-xs"
               >
-                $1000
+                ${quickAmount}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount('2000')}
-                disabled={isLoading}
-                className="border-border text-foreground hover:bg-accent"
-              >
-                $2000
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount('5000')}
-                disabled={isLoading}
-                className="border-border text-foreground hover:bg-accent"
-              >
-                $5000
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount('10000')}
-                disabled={isLoading}
-                className="border-border text-foreground hover:bg-accent"
-              >
-                $10000
-              </Button>
-            </div>
+            ))}
           </div>
 
           <div className="space-y-3">
             <Label>Payment Method</Label>
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} disabled={isLoading}>
+            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} disabled={loading}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="credit_card" id="credit_card" />
                 <Label htmlFor="credit_card" className="flex items-center gap-2 cursor-pointer">
@@ -221,18 +236,27 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
                   Bank Transfer
                 </Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="binance_pay" id="binance_pay" />
+                <Label htmlFor="binance_pay" className="flex items-center gap-2 cursor-pointer">
+                  <Wallet className="h-4 w-4" />
+                  Binance Pay (Crypto)
+                </Label>
+              </div>
             </RadioGroup>
           </div>
 
           <Button 
             type="submit" 
             className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0" 
-            disabled={isLoading}
+            disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {paymentMethod === 'bank_transfer' 
               ? 'Get Bank Transfer Details' 
-              : `Add ${formatCurrency(parseFloat(amount) || 0)} to Wallet`
+              : paymentMethod === 'binance_pay'
+                ? 'Pay with Binance Pay'
+                : `Add ${formatCurrency(parseFloat(amount) || 0)} to Wallet`
             }
           </Button>
         </form>
@@ -244,6 +268,14 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
         onClose={() => setShowBankTransferDialog(false)}
         amount={parseFloat(amount) || 0}
         onSuccess={handleBankTransferSuccess}
+      />
+
+      {/* Binance Pay Dialog */}
+      <BinancePayDialog
+        isOpen={showBinancePayDialog}
+        onClose={() => setShowBinancePayDialog(false)}
+        amount={parseFloat(amount) || 0}
+        onSuccess={handleBinancePaySuccess}
       />
     </Card>
   )

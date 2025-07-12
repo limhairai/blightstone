@@ -83,9 +83,9 @@ export function RegisterView() {
         }, 1000);
       } else if (data?.user && data.session) {
         // User is immediately logged in (new user with auto-confirm enabled)
-        toast.success("Registration successful! Redirecting to dashboard...");
+        toast.success("Registration successful! Let's get you set up...");
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/onboarding");
         }, 1000);
       } else {
         // Handle unexpected cases

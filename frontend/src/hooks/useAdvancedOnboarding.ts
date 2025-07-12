@@ -1,130 +1,106 @@
-import useSWR from 'swr'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useMemo } from 'react'
-import { staticConfig } from '@/lib/swr-config'
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-  }
-  return response.json()
+export interface OnboardingProgress {
+  hasCompletedOnboarding: boolean
+  completionPercentage: number
+  nextStep: string | null
 }
-
-// Simple onboarding data structure
-interface OnboardingData {
-  progress: {
-    hasVerifiedEmail: boolean;
-    hasCreatedBusiness: boolean;
-    hasFundedWallet: boolean;
-    hasCreatedAdAccount: boolean;
-  };
-  persistence: {
-    hasExplicitlyDismissed: boolean;
-  };
-}
-
-// Simple step definitions
-const ONBOARDING_STEPS = [
-  { 
-    id: 'email-verification', 
-    key: 'hasVerifiedEmail', 
-    title: 'Verify Your Email', 
-    description: 'Check your inbox for a verification link.' 
-  },
-  { 
-    id: 'business-setup', 
-    key: 'hasCreatedBusiness', 
-    title: 'Create a Business', 
-    description: 'Setup your first business profile.' 
-  },
-  { 
-    id: 'wallet-funding', 
-    key: 'hasFundedWallet', 
-    title: 'Fund Your Wallet', 
-    description: 'Add funds to start running ads.' 
-  },
-  { 
-    id: 'ad-account-setup', 
-    key: 'hasCreatedAdAccount', 
-    title: 'Link an Ad Account', 
-    description: 'Connect your first ad account.' 
-  },
-]
 
 export function useAdvancedOnboarding() {
-  const { user } = useAuth()
+  const { user, session } = useAuth()
+  const [progressData, setProgressData] = useState<OnboardingProgress | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isError, setIsError] = useState(false)
 
-  const { data, error, isLoading, mutate } = useSWR<OnboardingData>(
-    user ? '/api/onboarding-progress' : null,
-    fetcher,
-    staticConfig // Use static config for onboarding data that doesn't change often
-  )
+  const checkOnboardingStatus = async () => {
+    if (!user || !session) {
+      setIsLoading(false)
+      return
+    }
 
-  // Calculate steps with completion status
-  const steps = useMemo(() => {
-    if (!data?.progress) return ONBOARDING_STEPS.map(step => ({ ...step, isCompleted: false }));
-    
-    return ONBOARDING_STEPS.map(step => ({
-      ...step,
-      isCompleted: data.progress[step.key as keyof typeof data.progress] || false
-    }));
-  }, [data]);
-
-  // Calculate completion percentage
-  const completionPercentage = useMemo(() => {
-    const completedCount = steps.filter(step => step.isCompleted).length;
-    return Math.round((completedCount / steps.length) * 100);
-  }, [steps]);
-
-  // Simple logic: show if incomplete AND not dismissed
-  const shouldShowOnboarding = useMemo(() => {
-    if (isLoading || !data) return false;
-    if (completionPercentage === 100) return false;
-    if (data.persistence?.hasExplicitlyDismissed) return false;
-    return true;
-  }, [data, isLoading, completionPercentage]);
-
-  // Dismiss onboarding
-  const dismissOnboarding = async () => {
     try {
-      const response = await fetch('/api/onboarding-progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'dismiss' })
-      });
+      setIsError(false)
+      // Get user's organization details to check if onboarding is complete
+      const response = await fetch('/api/organizations', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
 
       if (!response.ok) {
-        throw new Error('Failed to dismiss onboarding');
+        throw new Error('Failed to fetch organization data')
       }
 
-      mutate();
+      const data = await response.json()
+      const organization = data.organizations?.[0]
+
+      if (!organization) {
+        // No organization found - this shouldn't happen for registered users
+        setProgressData({
+          hasCompletedOnboarding: false,
+          completionPercentage: 0,
+          nextStep: 'organization-setup'
+        })
+        setIsLoading(false)
+        return
+      }
+
+      // Check if basic onboarding info is collected
+      const hasBasicInfo = !!(
+        organization.name &&
+        organization.industry &&
+        organization.ad_spend_monthly &&
+        organization.timezone &&
+        organization.how_heard_about_us
+      )
+
+      setProgressData({
+        hasCompletedOnboarding: hasBasicInfo,
+        completionPercentage: hasBasicInfo ? 100 : 0,
+        nextStep: hasBasicInfo ? null : 'collect-info'
+      })
+
     } catch (error) {
-      console.error('Error dismissing onboarding:', error);
-      throw error;
+      console.error('Error checking onboarding status:', error)
+      setIsError(true)
+      setProgressData({
+        hasCompletedOnboarding: false,
+        completionPercentage: 0,
+        nextStep: 'organization-setup'
+      })
+    } finally {
+      setIsLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    checkOnboardingStatus()
+  }, [user, session])
+
+  const shouldShowOnboarding = progressData && !progressData.hasCompletedOnboarding
+
+  // Mock functions for components expecting them
+  const mutate = async () => {
+    setIsLoading(true)
+    await checkOnboardingStatus()
+  }
+
+  const dismissOnboarding = async () => {
+    // For now, just mark as completed
+    setProgressData({
+      hasCompletedOnboarding: true,
+      completionPercentage: 100,
+      nextStep: null
+    })
+  }
 
   return {
-    // Main data
-    progressData: {
-      completionPercentage,
-      steps,
-      isComplete: completionPercentage === 100
-    },
-    
-    // State
+    progressData,
     isLoading,
-    isError: !!error,
-    error,
-    
-    // Actions
+    isError,
     shouldShowOnboarding,
-    dismissOnboarding,
     mutate,
-    
-    // Legacy support (for existing code)
-    setupProgress: data?.progress,
-    nextStep: steps.find(step => !step.isCompleted) || null,
+    dismissOnboarding
   }
 }

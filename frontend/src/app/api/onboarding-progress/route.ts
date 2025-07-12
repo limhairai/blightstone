@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
     if (profileError || !profile?.organization_id) {
       return NextResponse.json({ 
         progress: {
-          hasVerifiedEmail: !!user.user_metadata.email_confirmed_at,
-          hasCreatedBusiness: false,
+          hasSetupOrganization: false,
+          hasSelectedPlan: false,
           hasFundedWallet: false,
-          hasCreatedAdAccount: false,
+          hasAppliedForBM: false,
         },
         persistence: {
           hasExplicitlyDismissed: false,
@@ -63,27 +63,48 @@ export async function GET(request: NextRequest) {
     // Fetch all data points in parallel
     const [
       walletRes,
-      businessRes,
-      adAccountRes,
+      organizationRes,
       onboardingStateRes
     ] = await Promise.all([
       supabaseAdmin.from('wallets').select('balance_cents').eq('organization_id', profile.organization_id).limit(1).single(),
-              supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'business_manager' }),
-        supabaseAdmin.rpc('get_organization_assets', { p_organization_id: profile.organization_id, p_asset_type: 'ad_account' }),
+      supabaseAdmin.from('organizations').select('name').eq('organization_id', profile.organization_id).single(),
       supabaseAdmin.from('onboarding_states').select('*').eq('user_id', userId).single()
     ]);
     
     const wallet = walletRes.data;
-    const hasCreatedBusiness = businessRes.data && businessRes.data.length > 0;
+    const organization = organizationRes.data;
     const hasFundedWallet = wallet ? wallet.balance_cents > 0 : false;
-    const hasCreatedAdAccount = adAccountRes.data && adAccountRes.data.length > 0;
     
+    // Check if organization has been properly set up (has custom name, not default)
+    const hasSetupOrganization = profile.organization_id && 
+      organization?.name && 
+      !organization.name.includes("'s Organization");
+
+    // Check if user has selected a plan (not on free plan)
+    const { data: subscription } = await supabaseAdmin
+      .from('subscriptions')
+      .select('plan_id')
+      .eq('organization_id', profile.organization_id)
+      .eq('status', 'active')
+      .single();
+    
+    const hasSelectedPlan = subscription && subscription.plan_id !== 'free';
+
+    // Check if user has applied for business manager
+    const { data: applications } = await supabaseAdmin
+      .from('applications')
+      .select('application_id')
+      .eq('organization_id', profile.organization_id)
+      .limit(1);
+    
+    const hasAppliedForBM = applications && applications.length > 0;
+
     // Combine live data with persisted dismissal state
     const progress = {
-        hasVerifiedEmail: !!user.user_metadata.email_confirmed_at,
-        hasCreatedBusiness,
+        hasSetupOrganization: hasSetupOrganization || false,
+        hasSelectedPlan: hasSelectedPlan || false,
         hasFundedWallet,
-        hasCreatedAdAccount,
+        hasAppliedForBM: hasAppliedForBM || false,
     };
 
     const persistence = {

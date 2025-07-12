@@ -111,38 +111,32 @@ export function Topbar({
       
       {/* Right: Controls */}
       <div className="flex items-center gap-2 md:gap-3 ml-auto">
-        {/* Setup Guide Button with Circular Progress */}
-        {showEmptyStateElements && setupWidgetState === "closed" && actualSetupPercentage < 100 && (
+        {/* Setup Guide Button - Always available when widget is closed */}
+        {setupWidgetState === "closed" && (
           <Button
+            key="setup-guide-button"
             variant="outline"
             size="sm"
-            className={`hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border ${gradientTokens.light} hover:opacity-80`}
+            className={`
+              hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border 
+              ${gradientTokens.light} hover:opacity-80 
+              transition-all duration-300 ease-in-out
+              hover:scale-105 hover:shadow-md
+              animate-in fade-in slide-in-from-right-3 duration-500
+            `}
             onClick={() => {
-              onSetupWidgetStateChange?.("expanded");
+              // First open in collapsed state, then auto-expand after brief delay
+              onSetupWidgetStateChange?.("collapsed");
+              setTimeout(() => {
+                onSetupWidgetStateChange?.("expanded");
+              }, 200); // 200ms delay for smooth animation sequence
             }}
           >
-            <div className="relative w-4 h-4">
-              {/* Background circle */}
-              <div className="w-4 h-4 rounded-full bg-muted border border-border"></div>
-              {/* Progress circle */}
-              <svg className="absolute inset-0 w-4 h-4 -rotate-90" viewBox="0 0 16 16">
-                <circle
-                  cx="8"
-                  cy="8"
-                  r="6"
-                  fill="none"
-                  stroke="#b4a0ff"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 6}`}
-                  strokeDashoffset={`${2 * Math.PI * 6 * (1 - actualSetupPercentage / 100)}`}
-                  style={{ transition: 'stroke-dashoffset 0.3s ease' }}
-                />
-              </svg>
-            </div>
             <span className="font-medium text-foreground">Setup Guide</span>
           </Button>
         )}
+
+
         
         {/* Notification Bell */}
         {/* Removed notification bell - was non-functional */}

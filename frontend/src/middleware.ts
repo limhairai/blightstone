@@ -121,8 +121,8 @@ export async function middleware(request: NextRequest) {
     // Continue without session - will be treated as unauthenticated
   }
 
-  // Define public routes
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email']
+  // Define public routes - include onboarding
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email', '/onboarding']
 
   // If it's a public route, do nothing.
   if (publicRoutes.includes(pathname) || pathname.startsWith('/api/')) {
@@ -195,7 +195,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public (public files)
+     * - public folder
      */
     '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],

@@ -15,16 +15,9 @@ export function AdHubLogo({ className, size = "md" }: AdHubLogoProps) {
 
   return (
     <div className={cn("font-bold", sizeClasses[size], className)}>
-      <span className="text-white">
-        Ad
-        <span
-          className="bg-clip-text text-transparent"
-          style={{
-            backgroundImage: "linear-gradient(90deg, #b4a0ff 0%, #ffb4a0 100%)",
-          }}
-        >
-          Hub
-        </span>
+      <span className="text-white">Ad</span>
+      <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">
+        Hub
       </span>
     </div>
   )

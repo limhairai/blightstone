@@ -254,21 +254,41 @@ export async function PATCH(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get('id');
-    const { name } = await request.json();
+    const updateData = await request.json();
 
-    if (!orgId) {
-      return NextResponse.json({ error: 'Organization ID is required' }, { status: 400 });
-    }
+    // If no orgId provided, update the user's current organization
+    let targetOrgId = orgId;
+    if (!targetOrgId) {
+      // First try to get user's organization via membership
+      const { data: orgMembership, error: membershipError } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
 
-    if (!name) {
-      return NextResponse.json({ error: 'Organization name is required' }, { status: 400 });
+      if (orgMembership) {
+        targetOrgId = orgMembership.organization_id;
+      } else {
+        // Fallback: get organization via profile (for users created by handle_new_user)
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('profile_id', user.id)
+          .single();
+
+        if (profile?.organization_id) {
+          targetOrgId = profile.organization_id;
+        } else {
+          return NextResponse.json({ error: 'User is not associated with any organization.' }, { status: 403 });
+        }
+      }
     }
 
     // Verify user has permission to update this organization
     const { data: membership } = await supabase
       .from('organization_members')
       .select('role')
-      .eq('organization_id', orgId)
+      .eq('organization_id', targetOrgId)
       .eq('user_id', user.id)
       .single();
 
@@ -276,14 +296,32 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
+    // Build update object with only provided fields
+    const updateFields: any = {};
+    if (updateData.name) updateFields.name = updateData.name;
+    if (updateData.ad_spend_monthly) updateFields.ad_spend_monthly = updateData.ad_spend_monthly;
+    if (updateData.industry) updateFields.industry = updateData.industry;
+    if (updateData.timezone) updateFields.timezone = updateData.timezone;
+    if (updateData.how_heard_about_us) updateFields.how_heard_about_us = updateData.how_heard_about_us;
+    if (updateData.additional_info) updateFields.additional_info = updateData.additional_info;
+
+    if (Object.keys(updateFields).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
     const { data: updatedOrg, error } = await supabase
       .from('organizations')
-      .update({ name })
-      .eq('organization_id', orgId)
+      .update(updateFields)
+      .eq('organization_id', targetOrgId)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Clear cache for this organization
+    const cacheKey = `${user.id}-${targetOrgId}`;
+    orgCache.delete(cacheKey);
+    orgCache.delete(`${user.id}-all`);
 
     return NextResponse.json(updatedOrg);
   } catch (error) {

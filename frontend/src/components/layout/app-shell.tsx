@@ -5,6 +5,7 @@ import { useEffect, useCallback, useState, createContext, useContext } from "rea
 import { DashboardSidebar } from "./dashboard-sidebar"
 import { Topbar } from "./topbar"
 import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
+import { WelcomeOverlay } from "../onboarding/welcome-overlay"
 import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
 import { usePathname } from "next/navigation"
 import { usePageTitle } from "../core/simple-providers"
@@ -41,7 +42,8 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
   const { user, session } = useAuth()
-  const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("collapsed")
+  const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("expanded") // Show widget expanded
+  const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false)
   const { setOrganization } = useOrganizationStore()
   
   // Use the new, simplified onboarding hook
@@ -57,17 +59,46 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     if (isLoading) return
     
-    // If setup is complete, always close
-    if (progressData?.completionPercentage === 100) {
-      setSetupWidgetState("closed")
-      return
-    }
+    // Don't auto-reopen if user has closed it
+    // Let the widget manage its own visibility based on actual progress
+  }, [isLoading])
+
+  // Show welcome overlay for new users
+  useEffect(() => {
+    if (!user || isLoading) return
     
-    // If user never dismissed and setup incomplete, show expanded
-    if (shouldShowOnboarding && setupWidgetState === "closed") {
-      setSetupWidgetState("expanded")
+    // Check if user is new (hasn't seen welcome overlay before)
+    const hasSeenWelcome = localStorage.getItem(`adhub_welcome_seen_${user.id}`)
+    
+    // Only show welcome overlay if user hasn't seen it before
+    if (!hasSeenWelcome) {
+      // Show welcome overlay if:
+      // 1. User is coming from onboarding (has URL parameter)
+      // 2. User is new (created recently)
+      const urlParams = new URLSearchParams(window.location.search)
+      const fromOnboarding = urlParams.get('welcome') === 'true'
+      const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Created within last 24 hours
+      
+      if (fromOnboarding || isNewUser) {
+        setShowWelcomeOverlay(true)
+      }
     }
-  }, [shouldShowOnboarding, isLoading, progressData, setupWidgetState])
+  }, [user, isLoading])
+
+  const handleWelcomeOverlayDismiss = () => {
+    if (user) {
+      localStorage.setItem(`adhub_welcome_seen_${user.id}`, 'true')
+    }
+    setShowWelcomeOverlay(false)
+    
+    // Clean up URL parameter if it exists
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('welcome')) {
+      urlParams.delete('welcome')
+      const newUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`
+      window.history.replaceState({}, '', newUrl)
+    }
+  }
 
   useEffect(() => {
     if (session?.user?.app_metadata?.organization_id && session?.user?.app_metadata?.organization_name) {
@@ -122,12 +153,15 @@ export function AppShell({ children }: AppShellProps) {
           <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>{children}</main>
         </div>
 
-        {/* Global Setup Guide Widget - Simple logic: show when incomplete */}
-        {progressData && progressData.completionPercentage < 100 && (
-          <SetupGuideWidget 
-            widgetState={setupWidgetState} 
-            onStateChange={setSetupWidgetState}
-          />
+        {/* Global Setup Guide Widget */}
+        <SetupGuideWidget 
+          widgetState={setupWidgetState} 
+          onStateChange={setSetupWidgetState}
+        />
+
+        {/* Welcome Overlay for New Users */}
+        {showWelcomeOverlay && (
+          <WelcomeOverlay onDismiss={handleWelcomeOverlayDismiss} />
         )}
       </div>
     </SetupWidgetContext.Provider>

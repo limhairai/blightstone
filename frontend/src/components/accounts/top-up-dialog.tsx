@@ -24,6 +24,7 @@ import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
 import { useSWRConfig } from 'swr'
 import { useTopupLimits } from '@/hooks/useTopupLimits'
+import { shouldEnableTopupLimits, shouldEnableAdSpendFees } from '@/lib/config/pricing-config'
 
 
 
@@ -68,7 +69,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   const [feeCalculation, setFeeCalculation] = useState<any>(null)
   const [isCalculatingFee, setIsCalculatingFee] = useState(false)
 
-  // Get top-up limit information
+  // Get top-up limit information (only if feature is enabled)
   const { limitInfo, isLoading: isLoadingLimits } = useTopupLimits(
     currentOrganizationId,
     formData.amount ? parseFloat(formData.amount) : undefined
@@ -85,11 +86,11 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   const isOnFreePlan = subscriptionData?.free || subscriptionData?.subscriptionStatus === 'free'
   const subscriptionMessage = subscriptionData?.message
 
-  // Calculate fee when amount changes
+  // Calculate fee when amount changes (only if feature is enabled)
   useEffect(() => {
     const calculateTopupFee = async () => {
       const amount = parseFloat(formData.amount)
-      if (amount > 0 && currentOrganizationId && !isOnFreePlan) {
+      if (amount > 0 && currentOrganizationId && !isOnFreePlan && shouldEnableAdSpendFees()) {
         setIsCalculatingFee(true)
         try {
           const calculation = await calculateFee(amount)
@@ -137,8 +138,8 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
       return `Total amount including fees (${formatCurrency(totalAmount)}) exceeds your wallet balance of ${formatCurrency(walletBalance)}`;
     }
 
-    // Check top-up limits
-    if (limitInfo && !limitInfo.allowed) {
+    // Check top-up limits (only if feature is enabled)
+    if (shouldEnableTopupLimits() && limitInfo && !limitInfo.allowed) {
       const limitText = limitInfo.limit ? `$${limitInfo.limit.toLocaleString()}` : 'unlimited';
       const usageText = `$${limitInfo.currentUsage.toLocaleString()}`;
       return `Monthly top-up limit exceeded. Your ${limitInfo.planName} plan allows ${limitText} per month, and you've used ${usageText} this month.`;

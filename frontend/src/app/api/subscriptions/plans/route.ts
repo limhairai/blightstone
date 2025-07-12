@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { PRICING_CONFIG } from '@/lib/config/pricing-config'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -7,7 +8,94 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET() {
   try {
-    // Fetch plans from database (exclude free plan for upgrade dialog)
+    // Use new pricing config if enabled
+    if (PRICING_CONFIG.newPricingModel.enabled) {
+      const plans = [
+        {
+          id: 'starter',
+          name: 'Starter',
+          description: 'Perfect for small businesses getting started',
+          monthlyPrice: PRICING_CONFIG.newPricingModel.plans.starter.price,
+          adSpendFee: PRICING_CONFIG.newPricingModel.plans.starter.adSpendFee,
+          maxTeamMembers: -1, // Unlimited
+          maxBusinesses: PRICING_CONFIG.newPricingModel.plans.starter.businessManagers,
+          maxAdAccounts: PRICING_CONFIG.newPricingModel.plans.starter.adAccounts,
+          features: [
+            `${PRICING_CONFIG.newPricingModel.plans.starter.businessManagers} Business Managers`,
+            `${PRICING_CONFIG.newPricingModel.plans.starter.adAccounts} Ad Accounts`,
+            'Unlimited Team Members',
+            'Unlimited Monthly Top-ups',
+            'Unlimited Account Replacements',
+            'No Ad Spend Fees'
+          ],
+          stripe_price_id: 'price_starter_new', // TODO: Update with actual Stripe price ID
+          isCustom: false
+        },
+        {
+          id: 'growth',
+          name: 'Growth',
+          description: 'For growing businesses',
+          monthlyPrice: PRICING_CONFIG.newPricingModel.plans.growth.price,
+          adSpendFee: PRICING_CONFIG.newPricingModel.plans.growth.adSpendFee,
+          maxTeamMembers: -1, // Unlimited
+          maxBusinesses: PRICING_CONFIG.newPricingModel.plans.growth.businessManagers,
+          maxAdAccounts: PRICING_CONFIG.newPricingModel.plans.growth.adAccounts,
+          features: [
+            `${PRICING_CONFIG.newPricingModel.plans.growth.businessManagers} Business Managers`,
+            `${PRICING_CONFIG.newPricingModel.plans.growth.adAccounts} Ad Accounts`,
+            'Unlimited Team Members',
+            'Unlimited Monthly Top-ups',
+            'Unlimited Account Replacements',
+            'No Ad Spend Fees',
+            'Priority Support'
+          ],
+          stripe_price_id: 'price_growth_new', // TODO: Update with actual Stripe price ID
+          isCustom: false
+        },
+        {
+          id: 'scale',
+          name: 'Scale',
+          description: 'For scaling businesses',
+          monthlyPrice: PRICING_CONFIG.newPricingModel.plans.scale.price,
+          adSpendFee: PRICING_CONFIG.newPricingModel.plans.scale.adSpendFee,
+          maxTeamMembers: -1, // Unlimited
+          maxBusinesses: PRICING_CONFIG.newPricingModel.plans.scale.businessManagers,
+          maxAdAccounts: PRICING_CONFIG.newPricingModel.plans.scale.adAccounts,
+          features: [
+            `${PRICING_CONFIG.newPricingModel.plans.scale.businessManagers} Business Managers`,
+            `${PRICING_CONFIG.newPricingModel.plans.scale.adAccounts} Ad Accounts`,
+            'Unlimited Team Members',
+            'Unlimited Monthly Top-ups',
+            'Unlimited Account Replacements',
+            'No Ad Spend Fees',
+            'Dedicated Support',
+            'Custom Integrations'
+          ],
+          stripe_price_id: 'price_scale_new', // TODO: Update with actual Stripe price ID
+          isCustom: false
+        },
+        {
+          id: 'plus',
+          name: 'Plus',
+          description: 'Advanced features for power users',
+          monthlyPrice: 0, // Will show "Coming Soon"
+          adSpendFee: 0,
+          maxTeamMembers: -1,
+          maxBusinesses: -1,
+          maxAdAccounts: -1,
+          features: [
+            'Coming Soon'
+          ],
+          stripe_price_id: null,
+          isCustom: true, // This makes it show "Coming Soon" instead of price
+          isComingSoon: true
+        }
+      ]
+
+      return NextResponse.json({ plans })
+    }
+
+    // Fallback to database plans (legacy pricing)
     const { data: dbPlans, error } = await supabase
       .from('plans')
       .select('*')

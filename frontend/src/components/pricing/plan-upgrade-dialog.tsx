@@ -7,6 +7,7 @@ import { useState, useEffect } from "react"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { toast } from "sonner"
+import { PRICING_CONFIG } from "@/lib/config/pricing-config"
 
 interface PlanUpgradeDialogProps {
   open: boolean
@@ -26,6 +27,7 @@ interface Plan {
   features: string[]
   stripe_price_id?: string | null
   isCustom?: boolean
+  isComingSoon?: boolean
 }
 
 export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps) {
@@ -111,7 +113,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
   const canUpgradeTo = (planId: string) => {
     if (!currentPlan || currentPlan.id === 'free') return true
     
-    const planOrder = ['starter', 'growth', 'scale', 'custom']
+    const planOrder = ['starter', 'growth', 'scale', 'plus']
     const currentIndex = planOrder.indexOf(currentPlan.id)
     const targetIndex = planOrder.indexOf(planId)
     
@@ -119,6 +121,12 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
   }
 
   const formatFeatures = (plan: Plan): string[] => {
+    // If using new pricing model, return features from API directly
+    if (PRICING_CONFIG.newPricingModel.enabled && plan.features) {
+      return plan.features
+    }
+
+    // Legacy feature formatting
     const features = []
     
     if (plan.maxBusinesses === -1) {
@@ -139,28 +147,30 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
       features.push(`${plan.maxTeamMembers} Team Members`)
     }
     
-    // Add monthly topup limit based on plan ID (fallback if API doesn't provide it)
-    const getTopupLimit = (planId: string) => {
-      switch (planId) {
-        case 'starter':
-          return 3000
-        case 'growth':
-          return 6000
-        case 'scale':
-        case 'custom':
-        case 'enterprise':
-          return null // unlimited
-        default:
-          return plan.monthlyTopupLimit
+    // Only add topup limits if feature is enabled
+    if (PRICING_CONFIG.enableTopupLimits) {
+      const getTopupLimit = (planId: string) => {
+        switch (planId) {
+          case 'starter':
+            return 3000
+          case 'growth':
+            return 6000
+          case 'scale':
+          case 'custom':
+          case 'enterprise':
+            return null // unlimited
+          default:
+            return plan.monthlyTopupLimit
+        }
       }
-    }
-    
-    const topupLimit = plan.monthlyTopupLimit !== undefined ? plan.monthlyTopupLimit : getTopupLimit(plan.id)
-    
-    if (topupLimit === null || topupLimit === undefined) {
-      features.push('Unlimited Monthly Top-ups')
-    } else {
-      features.push(`$${topupLimit.toLocaleString()} Monthly Top-up Limit`)
+      
+      const topupLimit = plan.monthlyTopupLimit !== undefined ? plan.monthlyTopupLimit : getTopupLimit(plan.id)
+      
+      if (topupLimit === null || topupLimit === undefined) {
+        features.push('Unlimited Monthly Top-ups')
+      } else {
+        features.push(`$${topupLimit.toLocaleString()} Monthly Top-up Limit`)
+      }
     }
     
     // Add parsed features from database
@@ -176,6 +186,11 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
       return '0'
     }
     return dollars.toString()
+  }
+
+  const shouldShowAdSpendFee = (plan: Plan): boolean => {
+    // Only show ad spend fee if it's enabled and greater than 0
+    return PRICING_CONFIG.enableAdSpendFees && plan.adSpendFee > 0
   }
 
   if (isLoading) {
@@ -209,6 +224,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
             const isCurrent = isCurrentPlan(plan.id)
             const canUpgrade = canUpgradeTo(plan.id)
             const isPopular = plan.id === 'growth' // Mark growth as popular
+            const isComingSoon = plan.isComingSoon || (plan.isCustom && plan.features?.includes('Coming Soon'))
             const features = formatFeatures(plan)
             
             return (
@@ -217,7 +233,9 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                 className={`relative rounded-lg border p-6 ${
                   isCurrent 
                     ? 'border-[#b4a0ff] bg-gradient-to-br from-[#b4a0ff]/5 to-[#ffb4a0]/5' 
-                    : 'border-border hover:border-[#b4a0ff]/50'
+                    : isComingSoon
+                      ? 'border-border/50 bg-muted/20'
+                      : 'border-border hover:border-[#b4a0ff]/50'
                 } ${isPopular ? 'ring-2 ring-[#b4a0ff]' : ''}`}
               >
                 {isPopular && (
@@ -236,10 +254,22 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                   </div>
                 )}
 
+                {isComingSoon && (
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-gradient-to-r from-gray-400 to-gray-500 text-white text-xs px-3 py-1 rounded-full font-medium">
+                      Coming Soon
+                    </span>
+                  </div>
+                )}
+
                 <div className="text-center mb-6">
                   <h3 className="text-xl font-semibold">{plan.name}</h3>
                   <div className="mt-2">
-                    {plan.isCustom ? (
+                    {isComingSoon ? (
+                      <span className="text-2xl font-bold text-muted-foreground">
+                        Coming Soon
+                      </span>
+                    ) : plan.isCustom ? (
                       <span className="text-2xl font-bold text-muted-foreground">
                         Contact Sales
                       </span>
@@ -252,7 +282,7 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                       </>
                     )}
                   </div>
-                  {!plan.isCustom && (
+                  {!plan.isCustom && !isComingSoon && shouldShowAdSpendFee(plan) && (
                     <div className="text-sm text-muted-foreground mt-1">
                       + {plan.adSpendFee}% ad spend fee
                     </div>
@@ -262,8 +292,10 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                 <ul className="space-y-3 mb-6">
                   {features.map((feature, index) => (
                     <li key={index} className="flex items-start gap-2 text-sm">
-                      <Check className="h-4 w-4 text-[#b4a0ff] mt-0.5 flex-shrink-0" />
-                      <span>{feature}</span>
+                      <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
+                        isComingSoon ? 'text-muted-foreground' : 'text-[#b4a0ff]'
+                      }`} />
+                      <span className={isComingSoon ? 'text-muted-foreground' : ''}>{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -272,14 +304,18 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                   className={`w-full ${
                     isCurrent 
                       ? "border-[#b4a0ff] text-[#b4a0ff] hover:bg-[#b4a0ff]/10" 
-                      : "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
+                      : isComingSoon
+                        ? "border-muted-foreground/50 text-muted-foreground cursor-not-allowed"
+                        : "bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
                   }`}
-                  variant={isCurrent ? "outline" : "default"}
-                  disabled={isCurrent || isUpgrading || (!plan.stripe_price_id && !plan.isCustom)}
+                  variant={isCurrent || isComingSoon ? "outline" : "default"}
+                  disabled={isCurrent || isUpgrading || isComingSoon || (!plan.stripe_price_id && !plan.isCustom)}
                   onClick={() => {
-                    if (plan.isCustom) {
-                      // For custom/enterprise plans, open contact form or redirect to contact
-                      window.open('mailto:sales@adhub.com?subject=Enterprise Plan Inquiry', '_blank')
+                    if (isComingSoon) {
+                      return // Do nothing for coming soon plans
+                    } else if (plan.isCustom) {
+                      // For custom plans, open contact form or redirect to contact
+                      window.open('mailto:sales@adhub.com?subject=Custom Plan Inquiry', '_blank')
                     } else {
                       handleSelectPlan(plan.id)
                     }
@@ -289,13 +325,15 @@ export function PlanUpgradeDialog({ open, onOpenChange }: PlanUpgradeDialogProps
                     ? "Current Plan" 
                     : isUpgrading 
                       ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-                      : plan.isCustom
-                        ? "Contact Sales"
-                        : !plan.stripe_price_id
-                          ? "Not Available"
-                          : !canUpgrade && !plan.isCustom
-                            ? "Downgrade"
-                            : "Select Plan"
+                      : isComingSoon
+                        ? "Coming Soon"
+                        : plan.isCustom
+                          ? "Contact Sales"
+                          : !plan.stripe_price_id
+                            ? "Not Available"
+                            : !canUpgrade && !plan.isCustom
+                              ? "Downgrade"
+                              : "Select Plan"
                   }
                 </Button>
               </div>

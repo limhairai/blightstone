@@ -106,8 +106,8 @@ export function LoginView() {
             <h1 className="text-4xl font-bold tracking-tight text-foreground">
               Welcome to{" "}
               <span>
-                <span className="text-foreground">Ad</span>
-                <span className="fey-gradient text-gradient">Hub</span>
+                <span className="text-white">Ad</span>
+                <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Hub</span>
               </span>
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">Sign in to your account to access your dashboard</p>
@@ -155,7 +155,7 @@ export function LoginView() {
               </div>
 
               <div className="text-sm">
-                <Link href="/forgot-password" className="fey-gradient">
+                <Link href="/forgot-password" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
                   Forgot your password?
                 </Link>
               </div>
@@ -217,7 +217,7 @@ export function LoginView() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="fey-gradient">
+              <Link href="/register" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
                 Sign up
               </Link>
             </p>
