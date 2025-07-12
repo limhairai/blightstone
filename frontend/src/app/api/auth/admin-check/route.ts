@@ -3,6 +3,9 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // TEMPORARY: Use service role as fallback until is_admin function is available
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,

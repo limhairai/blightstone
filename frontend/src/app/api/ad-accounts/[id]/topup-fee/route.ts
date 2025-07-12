@@ -3,6 +3,9 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { buildApiUrl, createAuthHeaders } from '../../../../../lib/api-utils'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 async function getAuth(request: NextRequest) {
     const cookieStore = cookies()
     const supabase = createServerClient(

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidateTag } from 'next/cache'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 /**
  * Cache invalidation endpoint
  * This endpoint can be called to immediately invalidate specific cache entries

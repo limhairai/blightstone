@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // Airwallex API configuration
 const AIRWALLEX_API_URL = process.env.AIRWALLEX_API_URL || 'https://api.airwallex.com'
 const AIRWALLEX_CLIENT_ID = process.env.AIRWALLEX_CLIENT_ID!

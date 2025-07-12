@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildApiUrl } from '@/lib/config/api';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // Using centralized API config
 
 export async function GET(request: NextRequest) {

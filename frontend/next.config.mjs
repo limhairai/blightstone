@@ -76,6 +76,8 @@ const sentryConfig = process.env.NODE_ENV === 'production' ? {
   tunnelRoute: "/monitoring",
   disableLogger: true,
   automaticVercelMonitors: true,
+  // Disable source map upload if no auth token is provided
+  dryRun: !process.env.SENTRY_AUTH_TOKEN,
 } : {};
 
 export default process.env.NODE_ENV === 'production' 

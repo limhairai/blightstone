@@ -14,6 +14,9 @@ const customJestConfig = {
     '<rootDir>/node_modules/',
     '<rootDir>/e2e/',
   ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(isows|@supabase|@babel|@jest)/)',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

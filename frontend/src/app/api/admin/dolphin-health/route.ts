@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildApiUrl } from '../../../../lib/api-utils';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 async function getAuthToken(request: NextRequest): Promise<string | null> {
   // Get token from Authorization header
   const authHeader = request.headers.get('authorization');

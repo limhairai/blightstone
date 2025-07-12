@@ -3,6 +3,9 @@ import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // GET /api/promotion-urls
 // Get all promotion URLs for the user's organization
 export async function GET(request: NextRequest) {
