@@ -6,35 +6,52 @@ AdHub uses a feature flag-based pricing system that allows you to easily toggle 
 
 ## Current Pricing Models
 
-### New Pricing Model (Recommended)
+### Active Pricing Model ✅
+**Status**: Currently enabled and active
+
 ```
-Starter: $79/month
+Starter: $79/month + 1% ad spend fee
 - 3 Business Managers
 - 15 Ad Accounts
 - Unlimited Replacements
-- No usage fees
+- No Spend Limits
 
-Growth: $299/month
+Growth: $299/month + 1% ad spend fee
 - 5 Business Managers
 - 25 Ad Accounts
 - Unlimited Replacements
-- No usage fees
+- No Spend Limits
 
-Scale: $699/month
+Scale: $699/month + 1% ad spend fee
 - 15 Business Managers
 - 75 Ad Accounts
 - Unlimited Replacements
-- No usage fees
-
-Plus: Coming Soon
-- Advanced features for power users
+- No Spend Limits
 ```
 
-### Legacy Pricing Model
+**Feature Flag Status:**
+- ✅ New pricing model: **ENABLED**
+- ❌ Monthly topup limits: **DISABLED** (feature flag off)
+- ✅ Ad spend fees: **ENABLED** (1% across all plans)
+- ❌ Domain limits: **DISABLED**
+- ❌ Team limits: **DISABLED**
+
+### Legacy Pricing Model (Disabled)
+**Status**: Available but disabled via feature flags
+
 - Complex tiered ad spend fees (3-6%)
-- Monthly topup limits
+- Monthly topup limits (Starter: $3K/month, Growth: $6K/month)
 - Domain limits
 - Team member limits
+
+**Monthly Topup Limits Ready**: The system has complete topup limit functionality implemented:
+- ✅ Database functions (`get_monthly_topup_usage`, `can_make_topup_request`)
+- ✅ API endpoints (`/api/topup-limits`)
+- ✅ Frontend components with limit checking
+- ✅ Migration files with proper limits set
+- ❌ **Currently disabled** via `enableTopupLimits: false`
+
+*Ready to enable instantly if needed for specific plans or regulatory requirements.*
 
 ## Feature Flags
 

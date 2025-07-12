@@ -26,7 +26,7 @@ export async function GET() {
             'Unlimited Team Members',
             'Unlimited Monthly Top-ups',
             'Unlimited Account Replacements',
-            'No Ad Spend Fees'
+            '1% Ad Spend Fee'
           ],
           stripe_price_id: 'price_starter_new', // TODO: Update with actual Stripe price ID
           isCustom: false
@@ -46,7 +46,7 @@ export async function GET() {
             'Unlimited Team Members',
             'Unlimited Monthly Top-ups',
             'Unlimited Account Replacements',
-            'No Ad Spend Fees',
+            '1% Ad Spend Fee',
             'Priority Support'
           ],
           stripe_price_id: 'price_growth_new', // TODO: Update with actual Stripe price ID
@@ -67,7 +67,7 @@ export async function GET() {
             'Unlimited Team Members',
             'Unlimited Monthly Top-ups',
             'Unlimited Account Replacements',
-            'No Ad Spend Fees',
+            '1% Ad Spend Fee',
             'Dedicated Support',
             'Custom Integrations'
           ],

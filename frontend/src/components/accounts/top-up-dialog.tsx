@@ -28,7 +28,7 @@ import { shouldEnableTopupLimits, shouldEnableAdSpendFees } from '@/lib/config/p
 
 
 
-const MINIMUM_TOP_UP_AMOUNT = 500;
+const MINIMUM_TOP_UP_AMOUNT = 100;
 
 interface TopUpDialogProps {
   trigger: React.ReactNode
@@ -132,8 +132,10 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
       return `Minimum top up amount is ${MINIMUM_TOP_UP_AMOUNT}.`;
     }
 
-    // Check if total amount (including fee) exceeds wallet balance
-    const totalAmount = feeCalculation?.total_amount || numAmount
+    // Calculate total amount with 1% fee
+    const feeAmount = shouldEnableAdSpendFees() ? numAmount * 0.01 : 0;
+    const totalAmount = numAmount + feeAmount;
+    
     if (totalAmount > walletBalance) {
       return `Total amount including fees (${formatCurrency(totalAmount)}) exceeds your wallet balance of ${formatCurrency(walletBalance)}`;
     }
@@ -367,7 +369,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
               </div>
 
               {/* Monthly Limits */}
-              {limitInfo && (
+              {shouldEnableTopupLimits() && limitInfo && (
                 <div className="bg-muted/20 p-4 rounded-lg border border-muted/40">
                   <h3 className="text-sm font-medium text-foreground mb-3">Monthly Limits</h3>
                   {limitInfo.hasLimit ? (
@@ -427,7 +429,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                     <p className="text-xs text-red-400 mt-2">{amountError}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
-                    Minimum: ${MINIMUM_TOP_UP_AMOUNT}. {isMultipleAccounts 
+                    Minimum: $100. {isMultipleAccounts 
                       ? "Amount added to each selected account."
                       : "Amount added to account balance."
                     }
@@ -453,22 +455,35 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Top-up amount:</span>
-                        <span className="text-sm font-medium text-foreground">${formatCurrency(feeCalculation.base_amount)}</span>
+                        <span className="text-sm font-medium text-foreground">${formatCurrency(parseFloat(formData.amount))}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Platform fee ({feeCalculation.fee_percentage}%):</span>
-                        <span className="text-sm font-medium text-orange-400">+${formatCurrency(feeCalculation.fee_amount)}</span>
+                        <span className="text-sm text-muted-foreground">Platform fee (1%):</span>
+                        <span className="text-sm font-medium text-orange-400">+${formatCurrency(parseFloat(formData.amount) * 0.01)}</span>
                       </div>
                       <div className="border-t border-muted/40 pt-2 mt-2">
                         <div className="flex justify-between">
                           <span className="text-sm font-medium text-foreground">Total deducted:</span>
-                          <span className="text-sm font-bold text-foreground">${formatCurrency(feeCalculation.total_amount)}</span>
+                          <span className="text-sm font-bold text-foreground">${formatCurrency(parseFloat(formData.amount) * 1.01)}</span>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground">
-                      Unable to calculate fees
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Top-up amount:</span>
+                        <span className="text-sm font-medium text-foreground">${formatCurrency(parseFloat(formData.amount))}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Platform fee (1%):</span>
+                        <span className="text-sm font-medium text-orange-400">+${formatCurrency(parseFloat(formData.amount) * 0.01)}</span>
+                      </div>
+                      <div className="border-t border-muted/40 pt-2 mt-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-foreground">Total deducted:</span>
+                          <span className="text-sm font-bold text-foreground">${formatCurrency(parseFloat(formData.amount) * 1.01)}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -488,10 +503,8 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                     isLoading || 
                     !!amountError || 
                     !formData.amount || 
-                    isCalculatingFee ||
                     isOnFreePlan ||
-                    (feeCalculation && feeCalculation.total_amount > walletBalance) ||
-                    (limitInfo && !limitInfo.allowed)
+                    (shouldEnableTopupLimits() && limitInfo && !limitInfo.allowed)
                   }
                   className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0 h-12 text-base font-medium"
                 >
