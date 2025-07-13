@@ -48,11 +48,17 @@ export function PricingTrigger({
 
 // Helper component for common button usage
 export function PricingButton({ 
-  mode = 'dialog', 
+  mode = 'dialog' as const, 
   currentPlan,
   className = "w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0",
   size = "default" as any,
   ...props 
+}: {
+  mode?: 'dialog' | 'page'
+  currentPlan?: { id: string }
+  className?: string
+  size?: any
+  [key: string]: any
 }) {
   return (
     <PricingTrigger mode={mode} currentPlan={currentPlan}>

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get current subscription from Stripe
-    const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId) as any;
     
     if (!subscription) {
       return NextResponse.json(
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // For downgrades, schedule the change at the end of the billing cycle
-    const updatedSubscription = await stripe.subscriptions.modify(stripeSubscriptionId, {
+    const updatedSubscription = await stripe.subscriptions.update(stripeSubscriptionId, {
       items: [{
         id: subscription.items.data[0].id,
         price: newPlan.stripe_price_id,

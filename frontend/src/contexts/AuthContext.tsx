@@ -676,6 +676,7 @@ export function useAuth(): AuthContextType {
       signOut: async () => ({ error: null }),
       resetPassword: async () => ({ data: null, error: null }),
       signInWithGoogle: async () => ({ data: null, error: null }),
+      signInWithMagicLink: async () => ({ data: null, error: null }),
       resendVerification: async () => ({ error: null }),
     };
   }

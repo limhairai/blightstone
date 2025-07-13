@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
         // Create wallet map
         const walletMap = new Map();
-        wallets?.forEach(wallet => {
+        wallets?.forEach((wallet: any) => {
             walletMap.set(wallet.organization_id, wallet);
         });
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
         const adAccountCountMap = new Map<string, number>();
         const pixelCountMap = new Map<string, Set<string>>(); // Use Set to avoid duplicate pixels
 
-        assetCounts?.forEach(binding => {
+        assetCounts?.forEach((binding: any) => {
             const orgId = binding.organization_id;
             const assetType = binding.asset.type;
             
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Transform organizations with additional data
-        const transformedOrganizations = organizations?.map(org => {
+        const transformedOrganizations = organizations?.map((org: any) => {
             const wallet = walletMap.get(org.organization_id);
             const totalBalance = wallet?.balance_cents || 0;
             const reservedBalance = wallet?.reserved_balance_cents || 0;
