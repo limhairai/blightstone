@@ -36,25 +36,33 @@ export async function POST(request: NextRequest) {
 
     const { 
       amount, 
-      wallet_credit, 
-      success_url, 
-      cancel_url 
+      organizationId,
+      returnUrl 
     } = await request.json()
+    
+    // Set wallet credit to the same as amount for wallet funding
+    const wallet_credit = amount
+    const success_url = returnUrl || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/wallet?success=true`
+    const cancel_url = returnUrl || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/wallet?canceled=true`
 
 
 
-    // Fetch the user's current organization
-    const { data: org, error: orgError } = await supabase
-      .from('organization_members')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single()
+    // Use the provided organizationId or fetch from user's profile
+    let organization_id = organizationId
+    
+    if (!organization_id) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('profile_id', user.id)
+        .single()
 
-
-
-    if (orgError || !org) {
-      console.error('Error fetching organization for user:', user.id, orgError)
-      return NextResponse.json({ error: 'Could not determine organization' }, { status: 500 })
+      if (profileError || !profile) {
+        console.error('Error fetching organization for user:', user.id, profileError)
+        return NextResponse.json({ error: 'Could not determine organization' }, { status: 500 })
+      }
+      
+      organization_id = profile.organization_id
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -77,7 +85,7 @@ export async function POST(request: NextRequest) {
       cancel_url,
       customer_email: user.email,
       metadata: {
-        organization_id: org.organization_id,
+        organization_id: organization_id,
         user_id: user.id,
         wallet_credit: wallet_credit.toString(),
       },
@@ -85,7 +93,7 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ 
-      checkout_url: session.url
+      url: session.url
     })
 
   } catch (error) {

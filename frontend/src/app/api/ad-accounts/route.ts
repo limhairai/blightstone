@@ -122,7 +122,8 @@ export async function GET(request: NextRequest) {
         // Additional useful metrics
         timezone: metadata.timezone_id || 'UTC',
         bound_at: asset.bound_at,
-        binding_id: asset.binding_id
+        binding_id: asset.binding_id,
+        metadata: metadata // Include full metadata for pixel_id and other data
       };
     });
 

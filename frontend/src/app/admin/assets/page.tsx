@@ -30,6 +30,7 @@ interface AssetStats {
   profiles: number
   business_managers: number
   ad_accounts: number
+  pixels: number
 }
 
 
@@ -37,6 +38,7 @@ interface AssetStats {
 export default function AssetsPage() {
   const { session } = useAuth()
   const [assets, setAssets] = useState<DolphinAsset[]>([])
+  const [pixels, setPixels] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -69,6 +71,25 @@ export default function AssetsPage() {
     }
   }, [])
 
+  const loadPixels = useCallback(async () => {
+    if (!session?.access_token) return
+    
+    try {
+      const response = await fetch('/api/admin/pixels', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+      
+      if (!response.ok) throw new Error('Failed to load pixels')
+      const data = await response.json()
+      setPixels(data.pixels || [])
+    } catch (err) {
+      console.error('Error loading pixels:', err)
+      // Don't show error toast for pixels since it's a secondary feature
+    }
+  }, [session?.access_token])
+
   const syncAssets = useCallback(async (forceRefresh = false) => {
     setSyncing(true)
     setError(null)
@@ -83,11 +104,12 @@ export default function AssetsPage() {
       const result = await response.json();
 
       const message = forceRefresh 
-        ? `Force Sync Complete: Found ${result.profiles_found} profiles, ${result.business_managers_found} BMs, ${result.ad_accounts_found} ad accounts. Updated ${result.assets_updated} assets.`
-        : `Sync Complete: Found ${result.profiles_found} profiles, ${result.business_managers_found} BMs, ${result.ad_accounts_found} ad accounts`;
+        ? `Force Sync Complete: Found ${result.profiles_found} profiles, ${result.business_managers_found} BMs, ${result.ad_accounts_found} ad accounts. Updated ${result.assets_updated} assets. Pixels refreshed.`
+        : `Sync Complete: Found ${result.profiles_found} profiles, ${result.business_managers_found} BMs, ${result.ad_accounts_found} ad accounts. Pixels refreshed.`;
         
       toast.success(message);
       await loadAssets()
+      await loadPixels()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sync assets')
       toast.error("Failed to sync assets from Dolphin API.")
@@ -160,14 +182,16 @@ export default function AssetsPage() {
 
   useEffect(() => {
     loadAssets()
+    loadPixels()
     // Removed loadSyncStatus() - no need for constant polling
-  }, [loadAssets])
+  }, [loadAssets, loadPixels])
 
   const stats = useMemo<AssetStats>(() => ({
     profiles: assets.filter(a => a.type === 'profile').length,
     business_managers: assets.filter(a => a.type === 'business_manager').length,
-    ad_accounts: assets.filter(a => a.type === 'ad_account').length
-  }), [assets])
+    ad_accounts: assets.filter(a => a.type === 'ad_account').length,
+    pixels: pixels.length
+  }), [assets, pixels])
 
   const getStatusBadge = useCallback((status: string) => {
     const statusMap: { [key: string]: { className: string; label: string } } = {
@@ -292,6 +316,95 @@ export default function AssetsPage() {
       return matchesSearch && matchesStatus && matchesTeam;
     });
 
+  const renderPixelsTable = () => {
+    const filteredPixels = pixels.filter(pixel => {
+      const matchesSearch = searchTerm === '' || 
+        pixel.pixelId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pixel.pixelName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pixel.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pixel.businessManagerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pixel.adAccounts.some((account: any) => 
+          account.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      
+      const matchesStatus = statusFilter === 'all' || pixel.status === statusFilter
+      
+      return matchesSearch && matchesStatus
+    })
+
+    if (filteredPixels.length === 0) {
+      return (
+        <div className="text-center py-8 text-muted-foreground">
+          {pixels.length === 0 ? 'No pixels found' : 'No pixels match your filters'}
+        </div>
+      )
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left p-3 font-medium text-foreground">Name</th>
+              <th className="text-left p-3 font-medium text-foreground">Pixel ID</th>
+              <th className="text-left p-3 font-medium text-foreground">Business Manager</th>
+              <th className="text-left p-3 font-medium text-foreground">Status</th>
+              <th className="text-left p-3 font-medium text-foreground">Ad Accounts</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredPixels.map((pixel) => (
+              <tr key={pixel.pixelId} className="border-b border-border/50 hover:bg-muted/30">
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium text-foreground">
+                        {pixel.pixelName?.charAt(0).toUpperCase() || 'P'}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-foreground">{pixel.pixelName || `Pixel ${pixel.pixelId}`}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {pixel.organizationName}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="p-3">
+                  <div className="font-mono text-sm">{pixel.pixelId}</div>
+                </td>
+                <td className="p-3">
+                  <div>
+                    <div className="font-medium text-foreground">{pixel.businessManagerName || 'Unknown BM'}</div>
+                    {pixel.businessManagerId && (
+                      <div className="text-xs text-muted-foreground font-mono">
+                        {pixel.businessManagerId.substring(0, 12)}...
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="p-3">
+                  {getStatusBadge(pixel.status)}
+                </td>
+                <td className="p-3">
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-foreground">
+                      {pixel.adAccounts.length} account{pixel.adAccounts.length !== 1 ? 's' : ''}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {pixel.adAccounts.slice(0, 2).map((account: any) => account.name).join(', ')}
+                      {pixel.adAccounts.length > 2 && ` +${pixel.adAccounts.length - 2} more`}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
   const renderAssetsTable = (assetList: DolphinAsset[], type: string) => {
     const typeHeaders: { [key: string]: string[] } = {
       profile: ['Team Profile', 'Status', 'Team & Role', 'Last Sync'],
@@ -352,6 +465,7 @@ export default function AssetsPage() {
             <TabsTrigger value="business_manager">Business Managers</TabsTrigger>
             <TabsTrigger value="ad_account">Ad Accounts</TabsTrigger>
             <TabsTrigger value="profile">Teams</TabsTrigger>
+            <TabsTrigger value="pixels">Pixels</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-4">
             <Select value={syncType} onValueChange={setSyncType}>
@@ -427,6 +541,7 @@ export default function AssetsPage() {
             <TabsContent value="business_manager">{renderAssetsTable(filteredAssets('business_manager'), 'business_manager')}</TabsContent>
             <TabsContent value="ad_account">{renderAssetsTable(filteredAssets('ad_account'), 'ad_account')}</TabsContent>
             <TabsContent value="profile">{renderAssetsTable(filteredAssets('profile'), 'profile')}</TabsContent>
+            <TabsContent value="pixels">{renderPixelsTable()}</TabsContent>
           </CardContent>
         </Card>
       </Tabs>

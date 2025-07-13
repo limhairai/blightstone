@@ -1367,3 +1367,78 @@ async def debug_raw_account_data(
     except Exception as e:
         logger.error(f"Error in raw account data debug: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Debug failed: {str(e)}") 
+
+@router.get("/debug/pixel-data")
+async def debug_pixel_data(
+    current_user: User = Depends(require_superuser)
+):
+    """Debug endpoint to check what pixel data we have in existing ad accounts"""
+    try:
+        supabase = get_supabase_client()
+        
+        # Get all ad account assets
+        response = supabase.table("asset").select("*").eq("type", "ad_account").execute()
+        
+        if not response.data:
+            return {"message": "No ad accounts found"}
+        
+        pixel_data = []
+        for asset in response.data:
+            metadata = asset.get("metadata", {})
+            pixel_id = metadata.get("pixel_id")
+            
+            if pixel_id:
+                pixel_data.append({
+                    "account_name": asset.get("name"),
+                    "account_id": asset.get("asset_id"),
+                    "dolphin_id": asset.get("dolphin_id"),
+                    "pixel_id": pixel_id,
+                    "metadata": metadata
+                })
+        
+        return {
+            "total_ad_accounts": len(response.data),
+            "accounts_with_pixels": len(pixel_data),
+            "pixel_data": pixel_data
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking pixel data: {e}")
+        return {"error": str(e)} 
+
+@router.get("/debug/dolphin-pixel-data")
+async def debug_dolphin_pixel_data(
+    current_user: User = Depends(require_superuser)
+):
+    """Debug endpoint to check raw pixel data from Dolphin API"""
+    try:
+        dolphin_api = DolphinCloudAPI()
+        
+        # Get raw CAB data
+        cabs_data = await dolphin_api.get_fb_cabs(per_page=10)
+        
+        pixel_info = []
+        for cab in cabs_data:
+            pixel_data = {
+                "account_name": cab.get("name"),
+                "account_id": cab.get("id"),
+                "ad_account_id": cab.get("ad_account_id"),
+                "pixel_id": cab.get("pixel_id"),
+                "has_pixel": cab.get("pixel_id") is not None,
+                "all_fields": list(cab.keys())
+            }
+            
+            # Only include accounts that have pixel data or show first few for structure
+            if cab.get("pixel_id") or len(pixel_info) < 3:
+                pixel_info.append(pixel_data)
+        
+        return {
+            "total_cabs_checked": len(cabs_data),
+            "cabs_with_pixels": len([cab for cab in cabs_data if cab.get("pixel_id")]),
+            "sample_pixel_data": pixel_info,
+            "all_available_fields": list(set().union(*(cab.keys() for cab in cabs_data[:3]))) if cabs_data else []
+        }
+        
+    except Exception as e:
+        logger.error(f"Error checking Dolphin pixel data: {e}")
+        return {"error": str(e)} 

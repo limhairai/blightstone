@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useBusinessManagers } from '@/lib/swr-config'
 import { useMemo, useCallback, useState } from 'react'
+import { mutate as globalMutate } from 'swr'
 
 export default function BusinessManagersPage() {
   const { session } = useAuth()
@@ -44,6 +45,10 @@ export default function BusinessManagersPage() {
   // Simple success callback
   const handleApplicationSuccess = useCallback(async () => {
     await mutate()
+    
+    // Also refresh the setup widget's onboarding progress
+    // This will trigger a refresh of the setup widget to show BM application completion
+    globalMutate('/api/onboarding-progress')
   }, [mutate])
 
   const activeManagers = businessManagers.filter((bm) => bm.status === "active").length

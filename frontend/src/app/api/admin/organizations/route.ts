@@ -41,25 +41,43 @@ export async function GET(request: NextRequest) {
             walletMap.set(wallet.organization_id, wallet);
         });
 
-        // Get business manager counts for all organizations
-        const { data: bmCounts, error: bmError } = await supabase
+        // Get asset counts for all organizations (BMs, ad accounts, and pixels)
+        const { data: assetCounts, error: assetError } = await supabase
             .from('asset_binding')
             .select(`
                 organization_id,
-                asset!inner(type)
+                asset!inner(type, metadata)
             `)
-            .eq('asset.type', 'business_manager')
             .eq('status', 'active');
 
-        if (bmError) {
-            console.error('Error fetching business manager counts:', bmError);
+        if (assetError) {
+            console.error('Error fetching asset counts:', assetError);
         }
 
-        // Create a map of organization_id to business manager count
+        // Create maps for different asset counts
         const bmCountMap = new Map<string, number>();
-        bmCounts?.forEach(binding => {
+        const adAccountCountMap = new Map<string, number>();
+        const pixelCountMap = new Map<string, Set<string>>(); // Use Set to avoid duplicate pixels
+
+        assetCounts?.forEach(binding => {
             const orgId = binding.organization_id;
-            bmCountMap.set(orgId, (bmCountMap.get(orgId) || 0) + 1);
+            const assetType = binding.asset.type;
+            
+            if (assetType === 'business_manager') {
+                bmCountMap.set(orgId, (bmCountMap.get(orgId) || 0) + 1);
+            } else if (assetType === 'ad_account') {
+                adAccountCountMap.set(orgId, (adAccountCountMap.get(orgId) || 0) + 1);
+                
+                // Check if this ad account has pixel data
+                const metadata = binding.asset.metadata || {};
+                const pixelId = metadata.pixel_id;
+                if (pixelId) {
+                    if (!pixelCountMap.has(orgId)) {
+                        pixelCountMap.set(orgId, new Set());
+                    }
+                    pixelCountMap.get(orgId)!.add(pixelId);
+                }
+            }
         });
 
         // Transform organizations with additional data
@@ -80,7 +98,9 @@ export async function GET(request: NextRequest) {
                 balance_cents: totalBalance, // Fixed: Use total balance, not available balance
                 available_balance_cents: availableBalance,
                 reserved_balance_cents: reservedBalance,
-                business_managers_count: bmCountMap.get(org.organization_id) || 0
+                business_managers_count: bmCountMap.get(org.organization_id) || 0,
+                ad_accounts_count: adAccountCountMap.get(org.organization_id) || 0,
+                pixels_count: pixelCountMap.get(org.organization_id)?.size || 0
             };
         }) || [];
 

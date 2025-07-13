@@ -400,6 +400,7 @@ export function SettingsView() {
       <PlanUpgradeDialog
         open={upgradeDialogOpen}
         onOpenChange={setUpgradeDialogOpen}
+        redirectToPage={false}
       />
     </div>
   )

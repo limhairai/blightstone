@@ -48,6 +48,7 @@ interface AuthContextType {
   signOut: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string, options?: { redirectTo?: string }) => Promise<{ data: {} | null; error: AuthError | null }>;
   signInWithGoogle: (options?: { redirectTo?: string }) => Promise<{ data: { provider?: string; url?: string; } | null; error: AuthError | null }>;
+  signInWithMagicLink: (email: string, options?: { redirectTo?: string }) => Promise<{ data: {} | null; error: AuthError | null }>;
   resendVerification: (email: string) => Promise<{ error: AuthError | null }>;
 }
 
@@ -320,6 +321,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { data: null, error };
     }
 
+    return { data, error: null }; 
+  };
+
+  const signInWithMagicLink = async (email: string, options?: { redirectTo?: string }) => {
+    setLoading(true);
+    const defaultRedirectTo = typeof window !== 'undefined' 
+      ? `${window.location.origin}/dashboard`
+      : 'https://adhub.tech/dashboard'; 
+
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: options?.redirectTo || defaultRedirectTo,
+      },
+    });
+
+    if (error) {
+      console.error("Error sending magic link:", error);
+      toast.error(`Magic link error: ${error.message}`);
+      setLoading(false);
+      return { data: null, error };
+    }
+
+    toast.success("Magic link sent! Check your email for the login link.");
+    setLoading(false);
     return { data, error: null }; 
   };
 
@@ -604,6 +630,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     resetPassword,
     signInWithGoogle,
+    signInWithMagicLink,
     resendVerification,
   };
   

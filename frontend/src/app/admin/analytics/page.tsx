@@ -118,9 +118,9 @@ export default function BusinessAnalyticsPage() {
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     
     const planPricing: Record<string, number> = {
-      'starter': 29,
-      'growth': 149,
-      'scale': 499,
+      'starter': 79,
+      'growth': 299,
+      'scale': 699,
       'enterprise': 1499
     };
 

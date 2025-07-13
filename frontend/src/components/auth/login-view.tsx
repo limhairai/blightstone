@@ -15,7 +15,7 @@ export function LoginView() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { signIn, signInWithGoogle, user, session, loading: authIsLoading } = useAuth();
+  const { signIn, signInWithGoogle, signInWithMagicLink, user, session, loading: authIsLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -93,106 +93,58 @@ export function LoginView() {
     }
   };
 
+  const handleMagicLinkSignIn = async () => {
+    if (!email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    
+    setError("");
+    
+    try {
+      const result = await signInWithMagicLink(email);
+      if (result.error) {
+        const errorMessage = result.error.message || "Failed to send magic link. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+      
+      // Success message is handled by the auth context
+    } catch (err: any) {
+      const errorMessage = err?.message || "An unexpected error occurred while sending magic link.";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <div className="px-6 py-4 md:px-8">
-        <Link href={user ? "/dashboard" : "/"}>
+    <div className="min-h-screen flex bg-background">
+      {/* Logo positioned at top left */}
+      <div className="absolute top-6 left-6 z-10">
+        <Link href="/">
           <AdHubLogo size="lg" />
         </Link>
       </div>
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">
-              Welcome to{" "}
-              <span>
-                <span className="text-white">Ad</span>
-                <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Hub</span>
-              </span>
-            </h1>
-            <p className="mt-3 text-sm text-muted-foreground">Sign in to your account to access your dashboard</p>
-          </div>
-
-          <form className="mt-10 space-y-6" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Email address"
-                  className="h-12 rounded-md px-5 text-sm"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  disabled={authIsLoading}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  className="h-12 rounded-md px-5 text-sm"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  disabled={authIsLoading}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input id="remember-me" name="remember-me" type="checkbox" className="checkbox" disabled={authIsLoading} />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground">
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <Link href="/forgot-password" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-                  Forgot your password?
-                </Link>
-              </div>
-            </div>
-
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
-            <div>
-              <Button
-                className="w-full h-12 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
-                type="submit"
-                disabled={authIsLoading}
-              >
-                {authIsLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </div>
-          </form>
-
-          <div className="relative flex items-center justify-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-muted-foreground/20" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-background px-4 text-muted-foreground">Or continue with</span>
-            </div>
-          </div>
-
+      
+      {/* Left side - Login Form */}
+      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-muted/30">
+        <div className="mx-auto w-full max-w-sm lg:w-96">
+          
           <div>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Welcome back</h2>
+            <p className="text-muted-foreground mb-8">Sign in to your account</p>
+          </div>
+
+          {/* GitHub-style button (placeholder for now) */}
+          <div className="mb-6">
             <Button
-              className="w-full h-12 rounded-md border border-border bg-background hover:bg-muted text-foreground"
+              className="w-full h-12 rounded-md border border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-3"
               type="button"
               onClick={handleGoogleSignIn}
               disabled={authIsLoading}
             >
-              <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -214,13 +166,122 @@ export function LoginView() {
             </Button>
           </div>
 
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-                Sign up
-              </Link>
-            </p>
+          {/* Magic Link Button */}
+          <div className="mb-6">
+            <Button
+              className="w-full h-12 rounded-md border border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-3"
+              type="button"
+              onClick={handleMagicLinkSignIn}
+              disabled={authIsLoading}
+            >
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+              </svg>
+              Continue with Magic Link
+            </Button>
+          </div>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-muted-foreground/20" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-background px-4 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="limhairai@gmail.com"
+                className="h-12 rounded-md px-4 text-sm bg-background border-border"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                disabled={authIsLoading}
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                  Password
+                </label>
+                <Link href="/forgot-password" className="text-sm bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
+                  Forgot Password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                className="h-12 rounded-md px-4 text-sm bg-background border-border"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                disabled={authIsLoading}
+              />
+            </div>
+
+            {error && (
+              <div className="text-red-500 text-sm">{error}</div>
+            )}
+
+            <div>
+              <Button
+                className="w-full h-12 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black font-medium"
+                type="submit"
+                disabled={authIsLoading}
+              >
+                {authIsLoading ? "Signing in..." : "Sign In"}
+              </Button>
+            </div>
+          </form>
+
+                      <div className="mt-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Don&apos;t have an account?{" "}
+                <Link href="/register" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity font-medium underline">
+                  Sign Up Now
+                </Link>
+              </p>
+            </div>
+
+          <div className="mt-8 text-xs text-muted-foreground text-center">
+            By continuing, you agree to AdHub&apos;s{" "}
+            <Link href="/terms" className="underline hover:text-foreground">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline hover:text-foreground">
+              Privacy Policy
+            </Link>
+            , and to receive periodic emails with updates.
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Testimonial/Quote */}
+      <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-20 xl:px-24 bg-background">
+        <div className="mx-auto max-w-xl">
+          <blockquote className="text-xl font-medium text-foreground leading-relaxed mb-8">
+            "Using AdHub I&apos;m really pleased on the power of Facebook advertising (and social media in general). Despite being a bit dubious about the whole backend as a service thing I have to say I really don&apos;t miss anything. The whole experience feels very robust and secure."
+          </blockquote>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] flex items-center justify-center">
+              <span className="text-white font-semibold text-lg">PR</span>
+            </div>
+            <div>
+              <div className="font-medium text-foreground">@PaoloRicciuti</div>
+            </div>
           </div>
         </div>
       </div>

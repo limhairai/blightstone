@@ -26,6 +26,7 @@ interface AdAccount {
   metadata?: any
   spend_cap_cents?: number
   spend_cents?: number
+  pixel_id?: string
 }
 
 interface BusinessManager {
@@ -105,7 +106,8 @@ export default function BusinessManagerDetailPage() {
       const statusFilter = selectedStatus === "all" || account.status === selectedStatus
       const searchFilter = searchTerm === "" || 
         account.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        account.ad_account_id.toLowerCase().includes(searchTerm.toLowerCase())
+        account.ad_account_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (account.pixel_id && account.pixel_id.toLowerCase().includes(searchTerm.toLowerCase()))
       return statusFilter && searchFilter
     })
   }, [adAccounts, selectedStatus, searchTerm])
@@ -191,10 +193,10 @@ export default function BusinessManagerDetailPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search ad accounts..."
+                placeholder="Search ad accounts, IDs, or pixel IDs..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-[250px]"
+                className="pl-10 w-[280px]"
               />
             </div>
             
@@ -209,6 +211,7 @@ export default function BusinessManagerDetailPage() {
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left p-4 font-medium">Ad Account</th>
+                <th className="text-left p-4 font-medium">Pixel ID</th>
                 <th className="text-left p-4 font-medium">Status</th>
                 <th className="text-right p-4 font-medium">Available Spend</th>
                 <th className="text-left p-4 font-medium">Timezone</th>
@@ -217,7 +220,7 @@ export default function BusinessManagerDetailPage() {
             <tbody>
               {filteredAdAccounts.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center p-8 text-muted-foreground">
+                  <td colSpan={5} className="text-center p-8 text-muted-foreground">
                     No ad accounts found
                   </td>
                 </tr>
@@ -245,6 +248,13 @@ export default function BusinessManagerDetailPage() {
                             <div className="text-xs text-muted-foreground font-mono">{account.ad_account_id}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="p-4">
+                        {account.metadata?.pixel_id ? (
+                          <div className="font-mono text-sm">{account.metadata.pixel_id}</div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">No pixel</div>
+                        )}
                       </td>
                       <td className="p-4">
                         <StatusBadge status={account.status} size="sm" />

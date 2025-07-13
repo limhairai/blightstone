@@ -644,6 +644,7 @@ export function OrganizationSettings() {
       <PlanUpgradeDialog
         open={upgradeOpen}
         onOpenChange={handleUpgradeDialogChange}
+        redirectToPage={false}
       />
 
       {/* Payment Method Dialog */}

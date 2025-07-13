@@ -23,6 +23,8 @@ interface Organization {
   available_balance_cents?: number
   reserved_balance_cents?: number
   business_managers_count: number
+  ad_accounts_count: number
+  pixels_count: number
   created_at: string
   subscription_status?: string
 }
@@ -119,9 +121,11 @@ export default function OrganizationsPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-border hover:bg-muted/50">
-                <TableHead className="text-muted-foreground" style={{ width: 250 }}>Organization</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 120 }}>Plan</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 140 }}>Business Managers</TableHead>
+                <TableHead className="text-muted-foreground" style={{ width: 220 }}>Organization</TableHead>
+                <TableHead className="text-muted-foreground" style={{ width: 100 }}>Plan</TableHead>
+                <TableHead className="text-muted-foreground" style={{ width: 80 }}>BMs</TableHead>
+                <TableHead className="text-muted-foreground" style={{ width: 80 }}>Accounts</TableHead>
+                <TableHead className="text-muted-foreground" style={{ width: 80 }}>Pixels</TableHead>
                 <TableHead className="text-muted-foreground" style={{ width: 120 }}>Balance</TableHead>
                 <TableHead className="text-muted-foreground" style={{ width: 50 }}></TableHead>
               </TableRow>
@@ -129,7 +133,7 @@ export default function OrganizationsPage() {
             <TableBody>
               {filteredOrganizations.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No results found.
                   </TableCell>
                 </TableRow>
@@ -156,6 +160,12 @@ export default function OrganizationsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-center font-medium">{org.business_managers_count}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-center font-medium">{org.ad_accounts_count}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-center font-medium">{org.pixels_count}</div>
                     </TableCell>
                     <TableCell>
                       <div className="text-right font-medium">

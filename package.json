@@ -2,7 +2,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.50.2",
     "dotenv": "^17.0.0",
-    "stripe": "^18.2.1",
+    "stripe": "^18.3.0",
     "swr": "^2.3.3",
     "zustand": "^5.0.5"
   },

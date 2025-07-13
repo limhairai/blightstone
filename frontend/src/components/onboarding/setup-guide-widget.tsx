@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Check, X, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react'
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { Button } from "../ui/button"
 import { Card, CardContent } from "../ui/card"
 import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
@@ -11,12 +11,27 @@ import { toast } from "sonner"
 import { useSWRConfig } from "swr"
 import { useAuth } from '@/contexts/AuthContext'
 import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
+import useSWR from 'swr'
 
 type WidgetState = "expanded" | "collapsed" | "closed"
 
 interface SetupGuideWidgetProps {
   widgetState: WidgetState
   onStateChange: (state: WidgetState) => void
+}
+
+// Add interface for onboarding progress data
+interface OnboardingProgressData {
+  progress: {
+    hasSetupOrganization: boolean
+    hasSelectedPlan: boolean
+    hasFundedWallet: boolean
+    hasAppliedForBM: boolean
+  }
+  persistence: {
+    hasExplicitlyDismissed: boolean
+    accountCreatedAt: string
+  }
 }
 
 export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidgetProps) {
@@ -27,6 +42,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   const [isAnimating, setIsAnimating] = useState(false)
   const expandableContentRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
   const { currentOrganizationId } = useOrganizationStore()
   const { mutate } = useSWRConfig()
   const { session } = useAuth()
@@ -39,12 +55,68 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     dismissOnboarding,
   } = useAdvancedOnboarding()
 
+  // Fetch onboarding progress data using SWR
+  const { data: onboardingProgress, error: onboardingError, mutate: mutateProgress } = useSWR<OnboardingProgressData>(
+    session?.access_token ? '/api/onboarding-progress' : null,
+    async (url) => {
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch onboarding progress')
+      }
+      return response.json()
+    },
+    {
+      refreshInterval: widgetState === "expanded" ? 10000 : 30000, // Refresh more frequently when expanded
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      revalidateOnMount: true
+    }
+  )
+
   // Handle initial render animation
   useEffect(() => {
     if (widgetState !== "closed") {
       setIsInitialRender(false)
     }
-  }, [widgetState])
+    // Refresh progress data when widget is expanded
+    if (widgetState === "expanded") {
+      mutateProgress()
+    }
+  }, [widgetState, mutateProgress])
+
+  // Detect successful payment and refresh progress
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentSuccess = urlParams.get('success')
+    
+    if (paymentSuccess === 'true') {
+      // Payment was successful, refresh onboarding progress
+      mutateProgress()
+      
+      // Clean up URL parameter
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('success')
+      window.history.replaceState({}, '', newUrl.toString())
+    }
+  }, [mutateProgress])
+
+  // Refresh progress when navigating back to key pages
+  useEffect(() => {
+    if (pathname === '/dashboard/wallet') {
+      // User is on wallet page, refresh progress in case they funded wallet
+      mutateProgress()
+    } else if (pathname === '/dashboard/business-managers') {
+      // User is on business managers page, refresh progress in case they applied for BM
+      mutateProgress()
+    } else if (pathname === '/dashboard') {
+      // User is back on dashboard, refresh progress to catch any changes
+      mutateProgress()
+    }
+  }, [pathname, mutateProgress])
 
   // Handle smooth expansion animation
   useEffect(() => {
@@ -95,27 +167,27 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     nextStep: null 
   }
 
-  // Create steps array based on practical setup requirements
+  // Create steps array based on practical setup requirements using real data
   const steps = [
     {
       id: 'choose-plan',
       title: 'Choose a Plan',
       description: 'Select a subscription plan that fits your advertising needs',
-      isCompleted: false, // This would need to be checked separately
+      isCompleted: onboardingProgress?.progress?.hasSelectedPlan || false,
       isRequired: true,
     },
     {
       id: 'wallet-funding',
       title: 'Fund Wallet',
       description: 'Add funds to your wallet to start using ad accounts',
-      isCompleted: false, // This would need to be checked separately
+      isCompleted: onboardingProgress?.progress?.hasFundedWallet || false,
       isRequired: true,
     },
     {
       id: 'business-setup',
       title: 'Apply for Business Manager',
       description: 'Submit your first business manager application',
-      isCompleted: false, // This would need to be checked separately
+      isCompleted: onboardingProgress?.progress?.hasAppliedForBM || false,
       isRequired: true,
     },
   ]
@@ -140,7 +212,11 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
           break
           
         case 'business-setup':
-          router.push('/dashboard/businesses')
+          router.push('/dashboard/business-managers')
+          // Refresh onboarding progress after navigating to BM page
+          setTimeout(() => {
+            mutateProgress()
+          }, 2000)
           break
           
         case 'ad-account-setup':
@@ -157,6 +233,14 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       setActionLoading(null)
     }
   }
+
+  // Add effect to refresh onboarding progress when upgrade dialog closes
+  useEffect(() => {
+    if (!upgradeDialogOpen) {
+      // Refresh onboarding progress data when dialog closes
+      mutateProgress()
+    }
+  }, [upgradeDialogOpen, mutateProgress])
 
   const handleDismiss = async () => {
     try {
@@ -183,6 +267,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   const totalSteps = steps.length
   const actualProgress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0
 
+  // Don't show widget if loading or if all steps are completed
   if (isLoading || actualProgress >= 100) {
     return null
   }
@@ -317,6 +402,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       <PlanUpgradeDialog
         open={upgradeDialogOpen}
         onOpenChange={setUpgradeDialogOpen}
+        redirectToPage={false}
       />
     </div>
   )
@@ -325,7 +411,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
 function getStepActionText(stepId: string): string {
   switch (stepId) {
     case 'choose-plan': return 'Choose Plan';
-    case 'business-setup': return 'View Businesses';
+    case 'business-setup': return 'View Business Managers';
     case 'wallet-funding': return 'Fund Wallet';
     case 'ad-account-setup': return 'Create Ad Account';
     default: return 'Complete Step';

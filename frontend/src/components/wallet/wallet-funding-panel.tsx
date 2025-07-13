@@ -93,13 +93,21 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
       return
     }
 
+    if (!session?.access_token) {
+      toast.error('Please log in to continue')
+      return
+    }
+
     setLoading(true)
     
     try {
       // Create Stripe checkout session for credit card payments
-      const response = await fetch('/api/payments/stripe/create-checkout', {
+      const response = await fetch('/api/payments/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           amount: amountNum,
           organizationId: currentOrganizationId,
