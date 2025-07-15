@@ -353,7 +353,7 @@ export function OrganizationSelector() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Find Organization or Business Manager..."
+                placeholder="Find Team or Business Manager..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-8 bg-background border-border text-foreground"
@@ -364,7 +364,7 @@ export function OrganizationSelector() {
           <div className="max-h-96 overflow-y-auto">
             <div className="p-2">
               <DropdownMenuLabel className="text-muted-foreground text-xs font-medium uppercase tracking-wide px-2 py-1">
-                Organizations
+                Teams
               </DropdownMenuLabel>
               
               {filteredOrganizations.map((org) => (

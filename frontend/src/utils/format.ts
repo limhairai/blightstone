@@ -10,8 +10,15 @@ export function formatCurrency(amount: number | undefined): string {
   }).format(amount)
 }
 
-export function formatRelativeTime(timestamp: Date | string): string {
+export function formatRelativeTime(timestamp: Date | string | null | undefined): string {
+  // Handle null/undefined timestamps
+  if (!timestamp) return 'Unknown time'
+  
   const date = typeof timestamp === 'string' ? new Date(timestamp) : timestamp
+  
+  // Check if date is valid
+  if (!date || isNaN(date.getTime())) return 'Invalid date'
+  
   const now = new Date()
   const diffInMs = now.getTime() - date.getTime()
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60))

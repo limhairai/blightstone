@@ -6,16 +6,25 @@ import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { BusinessManagersViewToggle } from "@/components/business-managers/business-managers-view-toggle"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/utils/format"
-import { Search, ArrowRight, Building2, Loader2, X, Trash2 } from "lucide-react"
+import { Search, ArrowRight, Building2, Loader2, X, Trash2, MoreHorizontal, Copy, Power, PowerOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessManager } from "@/types/business"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { mutate } from "swr"
+import { AssetDeactivationDialog } from "@/components/dashboard/AssetDeactivationDialog"
+import { useAssetDeactivation } from "@/hooks/useAssetDeactivation"
 
 interface BusinessManagersTableProps {
   businessManagers: any[]
@@ -29,9 +38,39 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
   const [sortBy, setSortBy] = useState<string>("activity")
   const [view, setView] = useState<"grid" | "list">("list")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  
+  // Add deactivation state
+  const [deactivationDialog, setDeactivationDialog] = useState<{
+    open: boolean;
+    asset: any | null;
+  }>({ open: false, asset: null });
 
   const { session } = useAuth()
   const router = useRouter()
+  
+  // Add deactivation handler
+  const handleDeactivationClick = (manager: BusinessManager, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeactivationDialog({
+      open: true,
+      asset: {
+        id: manager.id,
+        asset_id: manager.asset_id || manager.id,
+        name: manager.name,
+        type: 'business_manager',
+        is_active: manager.is_active !== false
+      }
+    });
+  }
+  
+  // Add copy function
+  const copyBmId = (bmId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (bmId) {
+      navigator.clipboard.writeText(bmId);
+      toast.success('Business Manager ID copied to clipboard');
+    }
+  }
 
   const filteredManagers = useMemo(() => {
     let filtered = businessManagers
@@ -134,58 +173,94 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
   }
 
   const getActionButtons = (manager: BusinessManager) => {
-    // Only show action buttons for applications (not active business managers)
-    if (!manager.is_application) {
-      return null
+    // For applications, show cancel/delete buttons
+    if (manager.is_application) {
+      const canCancel = ['pending', 'processing'].includes(manager.status)
+      const canDelete = manager.status === 'rejected'
+      
+      if (!canCancel && !canDelete) {
+        return null
+      }
+      
+      const isProcessing = cancellingId === manager.id
+      
+      return (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          {canCancel && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                handleCancelApplication(manager, e)
+              }}
+              disabled={isProcessing}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground border-border hover:bg-muted/50"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <X className="h-3 w-3" />
+              )}
+              <span className="ml-1">Cancel</span>
+            </Button>
+          )}
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => handleCancelApplication(manager, e)}
+              disabled={isProcessing}
+              className="h-7 px-2 text-xs text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20"
+            >
+              {isProcessing ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="h-3 w-3" />
+              )}
+              <span className="ml-1">Delete</span>
+            </Button>
+          )}
+        </div>
+      )
     }
     
-    const canCancel = ['pending', 'processing'].includes(manager.status)
-    const canDelete = manager.status === 'rejected'
-    
-    if (!canCancel && !canDelete) {
-      return null
+    // For active business managers, show dropdown menu
+    if (manager.status === 'active') {
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => copyBmId(manager.dolphin_business_manager_id || '', e)}>
+              <Copy className="h-4 w-4 mr-2" />
+              Copy BM ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={(e) => handleDeactivationClick(manager, e)}
+              className="text-muted-foreground"
+            >
+              {manager.is_active === false ? (
+                <>
+                  <Power className="h-4 w-4 mr-2" />
+                  Activate
+                </>
+              ) : (
+                <>
+                  <PowerOff className="h-4 w-4 mr-2" />
+                  Deactivate
+                </>
+              )}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
     }
     
-    const isProcessing = cancellingId === manager.id
-    
-    return (
-      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-        {canCancel && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              handleCancelApplication(manager, e)
-            }}
-            disabled={isProcessing}
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground border-border hover:bg-muted/50"
-          >
-            {isProcessing ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <X className="h-3 w-3" />
-            )}
-            <span className="ml-1">Cancel</span>
-          </Button>
-        )}
-        {canDelete && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => handleCancelApplication(manager, e)}
-            disabled={isProcessing}
-            className="h-7 px-2 text-xs text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20"
-          >
-            {isProcessing ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Trash2 className="h-3 w-3" />
-            )}
-            <span className="ml-1">Delete</span>
-          </Button>
-        )}
-      </div>
-    )
+    return null
   }
 
   return (
@@ -263,6 +338,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                 manager.status === "active" 
                   ? "cursor-pointer hover:border-[#c4b5fd]/30" 
                   : "cursor-default",
+                manager.is_active === false && "opacity-50 grayscale"
               )}
             >
               {/* Header */}
@@ -279,8 +355,14 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                       {manager.is_application ? 'Application' : ''}
                     </p>
                   </div>
-                  <div className="flex items-center">
-                    <StatusBadge status={manager.status as any} size="sm" />
+                  <div className="flex items-center gap-2">
+                    {manager.is_active === false ? (
+                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
+                        Deactivated
+                      </span>
+                    ) : (
+                      <StatusBadge status={manager.status as any} size="sm" />
+                    )}
                   </div>
                 </div>
               </div>
@@ -333,6 +415,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                 manager.status === "active" 
                   ? "cursor-pointer hover:border-[#c4b5fd]/30" 
                   : "cursor-default",
+                manager.is_active === false && "opacity-50 grayscale"
               )}
             >
               <div className="flex items-center justify-between">
@@ -369,7 +452,13 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                     <div className="font-semibold text-foreground text-lg">{manager.ad_account_count || 0}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <StatusBadge status={manager.status as any} size="sm" />
+                    {manager.is_active === false ? (
+                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
+                        Deactivated
+                      </span>
+                    ) : (
+                      <StatusBadge status={manager.status as any} size="sm" />
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {getActionButtons(manager)}
@@ -401,6 +490,22 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
       <div className="text-xs text-muted-foreground">
         Showing {filteredManagers.length} of {businessManagers.length} business managers
       </div>
+      
+      {/* Deactivation Dialog */}
+      {deactivationDialog.asset && (
+        <AssetDeactivationDialog
+          asset={{
+            id: deactivationDialog.asset.id,
+            asset_id: deactivationDialog.asset.asset_id || deactivationDialog.asset.id,
+            name: deactivationDialog.asset.name,
+            type: 'business_manager',
+            is_active: deactivationDialog.asset.is_active !== false
+          }}
+          open={deactivationDialog.open}
+          onOpenChange={(open) => setDeactivationDialog({ open, asset: open ? deactivationDialog.asset : null })}
+          onSuccess={onRefresh}
+        />
+      )}
     </div>
   )
 } 

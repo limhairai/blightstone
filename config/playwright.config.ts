@@ -32,6 +32,7 @@ const BACKEND_URL = getBackendUrl()
 
 export default defineConfig({
   testDir: '../tests',
+  testMatch: ['**/*.spec.ts', '**/*.e2e.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

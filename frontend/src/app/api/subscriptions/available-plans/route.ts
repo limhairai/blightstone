@@ -8,8 +8,8 @@ const plans = [
     monthlyPrice: 29,
     adSpendFee: 6.0,
     maxTeamMembers: 2,
-    maxBusinesses: 1,
-    maxAdAccounts: 5,
+    maxBusinesses: 3,
+    maxAdAccounts: 10,
     monthlyTopupLimit: 3000, // $3,000 monthly top-up limit
     features: ['Basic Support', 'Standard Features', '$3,000 monthly top-up limit']
   },
@@ -20,8 +20,8 @@ const plans = [
     monthlyPrice: 149,
     adSpendFee: 3.0,
     maxTeamMembers: 5,
-    maxBusinesses: 3,
-    maxAdAccounts: 21,
+    maxBusinesses: 5,
+    maxAdAccounts: 25,
     monthlyTopupLimit: 6000, // $6,000 monthly top-up limit
     features: ['Priority Support', 'Advanced Analytics', 'Team Collaboration', '$6,000 monthly top-up limit']
   },
@@ -32,8 +32,8 @@ const plans = [
     monthlyPrice: 499,
     adSpendFee: 1.5,
     maxTeamMembers: 15,
-    maxBusinesses: 10,
-    maxAdAccounts: 70,
+    maxBusinesses: 15,
+    maxAdAccounts: 75,
     monthlyTopupLimit: null, // Unlimited
     features: ['Dedicated Support', 'Custom Integrations', 'Advanced Reporting', 'Unlimited monthly top-ups']
   },

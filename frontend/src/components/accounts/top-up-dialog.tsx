@@ -71,8 +71,8 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
 
   // Get top-up limit information (only if feature is enabled)
   const { limitInfo, isLoading: isLoadingLimits } = useTopupLimits(
-    currentOrganizationId,
-    formData.amount ? parseFloat(formData.amount) : undefined
+    shouldEnableTopupLimits() && currentOrganizationId ? currentOrganizationId : null,
+    shouldEnableTopupLimits() && formData.amount ? parseFloat(formData.amount) : undefined
   )
 
   // Get wallet balance from SWR hook (same as topbar)

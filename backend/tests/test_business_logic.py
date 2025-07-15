@@ -300,20 +300,20 @@ def get_subscription_limits(plan: str) -> dict:
     """Get subscription plan limits."""
     limits = {
         'starter': {
-            'business_managers': 1,
-            'ad_accounts': 5,
+            'business_managers': 3,
+            'ad_accounts': 10,
             'team_members': 2,
             'monthly_topup_limit': 6000
         },
         'growth': {
-            'business_managers': 3,
-            'ad_accounts': 21,
+            'business_managers': 5,
+            'ad_accounts': 25,
             'team_members': 5,
             'monthly_topup_limit': 25000
         },
         'scale': {
-            'business_managers': 10,
-            'ad_accounts': 70,
+            'business_managers': 15,
+            'ad_accounts': 75,
             'team_members': 15,
             'monthly_topup_limit': 100000
         },

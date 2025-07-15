@@ -113,13 +113,14 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
 
-    // Count active business managers
+    // Count active business managers (bound AND client-activated)
     const { count: activeBMCount } = await supabase
       .from('asset_binding')
       .select('*, asset!inner(type)', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
       .eq('asset.type', 'business_manager')
       .eq('status', 'active')
+      .eq('is_active', true)
 
     // Count pending business manager applications
     const { count: pendingBMCount } = await supabase
@@ -129,13 +130,14 @@ export async function GET(request: NextRequest) {
       .eq('request_type', 'new_business_manager')
       .in('status', ['pending', 'processing'])
 
-    // Count active ad accounts
+    // Count active ad accounts (bound AND client-activated)
     const { count: activeAdAccountsCount } = await supabase
       .from('asset_binding')
       .select('*, asset!inner(type)', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
       .eq('asset.type', 'ad_account')
       .eq('status', 'active')
+      .eq('is_active', true)
 
     // Count pending ad account applications
     const { count: pendingAdAccountsCount } = await supabase

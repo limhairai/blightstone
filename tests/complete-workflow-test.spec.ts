@@ -22,8 +22,8 @@ test.describe('Complete AdHub Workflow', () => {
       await page.fill('[data-testid="name-input"]', 'John Client')
       await page.click('[data-testid="register-button"]')
       
-      // Should redirect to email confirmation
-      await expect(page).toHaveURL(/confirm-email/)
+      // Should redirect to email confirmation or onboarding
+      await page.waitForURL(/\/(onboarding|confirm-email)/)
     })
     
     await test.step('2. Email Confirmation & Login', async () => {

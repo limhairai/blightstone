@@ -11,8 +11,10 @@ import { AdHubLogo } from "../core/AdHubLogo"
 import { useInView } from 'react-intersection-observer'
 import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export function LandingView() {
+  const { user, loading } = useAuth()
   const { ref: ctaRef, inView: ctaInView } = useInView({
     triggerOnce: true,
     threshold: 0.15,
@@ -89,16 +91,31 @@ export function LandingView() {
           
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" className="text-foreground/80 hover:text-foreground hover:bg-secondary">
-                Login
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
-                Get Started
-              </Button>
-            </Link>
+            {loading ? (
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-9 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                <div className="w-24 h-9 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            ) : user ? (
+              <Link href="/dashboard">
+                <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" className="text-foreground/80 hover:text-foreground hover:bg-secondary">
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -158,16 +175,31 @@ export function LandingView() {
               
               {/* Mobile Auth Buttons */}
               <div className="p-4 space-y-4 border-t border-white/10">
-                <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full text-foreground/80 hover:text-foreground hover:bg-secondary justify-center py-3">
-                    Login
-                  </Button>
-                </Link>
-                <Link href="/register" className="block" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black justify-center py-3">
-                    Get Started
-                  </Button>
-                </Link>
+                {loading ? (
+                  <div className="space-y-4">
+                    <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                    <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  </div>
+                ) : user ? (
+                  <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
+                    <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black justify-center py-3">
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full text-foreground/80 hover:text-foreground hover:bg-secondary justify-center py-3">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link href="/register" className="block" onClick={() => setMobileMenuOpen(false)}>
+                      <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black justify-center py-3">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -203,16 +235,38 @@ export function LandingView() {
                   Instant access. Instant top ups. Scale uninterrupted.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center max-w-md sm:max-w-none mx-auto">
-                  <Link href="/register" className="w-full sm:w-auto">
-                    <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
-                      Get Started
-                    </Button>
-                  </Link>
-                  <Link href="#features" className="w-full sm:w-auto">
-                    <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl backdrop-blur-sm">
-                      Learn More
-                    </Button>
-                  </Link>
+                  {loading ? (
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                      <div className="w-full sm:w-32 h-14 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+                      <div className="w-full sm:w-32 h-14 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+                    </div>
+                  ) : user ? (
+                    <>
+                      <Link href="/dashboard" className="w-full sm:w-auto">
+                        <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link href="#features" className="w-full sm:w-auto">
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl backdrop-blur-sm">
+                          Learn More
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/register" className="w-full sm:w-auto">
+                        <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                        Get Started
+                        </Button>
+                      </Link>
+                      <Link href="#features" className="w-full sm:w-auto">
+                        <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl backdrop-blur-sm">
+                          Learn More
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="relative max-w-6xl mx-auto mt-8 sm:mt-16">
@@ -328,39 +382,84 @@ export function LandingView() {
                 Join thousands of advertisers who trust AdHub for their Meta advertising needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-12 sm:mb-16 max-w-md sm:max-w-none mx-auto">
-                <Link href="/register" className="w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
-                  >
-                    Get Started for Free
-                    <svg
-                      className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </Button>
-                </Link>
-                <Link href="/contact" className="w-full sm:w-auto">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl backdrop-blur-sm transition-all duration-200 hover:border-white/50 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 group"
-                  >
-                    Request a Demo
-                    <svg
-                      className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </Button>
-                </Link>
+                {loading ? (
+                  <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center">
+                    <div className="w-full sm:w-48 h-16 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+                    <div className="w-full sm:w-48 h-16 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse"></div>
+                  </div>
+                ) : user ? (
+                  <>
+                    <Link href="/dashboard" className="w-full sm:w-auto">
+                      <Button
+                        size="lg"
+                        className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
+                      >
+                        Go to Dashboard
+                        <svg
+                          className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Button>
+                    </Link>
+                    <Link href="/contact" className="w-full sm:w-auto">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl backdrop-blur-sm transition-all duration-200 hover:border-white/50 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 group"
+                      >
+                        Request a Demo
+                        <svg
+                          className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/register" className="w-full sm:w-auto">
+                      <Button
+                        size="lg"
+                        className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
+                      >
+                        Get Started for Free
+                        <svg
+                          className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Button>
+                    </Link>
+                    <Link href="/contact" className="w-full sm:w-auto">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl backdrop-blur-sm transition-all duration-200 hover:border-white/50 hover:shadow-[0_0_30px_rgba(255,255,255,0.1)] flex items-center justify-center gap-3 group"
+                      >
+                        Request a Demo
+                        <svg
+                          className="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:translate-x-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>

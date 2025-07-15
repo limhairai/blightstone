@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
         binding_id,
         asset_id,
         bound_at,
+        is_active,
         asset:asset_id (
           asset_id,
           name,
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
             `)
             .eq('organization_id', organizationId)
             .eq('status', 'active')
+            .eq('is_active', true) // Only count active assets
             .eq('asset.type', 'ad_account');
 
           if (!adAccountError && adAccountBindings) {
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
           id: binding.asset?.dolphin_id, // Use dolphin_id for consistency with ad account filtering
           name: binding.asset?.name,
           status: binding.asset?.status,
+          is_active: binding.is_active, // Client-controlled activation status
           created_at: binding.bound_at,
           ad_account_count: adAccountCount, // Use calculated count instead of metadata
           dolphin_business_manager_id: binding.asset?.dolphin_id,

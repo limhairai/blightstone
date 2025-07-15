@@ -156,11 +156,9 @@ export function OrganizationSettings() {
     }
   }
 
-  // Use real usage data from subscription hook, fallback to counting from API data
-  const totalBusinesses = usage?.businessManagers ?? businesses.length
-  const totalAccounts = usage?.adAccounts ?? accounts.length
-  // For team members, use subscription data or fallback to 1 (current user)
-  const totalTeamMembers = usage?.teamMembers ?? 1
+  // Count only ACTIVE assets (not total)
+  const activeBusinesses = businesses.filter((bm: any) => bm.status === 'active' && bm.is_active !== false).length
+  const activeAccounts = accounts.filter((acc: any) => acc.status === 'active' && acc.is_active !== false).length
   
   // Use real subscription plan data instead of hardcoded defaultPlans
   const currentPlan = subscriptionPlan || {
@@ -324,14 +322,14 @@ export function OrganizationSettings() {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Business Managers</Label>
                   <span className="text-sm text-muted-foreground">
-                    {totalBusinesses} / {currentPlan.maxBusinesses === -1 ? '∞' : currentPlan.maxBusinesses}
+                    {activeBusinesses} / {currentPlan.maxBusinesses === -1 ? '∞' : currentPlan.maxBusinesses}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
-                      width: `${currentPlan.maxBusinesses === -1 ? 0 : Math.min(100, (totalBusinesses / currentPlan.maxBusinesses) * 100)}%` 
+                      width: `${currentPlan.maxBusinesses === -1 ? 0 : Math.min(100, (activeBusinesses / currentPlan.maxBusinesses) * 100)}%` 
                     }}
                   ></div>
                 </div>
@@ -342,36 +340,20 @@ export function OrganizationSettings() {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Ad Accounts</Label>
                   <span className="text-sm text-muted-foreground">
-                    {totalAccounts} / {currentPlan.maxAdAccounts === -1 ? '∞' : currentPlan.maxAdAccounts}
+                    {activeAccounts} / {currentPlan.maxAdAccounts === -1 ? '∞' : currentPlan.maxAdAccounts}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
-                      width: `${currentPlan.maxAdAccounts === -1 ? 0 : Math.min(100, (totalAccounts / currentPlan.maxAdAccounts) * 100)}%` 
+                      width: `${currentPlan.maxAdAccounts === -1 ? 0 : Math.min(100, (activeAccounts / currentPlan.maxAdAccounts) * 100)}%` 
                     }}
                   ></div>
                 </div>
               </div>
 
-              {/* Team Members Usage */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-foreground">Team Members</Label>
-                  <span className="text-sm text-muted-foreground">
-                    {totalTeamMembers} / {currentPlan.maxTeamMembers === -1 ? '∞' : currentPlan.maxTeamMembers}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
-                    style={{ 
-                      width: `${currentPlan.maxTeamMembers === -1 ? 0 : Math.min(100, (totalTeamMembers / currentPlan.maxTeamMembers) * 100)}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
+
 
               {/* Current Plan Summary */}
               <div className="pt-2 border-t border-border">

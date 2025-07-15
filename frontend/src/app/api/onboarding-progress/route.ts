@@ -20,22 +20,21 @@ export async function GET(request: NextRequest) {
           return cookieStore.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          cookieStore.set({ name, value, ...options })
+          cookieStore.set(name, value, options)
         },
         remove(name: string, options: CookieOptions) {
-          cookieStore.set({ name, value: '', ...options })
+          cookieStore.delete(name)
         },
       },
     }
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
   if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const userId = user.id;
+  const userId = user.id
 
   try {
     // Get user's organization first
@@ -52,6 +51,8 @@ export async function GET(request: NextRequest) {
           hasSelectedPlan: false,
           hasFundedWallet: false,
           hasAppliedForBM: false,
+          hasActiveBM: false,
+          hasAddedPixel: false,
         },
         persistence: {
           hasExplicitlyDismissed: false,
@@ -66,13 +67,16 @@ export async function GET(request: NextRequest) {
       organizationRes,
       onboardingStateRes
     ] = await Promise.all([
-      supabaseAdmin.from('wallets').select('balance_cents').eq('organization_id', profile.organization_id).limit(1).single(),
+      supabaseAdmin.from('wallets').select('balance_cents, reserved_balance_cents').eq('organization_id', profile.organization_id).limit(1).single(),
       supabaseAdmin.from('organizations').select('name').eq('organization_id', profile.organization_id).single(),
       supabaseAdmin.from('onboarding_states').select('*').eq('user_id', userId).single()
     ]);
     
     const wallet = walletRes.data;
     const organization = organizationRes.data;
+    
+
+    
     const hasFundedWallet = wallet ? wallet.balance_cents > 0 : false;
     
     // Check if organization has been properly set up (has custom name, not default)
@@ -92,12 +96,42 @@ export async function GET(request: NextRequest) {
 
     // Check if user has applied for business manager
     const { data: applications } = await supabaseAdmin
-      .from('applications')
+      .from('application')
       .select('application_id')
       .eq('organization_id', profile.organization_id)
       .limit(1);
     
     const hasAppliedForBM = applications && applications.length > 0;
+
+    // Check if user has an active business manager
+    const { data: activeBMs } = await supabaseAdmin
+      .from('asset_binding')
+      .select(`
+        binding_id,
+        asset!inner(type)
+      `)
+      .eq('organization_id', profile.organization_id)
+      .eq('status', 'active')
+      .eq('is_active', true)
+      .eq('asset.type', 'business_manager')
+      .limit(1);
+    
+    const hasActiveBM = activeBMs && activeBMs.length > 0;
+
+    // Check if user has added a pixel
+    const { data: pixels } = await supabaseAdmin
+      .from('asset_binding')
+      .select(`
+        binding_id,
+        asset!inner(type)
+      `)
+      .eq('organization_id', profile.organization_id)
+      .eq('status', 'active')
+      .eq('is_active', true)
+      .eq('asset.type', 'pixel')
+      .limit(1);
+    
+    const hasAddedPixel = pixels && pixels.length > 0;
 
     // Combine live data with persisted dismissal state
     const progress = {
@@ -105,6 +139,8 @@ export async function GET(request: NextRequest) {
         hasSelectedPlan: hasSelectedPlan || false,
         hasFundedWallet,
         hasAppliedForBM: hasAppliedForBM || false,
+        hasActiveBM: hasActiveBM || false,
+        hasAddedPixel: hasAddedPixel || false,
     };
 
     const persistence = {
@@ -114,7 +150,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ progress, persistence }, {
       headers: {
-        'Cache-Control': 'private, max-age=300, s-maxage=300', // Cache for 5 minutes
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate', // Disable caching to ensure fresh data
+        'Pragma': 'no-cache',
+        'Expires': '0',
         'Vary': 'Authorization'
       }
     });

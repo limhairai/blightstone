@@ -111,6 +111,7 @@ export async function GET(request: NextRequest) {
         business_manager_name: businessManagerName || 'N/A',
         business_manager_id: businessManagerId || 'unknown',
         status: asset.status || 'unknown',
+        is_active: asset.is_active !== undefined ? asset.is_active : true, // Client-controlled activation
         // Use Dolphin's balance field directly instead of calculated balance
         balance_cents: Math.round((metadata.balance || 0) * 100),
         spend_cents: Math.round((metadata.amount_spent || 0) * 100),

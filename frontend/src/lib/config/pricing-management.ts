@@ -47,14 +47,14 @@ export const PRICING_PLANS: PricingPlan[] = [
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      '1 Business Manager',
-      '5 Ad Accounts',
+      '3 Business Managers',
+      '10 Ad Accounts',
       '2 Team Members',
       '6% ad spend fee',
       '$3,000 monthly top-up limit'
     ],
     limits: {
-      accountsLimit: 5,
+      accountsLimit: 10,
       usersLimit: 2,
       monthlyTopupLimit: 3000 // $3,000 monthly top-up limit
     },
@@ -70,14 +70,14 @@ export const PRICING_PLANS: PricingPlan[] = [
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      '3 Business Managers',
-      '15 Ad Accounts',
+      '5 Business Managers',
+      '25 Ad Accounts',
       '5 Team Members',
       '3% ad spend fee',
       '$6,000 monthly top-up limit'
     ],
     limits: {
-      accountsLimit: 15,
+      accountsLimit: 25,
       usersLimit: 5,
       monthlyTopupLimit: 6000 // $6,000 monthly top-up limit
     },
@@ -94,14 +94,14 @@ export const PRICING_PLANS: PricingPlan[] = [
     currency: DISPLAY_CONFIG.CURRENCY,
     billingInterval: 'monthly',
     features: [
-      '10 Business Managers',
-      '50 Ad Accounts',
+      '15 Business Managers',
+      '75 Ad Accounts',
       '15 Team Members',
       '1.5% ad spend fee',
       'Unlimited monthly top-ups'
     ],
     limits: {
-      accountsLimit: 50,
+      accountsLimit: 75,
       usersLimit: 15,
       monthlyTopupLimit: null // Unlimited
     },

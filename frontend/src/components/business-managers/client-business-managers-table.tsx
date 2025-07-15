@@ -10,7 +10,7 @@ import { StatusBadge } from "../ui/status-badge"
 import { Button } from "../ui/button"
 import { getInitials } from "../../utils/format"
 import { getBusinessAvatarClasses } from "../../lib/design-tokens"
-import { Search, ArrowRight, Building2, Copy, MoreHorizontal, Loader2 } from "lucide-react"
+import { Search, ArrowRight, Building2, Copy, MoreHorizontal, Loader2, Power, PowerOff } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { LoadingState, ErrorState, EmptyState } from "../ui/states"
 import {
@@ -23,6 +23,7 @@ import {
 
 import { toast } from "sonner"
 import { BusinessManager } from "../../types/business"
+import { AssetDeactivationDialog } from "../dashboard/AssetDeactivationDialog"
 
 interface BusinessManagersTableProps {
   businessManagers: BusinessManager[]
@@ -35,6 +36,10 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("activity")
+  const [deactivationDialog, setDeactivationDialog] = useState<{
+    open: boolean;
+    asset: BusinessManager | null;
+  }>({ open: false, asset: null })
 
   const router = useRouter()
 
@@ -51,7 +56,11 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter((manager) => manager.status === statusFilter)
+      if (statusFilter === "deactivated") {
+        filtered = filtered.filter((manager) => manager.is_active === false)
+      } else {
+        filtered = filtered.filter((manager) => manager.status === statusFilter)
+      }
     }
 
     return filtered.sort((a, b) => {
@@ -77,6 +86,14 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
     e.stopPropagation()
     navigator.clipboard.writeText(bmId)
     toast.success("Business Manager ID copied to clipboard!")
+  }
+
+  const handleDeactivationClick = (manager: BusinessManager, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDeactivationDialog({
+      open: true,
+      asset: manager
+    })
   }
 
 
@@ -107,6 +124,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="deactivated">Deactivated</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="processing">Processing</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
@@ -128,7 +146,9 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
 
       {/* Grid and List Views */}
       <div className="space-y-1.5">
-          {filteredManagers.map((manager) => (
+        {filteredManagers.length > 0 && (
+          <div className="space-y-1.5">
+            {filteredManagers.map((manager) => (
             <div
               key={manager.id}
               onClick={() => handleManagerClick(manager)}
@@ -148,6 +168,12 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                     <div className="font-semibold text-foreground">{manager.name}</div>
                     <div className="text-muted-foreground text-xs flex items-center gap-2">
                       <StatusBadge status={manager.status as "active" | "pending" | "suspended" | "error" | "inactive" | "restricted" | "paused"} />
+                      {manager.is_active === false && (
+                        <>
+                          <span>•</span>
+                          <span className="text-orange-600 font-medium">Deactivated</span>
+                        </>
+                      )}
                       <span>•</span>
                       <span>ID: {manager.dolphin_business_manager_id || 'N/A'}</span>
                       <span>•</span>
@@ -167,14 +193,32 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                           <Copy className="h-4 w-4 mr-2" />
                           Copy BM ID
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={(e) => handleDeactivationClick(manager, e)}
+                          className="text-muted-foreground"
+                        >
+                          {manager.is_active === false ? (
+                            <>
+                              <Power className="h-4 w-4 mr-2" />
+                              Activate
+                            </>
+                          ) : (
+                            <>
+                              <PowerOff className="h-4 w-4 mr-2" />
+                              Deactivate
+                            </>
+                          )}
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
       {filteredManagers.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12">
@@ -188,7 +232,22 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
         </div>
       )}
 
-
+      {/* Deactivation Dialog */}
+      {deactivationDialog.asset && (
+        <AssetDeactivationDialog
+          asset={{
+            id: deactivationDialog.asset.id,
+            asset_id: deactivationDialog.asset.asset_id || deactivationDialog.asset.id,
+            name: deactivationDialog.asset.name,
+            type: 'business_manager',
+            is_active: deactivationDialog.asset.is_active !== false
+          }}
+          open={deactivationDialog.open}
+          onOpenChange={(open) => setDeactivationDialog({ open, asset: open ? deactivationDialog.asset : null })}
+          onSuccess={onRefresh}
+        />
+      )}
+      </div>
     </div>
   )
 } 

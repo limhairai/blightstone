@@ -11,10 +11,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { orgId: string } }
 ) {
   try {
-    const { id: organizationId } = params
+    const { orgId: organizationId } = params
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
 

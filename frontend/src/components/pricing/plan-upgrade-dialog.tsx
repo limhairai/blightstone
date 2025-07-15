@@ -366,40 +366,53 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
         {plusPlan && (
           <div className="border-t pt-8">
             <div className="bg-card rounded-2xl border border-border p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                {/* Left side - Title and Features */}
-                <div className="flex-1">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                {/* Left side - Title and Button */}
+                <div className="lg:min-w-[200px]">
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-foreground mb-2">PLUS</h3>
                     <p className="text-sm text-muted-foreground">
-                      For large-scale applications running Internet scale workloads.
+                      A plan based on your specific needs.
                     </p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {formatFeatures(plusPlan).map((feature, index) => (
-                      <div key={index} className="flex items-start">
-                        <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <Button
+                    disabled={true}
+                    className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-background hover:bg-accent text-foreground border border-border"
+                    variant="outline"
+                  >
+                    Coming Soon
+                  </Button>
                 </div>
 
-                {/* Right side - CTA only */}
-                <div className="lg:text-right lg:min-w-[200px]">
-                  <Button
-                    onClick={() => handleSelectPlan(plusPlan.id)}
-                    disabled={isCurrentPlan(plusPlan.id) || isUpgrading || plusPlan.isComingSoon}
-                    className={`w-full lg:w-auto lg:min-w-[140px] h-11 font-medium ${
-                      isCurrentPlan(plusPlan.id)
-                        ? 'bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0'
-                        : 'bg-background hover:bg-accent text-foreground border border-border'
-                    }`}
-                    variant={isCurrentPlan(plusPlan.id) ? 'default' : 'outline'}
-                  >
-                    {getButtonText(plusPlan)}
-                  </Button>
+                {/* Right side - Features */}
+                <div className="flex-1 flex justify-center">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
+                    <div className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Unlimited Active Business Managers</span>
+                    </div>
+                    <div className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Unlimited Active Ad Accounts</span>
+                    </div>
+                    <div className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Unlimited Facebook Pixels</span>
+                    </div>
+                    <div className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">White-Glove Services</span>
+                    </div>
+                    <div className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Dedicated Account Manager</span>
+                    </div>
+                    <div className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Post Pay Capabilities</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -408,7 +421,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
 
         <div className="pt-6 text-center">
           <p className="text-sm text-muted-foreground">
-            All plans include unlimited replacements and 24/7 support.
+            All plans include unlimited replacements and ticket support.
           </p>
         </div>
       </DialogContent>

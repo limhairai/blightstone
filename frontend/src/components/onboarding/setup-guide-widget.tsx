@@ -27,6 +27,8 @@ interface OnboardingProgressData {
     hasSelectedPlan: boolean
     hasFundedWallet: boolean
     hasAppliedForBM: boolean
+    hasActiveBM: boolean
+    hasAddedPixel: boolean
   }
   persistence: {
     hasExplicitlyDismissed: boolean
@@ -70,10 +72,13 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       return response.json()
     },
     {
-      refreshInterval: widgetState === "expanded" ? 10000 : 30000, // Refresh more frequently when expanded
+      refreshInterval: 0, // Disable automatic refresh - only refresh on events
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      revalidateOnMount: true
+      revalidateOnMount: true,
+      dedupingInterval: 30000, // Cache for 30 seconds
+      revalidateIfStale: true,
+      focusThrottleInterval: 5000 // Throttle focus revalidation to 5 seconds
     }
   )
 
@@ -94,8 +99,10 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     const paymentSuccess = urlParams.get('success')
     
     if (paymentSuccess === 'true') {
-      // Payment was successful, refresh onboarding progress
-      mutateProgress()
+      // Payment was successful, refresh onboarding progress with delay to ensure DB is updated
+      setTimeout(() => {
+        mutateProgress()
+      }, 1000) // 1 second delay to ensure payment processing is complete
       
       // Clean up URL parameter
       const newUrl = new URL(window.location.href)
@@ -108,13 +115,19 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   useEffect(() => {
     if (pathname === '/dashboard/wallet') {
       // User is on wallet page, refresh progress in case they funded wallet
-      mutateProgress()
+      setTimeout(() => mutateProgress(), 500) // Small delay to ensure page is loaded
     } else if (pathname === '/dashboard/business-managers') {
       // User is on business managers page, refresh progress in case they applied for BM
-      mutateProgress()
+      setTimeout(() => mutateProgress(), 500)
+    } else if (pathname === '/dashboard/pixels') {
+      // User is on pixels page, refresh progress in case they added a pixel
+      setTimeout(() => mutateProgress(), 500)
+    } else if (pathname === '/dashboard/accounts') {
+      // User is on accounts page, refresh progress in case they topped up an account
+      setTimeout(() => mutateProgress(), 500)
     } else if (pathname === '/dashboard') {
       // User is back on dashboard, refresh progress to catch any changes
-      mutateProgress()
+      setTimeout(() => mutateProgress(), 500)
     }
   }, [pathname, mutateProgress])
 
@@ -168,13 +181,14 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   }
 
   // Create steps array based on practical setup requirements using real data
-  const steps = [
+  const allSteps = [
     {
       id: 'choose-plan',
       title: 'Choose a Plan',
       description: 'Select a subscription plan that fits your advertising needs',
       isCompleted: onboardingProgress?.progress?.hasSelectedPlan || false,
       isRequired: true,
+      isVisible: true,
     },
     {
       id: 'wallet-funding',
@@ -182,6 +196,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       description: 'Add funds to your wallet to start using ad accounts',
       isCompleted: onboardingProgress?.progress?.hasFundedWallet || false,
       isRequired: true,
+      isVisible: true,
     },
     {
       id: 'business-setup',
@@ -189,8 +204,29 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       description: 'Submit your first business manager application',
       isCompleted: onboardingProgress?.progress?.hasAppliedForBM || false,
       isRequired: true,
+      isVisible: true,
+    },
+    {
+      id: 'pixel-setup',
+      title: 'Add Pixel to BM',
+      description: 'Connect a Facebook pixel to your business manager',
+      isCompleted: onboardingProgress?.progress?.hasAddedPixel || false,
+      isRequired: true,
+      // Always show this step so clients know what to expect
+      isVisible: true,
+    },
+    {
+      id: 'ad-account-topup',
+      title: 'Top up Ad Account',
+      description: 'Fund your ad accounts to start running campaigns',
+      isCompleted: false, // TODO: Add tracking for this step
+      isRequired: true,
+      isVisible: true,
     },
   ]
+
+  // Filter to only show visible steps
+  const steps = allSteps.filter(step => step.isVisible)
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -214,6 +250,22 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
         case 'business-setup':
           router.push('/dashboard/business-managers')
           // Refresh onboarding progress after navigating to BM page
+          setTimeout(() => {
+            mutateProgress()
+          }, 2000)
+          break
+          
+        case 'pixel-setup':
+          router.push('/dashboard/pixels')
+          // Refresh onboarding progress after navigating to pixels page
+          setTimeout(() => {
+            mutateProgress()
+          }, 2000)
+          break
+          
+        case 'ad-account-topup':
+          router.push('/dashboard/accounts')
+          // Refresh onboarding progress after navigating to accounts page
           setTimeout(() => {
             mutateProgress()
           }, 2000)
@@ -325,14 +377,32 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
             </div>
             
             {/* Next step info - Always visible */}
-            <div className="text-sm text-muted-foreground">
-              {nextStepData ? (
-                <>
-                  <span className="font-medium text-primary">Next:</span> {nextStepData.title}
-                </>
-              ) : (
-                <span className="text-green-500">Setup complete! 🎉</span>
-              )}
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                {nextStepData ? (
+                  <>
+                    <span className="font-medium text-primary">Next:</span> {nextStepData.title}
+                  </>
+                ) : (
+                  <span className="text-green-500">Setup complete! 🎉</span>
+                )}
+              </div>
+              
+              {/* Debug refresh button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 opacity-50 hover:opacity-100"
+                onClick={() => {
+                  mutateProgress()
+                  toast.success("Progress refreshed")
+                }}
+                title="Refresh progress"
+              >
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </Button>
             </div>
           </div>
 
@@ -413,6 +483,8 @@ function getStepActionText(stepId: string): string {
     case 'choose-plan': return 'Choose Plan';
     case 'business-setup': return 'View Business Managers';
     case 'wallet-funding': return 'Fund Wallet';
+    case 'pixel-setup': return 'Add Pixel';
+    case 'ad-account-topup': return 'Top up Account';
     case 'ad-account-setup': return 'Create Ad Account';
     default: return 'Complete Step';
   }

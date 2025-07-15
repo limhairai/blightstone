@@ -55,12 +55,7 @@ export const swrConfig = {
     }
   },
   
-  // DEBUGGING
-  onSuccess: (data: any, key: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔄 SWR Success:', key, data)
-    }
-  }
+  // Removed SWR debug logging
 }
 
 // **SPECIAL CONFIGS** - Only for specific use cases

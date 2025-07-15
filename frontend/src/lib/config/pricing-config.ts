@@ -44,7 +44,7 @@ export interface PricingConfig {
 export const PRICING_CONFIG: PricingConfig = {
   // Feature flags - set to false to disable old features
   enableTopupLimits: false,
-  enableAdSpendFees: true, // Enable 1% ad spend fee
+  enableAdSpendFees: true, // Enable ad spend fees
   enableDomainLimits: false,
   enableTeamLimits: false,
   enablePixelLimits: true, // Enable pixel limits
@@ -100,7 +100,10 @@ export const getPlanPricing = (planId: 'starter' | 'growth' | 'scale') => {
 };
 
 // Get pixel limit for a plan
-export const getPixelLimit = (planId: 'starter' | 'growth' | 'scale') => {
+export const getPixelLimit = (planId: 'free' | 'starter' | 'growth' | 'scale') => {
+  if (planId === 'free') {
+    return 0; // Free plan has no pixels
+  }
   if (shouldEnablePixelLimits() && isNewPricingEnabled()) {
     return PRICING_CONFIG.newPricingModel.plans[planId].pixels;
   }

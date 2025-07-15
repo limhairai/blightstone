@@ -7,6 +7,7 @@ import { Plus } from "lucide-react"
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useBusinessManagers } from '@/lib/swr-config'
+import { useSubscription } from '@/hooks/useSubscription'
 import { useMemo, useCallback, useState } from 'react'
 import { mutate as globalMutate } from 'swr'
 
@@ -15,6 +16,7 @@ export default function BusinessManagersPage() {
   const { currentOrganizationId } = useOrganizationStore()
 
   const { data: bms, error, isLoading, mutate } = useBusinessManagers()
+  const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription()
   
   // Transform server data for display
   const businessManagers = useMemo(() => {
@@ -27,6 +29,7 @@ export default function BusinessManagersPage() {
       organization_id: currentOrganizationId || '',
       name: bm.name,
       status: bm.status,
+      is_active: bm.is_active, // Add the is_active field
       created_at: bm.created_at,
       ad_account_count: bm.ad_account_count,
       dolphin_business_manager_id: bm.dolphin_business_manager_id,
@@ -51,8 +54,19 @@ export default function BusinessManagersPage() {
     globalMutate('/api/onboarding-progress')
   }, [mutate])
 
-  const activeManagers = businessManagers.filter((bm) => bm.status === "active").length
-  const activeAccounts = businessManagers.filter((bm) => bm.status === "active").reduce((total, bm) => total + (bm.ad_account_count || 0), 0)
+  const activeManagers = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).length
+  const activeAccounts = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).reduce((total, bm) => total + (bm.ad_account_count || 0), 0)
+
+  // Get plan limits with fallbacks
+  const bmLimit = currentPlan?.maxBusinesses ?? 0
+  const adAccountLimit = currentPlan?.maxAdAccounts ?? 0
+
+  // Format limits (-1 means unlimited)
+  const formatLimit = (current: number, limit: number) => {
+    if (isSubscriptionLoading) return "..." // Show loading state
+    if (limit === -1) return current.toString() // Unlimited
+    return `${current} / ${limit}`
+  }
 
   return (
     <div className="space-y-6">
@@ -62,15 +76,17 @@ export default function BusinessManagersPage() {
         <div className="flex items-start gap-12 text-sm">
           <div className="flex flex-col">
             <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-              Total Business Managers
+              Active Business Managers
             </span>
             <div className="text-foreground font-semibold text-lg">
-              {activeManagers}
+              {formatLimit(activeManagers, bmLimit)}
             </div>
           </div>
           <div className="flex flex-col">
-            <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">Total Ad Accounts</span>
-            <div className="text-foreground font-semibold text-lg">{activeAccounts}</div>
+            <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">Active Ad Accounts</span>
+            <div className="text-foreground font-semibold text-lg">
+              {formatLimit(activeAccounts, adAccountLimit)}
+            </div>
           </div>
         </div>
 

@@ -52,17 +52,27 @@ export default function OnboardingPage() {
     },
     {
       id: 2,
-      title: "What's the name of your organization?",
-      subtitle: "This will be displayed on your dashboard and in communications.",
+      title: "What's the name of your team?",
+      subtitle: "",
       component: (
         <div className="space-y-4">
-          <Input
-            value={orgName}
-            onChange={(e) => setOrgName(e.target.value)}
-            placeholder="Enter your organization name"
-            className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 focus:scale-105 focus:shadow-lg bg-background/50 backdrop-blur-sm"
-            autoFocus
-          />
+          <div className="relative">
+            <Input
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              placeholder="Enter your team name (e.g., Marketing, Sales, etc.)"
+              className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 focus:scale-105 focus:shadow-lg bg-background/50 backdrop-blur-sm pr-20"
+              autoFocus
+            />
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground text-lg">
+              's Team
+            </div>
+          </div>
+          {orgName && (
+            <div className="text-sm text-muted-foreground">
+              Your team will be called: <span className="font-medium text-foreground">{orgName}'s Team</span>
+            </div>
+          )}
         </div>
       ),
       isValid: () => orgName.trim() !== ""
@@ -225,7 +235,7 @@ export default function OnboardingPage() {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: orgName,
+          name: `${orgName}'s Team`,
           industry: industry,
           ad_spend_monthly: monthlySpend,
           timezone: timezone,

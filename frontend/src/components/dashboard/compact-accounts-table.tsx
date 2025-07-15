@@ -19,12 +19,14 @@ import { TopUpDialog } from "@/components/accounts/top-up-dialog"
 import { BalanceResetDialog } from "@/components/accounts/balance-reset-dialog"
 import { TransferBalanceDialog } from "@/components/accounts/transfer-balance-dialog"
 import { formatCurrency } from "@/utils/format"
-import { MoreHorizontal, ArrowDownLeft, ArrowRightLeft, Wallet, Copy, Plus } from "lucide-react"
+import { MoreHorizontal, ArrowDownLeft, ArrowRightLeft, Wallet, Copy, Plus, Power, PowerOff } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Loader2, AlertCircle, Target } from "lucide-react"
 import { LoadingState, ErrorState, EmptyState } from "@/components/ui/states"
 import { useOrganizationStore } from "../../lib/stores/organization-store"
 import { useAdAccounts, useBusinessManagers } from "@/lib/swr-config"
+import { AssetDeactivationDialog } from "@/components/dashboard/AssetDeactivationDialog"
+import { useAssetDeactivation } from "@/hooks/useAssetDeactivation"
 
 interface CompactAccountsTableProps {
   initialBusinessFilter?: string
@@ -45,6 +47,12 @@ export function CompactAccountsTable({
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [resetBalanceAccount, setResetBalanceAccount] = useState<any>(null)
   const [transferBalanceAccount, setTransferBalanceAccount] = useState<any>(null)
+  
+  // Add deactivation state
+  const [deactivationDialog, setDeactivationDialog] = useState<{
+    open: boolean;
+    asset: any | null;
+  }>({ open: false, asset: null });
 
   // Use optimized hooks instead of direct SWR calls
   const { data: accounts, error, isLoading, mutate } = useAdAccounts(bmIdFilter);
@@ -70,11 +78,13 @@ export function CompactAccountsTable({
 
       return {
         id: account.id,
+        asset_id: account.asset_id || account.id,
         name: account.name,
         adAccount: account.ad_account_id || account.dolphin_account_id,
         business: account.business_manager_name || 'Unknown',
         bmId: account.business_manager_id || null,
         status: account.status,
+        is_active: account.is_active !== false, // Add is_active field
         balance: balanceDollars, // Keep original balance for backward compatibility
         availableSpend: availableSpend, // NEW: Available spend calculation
         spent: spentDollars,
@@ -172,6 +182,21 @@ export function CompactAccountsTable({
     
     return timezone
   }
+  
+  // Add deactivation handler
+  const handleDeactivationClick = (account: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeactivationDialog({
+      open: true,
+      asset: {
+        id: account.id,
+        asset_id: account.asset_id || account.id,
+        name: account.name,
+        type: 'ad_account',
+        is_active: account.is_active !== false
+      }
+    });
+  }
 
   if (isLoading) {
     return <LoadingState message="Loading ad accounts..." />
@@ -242,7 +267,7 @@ export function CompactAccountsTable({
         {/* Table Header */}
         <div
           className="grid gap-4 px-6 py-4 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "40px 200px 20px 180px 150px 150px 100px 100px 120px 120px" }}
+          style={{ gridTemplateColumns: "40px 180px 20px 160px 130px 130px 80px 80px 100px 160px" }}
         >
           <div className="flex items-center">
             <Checkbox
@@ -270,8 +295,9 @@ export function CompactAccountsTable({
               className={cn(
                 "grid gap-4 px-6 py-5 hover:bg-muted/50 transition-colors group cursor-pointer border-b border-border",
                 selectedAccounts.includes(account.id) && "bg-muted/30",
+                account.is_active === false && "opacity-50 grayscale"
               )}
-              style={{ gridTemplateColumns: "40px 200px 20px 180px 150px 150px 100px 100px 120px 120px" }}
+              style={{ gridTemplateColumns: "40px 180px 20px 160px 130px 130px 80px 80px 100px 160px" }}
               onClick={(e) => handleRowClick(account, e)}
             >
               {/* Checkbox */}
@@ -318,8 +344,14 @@ export function CompactAccountsTable({
               </div>
 
               {/* Status */}
-              <div className="flex items-center">
-                <StatusBadge status={account.status as any} size="sm" />
+              <div className="flex items-center gap-2">
+                {account.is_active === false ? (
+                  <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
+                    Deactivated
+                  </span>
+                ) : (
+                  <StatusBadge status={account.status as any} size="sm" />
+                )}
               </div>
 
               {/* Available Spend */}
@@ -329,41 +361,14 @@ export function CompactAccountsTable({
 
               {/* Actions */}
               <div className="flex items-center justify-end gap-2">
-                {/* Top Up Button */}
-                <TopUpDialog
-                  account={{
-                    id: account.id,
-                    name: account.name,
-                    adAccount: account.adAccount,
-                    balance: account.availableSpend, // Use availableSpend as balance
-                    currency: account.currency,
-                    business: account.business,
-                    bmId: account.bmId
-                  }}
-                  onSuccess={() => mutate()}
-                  trigger={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                      }}
-                      className="h-7 px-2 text-xs border-border hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      <Wallet className="h-3 w-3 mr-1" />
-                      Top Up
-                    </Button>
-                  }
-                />
-
-                {/* 3-dot Menu */}
+                {/* 3-dot Menu - moved to the left */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={(e) => e.stopPropagation()}
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-accent"
+                      className="h-8 w-8 opacity-100 hover:bg-accent"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -428,8 +433,52 @@ export function CompactAccountsTable({
                       <ArrowDownLeft className="h-3 w-3 mr-2" />
                       Reset Balance
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-border" />
+                    <DropdownMenuItem
+                      className="text-popover-foreground hover:bg-accent"
+                      onClick={(e) => handleDeactivationClick(account, e)}
+                    >
+                      {account.is_active === false ? (
+                        <>
+                          <Power className="h-3 w-3 mr-2" />
+                          Activate
+                        </>
+                      ) : (
+                        <>
+                          <PowerOff className="h-3 w-3 mr-2" />
+                          Deactivate
+                        </>
+                      )}
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Top Up Button */}
+                <TopUpDialog
+                  account={{
+                    id: account.id,
+                    name: account.name,
+                    adAccount: account.adAccount,
+                    balance: account.availableSpend, // Use availableSpend as balance
+                    currency: account.currency,
+                    business: account.business,
+                    bmId: account.bmId
+                  }}
+                  onSuccess={() => mutate()}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                      }}
+                      className="h-7 px-2 text-xs border-border hover:bg-accent"
+                    >
+                      <Wallet className="h-3 w-3 mr-1" />
+                      Top Up
+                    </Button>
+                  }
+                />
               </div>
             </div>
           ))}
@@ -484,6 +533,22 @@ export function CompactAccountsTable({
               setResetBalanceAccount(null)
             }
           }}
+        />
+      )}
+      
+      {/* Deactivation Dialog */}
+      {deactivationDialog.asset && (
+        <AssetDeactivationDialog
+          asset={{
+            id: deactivationDialog.asset.id,
+            asset_id: deactivationDialog.asset.asset_id || deactivationDialog.asset.id,
+            name: deactivationDialog.asset.name,
+            type: 'ad_account',
+            is_active: deactivationDialog.asset.is_active !== false
+          }}
+          open={deactivationDialog.open}
+          onOpenChange={(open) => setDeactivationDialog({ open, asset: open ? deactivationDialog.asset : null })}
+          onSuccess={mutate}
         />
       )}
     </div>

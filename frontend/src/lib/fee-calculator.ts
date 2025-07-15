@@ -5,24 +5,24 @@ const SUBSCRIPTION_PLANS = {
   starter: {
     monthlyFee: 29,
     adSpendFeePercent: 6,
-    businessManagers: 1,
-    adAccounts: 5,
+    businessManagers: 3,
+    adAccounts: 10,
     teamMembers: 2,
     monthlyTopupLimit: 6000
   },
   growth: {
     monthlyFee: 149,
     adSpendFeePercent: 3,
-    businessManagers: 3,
-    adAccounts: 21,
+    businessManagers: 5,
+    adAccounts: 25,
     teamMembers: 5,
     monthlyTopupLimit: 25000
   },
   scale: {
     monthlyFee: 499,
     adSpendFeePercent: 1.5,
-    businessManagers: 10,
-    adAccounts: 70,
+    businessManagers: 15,
+    adAccounts: 75,
     teamMembers: 15,
     monthlyTopupLimit: 100000
   },

@@ -19,6 +19,8 @@ import {
   Building2,
   Package,
   History,
+  MessageSquare,
+  Zap,
   type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
@@ -44,6 +46,7 @@ export function AdminSidebar({ className }: { className?: string }) {
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/admin", icon: Home },
     { name: "Assets", href: "/admin/assets", icon: Package },
+    { name: "Support", href: "/admin/support", icon: MessageSquare },
     {
       name: "Teams",
       href: "/admin/teams",

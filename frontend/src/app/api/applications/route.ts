@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { type, business_manager_id, timezone, website_url } = await request.json();
+        const { type, business_manager_id, timezone, website_url, pixel_id, pixel_name, target_bm_dolphin_id } = await request.json();
 
         if (!type) {
             return NextResponse.json({ error: 'Application type is required.' }, { status: 400 });
@@ -112,7 +112,140 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        if (type === 'ad_account') {
+        if (type === 'pixel_connection') {
+            // Handle pixel connection application
+            if (!pixel_id || !target_bm_dolphin_id) {
+                return NextResponse.json({ error: 'Pixel ID and Business Manager ID are required for pixel connection requests.' }, { status: 400 });
+            }
+
+            // Check if organization can add more pixels
+            const { data: canAddPixel, error: pixelLimitError } = await supabaseService
+                .rpc('check_plan_limits', {
+                    org_id: organization_id,
+                    limit_type: 'pixels'
+                });
+
+            if (pixelLimitError) {
+                console.error('Error checking pixel limits:', pixelLimitError);
+                return NextResponse.json({ error: 'Failed to check plan limits.' }, { status: 500 });
+            }
+
+            if (!canAddPixel) {
+                return NextResponse.json({ 
+                    error: 'Plan Limit Reached',
+                    message: 'You have reached the maximum number of pixels for your current plan. Please upgrade to add more pixels.'
+                }, { status: 403 });
+            }
+
+            // Check if the business manager exists and belongs to the user's organization
+            const { data: bmBindings, error: bmError } = await supabaseService
+                .from('asset_binding')
+                .select(`
+                    binding_id,
+                    asset:asset_id (
+                        asset_id,
+                        dolphin_id,
+                        type,
+                        name
+                    )
+                `)
+                .eq('organization_id', organization_id)
+                .eq('status', 'active');
+
+            if (bmError) {
+                console.error('Business manager lookup error:', bmError);
+                return NextResponse.json({ error: 'Failed to lookup business managers.' }, { status: 500 });
+            }
+
+            // Filter to find the matching business manager
+            const matchingBM = bmBindings?.find((binding: any) => 
+                binding.asset && 
+                binding.asset.type === 'business_manager' && 
+                binding.asset.dolphin_id === target_bm_dolphin_id
+            );
+
+            if (!matchingBM || !matchingBM.asset) {
+                console.error('Business manager not found for dolphin_id:', target_bm_dolphin_id);
+                return NextResponse.json({ error: 'Business manager not found or not accessible.' }, { status: 404 });
+            }
+
+            // Check if this pixel is already connected or has a pending request
+            const { data: existingPixel, error: pixelCheckError } = await supabaseService
+                .from('application')
+                .select('application_id, status')
+                .eq('organization_id', organization_id)
+                .eq('request_type', 'pixel_connection')
+                .eq('pixel_id', pixel_id)
+                .in('status', ['pending', 'processing'])
+                .single();
+
+            if (pixelCheckError && pixelCheckError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                console.error('Error checking existing pixel request:', pixelCheckError);
+                return NextResponse.json({ error: 'Failed to validate pixel request.' }, { status: 500 });
+            }
+
+            if (existingPixel) {
+                return NextResponse.json({ 
+                    error: 'Pixel Request Already Exists',
+                    message: 'A pixel connection request for this pixel is already pending or being processed.'
+                }, { status: 409 });
+            }
+
+            // Check if this pixel is already connected as an asset
+            const { data: existingAsset, error: assetCheckError } = await supabaseService
+                .from('asset_binding')
+                .select(`
+                    binding_id,
+                    asset:asset_id (
+                        asset_id,
+                        dolphin_id,
+                        type
+                    )
+                `)
+                .eq('organization_id', organization_id)
+                .eq('status', 'active');
+
+            if (assetCheckError) {
+                console.error('Error checking existing pixel asset:', assetCheckError);
+                return NextResponse.json({ error: 'Failed to validate pixel asset.' }, { status: 500 });
+            }
+
+            const existingPixelAsset = assetCheckError ? null : existingAsset?.find((binding: any) => 
+                binding.asset && 
+                binding.asset.type === 'pixel' && 
+                binding.asset.dolphin_id === pixel_id
+            );
+
+            if (existingPixelAsset) {
+                return NextResponse.json({ 
+                    error: 'Pixel Already Connected',
+                    message: 'This pixel is already connected to your organization.'
+                }, { status: 409 });
+            }
+
+            // Create pixel connection application
+            const { data, error } = await supabaseService
+                .from('application')
+                .insert({
+                    organization_id,
+                    request_type: 'pixel_connection',
+                    pixel_id,
+                    pixel_name: pixel_name || `Pixel ${pixel_id}`,
+                    target_bm_dolphin_id,
+                    website_url: 'N/A', // Required field but not relevant for pixel connections
+                    status: 'pending'
+                })
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Database error creating pixel connection application:', error);
+                return NextResponse.json({ error: 'Failed to create pixel connection request.' }, { status: 500 });
+            }
+
+            return NextResponse.json({ success: true, application: data });
+
+        } else if (type === 'ad_account') {
             // Handle ad account application
             if (!business_manager_id) {
                 return NextResponse.json({ error: 'Business manager ID is required for ad account applications.' }, { status: 400 });

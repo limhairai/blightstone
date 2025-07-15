@@ -100,40 +100,58 @@ class SubscriptionService:
                 .execute()
             )
             
-            # Get business managers count
+            # Get business managers count - only active and client-activated
             business_managers = (
                 self.supabase.table("asset_binding")
                 .select("asset_id", count="exact")
                 .eq("organization_id", organization_id)
                 .eq("status", "active")
-                .in_("asset_id", 
-                    self.supabase.table("asset")
-                    .select("asset_id")
-                    .eq("type", "business_manager")
-                    .execute().data
-                )
+                .eq("is_active", True)  # Only count client-activated assets
                 .execute()
             )
             
-            # Get ad accounts count
+            # Filter for business manager assets
+            if business_managers.data:
+                bm_asset_ids = [binding["asset_id"] for binding in business_managers.data]
+                bm_assets = (
+                    self.supabase.table("asset")
+                    .select("asset_id", count="exact")
+                    .eq("type", "business_manager")
+                    .in_("asset_id", bm_asset_ids)
+                    .execute()
+                )
+                bm_count = bm_assets.count or 0
+            else:
+                bm_count = 0
+            
+            # Get ad accounts count - only active and client-activated
             ad_accounts = (
                 self.supabase.table("asset_binding")
                 .select("asset_id", count="exact")
                 .eq("organization_id", organization_id)
                 .eq("status", "active")
-                .in_("asset_id",
-                    self.supabase.table("asset")
-                    .select("asset_id")
-                    .eq("type", "ad_account")
-                    .execute().data
-                )
+                .eq("is_active", True)  # Only count client-activated assets
                 .execute()
             )
             
+            # Filter for ad account assets
+            if ad_accounts.data:
+                ad_asset_ids = [binding["asset_id"] for binding in ad_accounts.data]
+                ad_assets = (
+                    self.supabase.table("asset")
+                    .select("asset_id", count="exact")
+                    .eq("type", "ad_account")
+                    .in_("asset_id", ad_asset_ids)
+                    .execute()
+                )
+                ad_count = ad_assets.count or 0
+            else:
+                ad_count = 0
+            
             return {
                 "team_members": team_members.count or 0,
-                "business_managers": business_managers.count or 0,
-                "ad_accounts": ad_accounts.count or 0
+                "business_managers": bm_count,
+                "ad_accounts": ad_count
             }
         except Exception as e:
             logger.error(f"Error getting usage for org {organization_id}: {e}")

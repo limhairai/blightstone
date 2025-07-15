@@ -19,11 +19,13 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { StatusBadge } from "../ui/status-badge"
-import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2, RefreshCw, CreditCard, SearchIcon, Target, Plus } from "lucide-react"
+import { MoreHorizontal, Eye, ArrowUpRight, ArrowDownLeft, Wallet, Pause, Play, Copy, Receipt, Trash2, RefreshCw, CreditCard, SearchIcon, Target, Plus, Power, PowerOff } from "lucide-react"
 import { toast } from "sonner"
 import { LoadingState, ErrorState, EmptyState } from "../ui/states"
 import { Skeleton } from "../ui/skeleton";
 import { formatCurrency } from "../../lib/config/financial"
+import { AssetDeactivationDialog } from "../dashboard/AssetDeactivationDialog"
+import { useAssetDeactivation } from "../../hooks/useAssetDeactivation"
 
 const fetcher = (url: string, token: string) => 
   fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
@@ -45,6 +47,12 @@ export function AccountsTable() {
     business: searchParams?.get('business') || "all"
   })
   const [debouncedSearch] = useDebounce(filters.search, 500);
+
+  // Add deactivation state
+  const [deactivationDialog, setDeactivationDialog] = useState<{
+    open: boolean;
+    asset: any | null;
+  }>({ open: false, asset: null });
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -140,11 +148,30 @@ export function AccountsTable() {
   }
 
   const handleSelectAll = () => {
-    setSelectedAccounts(
-      selectedAccounts.length === accounts.length 
-        ? [] 
-        : accounts.map((account: any) => account.id)
-    )
+    if (isAllSelected) {
+      setSelectedAccounts([])
+    } else {
+      setSelectedAccounts(accounts.map((account: AdAccount) => account.id))
+    }
+  }
+
+  // Add deactivation handler
+  const handleDeactivationClick = (account: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeactivationDialog({
+      open: true,
+      asset: {
+        id: account.id,
+        asset_id: account.asset_id || account.id,
+        name: account.name,
+        type: 'ad_account',
+        is_active: account.is_active !== false
+      }
+    });
+  }
+
+  const onRefresh = () => {
+    mutate(accountsSWRKey);
   }
   
   const isAllSelected = accounts.length > 0 && selectedAccounts.length === accounts.length
@@ -169,7 +196,7 @@ export function AccountsTable() {
             <Button 
               size="sm" 
               variant="outline" 
-              onClick={() => mutate(accountsSWRKey)}
+              onClick={onRefresh}
               disabled={isLoading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
@@ -251,7 +278,16 @@ export function AccountsTable() {
                     {account.metadata?.business_manager_id ? account.metadata.business_manager_id.substring(0, 12) : 'N/A'}
                   </div>
                 </td>
-                <td className="p-2"><StatusBadge status={account.status} /></td>
+                <td className="p-2">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={account.status} />
+                    {account.is_active === false && (
+                      <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
+                        Deactivated
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="p-2 text-right font-mono">
                   {formatCurrency(Math.max(0, ((account.spend_cap_cents || 0) / 100) - ((account.spend_cents || 0) / 100)))}
                 </td>
@@ -274,6 +310,22 @@ export function AccountsTable() {
                       <DropdownMenuItem className="text-red-500">
                         Remove from Business
                       </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={(e) => handleDeactivationClick(account, e)}
+                        className="text-muted-foreground"
+                      >
+                        {account.is_active === false ? (
+                          <>
+                            <Power className="h-4 w-4 mr-2" />
+                            Activate
+                          </>
+                        ) : (
+                          <>
+                            <PowerOff className="h-4 w-4 mr-2" />
+                            Deactivate
+                          </>
+                        )}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </td>
@@ -292,6 +344,22 @@ export function AccountsTable() {
         />
       )}
       {/* Add pagination controls here if needed */}
+        
+        {/* Deactivation Dialog */}
+        {deactivationDialog.asset && (
+          <AssetDeactivationDialog
+            asset={{
+              id: deactivationDialog.asset.id,
+              asset_id: deactivationDialog.asset.asset_id || deactivationDialog.asset.id,
+              name: deactivationDialog.asset.name,
+              type: 'ad_account',
+              is_active: deactivationDialog.asset.is_active !== false
+            }}
+            open={deactivationDialog.open}
+            onOpenChange={(open) => setDeactivationDialog({ open, asset: open ? deactivationDialog.asset : null })}
+            onSuccess={onRefresh}
+          />
+        )}
     </div>
   )
 }

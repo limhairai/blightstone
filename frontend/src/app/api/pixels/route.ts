@@ -62,11 +62,12 @@ export async function GET(request: NextRequest) {
 
     // Get pixel limits based on plan
     const pixelLimits: Record<string, number> = {
+      'free': 0,
       'starter': 2,
       'growth': 5,
       'scale': 10
     }
-    const subscriptionLimit = pixelLimits[subscription?.plan_id || 'starter'] || 1
+    const subscriptionLimit = pixelLimits[subscription?.plan_id || 'free'] || 0
 
     // Get all ad accounts for this organization that have pixel data
     // Use the same approach as admin API for consistency
