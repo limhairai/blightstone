@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       .eq('asset.type', 'ad_account');
 
     // Get all domains for all BMs in one query
-    const bmAssetIds = validBoundAssets.map(binding => binding.asset?.asset_id).filter(Boolean);
+    const bmAssetIds = validBoundAssets.map((binding: any) => binding.asset?.asset_id).filter(Boolean);
     const { data: allDomains, error: domainError } = await supabase
       .from('bm_domains')
       .select('bm_asset_id, domain_url')

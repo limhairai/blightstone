@@ -89,7 +89,7 @@ export const LazyAdminTeams = dynamic(
 
 // Lazy-loaded admin components (individual components)
 export const LazyAccessCodeManager = dynamic(
-  () => import('@/components/admin/AccessCodeManager').then(mod => ({ default: mod.AccessCodeManager })),
+  () => import('@/components/admin/AccessCodeManager'),
   {
     loading: () => <Skeleton className="h-64 w-full" />,
     ssr: false
@@ -112,18 +112,18 @@ export const LazyManageAssetDialog = dynamic(
   }
 )
 
-// Chart components (heavy dependencies)
-export const LazyAdminCharts = dynamic(
-  () => import('@/components/admin/admin-charts'),
-  {
-    loading: () => <Skeleton className="h-64 w-full" />,
-    ssr: false
-  }
-)
+// Chart components (heavy dependencies) - removed as admin-charts doesn't exist
+// export const LazyAdminCharts = dynamic(
+//   () => import('@/components/admin/admin-charts'),
+//   {
+//     loading: () => <Skeleton className="h-64 w-full" />,
+//     ssr: false
+//   }
+// )
 
 // Table components with heavy data processing
 export const LazyAdminBusinessesTable = dynamic(
-  () => import('@/components/dashboard/admin-businesses-table'),
+  () => import('@/components/dashboard/admin-businesses-table').then(mod => ({ default: mod.BusinessesTable })),
   {
     loading: () => <AdminPanelSkeleton />,
     ssr: false
