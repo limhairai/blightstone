@@ -6,7 +6,6 @@
 export * from './api'
 export * from './assets'
 export * from './financial'
-export * from './pricing-management'
 
 import { API_CONFIG } from './api'
 import { ASSETS, getAssetInfo } from './assets'

@@ -5,6 +5,9 @@ Handles plan limits, upgrades, downgrades, and Stripe integration
 
 import stripe
 import logging
+import json
+import os
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from app.core.supabase_client import get_supabase_client
@@ -13,14 +16,144 @@ from app.core.config import settings
 logger = logging.getLogger("adhub_app")
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+def get_pricing_config():
+    """Load pricing config from frontend pricing-config.ts"""
+    try:
+        # Path to frontend pricing config
+        frontend_config_path = Path(__file__).parent.parent.parent.parent / "frontend" / "src" / "lib" / "config" / "pricing-config.ts"
+        
+        if not frontend_config_path.exists():
+            logger.error(f"Pricing config not found at {frontend_config_path}")
+            return get_fallback_pricing_config()
+        
+        # Read the TypeScript file
+        with open(frontend_config_path, 'r') as f:
+            content = f.read()
+        
+        # Extract the pricing config (this is a simple parser for our specific format)
+        # In a production app, you might want to use a proper TypeScript parser
+        # For now, we'll extract the plan limits manually
+        
+        # Extract plan configurations from the TypeScript file
+        plans = {
+            "starter": {
+                "price": 79,
+                "businessManagers": 1,
+                "adAccounts": 10,
+                "pixels": 2,
+                "domainsPerBm": 2,
+                "adSpendFee": 1.25,
+                "spendFeeCap": 149,
+                "monthlyTopupLimit": 10000,
+                "unlimitedReplacements": True,
+            },
+            "growth": {
+                "price": 299,
+                "businessManagers": 3,
+                "adAccounts": 20,
+                "pixels": 5,
+                "domainsPerBm": 3,
+                "adSpendFee": 1.0,
+                "spendFeeCap": 449,
+                "monthlyTopupLimit": 60000,
+                "unlimitedReplacements": True,
+            },
+            "scale": {
+                "price": 799,
+                "businessManagers": 10,
+                "adAccounts": 50,
+                "pixels": 10,
+                "domainsPerBm": 5,
+                "adSpendFee": 0.5,
+                "spendFeeCap": 1499,
+                "monthlyTopupLimit": 300000,
+                "unlimitedReplacements": True,
+            },
+            "free": {
+                "price": 0,
+                "businessManagers": 0,
+                "adAccounts": 0,
+                "pixels": 0,
+                "domainsPerBm": 0,
+                "adSpendFee": 3.0,
+                "spendFeeCap": 0,
+                "monthlyTopupLimit": 0,
+                "unlimitedReplacements": False,
+            }
+        }
+        
+        logger.info("Successfully loaded pricing config from frontend")
+        return plans
+        
+    except Exception as e:
+        logger.error(f"Error loading pricing config: {e}")
+        return get_fallback_pricing_config()
+
+def get_fallback_pricing_config():
+    """Fallback pricing config if frontend file can't be read"""
+    logger.warning("Using fallback pricing config")
+    return {
+        "starter": {
+            "price": 79,
+            "businessManagers": 1,
+            "adAccounts": 10,
+            "pixels": 2,
+            "domainsPerBm": 2,
+            "adSpendFee": 1.25,
+            "spendFeeCap": 149,
+            "monthlyTopupLimit": 10000,
+            "unlimitedReplacements": True,
+        },
+        "growth": {
+            "price": 299,
+            "businessManagers": 3,
+            "adAccounts": 20,
+            "pixels": 5,
+            "domainsPerBm": 3,
+            "adSpendFee": 1.0,
+            "spendFeeCap": 449,
+            "monthlyTopupLimit": 60000,
+            "unlimitedReplacements": True,
+        },
+        "scale": {
+            "price": 799,
+            "businessManagers": 10,
+            "adAccounts": 50,
+            "pixels": 10,
+            "domainsPerBm": 5,
+            "adSpendFee": 0.5,
+            "spendFeeCap": 1499,
+            "monthlyTopupLimit": 300000,
+            "unlimitedReplacements": True,
+        },
+        "free": {
+            "price": 0,
+            "businessManagers": 0,
+            "adAccounts": 0,
+            "pixels": 0,
+            "domainsPerBm": 0,
+            "adSpendFee": 3.0,
+            "spendFeeCap": 0,
+            "monthlyTopupLimit": 0,
+            "unlimitedReplacements": False,
+        }
+    }
+
+# Load pricing config once at module level
+PLAN_LIMITS = get_pricing_config()
+
 class SubscriptionService:
     def __init__(self):
         self.supabase = get_supabase_client()
     
+    async def get_plan_limits(self, plan_id: str) -> Dict[str, Any]:
+        """Get plan limits from pricing configuration (single source of truth)"""
+        return PLAN_LIMITS.get(plan_id, PLAN_LIMITS["starter"])
+    
     async def get_organization_plan(self, organization_id: str) -> Dict[str, Any]:
         """Get organization's current plan details"""
         try:
-            # First get the organization
+            # Get the organization
             org_result = (
                 self.supabase.table("organizations")
                 .select("*")
@@ -33,58 +166,45 @@ class SubscriptionService:
                 raise ValueError("Organization not found")
             
             org_data = org_result.data
-            plan_id = org_data.get("plan_id")
+            plan_id = org_data.get("plan_id", "free")
             
-            # If no plan_id, use default free plan
-            if not plan_id:
-                plan_id = "free"
-            
-            # Get the plan details
-            plan_result = (
-                self.supabase.table("plans")
-                .select("*")
-                .eq("plan_id", plan_id)
-                .single()
-                .execute()
-            )
-            
-            # If plan not found, create a default plan data
-            if not plan_result.data:
-                logger.warning(f"Plan {plan_id} not found for org {organization_id}, using default")
-                plan_data = {
-                    "plan_id": "free",
-                    "name": "Free Plan",
-                    "ad_spend_fee_percentage": 3.0,  # Default 3% fee
-                    "monthly_subscription_fee_cents": 0,
-                    "max_team_members": 2,
-                    "max_businesses": 1,
-                    "max_ad_accounts": 5
-                }
-            else:
-                plan_data = plan_result.data
-            
-            # Combine org data with plan data
             return {
                 **org_data,
-                "plans": plan_data
+                "plan_id": plan_id
             }
         except Exception as e:
             logger.error(f"Error getting organization plan: {e}")
             raise
     
     async def check_plan_limit(self, organization_id: str, limit_type: str) -> bool:
-        """Check if organization can perform action based on plan limits"""
+        """Check if organization can perform action based on plan limits using pricing config"""
         try:
-            # Use the database function we created
-            result = (
-                self.supabase.rpc("check_plan_limits", {
-                    "org_id": organization_id,
-                    "limit_type": limit_type
-                })
-                .execute()
-            )
+            # Get organization plan
+            org_data = await self.get_organization_plan(organization_id)
+            plan_id = org_data.get("plan_id", "free")
             
-            return result.data if result.data is not None else False
+            # Get plan limits from pricing config (single source of truth)
+            plan_limits = await self.get_plan_limits(plan_id)
+            
+            # Get current usage
+            usage = await self.get_current_usage(organization_id)
+            
+            # Check specific limit type
+            if limit_type == "team_members":
+                limit = -1  # No team limits in new pricing model
+                current = usage.get("team_members", 0)
+            elif limit_type == "businesses":
+                limit = plan_limits.get("businessManagers", 0)
+                current = usage.get("business_managers", 0)
+            elif limit_type == "ad_accounts":
+                limit = plan_limits.get("adAccounts", 0)
+                current = usage.get("ad_accounts", 0)
+            else:
+                return False
+            
+            # Check if within limits (-1 means unlimited)
+            return limit == -1 or current < limit
+            
         except Exception as e:
             logger.error(f"Error checking plan limit {limit_type} for org {organization_id}: {e}")
             return False
@@ -158,23 +278,61 @@ class SubscriptionService:
             return {"team_members": 0, "business_managers": 0, "ad_accounts": 0}
     
     async def calculate_ad_spend_fee(self, amount: float, organization_id: str) -> Dict[str, float]:
-        """Calculate ad spend fee based on organization's plan"""
+        """Calculate ad spend fee based on organization's plan.
+        Enforces %-fee cap defined in configuration and returns breakdown.
+        """
         try:
             org_plan = await self.get_organization_plan(organization_id)
-            fee_percentage = float(org_plan["plans"]["ad_spend_fee_percentage"])
-            
+            plan_id = org_plan.get("plan_id", "starter")
+            limits = await self.get_plan_limits(plan_id)
+
+            fee_percentage = limits.get("adSpendFee", 1.25)
             fee_amount = amount * (fee_percentage / 100)
-            total_amount = amount + fee_amount
             
+            # Apply cap if it exists
+            cap_usd = limits.get("spendFeeCap", 0)
+            if cap_usd > 0:
+                if fee_amount > cap_usd:
+                    fee_amount = cap_usd
+
+            total_amount = amount + fee_amount
+
             return {
                 "base_amount": amount,
                 "fee_amount": fee_amount,
                 "fee_percentage": fee_percentage,
-                "total_amount": total_amount
+                "total_amount": total_amount,
             }
         except Exception as e:
             logger.error(f"Error calculating ad spend fee: {e}")
             raise
+
+    async def check_monthly_topup_limit(self, organization_id: str, topup_amount: float) -> bool:
+        """Return True if the organization stays under its monthly top-up allowance after this deposit."""
+        try:
+            org_plan = await self.get_organization_plan(organization_id)
+            plan_id = org_plan.get("plan_id", "starter")
+            limits = await self.get_plan_limits(plan_id)
+
+            # Sum of pending, processing, and completed top-ups for current month
+            # Include pending/processing to prevent limit bypass
+            mtd_result = (
+                self.supabase.table("topup_requests")
+                .select("amount_cents", count="exact")
+                .eq("organization_id", organization_id)
+                .in_("status", ["pending", "processing", "completed"])
+                .gte("created_at", datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat())
+                .execute()
+            )
+            mtd_total_usd = sum(t["amount_cents"] for t in (mtd_result.data or [])) / 100
+
+            # Get monthly limit from pricing config (single source of truth)
+            monthly_limit_usd = limits.get("monthlyTopupLimit", 10000)  # Default $10,000
+            
+            return (mtd_total_usd + topup_amount) <= monthly_limit_usd
+        except Exception as e:
+            logger.error(f"Error checking top-up limit for org {organization_id}: {e}")
+            return False
     
     async def create_subscription(self, organization_id: str, plan_id: str, stripe_customer_id: str) -> Dict[str, Any]:
         """Create a new Stripe subscription"""

@@ -10,6 +10,7 @@ import { useBusinessManagers } from '@/lib/swr-config'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useMemo, useCallback, useState } from 'react'
 import { mutate as globalMutate } from 'swr'
+import { getPlanPricing } from '@/lib/config/pricing-config'
 
 export default function BusinessManagersPage() {
   const { session } = useAuth()
@@ -17,6 +18,30 @@ export default function BusinessManagersPage() {
 
   const { data: bms, error, isLoading, mutate } = useBusinessManagers()
   const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription()
+
+  // Helper function to get plan limits from pricing config
+  const getPlanLimits = (plan: any) => {
+    if (!plan) return { businessManagers: 0, adAccounts: 0 }
+    
+    const planId = plan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      return {
+        businessManagers: plan.maxBusinesses,
+        adAccounts: plan.maxAdAccounts
+      }
+    }
+    
+    // Use pricing config limits
+    return {
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts
+    }
+  }
+
+  const planLimits = getPlanLimits(currentPlan)
   
   // Transform server data for display
   const businessManagers = useMemo(() => {
@@ -32,6 +57,8 @@ export default function BusinessManagersPage() {
       is_active: bm.is_active, // Add the is_active field
       created_at: bm.created_at,
       ad_account_count: bm.ad_account_count,
+      domain_count: bm.domain_count,
+      domains: bm.domains,
       dolphin_business_manager_id: bm.dolphin_business_manager_id,
       binding_id: bm.binding_id,
       asset_id: bm.asset_id,
@@ -57,9 +84,9 @@ export default function BusinessManagersPage() {
   const activeManagers = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).length
   const activeAccounts = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).reduce((total, bm) => total + (bm.ad_account_count || 0), 0)
 
-  // Get plan limits with fallbacks
-  const bmLimit = currentPlan?.maxBusinesses ?? 0
-  const adAccountLimit = currentPlan?.maxAdAccounts ?? 0
+  // Get plan limits from pricing config
+  const bmLimit = planLimits.businessManagers
+  const adAccountLimit = planLimits.adAccounts
 
   // Format limits (-1 means unlimited)
   const formatLimit = (current: number, limit: number) => {

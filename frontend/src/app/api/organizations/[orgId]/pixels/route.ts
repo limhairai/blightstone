@@ -45,21 +45,11 @@ export async function GET(
       return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 })
     }
 
-    // Get plan data to fetch max_pixels
-    const { data: planData, error: planError } = await supabase
-      .from('plans')
-      .select('max_pixels')
-      .eq('plan_id', orgData.plan_id)
-      .single()
-
-    let subscriptionLimit = 0
-    if (!planError && planData) {
-      subscriptionLimit = planData.max_pixels || 0
-      // Keep -1 for unlimited pixels so frontend can handle it properly
-    } else {
-      // If no plan found, default to 0 (no pixels allowed)
-      subscriptionLimit = 0
-    }
+    // Get pixel limits from pricing config
+    const { getPlanPricing } = await import('@/lib/config/pricing-config')
+    const planId = orgData.plan_id || 'free'
+    const planPricing = planId === 'free' ? null : getPlanPricing(planId)
+    const subscriptionLimit = planPricing?.pixels || 0
 
     // Fetch ad accounts with pixel data for this organization (same approach as admin panel)
     const { data: adAccounts, error: adAccountsError } = await supabase

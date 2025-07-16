@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { unstable_cache } from 'next/cache'
+import { getPlanPricing } from '@/lib/config/pricing-config'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -66,40 +67,66 @@ export async function GET(request: NextRequest) {
         features: ['Dashboard Access', 'Feature Preview']
       }
     } else {
-      const { data: planData, error: planError } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('plan_id', orgData.plan_id)
-        .single()
-
-      if (!planError && planData) {
+      // Get plan pricing from pricing config (single source of truth)
+      const planId = orgData.plan_id as 'starter' | 'growth' | 'scale'
+      const planPricing = getPlanPricing(planId)
+      
+      if (planPricing) {
+        // Use pricing config as the authoritative source
         currentPlan = {
-          id: planData.plan_id,
-          name: planData.name,
-          description: planData.description,
-          monthlyPrice: planData.monthly_subscription_fee_cents / 100,
-          adSpendFee: planData.ad_spend_fee_percentage,
-          maxTeamMembers: planData.max_team_members,
-          maxBusinesses: planData.max_businesses,
-          maxAdAccounts: planData.max_ad_accounts,
-          features: planData.features || []
+          id: planId,
+          name: planId.charAt(0).toUpperCase() + planId.slice(1),
+          description: `${planId.charAt(0).toUpperCase() + planId.slice(1)} plan`,
+          monthlyPrice: planPricing.price,
+          adSpendFee: planPricing.adSpendFee,
+          maxTeamMembers: -1, // Unlimited in new model
+          maxBusinesses: planPricing.businessManagers,
+          maxAdAccounts: planPricing.adAccounts,
+          features: [
+            `${planPricing.businessManagers} Business Managers`,
+            `${planPricing.adAccounts} Ad Accounts`,
+            `${planPricing.pixels} Facebook Pixels`,
+            `${planPricing.adSpendFee}% Ad Spend Fee`,
+            'Unlimited Replacements'
+          ]
         }
       } else {
-        console.error('Error fetching plan data:', planError)
-        // Plan exists in org but not in plans table - treat as frozen
-        return NextResponse.json({
-          currentPlan: null,
-          usage: {
-            teamMembers: 1,
-            businessManagers: 0,
-            adAccounts: 0
-          },
-          subscriptionStatus: 'frozen',
-          frozen: true,
-          message: 'Subscription plan not found. Please contact support.',
-          canTopup: false,
-          canRequestAssets: false
-        })
+        // Fallback to database if pricing config doesn't have this plan
+        const { data: planData, error: planError } = await supabase
+          .from('plans')
+          .select('*')
+          .eq('plan_id', orgData.plan_id)
+          .single()
+
+        if (!planError && planData) {
+          currentPlan = {
+            id: planData.plan_id,
+            name: planData.name,
+            description: planData.description,
+            monthlyPrice: planData.monthly_subscription_fee_cents / 100,
+            adSpendFee: planData.ad_spend_fee_percentage,
+            maxTeamMembers: planData.max_team_members,
+            maxBusinesses: planData.max_businesses,
+            maxAdAccounts: planData.max_ad_accounts,
+            features: planData.features || []
+          }
+        } else {
+          console.error('Error fetching plan data:', planError)
+          // Plan exists in org but not in plans table - treat as frozen
+          return NextResponse.json({
+            currentPlan: null,
+            usage: {
+              teamMembers: 1,
+              businessManagers: 0,
+              adAccounts: 0
+            },
+            subscriptionStatus: 'frozen',
+            frozen: true,
+            message: 'Subscription plan not found. Please contact support.',
+            canTopup: false,
+            canRequestAssets: false
+          })
+        }
       }
     }
 
@@ -182,10 +209,10 @@ export async function GET(request: NextRequest) {
     // Add cache tags for revalidation
     response.headers.set('Cache-Tag', `subscription-${organizationId},organization-${organizationId},subscriptions`)
 
-    return response
+    return response;
 
   } catch (error) {
-    console.error('Error in /api/subscriptions/current:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error in /api/subscriptions/current:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

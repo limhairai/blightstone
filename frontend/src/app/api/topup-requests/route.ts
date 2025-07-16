@@ -327,8 +327,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate minimum amount for topup requests
-    if (request_type === 'topup' && amount_cents < 50000) { // $500 minimum for topups
-      return NextResponse.json({ error: 'Minimum top-up amount is $500' }, { status: 400 });
+    if (request_type === 'topup' && amount_cents < 10000) { // $100 minimum for topups
+      return NextResponse.json({ error: 'Minimum top-up amount is $100' }, { status: 400 });
     }
 
     // Validate minimum amount for balance reset requests
@@ -338,33 +338,63 @@ export async function POST(request: NextRequest) {
 
     // Check top-up limits for topup requests (only if feature is enabled)
     if (request_type === 'topup') {
-      // Import the feature flag
-      const { shouldEnableTopupLimits } = await import('@/lib/config/pricing-config');
+      // Import the feature flag and pricing config
+      const { shouldEnableTopupLimits, getPlanPricing } = await import('@/lib/config/pricing-config');
       
       if (shouldEnableTopupLimits()) {
-        const { data: limitCheck, error: limitError } = await supabase
-          .rpc('can_make_topup_request', {
-            org_id: organization_id,
-            request_amount_cents: amount_cents
-          });
+        // Get organization plan from database
+        const { data: orgData, error: orgError } = await supabase
+          .from('organizations')
+          .select('plan_id')
+          .eq('organization_id', organization_id)
+          .single();
 
-        if (limitError) {
-          console.error('Error checking topup limits:', limitError);
+        if (orgError) {
+          console.error('Error fetching organization plan:', orgError);
           return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
         }
 
-        if (!limitCheck.allowed) {
-          const limitInDollars = limitCheck.limit ? `$${(limitCheck.limit / 100).toLocaleString()}` : 'unlimited';
-          const usageInDollars = `$${(limitCheck.current_usage / 100).toLocaleString()}`;
+        // Get plan limits from pricing config (single source of truth)
+        const planId = orgData.plan_id as 'starter' | 'growth' | 'scale';
+        const planLimits = getPlanPricing(planId);
+        
+        if (planLimits) {
+          const monthlyLimitCents = planLimits.monthlyTopupLimit * 100; // Convert to cents
           
-          return NextResponse.json({ 
-            error: `Monthly top-up limit exceeded. Your plan allows ${limitInDollars} per month, and you've already used ${usageInDollars} this month.`,
-            limitInfo: {
-              limit: limitCheck.limit ? limitCheck.limit / 100 : null,
-              currentUsage: limitCheck.current_usage / 100,
-              available: limitCheck.available ? limitCheck.available / 100 : null
-            }
-          }, { status: 400 });
+          // Get current month's usage
+          const currentMonthStart = new Date();
+          currentMonthStart.setDate(1);
+          currentMonthStart.setHours(0, 0, 0, 0);
+          
+          const { data: topupData, error: topupError } = await supabase
+            .from('topup_requests')
+            .select('amount_cents')
+            .eq('organization_id', organization_id)
+            .in('status', ['pending', 'processing', 'completed'])
+            .gte('created_at', currentMonthStart.toISOString());
+
+          if (topupError) {
+            console.error('Error fetching topup usage:', topupError);
+            return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
+          }
+
+          const currentUsageCents = topupData.reduce((sum, req) => sum + req.amount_cents, 0);
+          const availableCents = monthlyLimitCents - currentUsageCents;
+          
+          // Check if request would exceed limit
+          if (currentUsageCents + amount_cents > monthlyLimitCents) {
+            const limitInDollars = `$${(monthlyLimitCents / 100).toLocaleString()}`;
+            const usageInDollars = `$${(currentUsageCents / 100).toLocaleString()}`;
+            
+            return NextResponse.json({ 
+              error: `Monthly top-up limit exceeded. Your ${planId} plan allows ${limitInDollars} per month, and you've already used ${usageInDollars} this month.`,
+              limitInfo: {
+                limit: monthlyLimitCents / 100,
+                currentUsage: currentUsageCents / 100,
+                available: availableCents / 100
+              }
+            }, { status: 400 });
+          }
         }
       }
     }

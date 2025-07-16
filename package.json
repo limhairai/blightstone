@@ -35,7 +35,7 @@
     "react-dom": "^18",
     "resend": "^4.0.1",
     "sonner": "^1.7.1",
-    "stripe": "^18.4.0",
+    "stripe": "^16.12.0",
     "swr": "^2.2.5",
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
@@ -45,20 +45,15 @@
     "@playwright/test": "^1.53.1"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:essential": "playwright test --config=config/playwright.config.ts tests/essential-user-flows.spec.ts",
-    "test:e2e:comprehensive": "playwright test --config=config/playwright.config.ts tests/auth-flows-comprehensive.spec.ts",
-    "test:e2e:ui": "playwright test --config=config/playwright.config.ts --ui",
-    "test:e2e:debug": "playwright test --config=config/playwright.config.ts --debug",
-    "test:e2e:headed": "playwright test --config=config/playwright.config.ts --headed",
-    "test:all": "npm run test && npm run test:e2e:essential",
-    "precommit": "npm run lint && npm run test:all"
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install",
+    "test:e2e:codegen": "playwright codegen http://localhost:3000",
+    "test:e2e:staging": "PLAYWRIGHT_BASE_URL=https://staging.adhub.tech playwright test",
+    "test:e2e:production": "PLAYWRIGHT_BASE_URL=https://adhub.tech playwright test --project=chromium",
+    "test:setup": "playwright install && playwright install-deps"
   }
 }

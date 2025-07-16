@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { toast } from 'sonner'
 import { useSubscriptionSWR } from '@/lib/swr-config'
+import { getPlanPricing } from '@/lib/config/pricing-config'
 
 // Global flag to prevent multiple error toasts
 let hasShownSubscriptionError = false
@@ -135,28 +136,67 @@ export function useSubscription() {
     }
   }
 
-  // Check if action is within plan limits
+  // Check if action is within plan limits using pricing config
   const checkLimit = (limitType: 'teamMembers' | 'businessManagers' | 'adAccounts', currentUsage: number) => {
     if (!currentPlan) return false
     
+    // Get plan limits from pricing config (single source of truth)
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      const limits = {
+        teamMembers: currentPlan.maxTeamMembers,
+        businessManagers: currentPlan.maxBusinesses,
+        adAccounts: currentPlan.maxAdAccounts
+      }
+      
+      const limit = limits[limitType]
+      return limit === -1 || currentUsage < limit
+    }
+    
+    // Use pricing config limits
     const limits = {
-      teamMembers: currentPlan.maxTeamMembers,
-      businessManagers: currentPlan.maxBusinesses,
-      adAccounts: currentPlan.maxAdAccounts
+      teamMembers: -1, // No team limits in new pricing model
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts
     }
     
     const limit = limits[limitType]
     return limit === -1 || currentUsage < limit // -1 means unlimited
   }
 
-  // Get usage percentage for progress bars
+  // Get usage percentage for progress bars using pricing config
   const getUsagePercentage = (limitType: 'teamMembers' | 'businessManagers' | 'adAccounts') => {
     if (!currentPlan) return 0
     
+    // Get plan limits from pricing config (single source of truth)
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      const limits = {
+        teamMembers: currentPlan.maxTeamMembers,
+        businessManagers: currentPlan.maxBusinesses,
+        adAccounts: currentPlan.maxAdAccounts
+      }
+      
+      const currentUsage = usage[limitType]
+      const limit = limits[limitType]
+      
+      if (limit === -1) return 0 // Unlimited
+      if (limit === 0) return 100 // No allowance
+      
+      return Math.min((currentUsage / limit) * 100, 100)
+    }
+    
+    // Use pricing config limits
     const limits = {
-      teamMembers: currentPlan.maxTeamMembers,
-      businessManagers: currentPlan.maxBusinesses,
-      adAccounts: currentPlan.maxAdAccounts
+      teamMembers: -1, // No team limits in new pricing model
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts
     }
     
     const currentUsage = usage[limitType]
@@ -342,28 +382,67 @@ export function useSubscriptionLegacy() {
     }
   }
 
-  // Check if action is within plan limits
+  // Check if action is within plan limits using pricing config
   const checkLimit = (limitType: 'teamMembers' | 'businessManagers' | 'adAccounts', currentUsage: number) => {
     if (!currentPlan) return false
     
+    // Get plan limits from pricing config (single source of truth)
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      const limits = {
+        teamMembers: currentPlan.maxTeamMembers,
+        businessManagers: currentPlan.maxBusinesses,
+        adAccounts: currentPlan.maxAdAccounts
+      }
+      
+      const limit = limits[limitType]
+      return limit === -1 || currentUsage < limit
+    }
+    
+    // Use pricing config limits
     const limits = {
-      teamMembers: currentPlan.maxTeamMembers,
-      businessManagers: currentPlan.maxBusinesses,
-      adAccounts: currentPlan.maxAdAccounts
+      teamMembers: -1, // No team limits in new pricing model
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts
     }
     
     const limit = limits[limitType]
     return limit === -1 || currentUsage < limit // -1 means unlimited
   }
 
-  // Get usage percentage for progress bars
+  // Get usage percentage for progress bars using pricing config
   const getUsagePercentage = (limitType: 'teamMembers' | 'businessManagers' | 'adAccounts') => {
     if (!currentPlan) return 0
     
+    // Get plan limits from pricing config (single source of truth)
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      const limits = {
+        teamMembers: currentPlan.maxTeamMembers,
+        businessManagers: currentPlan.maxBusinesses,
+        adAccounts: currentPlan.maxAdAccounts
+      }
+      
+      const currentUsage = usage[limitType]
+      const limit = limits[limitType]
+      
+      if (limit === -1) return 0 // Unlimited
+      if (limit === 0) return 100 // No allowance
+      
+      return Math.min((currentUsage / limit) * 100, 100)
+    }
+    
+    // Use pricing config limits
     const limits = {
-      teamMembers: currentPlan.maxTeamMembers,
-      businessManagers: currentPlan.maxBusinesses,
-      adAccounts: currentPlan.maxAdAccounts
+      teamMembers: -1, // No team limits in new pricing model
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts
     }
     
     const currentUsage = usage[limitType]

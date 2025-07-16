@@ -82,10 +82,11 @@ export async function GET(request: NextRequest) {
       binding.asset && binding.asset.asset_id && binding.asset.name
     );
 
-    // Calculate ad account count for each business manager by counting actual ad accounts
+    // Calculate ad account count and domain count for each business manager
     const businessManagersWithCounts = await Promise.all(
       validBoundAssets.map(async (binding: any) => {
         const bmDolphinId = binding.asset?.dolphin_id;
+        const bmAssetId = binding.asset?.asset_id;
         
         // Count ad accounts bound to this business manager
         let adAccountCount = 0;
@@ -112,6 +113,23 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        // Get domain count and actual domains for this business manager
+        let domainCount = 0;
+        let domains: string[] = [];
+        if (bmAssetId) {
+          const { data: domainData, error: domainError } = await supabase
+            .from('bm_domains')
+            .select('domain_url')
+            .eq('bm_asset_id', bmAssetId)
+            .eq('is_active', true)
+            .order('domain_url');
+
+          if (!domainError && domainData) {
+            domains = domainData.map(d => d.domain_url);
+            domainCount = domains.length;
+          }
+        }
+
         return {
           id: binding.asset?.dolphin_id, // Use dolphin_id for consistency with ad account filtering
           name: binding.asset?.name,
@@ -119,6 +137,8 @@ export async function GET(request: NextRequest) {
           is_active: binding.is_active, // Client-controlled activation status
           created_at: binding.bound_at,
           ad_account_count: adAccountCount, // Use calculated count instead of metadata
+          domain_count: domainCount, // Add domain count
+          domains: domains, // Add actual domains array
           dolphin_business_manager_id: binding.asset?.dolphin_id,
           binding_id: binding.binding_id,
           asset_id: binding.asset?.asset_id // Keep the actual asset ID for reference
@@ -133,6 +153,7 @@ export async function GET(request: NextRequest) {
       status: app.status === 'pending' ? 'pending' : app.status === 'processing' ? 'processing' : app.status === 'rejected' ? 'rejected' : 'pending',
       created_at: app.created_at,
       ad_account_count: 0,
+      domain_count: 0, // Applications don't have domains yet
       dolphin_business_manager_id: null,
       is_application: true,
       application_id: app.application_id || app.id,

@@ -17,14 +17,14 @@ Starter: $79/month + 1% ad spend fee
 - No Spend Limits
 
 Growth: $299/month + 1% ad spend fee
-- 5 Business Managers
-- 25 Ad Accounts
+- 3 Business Managers
+- 20 Ad Accounts
 - Unlimited Replacements
 - No Spend Limits
 
-Scale: $699/month + 1% ad spend fee
-- 15 Business Managers
-- 75 Ad Accounts
+Scale: $799/month + 1% ad spend fee
+- 10 Business Managers
+- 50 Ad Accounts
 - Unlimited Replacements
 - No Spend Limits
 ```

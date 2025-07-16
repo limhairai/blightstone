@@ -145,9 +145,60 @@ export async function POST(request: NextRequest) {
             console.log('No ad accounts selected for binding');
         }
 
+        // Step 7: Process domains from the application
+        let boundDomains = 0;
+        
+        // Get the application details to retrieve domains
+        const { data: applicationData, error: appError } = await supabase
+            .from('application')
+            .select('domains')
+            .eq('application_id', application_id)
+            .single();
+
+        if (appError) {
+            console.error('Error fetching application domains:', appError);
+        } else if (applicationData?.domains && Array.isArray(applicationData.domains) && applicationData.domains.length > 0) {
+            console.log('Processing domains from application:', applicationData.domains);
+            
+            try {
+                // Create domain entries for the BM
+                const domainEntries = applicationData.domains
+                    .filter((domain: string) => domain && domain.trim()) // Filter out empty domains
+                    .map((domain: string) => ({
+                        organization_id: organization_id,
+                        bm_asset_id: bmAsset.asset_id, // Use the BM asset ID
+                        domain_url: domain.trim(),
+                        is_active: true
+                    }));
+
+                if (domainEntries.length > 0) {
+                    const { data: insertedDomains, error: domainError } = await supabase
+                        .from('bm_domains')
+                        .insert(domainEntries)
+                        .select('domain_id');
+
+                    if (domainError) {
+                        console.error('Error creating domain entries:', domainError);
+                        // Don't fail the entire operation, just log and continue
+                        console.warn('Some domains may not have been created, but BM was assigned successfully');
+                        boundDomains = 0;
+                    } else {
+                        boundDomains = insertedDomains?.length || 0;
+                        console.log(`Successfully created ${boundDomains} domain entries`);
+                    }
+                }
+            } catch (domainError) {
+                console.error('Error in domain processing:', domainError);
+                // Don't fail the entire operation
+                boundDomains = 0;
+            }
+        } else {
+            console.log('No domains found in application or domains array is empty');
+        }
+
         return NextResponse.json({ 
             success: true, 
-            message: `Application fulfilled successfully. Business Manager assigned with ${boundAdAccounts} ad accounts.`,
+            message: `Application fulfilled successfully. Business Manager assigned with ${boundAdAccounts} ad accounts and ${boundDomains} domains.`,
             details: {
                 business_manager: bmAsset.name,
                 ad_accounts_bound: boundAdAccounts

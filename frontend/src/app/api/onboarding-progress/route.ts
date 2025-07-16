@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
           hasAppliedForBM: false,
           hasActiveBM: false,
           hasAddedPixel: false,
+          hasSubmittedTopup: false,
         },
         persistence: {
           hasExplicitlyDismissed: false,
@@ -133,6 +134,15 @@ export async function GET(request: NextRequest) {
     
     const hasAddedPixel = pixels && pixels.length > 0;
 
+    // Check if user has submitted topup requests (decision: track on submission, not completion)
+    const { data: topupRequests } = await supabaseAdmin
+      .from('topup_requests')
+      .select('request_id')
+      .eq('organization_id', profile.organization_id)
+      .limit(1);
+    
+    const hasSubmittedTopup = topupRequests && topupRequests.length > 0;
+
     // Combine live data with persisted dismissal state
     const progress = {
         hasSetupOrganization: hasSetupOrganization || false,
@@ -141,6 +151,7 @@ export async function GET(request: NextRequest) {
         hasAppliedForBM: hasAppliedForBM || false,
         hasActiveBM: hasActiveBM || false,
         hasAddedPixel: hasAddedPixel || false,
+        hasSubmittedTopup: hasSubmittedTopup || false,
     };
 
     const persistence = {

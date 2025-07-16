@@ -1,1 +1,0 @@
-SELECT a.asset_id, a.name, a.dolphin_id, a.type, a.status, a.metadata, ab.organization_id, ab.status as binding_status, ab.is_active FROM asset a JOIN asset_binding ab ON a.asset_id = ab.asset_id WHERE ab.organization_id = 'c845e3af-b8e4-4356-82bc-2b7b7e91eacc' AND a.type = 'pixel';

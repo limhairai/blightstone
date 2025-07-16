@@ -9,6 +9,8 @@ import stripe
 import os
 import logging
 import json
+from app.schemas.payment import PaymentIntentCreateRequest, PaymentIntentResponse, PaymentMethodResponse
+from app.services.subscription_service import SubscriptionService
 
 router = APIRouter()
 logger = logging.getLogger("adhub_app")
@@ -58,7 +60,7 @@ def verify_org_membership(supabase, user_id: str, org_id: str):
 
 @router.post("/create-intent", response_model=PaymentIntentResponse)
 async def create_payment_intent(
-    request: PaymentIntentRequest,
+    request: PaymentIntentCreateRequest,
     current_user: User = Depends(get_current_user)
 ):
     """Create a Stripe Payment Intent for wallet top-up"""
@@ -66,6 +68,17 @@ async def create_payment_intent(
         raise HTTPException(status_code=400, detail="Amount must be between $10 and $100,000")
     
     supabase = get_supabase_client()
+    
+    # 🔒 Enforce monthly top-up limits based on plan
+    subscription_svc = SubscriptionService()
+    under_limit = await subscription_svc.check_monthly_topup_limit(
+        request.organization_id, request.amount
+    )
+    if not under_limit:
+        raise HTTPException(
+            status_code=403,
+            detail="Monthly top-up limit reached for your current plan. Please upgrade to add more funds."
+        )
     
     try:
         # Verify user is member of organization

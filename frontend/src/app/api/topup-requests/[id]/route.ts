@@ -16,6 +16,15 @@ export async function PATCH(
   try {
     const { id } = await params;
     
+    // Validate that the ID is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid UUID format for topup request ID:', id);
+      return NextResponse.json({ 
+        error: 'Invalid request ID format. Expected UUID.' 
+      }, { status: 400 });
+    }
+    
     const authHeader = request.headers.get('Authorization');
     if (!authHeader) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });

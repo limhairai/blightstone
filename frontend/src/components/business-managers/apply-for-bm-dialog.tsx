@@ -13,14 +13,16 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Check, Loader2, Building2 } from "lucide-react"
+import { Check, Loader2, Building2, Plus, X } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import { validateBusinessManagerApplicationForm, showValidationErrors } from "@/lib/form-validation"
 import { useSubscription } from "@/hooks/useSubscription"
+import { normalizeDomain, isValidDomain, hasDuplicateDomains, removeDuplicateDomains, isSubdomain, getBaseDomain, SUBDOMAIN_POLICY } from "@/lib/utils/domain-utils"
 import { refreshAfterBusinessManagerChange } from "@/lib/subscription-utils"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { mutate } from 'swr'
+import { getPlanPricing } from '@/lib/config/pricing-config'
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -32,7 +34,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const { session } = useAuth()
-  const { subscriptionData, usage, checkLimit } = useSubscription()
+  const { subscriptionData, usage, checkLimit, currentPlan } = useSubscription()
   const { currentOrganizationId } = useOrganizationStore()
 
   // Check if organization is on free plan or cannot request assets
@@ -44,13 +46,56 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const canAddMoreBMs = checkLimit('businessManagers', usage?.businessManagers || 0)
   const hasReachedBMLimit = !canAddMoreBMs && !isOnFreePlan
 
+  // Get domain limits from pricing config
+  const planId = currentPlan?.id as 'starter' | 'growth' | 'scale'
+  const planLimits = getPlanPricing(planId)
+  const maxDomainsPerBm = planLimits?.domainsPerBm || 2
+
+  // Domain management functions
+  const addDomainField = () => {
+    if (formData.domains.length < maxDomainsPerBm) {
+      setFormData(prev => ({
+        ...prev,
+        domains: [...prev.domains, ""]
+      }))
+    }
+  }
+
+  const removeDomainField = (index: number) => {
+    if (formData.domains.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        domains: prev.domains.filter((_, i) => i !== index)
+      }))
+    }
+  }
+
+  const updateDomain = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      domains: prev.domains.map((domain, i) => i === index ? value : domain)
+    }))
+  }
+
+  // Domain validation with normalization
+  const validateDomainInput = (input: string) => {
+    if (!input.trim()) return { isValid: false, error: 'Domain cannot be empty' }
+    
+    const normalized = normalizeDomain(input)
+    if (!isValidDomain(normalized)) {
+      return { isValid: false, error: 'Invalid domain format' }
+    }
+    
+    return { isValid: true, normalized }
+  }
+
   const [formData, setFormData] = useState({
-    website: "",
+    domains: [""] as string[], // Array of domains based on plan limits
   })
 
   const resetForm = () => {
     setFormData({
-      website: "",
+      domains: [""],
     })
   }
 
@@ -73,10 +118,48 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
       return;
     }
 
-    // Validate form
-    if (!formData.website.trim()) {
-      toast.error('Website is required');
+    // No need to validate primary website since we're using domains directly
+
+    // Validate domains - filter out empty domains and check for duplicates
+    const validDomains = formData.domains.filter(domain => domain.trim())
+    if (validDomains.length === 0) {
+      toast.error('At least one domain is required');
       return;
+    }
+
+    // Validate and normalize domains
+    const processedDomains: string[] = []
+    const warnings: string[] = []
+    
+    for (const domain of validDomains) {
+      const validation = validateDomainInput(domain)
+      if (!validation.isValid) {
+        toast.error(`Invalid domain "${domain}": ${validation.error}`)
+        return
+      }
+      
+      const normalized = validation.normalized!
+      
+      // Check for subdomains and warn
+      const existingBaseDomains = processedDomains.map(getBaseDomain)
+      const currentBaseDomain = getBaseDomain(normalized)
+      
+      if (existingBaseDomains.includes(currentBaseDomain) && !processedDomains.includes(normalized)) {
+        warnings.push(`"${domain}" and another domain share the same base domain (${currentBaseDomain})`)
+      }
+      
+      processedDomains.push(normalized)
+    }
+    
+    // Check for duplicates using normalized domains
+    if (hasDuplicateDomains(processedDomains)) {
+      toast.error('Duplicate domains detected (www, https, and paths are ignored)')
+      return
+    }
+    
+    // Show warnings if any
+    if (warnings.length > 0) {
+      toast.warning(warnings.join('. '))
     }
 
     setIsSubmitting(true)
@@ -108,7 +191,8 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
         },
         body: JSON.stringify({
           type: 'business_manager',
-          website_url: formData.website,
+          website_url: processedDomains[0], // Use first normalized domain as primary website
+          domains: processedDomains, // Include the normalized domains
         }),
       })
 
@@ -175,20 +259,66 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="website" className="text-foreground">
-              Website *
-            </Label>
-            <Input
-              id="website"
-              type="text"
-              value={formData.website}
-              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              placeholder="https://your-website.com or your-website.com"
-              required
-              className="bg-background border-border text-foreground"
-            />
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground">
+                Domains for this Business Manager ({formData.domains.filter(d => d.trim()).length}/{maxDomainsPerBm})
+              </Label>
+              {formData.domains.length < maxDomainsPerBm && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addDomainField}
+                  className="h-8 px-2 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Domain
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              {formData.domains.map((domain, index) => {
+                const validation = domain.trim() ? validateDomainInput(domain) : null
+                const normalized = validation?.normalized
+                const isSubdomain = normalized ? normalized.split('.').length > 2 : false
+                
+                return (
+                  <div key={index} className="space-y-1">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          type="text"
+                          value={domain}
+                          onChange={(e) => updateDomain(index, e.target.value)}
+                          placeholder={index === 0 ? "example.com (primary domain)" : "additional-domain.com (optional)"}
+                          className={`bg-background border-border text-foreground ${
+                            validation && !validation.isValid ? 'border-red-500' : ''
+                          }`}
+                        />
+                        {validation && !validation.isValid && (
+                          <p className="text-xs text-red-500 mt-1">{validation.error}</p>
+                        )}
+                      </div>
+                      {formData.domains.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeDomainField(index)}
+                          className="h-10 px-2 text-red-500 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            
             <p className="text-xs text-muted-foreground">
-              Enter your website URL in any format: domain.com, www.domain.com, or https://domain.com
+              Add all domains you plan to promote with this Business Manager. The first domain will be used as your primary website. Your {planId || 'current'} plan allows up to {maxDomainsPerBm} domains per BM.
             </p>
           </div>
 
@@ -210,6 +340,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
               <ul className="text-xs text-muted-foreground space-y-1">
                 <li>• Your application will be reviewed within 1-3 business days</li>
                 <li>• Once approved, you&apos;ll receive your Business Manager ID</li>
+                <li>• You can manage up to {maxDomainsPerBm} domains per Business Manager</li>
                 <li>• You can then start creating ad accounts and campaigns</li>
               </ul>
             </div>

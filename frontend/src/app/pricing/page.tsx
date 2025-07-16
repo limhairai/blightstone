@@ -139,6 +139,9 @@ export default function PricingPage() {
       features.push(`${plan.maxTeamMembers} Team Members`)
     }
     
+    // Add unlimited replacements for all plans
+    features.push('Unlimited Replacements')
+    
     if (plan.features && Array.isArray(plan.features)) {
       features.push(...plan.features)
     }

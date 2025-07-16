@@ -23,7 +23,7 @@ import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
 import { useSWRConfig } from 'swr'
-import { useTopupLimits } from '@/hooks/useTopupLimits'
+
 import { shouldEnableTopupLimits, shouldEnableAdSpendFees } from '@/lib/config/pricing-config'
 
 
@@ -68,12 +68,9 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
   })
   const [feeCalculation, setFeeCalculation] = useState<any>(null)
   const [isCalculatingFee, setIsCalculatingFee] = useState(false)
+  const [limitInfo, setLimitInfo] = useState<any>(null)
 
-  // Get top-up limit information (only if feature is enabled)
-  const { limitInfo, isLoading: isLoadingLimits } = useTopupLimits(
-    shouldEnableTopupLimits() && currentOrganizationId ? currentOrganizationId : null,
-    shouldEnableTopupLimits() && formData.amount ? parseFloat(formData.amount) : undefined
-  )
+  // Top-up limits are handled by the backend during payment processing
 
   // Get wallet balance from SWR hook (same as topbar)
   const walletBalance = orgData?.organizations?.[0]?.balance_cents ? orgData.organizations[0].balance_cents / 100 : 0
@@ -110,6 +107,67 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
     return () => clearTimeout(debounceTimer)
   }, [formData.amount, currentOrganizationId, calculateFee, isOnFreePlan])
 
+  // Fetch top-up limit information
+  useEffect(() => {
+    const fetchLimitInfo = async () => {
+      if (!currentOrganizationId || !shouldEnableTopupLimits()) {
+        setLimitInfo(null)
+        return
+      }
+
+      try {
+        const { getPlanPricing } = await import('@/lib/config/pricing-config')
+        
+        // Get current plan from subscription data
+        const planId = currentPlan?.id as 'starter' | 'growth' | 'scale'
+        if (!planId) {
+          setLimitInfo(null)
+          return
+        }
+
+        const planLimits = getPlanPricing(planId)
+        if (!planLimits) {
+          setLimitInfo(null)
+          return
+        }
+
+        // Fetch actual monthly usage from the API
+        let currentUsage = 0
+        try {
+          const usageResponse = await fetch(`/api/topup-usage?organization_id=${currentOrganizationId}`, {
+            headers: {
+              'Authorization': `Bearer ${session?.access_token}`
+            }
+          })
+          
+          if (usageResponse.ok) {
+            const usageData = await usageResponse.json()
+            currentUsage = usageData.currentUsage
+          }
+        } catch (error) {
+          console.error('Error fetching monthly usage:', error)
+          // Continue with 0 usage if fetch fails
+        }
+
+        const available = planLimits.monthlyTopupLimit - currentUsage
+
+        setLimitInfo({
+          hasLimit: true,
+          limit: planLimits.monthlyTopupLimit,
+          currentUsage,
+          available: Math.max(0, available),
+          planName: planId,
+          allowed: available > 0
+        })
+      } catch (error) {
+        console.error('Error fetching limit info:', error)
+        setLimitInfo(null)
+      }
+    }
+
+    fetchLimitInfo()
+  }, [currentOrganizationId, currentPlan, session])
+
   const resetForm = () => {
     setFormData({
       amount: "",
@@ -132,20 +190,15 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
       return `Minimum top up amount is ${MINIMUM_TOP_UP_AMOUNT}.`;
     }
 
-    // Calculate total amount with 1% fee
-    const feeAmount = shouldEnableAdSpendFees() ? numAmount * 0.01 : 0;
-    const totalAmount = numAmount + feeAmount;
+    // Calculate total amount using actual fee calculation if available
+    const totalAmount = feeCalculation ? feeCalculation.total_amount : (shouldEnableAdSpendFees() ? numAmount * 1.01 : numAmount);
     
     if (totalAmount > walletBalance) {
       return `Total amount including fees (${formatCurrency(totalAmount)}) exceeds your wallet balance of ${formatCurrency(walletBalance)}`;
     }
 
-    // Check top-up limits (only if feature is enabled)
-    if (shouldEnableTopupLimits() && limitInfo && !limitInfo.allowed) {
-      const limitText = limitInfo.limit ? `$${limitInfo.limit.toLocaleString()}` : 'unlimited';
-      const usageText = `$${limitInfo.currentUsage.toLocaleString()}`;
-      return `Monthly top-up limit exceeded. Your ${limitInfo.planName} plan allows ${limitText} per month, and you've used ${usageText} this month.`;
-    }
+    // Top-up limits are validated by the backend during submission
+    // Frontend just shows the limit information for user reference
     
     return null;
   }
@@ -251,6 +304,45 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
           // Force revalidation with cache busting
           mutate([`/api/organizations?id=${currentOrganizationId}`, session?.access_token], undefined, { revalidate: true }),
         ]);
+        
+        // Refresh limit info after successful submission
+        const fetchLimitInfo = async () => {
+          if (!shouldEnableTopupLimits()) return
+          
+          try {
+            const { getPlanPricing } = await import('@/lib/config/pricing-config')
+            const planId = currentPlan?.id as 'starter' | 'growth' | 'scale'
+            if (!planId) return
+            
+            const planLimits = getPlanPricing(planId)
+            if (!planLimits) return
+            
+            const usageResponse = await fetch(`/api/topup-usage?organization_id=${currentOrganizationId}`, {
+              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+            })
+            
+            if (usageResponse.ok) {
+              const usageData = await usageResponse.json()
+              const available = planLimits.monthlyTopupLimit - usageData.currentUsage
+              
+              setLimitInfo({
+                hasLimit: true,
+                limit: planLimits.monthlyTopupLimit,
+                currentUsage: usageData.currentUsage,
+                available: Math.max(0, available),
+                planName: planId,
+                allowed: available > 0
+              })
+            }
+          } catch (error) {
+            console.error('Error refreshing limit info:', error)
+          }
+        }
+        
+        fetchLimitInfo()
+        
+        // Refresh onboarding progress to update setup widget
+        mutate('/api/onboarding-progress')
       }
 
       // Close dialog after success
@@ -458,13 +550,13 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                         <span className="text-sm font-medium text-foreground">${formatCurrency(parseFloat(formData.amount))}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Platform fee (1%):</span>
-                        <span className="text-sm font-medium text-orange-400">+${formatCurrency(parseFloat(formData.amount) * 0.01)}</span>
+                        <span className="text-sm text-muted-foreground">Platform fee ({feeCalculation.fee_percentage}%):</span>
+                        <span className="text-sm font-medium text-orange-400">+${formatCurrency(feeCalculation.fee_amount)}</span>
                       </div>
                       <div className="border-t border-muted/40 pt-2 mt-2">
                         <div className="flex justify-between">
                           <span className="text-sm font-medium text-foreground">Total deducted:</span>
-                          <span className="text-sm font-bold text-foreground">${formatCurrency(parseFloat(formData.amount) * 1.01)}</span>
+                          <span className="text-sm font-bold text-foreground">${formatCurrency(feeCalculation.total_amount)}</span>
                         </div>
                       </div>
                     </div>
@@ -503,8 +595,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                     isLoading || 
                     !!amountError || 
                     !formData.amount || 
-                    isOnFreePlan ||
-                    (shouldEnableTopupLimits() && limitInfo && !limitInfo.allowed)
+                    isOnFreePlan
                   }
                   className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0 h-12 text-base font-medium"
                 >

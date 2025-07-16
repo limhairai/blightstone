@@ -120,7 +120,7 @@ export default function BusinessAnalyticsPage() {
     const planPricing: Record<string, number> = {
       'starter': 79,
       'growth': 299,
-      'scale': 699,
+      'scale': 799,
       'enterprise': 1499
     };
 

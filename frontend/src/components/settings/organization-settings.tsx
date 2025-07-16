@@ -27,6 +27,7 @@ import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 import useSWR from 'swr'
 import { API_ENDPOINTS, createAuthHeaders } from '@/lib/api-config'
 import { buildApiUrl } from '../../lib/api-utils'
+import { getPlanPricing, shouldEnableTopupLimits, shouldEnablePixelLimits } from "@/lib/config/pricing-config"
 
 
 export function OrganizationSettings() {
@@ -35,10 +36,68 @@ export function OrganizationSettings() {
   const { session } = useAuth();
   const { currentPlan: subscriptionPlan, usage, subscriptionData } = useSubscription();
 
+  // Helper function to get plan limits from pricing config
+  const getPlanLimits = (plan: any) => {
+    if (!plan) return { teamMembers: 0, businessManagers: 0, adAccounts: 0, pixels: 0, monthlyTopupLimit: 0 }
+    
+    const planId = plan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      return {
+        teamMembers: plan.maxTeamMembers,
+        businessManagers: plan.maxBusinesses,
+        adAccounts: plan.maxAdAccounts,
+        pixels: 0,
+        monthlyTopupLimit: 0
+      }
+    }
+    
+    // Use pricing config limits
+    return {
+      teamMembers: -1, // No team limits in new pricing model
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts,
+      pixels: planLimits.pixels,
+      monthlyTopupLimit: planLimits.monthlyTopupLimit
+    }
+  }
+
+  const planLimits = getPlanLimits(subscriptionPlan)
+
   // Use optimized hooks - remove individual API calls
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useCurrentOrganization(currentOrganizationId);
   const { data: bizData, isLoading: isBizLoading } = useBusinessManagers();
   const { data: accData, isLoading: isAccLoading } = useAdAccounts();
+  
+  // Fetch pixel data for usage display
+  const { data: pixelData, isLoading: isPixelLoading } = useSWR(
+    session?.access_token && currentOrganizationId 
+      ? [`/api/organizations/${currentOrganizationId}/pixels`, currentOrganizationId]
+      : null,
+    async ([url, orgId]) => {
+      const response = await fetch(url, {
+        headers: createAuthHeaders(session!.access_token)
+      });
+      if (!response.ok) throw new Error('Failed to fetch pixels');
+      return response.json();
+    }
+  );
+
+  // Fetch monthly topup usage if feature is enabled
+  const { data: topupUsage, isLoading: isTopupLoading } = useSWR(
+    session?.access_token && currentOrganizationId && shouldEnableTopupLimits()
+      ? [`/api/topup-usage?organization_id=${currentOrganizationId}`, currentOrganizationId]
+      : null,
+    async ([url, orgId]) => {
+      const response = await fetch(url, {
+        headers: createAuthHeaders(session!.access_token)
+      });
+      if (!response.ok) throw new Error('Failed to fetch topup usage');
+      return response.json();
+    }
+  );
   
   // Fetch payment methods from backend API
   const { data: paymentMethods = [], error: paymentMethodsError } = useSWR(
@@ -159,6 +218,8 @@ export function OrganizationSettings() {
   // Count only ACTIVE assets (not total)
   const activeBusinesses = businesses.filter((bm: any) => bm.status === 'active' && bm.is_active !== false).length
   const activeAccounts = accounts.filter((acc: any) => acc.status === 'active' && acc.is_active !== false).length
+  const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
+  const monthlyTopupUsage = topupUsage?.currentUsage || 0
   
   // Use real subscription plan data instead of hardcoded defaultPlans
   const currentPlan = subscriptionPlan || {
@@ -267,7 +328,7 @@ export function OrganizationSettings() {
     }
   };
 
-  const globalLoading = isOrgLoading || isBizLoading || isAccLoading;
+  const globalLoading = isOrgLoading || isBizLoading || isAccLoading || isPixelLoading || isTopupLoading;
 
   if (globalLoading) {
     return <div>Loading organization settings...</div>;
@@ -322,14 +383,14 @@ export function OrganizationSettings() {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Business Managers</Label>
                   <span className="text-sm text-muted-foreground">
-                    {activeBusinesses} / {currentPlan.maxBusinesses === -1 ? '∞' : currentPlan.maxBusinesses}
+                                            {activeBusinesses} / {planLimits.businessManagers === -1 ? '∞' : planLimits.businessManagers}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
-                      width: `${currentPlan.maxBusinesses === -1 ? 0 : Math.min(100, (activeBusinesses / currentPlan.maxBusinesses) * 100)}%` 
+                      width: `${planLimits.businessManagers === -1 ? 0 : Math.min(100, (activeBusinesses / planLimits.businessManagers) * 100)}%` 
                     }}
                   ></div>
                 </div>
@@ -340,20 +401,58 @@ export function OrganizationSettings() {
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-foreground">Ad Accounts</Label>
                   <span className="text-sm text-muted-foreground">
-                    {activeAccounts} / {currentPlan.maxAdAccounts === -1 ? '∞' : currentPlan.maxAdAccounts}
+                                            {activeAccounts} / {planLimits.adAccounts === -1 ? '∞' : planLimits.adAccounts}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
                     className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
                     style={{ 
-                      width: `${currentPlan.maxAdAccounts === -1 ? 0 : Math.min(100, (activeAccounts / currentPlan.maxAdAccounts) * 100)}%` 
+                      width: `${planLimits.adAccounts === -1 ? 0 : Math.min(100, (activeAccounts / planLimits.adAccounts) * 100)}%` 
                     }}
                   ></div>
                 </div>
               </div>
 
+              {/* Pixels Usage */}
+              {shouldEnablePixelLimits() && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-foreground">Facebook Pixels</Label>
+                    <span className="text-sm text-muted-foreground">
+                      {activePixels} / {planLimits.pixels === -1 ? '∞' : planLimits.pixels}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${planLimits.pixels === -1 ? 0 : Math.min(100, (activePixels / planLimits.pixels) * 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
 
+              {/* Monthly Topup Usage */}
+              {shouldEnableTopupLimits() && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-foreground">Monthly Topup Limit</Label>
+                    <span className="text-sm text-muted-foreground">
+                      ${monthlyTopupUsage.toLocaleString()} / ${planLimits.monthlyTopupLimit === -1 ? '∞' : planLimits.monthlyTopupLimit.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${planLimits.monthlyTopupLimit === -1 ? 0 : Math.min(100, (monthlyTopupUsage / planLimits.monthlyTopupLimit) * 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
 
               {/* Current Plan Summary */}
               <div className="pt-2 border-t border-border">
@@ -365,6 +464,18 @@ export function OrganizationSettings() {
                   <span className="text-muted-foreground">Ad Spend Fee</span>
                   <span className="text-foreground font-medium">{currentPlan.adSpendFee}%</span>
                 </div>
+                {planLimits.monthlyTopupLimit && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Monthly Topup Limit</span>
+                    <span className="text-foreground font-medium">${planLimits.monthlyTopupLimit.toLocaleString()}</span>
+                  </div>
+                )}
+                {currentPlan.id !== 'free' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Domains per BM</span>
+                    <span className="text-foreground font-medium">{planLimits.pixels ? `${getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}` : '0'}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

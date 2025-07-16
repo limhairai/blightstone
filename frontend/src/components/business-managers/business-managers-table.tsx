@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { BusinessManagersViewToggle } from "@/components/business-managers/business-managers-view-toggle"
+import { BmCardWithTabs } from "@/components/business-managers/bm-card-with-tabs"
 import { Button } from "@/components/ui/button"
 import { getInitials } from "@/utils/format"
-import { Search, ArrowRight, Building2, Loader2, X, Trash2, MoreHorizontal, Copy, Power, PowerOff } from "lucide-react"
+import { Search, ArrowRight, Building2, Loader2, X, Trash2, MoreHorizontal, Copy, Power, PowerOff, Globe, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { BusinessManager } from "@/types/business"
 import { useAuth } from "@/contexts/AuthContext"
@@ -25,6 +26,7 @@ import { toast } from "sonner"
 import { mutate } from "swr"
 import { AssetDeactivationDialog } from "@/components/dashboard/AssetDeactivationDialog"
 import { useAssetDeactivation } from "@/hooks/useAssetDeactivation"
+import { BmDetailsDialog } from "@/components/business-managers/bm-details-dialog"
 
 interface BusinessManagersTableProps {
   businessManagers: any[]
@@ -44,6 +46,12 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
     open: boolean;
     asset: any | null;
   }>({ open: false, asset: null });
+
+  // Add details dialog state
+  const [detailsDialog, setDetailsDialog] = useState<{
+    open: boolean;
+    businessManager: BusinessManager | null;
+  }>({ open: false, businessManager: null });
 
   const { session } = useAuth()
   const router = useRouter()
@@ -70,6 +78,12 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
       navigator.clipboard.writeText(bmId);
       toast.success('Business Manager ID copied to clipboard');
     }
+  }
+
+  // Add view details handler
+  const handleViewDetails = (businessManager: BusinessManager, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDetailsDialog({ open: true, businessManager })
   }
 
   const filteredManagers = useMemo(() => {
@@ -234,6 +248,11 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => handleViewDetails(manager, e)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={(e) => copyBmId(manager.dolphin_business_manager_id || '', e)}>
               <Copy className="h-4 w-4 mr-2" />
               Copy BM ID
@@ -260,7 +279,18 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
       )
     }
     
-    return null
+    // For other statuses, show view details button
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={(e) => handleViewDetails(manager, e)}
+        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+      >
+        <Eye className="h-3 w-3 mr-1" />
+        Details
+      </Button>
+    )
   }
 
   return (
@@ -326,80 +356,15 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
       </div>
 
       {view === "grid" ? (
-        /* Grid View */
+        /* Grid View with Tabs */
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
           {filteredManagers.map((manager) => (
-            <div
+            <BmCardWithTabs
               key={manager.id}
-              onClick={(e) => handleManagerClick(manager, e)}
-              className={cn(
-                "bg-card border border-border rounded-lg p-4 shadow-sm transition-all duration-200 group",
-                "hover:shadow-md hover:border-border/60 hover:bg-card/80",
-                manager.status === "active" 
-                  ? "cursor-pointer hover:border-[#c4b5fd]/30" 
-                  : "cursor-default",
-                manager.is_active === false && "opacity-50 grayscale"
-              )}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#c4b5fd] to-[#ffc4b5] flex items-center justify-center">
-                    <span className="text-black font-semibold">{getManagerInitial(manager.name)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-foreground truncate">{manager.name}</h3>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {manager.is_application ? 'Application' : ''}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {manager.is_active === false ? (
-                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
-                        Deactivated
-                      </span>
-                    ) : (
-                      <StatusBadge status={manager.status as any} size="sm" />
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* BM ID - Always reserve space for alignment */}
-              <div className="mb-3 flex items-center min-h-[24px]">
-                {manager.dolphin_business_manager_id ? (
-                  <div className="flex items-center gap-1 bg-muted/40 px-2 py-1 rounded text-xs text-muted-foreground">
-                    <code className="text-xs">BM:{manager.dolphin_business_manager_id}</code>
-                  </div>
-                ) : (
-                  <div></div>
-                )}
-              </div>
-
-              {/* Metrics */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="flex flex-col items-center justify-center p-2 bg-muted/30 rounded-md">
-                  <div className="text-xs text-muted-foreground mb-1">Ad Accounts</div>
-                  <div className="font-semibold text-foreground text-lg">{manager.ad_account_count || 0}</div>
-                </div>
-                <div className="flex flex-col items-center justify-center p-2 bg-muted/30 rounded-md">
-                  <div className="text-xs text-muted-foreground mb-1">Status</div>
-                  <div className="font-semibold text-foreground text-sm capitalize">{manager.status}</div>
-                </div>
-              </div>
-
-              {/* Action buttons or navigation arrow */}
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  {getActionButtons(manager)}
-                </div>
-                {manager.status === "active" && (
-                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                )}
-              </div>
-            </div>
+              manager={manager}
+              onDeactivationClick={handleDeactivationClick}
+              getActionButtons={getActionButtons}
+            />
           ))}
         </div>
       ) : (
@@ -419,46 +384,72 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               )}
             >
               <div className="flex items-center justify-between">
-                {/* Left: Manager Info */}
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#c4b5fd] to-[#ffc4b5] flex items-center justify-center">
-                    <span className="text-black font-semibold">{getManagerInitial(manager.name)}</span>
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="font-semibold text-foreground truncate">{manager.name}</h3>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{manager.is_application ? 'Application' : ''}</span>
-                      <span>•</span>
-                      <span>Created {new Date(manager.created_at).toLocaleDateString()}</span>
-                      {manager.dolphin_business_manager_id && (
-                        <>
-                          <span>•</span>
-                          <div className="flex items-center gap-1">
-                            <code className="bg-muted px-1 py-0.5 rounded text-xs">BM:{manager.dolphin_business_manager_id}</code>
-                          </div>
-                        </>
+                {/* Left: Manager Info with Domains */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="font-semibold text-foreground truncate">{manager.name}</h3>
+                    <div className="flex items-center gap-2">
+                      {manager.is_active === false ? (
+                        <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
+                          Deactivated
+                        </span>
+                      ) : (
+                        <StatusBadge status={manager.status as any} size="sm" />
                       )}
                     </div>
                   </div>
+                  {/* Domains under name */}
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                    {manager.domains && manager.domains.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {manager.domains.slice(0, 4).map((domain: string, index: number) => (
+                          <div 
+                            key={index} 
+                            className="inline-flex items-center px-2 py-1 bg-muted/40 rounded text-xs"
+                            title={domain}
+                          >
+                            <span className="truncate max-w-[120px]">{domain}</span>
+                          </div>
+                        ))}
+                        {manager.domains.length > 4 && (
+                          <div className="inline-flex items-center px-2 py-1 bg-muted/20 rounded text-xs text-muted-foreground">
+                            +{manager.domains.length - 4} more
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground italic">No domains</div>
+                    )}
+                  </div>
+                  {/* Application type if applicable */}
+                  {manager.is_application && (
+                    <div className="text-xs text-muted-foreground">
+                      Application
+                    </div>
+                  )}
                 </div>
 
-                {/* Right: Metrics and Actions */}
+                {/* Right: Columns for Date, BM ID, Ad Accounts, Actions */}
                 <div className="flex items-center gap-8">
-                  <div className="flex flex-col items-center justify-center w-24">
+                  <div className="flex flex-col items-start justify-center w-24">
+                    <div className="text-xs text-muted-foreground mb-1">Created</div>
+                    <div className="text-sm text-foreground">{new Date(manager.created_at).toLocaleDateString()}</div>
+                  </div>
+                  <div className="flex flex-col items-start justify-center w-32">
+                    <div className="text-xs text-muted-foreground mb-1">BM ID</div>
+                    <div className="text-sm text-foreground">
+                      {manager.dolphin_business_manager_id ? (
+                        <code className="bg-muted px-1 py-0.5 rounded text-xs">
+                          {manager.dolphin_business_manager_id}
+                        </code>
+                      ) : (
+                        <span className="text-muted-foreground italic">Not assigned</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center w-20">
                     <div className="text-xs text-muted-foreground mb-1">Ad Accounts</div>
                     <div className="font-semibold text-foreground text-lg">{manager.ad_account_count || 0}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {manager.is_active === false ? (
-                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
-                        Deactivated
-                      </span>
-                    ) : (
-                      <StatusBadge status={manager.status as any} size="sm" />
-                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {getActionButtons(manager)}
@@ -506,6 +497,13 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
           onSuccess={onRefresh}
         />
       )}
+
+      {/* BM Details Dialog */}
+      <BmDetailsDialog
+        businessManager={detailsDialog.businessManager}
+        open={detailsDialog.open}
+        onOpenChange={(open) => setDetailsDialog({ open, businessManager: open ? detailsDialog.businessManager : null })}
+      />
     </div>
   )
 } 

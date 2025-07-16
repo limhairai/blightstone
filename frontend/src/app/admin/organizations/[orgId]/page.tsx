@@ -9,7 +9,7 @@ import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table"
-import { Building, ArrowLeft, Search, RefreshCw } from "lucide-react"
+import { Building, ArrowLeft, Search, RefreshCw, Globe } from "lucide-react"
 import { StatusBadge } from "../../../../components/admin/status-badge"
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
@@ -26,6 +26,8 @@ interface BusinessManager {
   totalSpend: number
   monthlyBudget: number
   createdAt: string
+  domains: string[]
+  domain_count: number
 }
 
 interface Organization {
@@ -165,6 +167,7 @@ export default function OrganizationDetailPage() {
             <TableHeader>
               <TableRow className="border-border hover:bg-muted/50">
                 <TableHead className="text-muted-foreground">Business Manager</TableHead>
+                <TableHead className="text-muted-foreground">Domains</TableHead>
                 <TableHead className="text-muted-foreground">Business Manager ID</TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
                 <TableHead className="text-muted-foreground">Ad Accounts</TableHead>
@@ -174,7 +177,7 @@ export default function OrganizationDetailPage() {
             <TableBody>
               {filteredBusinessManagers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No business managers found for this organization.
                   </TableCell>
                 </TableRow>
@@ -192,6 +195,31 @@ export default function OrganizationDetailPage() {
                             {bm.adAccountsCount} ad accounts
                           </div>
                         </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {bm.domains && bm.domains.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {bm.domains.slice(0, 3).map((domain: string, index: number) => (
+                              <div 
+                                key={index} 
+                                className="inline-flex items-center gap-1 px-2 py-1 bg-muted/40 rounded text-xs"
+                                title={domain}
+                              >
+                                <Globe className="h-3 w-3 text-muted-foreground" />
+                                <span className="truncate max-w-[100px]">{domain}</span>
+                              </div>
+                            ))}
+                            {bm.domains.length > 3 && (
+                              <div className="inline-flex items-center px-2 py-1 bg-muted/20 rounded text-xs text-muted-foreground">
+                                +{bm.domains.length - 3} more
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground italic">No domains</div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>

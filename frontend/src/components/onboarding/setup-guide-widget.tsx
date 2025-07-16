@@ -29,6 +29,7 @@ interface OnboardingProgressData {
     hasAppliedForBM: boolean
     hasActiveBM: boolean
     hasAddedPixel: boolean
+    hasSubmittedTopup: boolean
   }
   persistence: {
     hasExplicitlyDismissed: boolean
@@ -219,7 +220,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       id: 'ad-account-topup',
       title: 'Top up Ad Account',
       description: 'Fund your ad accounts to start running campaigns',
-      isCompleted: false, // TODO: Add tracking for this step
+      isCompleted: onboardingProgress?.progress?.hasSubmittedTopup || false,
       isRequired: true,
       isVisible: true,
     },

@@ -29,7 +29,7 @@ BEGIN
         SELECT ad_account_name, ad_account_id
         INTO v_account_name, v_account_id
         FROM public.topup_requests 
-        WHERE id = p_request_id;
+        WHERE request_id = p_request_id;
     END IF;
     
     -- Set defaults if extraction failed

@@ -60,14 +60,11 @@ export async function GET(request: NextRequest) {
       .eq('status', 'active')
       .single()
 
-    // Get pixel limits based on plan
-    const pixelLimits: Record<string, number> = {
-      'free': 0,
-      'starter': 2,
-      'growth': 5,
-      'scale': 10
-    }
-    const subscriptionLimit = pixelLimits[subscription?.plan_id || 'free'] || 0
+    // Get pixel limits from pricing config
+    const { getPlanPricing } = await import('@/lib/config/pricing-config')
+    const planId = subscription?.plan_id || 'free'
+    const planPricing = planId === 'free' ? null : getPlanPricing(planId)
+    const subscriptionLimit = planPricing?.pixels || 0
 
     // Get all ad accounts for this organization that have pixel data
     // Use the same approach as admin API for consistency

@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { toast } from "sonner"
-import { PRICING_CONFIG } from "@/lib/config/pricing-config"
+import { getPlanPricing } from "@/lib/config/pricing-config"
 
 interface PlanUpgradeDialogProps {
   open: boolean
@@ -16,25 +16,8 @@ interface PlanUpgradeDialogProps {
   redirectToPage?: boolean
 }
 
-interface Plan {
-  id: string
-  name: string
-  description: string
-  monthlyPrice: number
-  adSpendFee: number
-  maxTeamMembers: number
-  maxBusinesses: number
-  maxAdAccounts: number
-  monthlyTopupLimit?: number | null
-  features: string[]
-  stripe_price_id?: string | null
-  isCustom?: boolean
-  isComingSoon?: boolean
-}
-
 export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }: PlanUpgradeDialogProps) {
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [isUpgrading, setIsUpgrading] = useState(false)
   const { currentPlan } = useSubscription()
   const { currentOrganizationId } = useOrganizationStore()
@@ -51,32 +34,10 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
     return null
   }
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      try {
-        setIsLoading(true)
-        const response = await fetch('/api/subscriptions/plans')
-        if (!response.ok) throw new Error('Failed to fetch plans')
-        
-        const data = await response.json()
-        setPlans(data.plans)
-      } catch (error) {
-        console.error('Error fetching plans:', error)
-        toast.error('Failed to load plans')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    if (open) {
-      fetchPlans()
-    }
-  }, [open])
-
   const canUpgradeTo = (planId: string) => {
     if (!currentPlan || currentPlan.id === 'free') return true
     
-    const planOrder = ['starter', 'growth', 'scale', 'plus']
+    const planOrder = ['starter', 'growth', 'scale']
     const currentIndex = planOrder.indexOf(currentPlan.id)
     const targetIndex = planOrder.indexOf(planId)
     
@@ -86,24 +47,23 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
   const isDowngrade = (planId: string) => {
     if (!currentPlan || currentPlan.id === 'free') return false
     
-    const planOrder = ['starter', 'growth', 'scale', 'plus']
+    const planOrder = ['starter', 'growth', 'scale']
     const currentIndex = planOrder.indexOf(currentPlan.id)
     const targetIndex = planOrder.indexOf(planId)
     
     return targetIndex < currentIndex
   }
 
-  const getButtonText = (plan: Plan) => {
-    const isCurrent = isCurrentPlan(plan.id)
-    const isDowngradeAction = isDowngrade(plan.id)
+  const getButtonText = (planId: string) => {
+    const isCurrent = isCurrentPlan(planId)
+    const isDowngradeAction = isDowngrade(planId)
     
     if (isCurrent) return "Current plan"
     if (isUpgrading) return <><Loader2 className="h-4 w-4 animate-spin mr-2" />Processing...</>
-    if (plan.isComingSoon) return "Coming Soon"
-    if (plan.isCustom) return "Contact Us"
     
     if (isDowngradeAction) {
-      return `Downgrade to ${plan.name}`
+      const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
+      return `Downgrade to ${planName}`
     } else {
       return `Get Started`
     }
@@ -112,17 +72,12 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
   const handleSelectPlan = async (planId: string) => {
     if (isUpgrading || !currentOrganizationId) return
     
-    const selectedPlan = plans.find(p => p.id === planId)
-    if (selectedPlan?.isCustom) {
-      toast.info('Please contact our sales team for custom pricing')
-      return
-    }
-
     const isDowngradeAction = isDowngrade(planId)
     
     if (isDowngradeAction) {
+      const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
       const confirmed = confirm(
-        `Are you sure you want to downgrade to ${selectedPlan?.name}?\n\n` +
+        `Are you sure you want to downgrade to ${planName}?\n\n` +
         `Your current ${currentPlan?.name} plan will remain active until the end of your billing cycle. ` +
         `The downgrade will take effect on your next billing date, and you won't be charged until then.`
       )
@@ -153,8 +108,9 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
       const data = await response.json()
       
       if (isDowngradeAction) {
+        const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
         toast.success(
-          `Downgrade scheduled! Your plan will change to ${selectedPlan?.name} at the end of your current billing cycle.`
+          `Downgrade scheduled! Your plan will change to ${planName} at the end of your current billing cycle.`
         )
         onOpenChange(false)
       } else {
@@ -177,92 +133,48 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
     return currentPlan?.id === planId
   }
 
-  const formatFeatures = (plan: Plan): string[] => {
-    if (PRICING_CONFIG.newPricingModel.enabled && plan.features) {
-      return plan.features
-    }
-
-    const features = []
-    
-    if (plan.maxBusinesses === -1) {
-      features.push('Unlimited Business Managers')
-    } else {
-      features.push(`${plan.maxBusinesses} Business Manager${plan.maxBusinesses > 1 ? 's' : ''}`)
-    }
-    
-    if (plan.maxAdAccounts === -1) {
-      features.push('Unlimited Ad Accounts')
-    } else {
-      features.push(`${plan.maxAdAccounts} Ad Accounts`)
-    }
-    
-    if (plan.maxTeamMembers === -1) {
-      features.push('Unlimited Team Members')
-    } else {
-      features.push(`${plan.maxTeamMembers} Team Members`)
-    }
-    
-    if (PRICING_CONFIG.enableTopupLimits) {
-      const getTopupLimit = (planId: string) => {
-        switch (planId) {
-          case 'starter':
-            return 3000
-          case 'growth':
-            return 6000
-          case 'scale':
-          case 'custom':
-          case 'enterprise':
-            return null
-          default:
-            return plan.monthlyTopupLimit
-        }
-      }
-      
-      const topupLimit = plan.monthlyTopupLimit !== undefined ? plan.monthlyTopupLimit : getTopupLimit(plan.id)
-      
-      if (topupLimit === null || topupLimit === undefined) {
-        features.push('Unlimited Monthly Top-ups')
-      } else {
-        features.push(`$${topupLimit.toLocaleString()} Monthly Top-up Limit`)
-      }
-    }
-    
-    if (plan.features && Array.isArray(plan.features)) {
-      features.push(...plan.features)
-    }
-    
-    return features
-  }
-
   const formatPrice = (dollars: number): string => {
-    if (typeof dollars !== 'number' || isNaN(dollars)) {
-      return '0'
-    }
     return dollars.toString()
   }
 
-  const shouldShowAdSpendFee = (plan: Plan): boolean => {
-    return PRICING_CONFIG.enableAdSpendFees && plan.adSpendFee > 0
+  // Get plan data from pricing config
+  const planIds = ['starter', 'growth', 'scale'] as const
+  const plans = planIds.map(planId => {
+    const pricing = getPlanPricing(planId)
+    if (!pricing) return null
+    
+    return {
+      id: planId,
+      name: planId.charAt(0).toUpperCase() + planId.slice(1),
+      description: '', // Removed descriptions
+      ...pricing
+    }
+  }).filter(Boolean)
+
+  function getFeatures(plan: any): string[] {
+    return [
+      `Up to $${plan.monthlyTopupLimit.toLocaleString()}/month in ad spend`,
+      `${plan.businessManagers} Active Business Manager${plan.businessManagers > 1 ? 's' : ''}`,
+      `${plan.adAccounts} Active Ad Accounts`,
+      `${plan.pixels} Facebook Pixels`,
+      `${plan.domainsPerBm} Promotion URLs per BM`,
+      'Unlimited Replacements',
+      ...getAdditionalFeatures(plan.id)
+    ]
   }
 
-  if (isLoading) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl">
-          <DialogHeader className="text-center pb-6">
-            <DialogTitle className="text-2xl font-bold">Choose Your Plan</DialogTitle>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
+  function getAdditionalFeatures(planId: string): string[] {
+    switch (planId) {
+      case 'starter':
+        return ['Live chat support']
+      case 'growth':
+        return ['Priority support']
+      case 'scale':
+        return ['Dedicated Slack channel']
+      default:
+        return []
+    }
   }
-
-  // Separate Plus plan from other plans
-  const regularPlans = plans.filter(plan => plan.id !== 'plus')
-  const plusPlan = plans.find(plan => plan.id === 'plus')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -270,13 +182,14 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
         <DialogHeader className="text-center pb-6">
           <DialogTitle className="text-2xl font-bold">Choose Your Plan</DialogTitle>
           <p className="text-muted-foreground mt-2">
-            Scale your Facebook advertising with the right plan for your business
+            Scale your Facebook advertising with transparent pricing and no hidden fees
           </p>
         </DialogHeader>
 
-        {/* Regular plans in 3-column grid */}
+        {/* Plans in 3-column grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {regularPlans.map((plan) => {
+          {plans.map((plan) => {
+            if (!plan) return null
             const isCurrent = isCurrentPlan(plan.id)
             const isPopular = plan.id === 'growth'
             
@@ -311,28 +224,24 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                   {/* Plan name */}
                   <div className="mb-6">
                     <h3 className="text-xl font-bold mb-2 capitalize">{plan.name}</h3>
-                    {plan.description && (
-                      <p className="text-muted-foreground text-sm">{plan.description}</p>
-                    )}
+                    {/* Removed description */}
                   </div>
 
                   {/* Price */}
                   <div className="mb-6">
                     <div className="flex items-baseline mb-2">
-                      <span className="text-3xl font-bold">${formatPrice(plan.monthlyPrice)}</span>
+                      <span className="text-3xl font-bold">${formatPrice(plan.price)}</span>
                       <span className="text-muted-foreground ml-2">/month</span>
                     </div>
-                    {shouldShowAdSpendFee(plan) && (
-                      <p className="text-sm text-muted-foreground">
-                        + {plan.adSpendFee}% ad spend fee
-                      </p>
-                    )}
+                    <p className="text-sm text-muted-foreground">
+                      + {plan.adSpendFee}% ad spend fee (capped at ${plan.spendFeeCap})
+                    </p>
                   </div>
 
                   {/* Features */}
                   <div className="mb-6">
                     <ul className="space-y-2.5">
-                      {formatFeatures(plan).map((feature, index) => (
+                      {getFeatures(plan).map((feature, index) => (
                         <li key={index} className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
                           <span className="text-sm text-muted-foreground">{feature}</span>
@@ -344,7 +253,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                   {/* CTA Button */}
                   <Button
                     onClick={() => handleSelectPlan(plan.id)}
-                    disabled={isCurrent || isUpgrading || plan.isComingSoon}
+                    disabled={isCurrent || isUpgrading}
                     className={`w-full h-11 font-medium ${
                       isCurrent
                         ? 'bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0'
@@ -354,7 +263,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     }`}
                     variant={isCurrent ? 'default' : isPopular ? 'default' : 'outline'}
                   >
-                    {getButtonText(plan)}
+                    {getButtonText(plan.id)}
                   </Button>
                 </div>
               </div>
@@ -363,66 +272,71 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
         </div>
 
         {/* Plus plan - horizontal layout */}
-        {plusPlan && (
-          <div className="border-t pt-8">
-            <div className="bg-card rounded-2xl border border-border p-6">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
-                {/* Left side - Title and Button */}
-                <div className="lg:min-w-[200px]">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-foreground mb-2">PLUS</h3>
-                    <p className="text-sm text-muted-foreground">
-                      A plan based on your specific needs.
-                    </p>
-                  </div>
-                  
-                  <Button
-                    disabled={true}
-                    className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-background hover:bg-accent text-foreground border border-border"
-                    variant="outline"
-                  >
-                    Coming Soon
-                  </Button>
+        <div className="border-t pt-8">
+          <div className="bg-card rounded-2xl border border-border p-6">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+              {/* Left side - Title and Button */}
+              <div className="lg:min-w-[200px]">
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">PLUS</h3>
                 </div>
+                
+                <Button
+                  disabled={true}
+                  className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-background hover:bg-accent text-foreground border border-border"
+                  variant="outline"
+                >
+                  Coming Soon
+                </Button>
+              </div>
 
-                {/* Right side - Features */}
-                <div className="flex-1 flex justify-center">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
-                    <div className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+              {/* Right side - Features */}
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-foreground mb-3">Enterprise Features</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Unlimited Active Business Managers</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    </li>
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Unlimited Active Ad Accounts</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">Unlimited Facebook Pixels</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">White-Glove Services</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">Dedicated Account Manager</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">Post Pay Capabilities</span>
-                    </div>
-                  </div>
+                    </li>
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Unlimited Pixels & Domains</span>
+                    </li>
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">No monthly spend limits</span>
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-foreground mb-3">Premium Support</h4>
+                  <ul className="space-y-2">
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Post-pay credit lines</span>
+                    </li>
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">White glove services</span>
+                    </li>
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Dedicated account manager</span>
+                    </li>
+                    <li className="flex items-start">
+                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">Volume-based cashback</span>
+                    </li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        <div className="pt-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            All plans include unlimited replacements and ticket support.
-          </p>
         </div>
       </DialogContent>
     </Dialog>

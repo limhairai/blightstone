@@ -211,8 +211,8 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
           </div>
 
           {/* Quick Amount Buttons */}
-          <div className="grid grid-cols-3 gap-2">
-            {[100, 500, 1000].map((quickAmount) => (
+          <div className="grid grid-cols-4 gap-2">
+            {[500, 1000, 2000, 5000].map((quickAmount) => (
               <Button
                 key={quickAmount}
                 type="button"

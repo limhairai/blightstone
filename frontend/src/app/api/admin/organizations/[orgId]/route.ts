@@ -19,8 +19,8 @@ export async function GET(
   }
 
   try {
-    // Single optimized query to get organization, business managers, and ad accounts in one go
-    const [orgResult, assetsResult] = await Promise.all([
+    // Single optimized query to get organization, business managers, ad accounts, and domains in one go
+    const [orgResult, assetsResult, domainsResult] = await Promise.all([
       // Fetch organization details
       supabase
         .from('organizations')
@@ -44,11 +44,19 @@ export async function GET(
         `)
         .eq('organization_id', orgId)
         .eq('status', 'active')
-        .in('asset.type', ['business_manager', 'ad_account'])
+        .in('asset.type', ['business_manager', 'ad_account']),
+      
+      // Fetch domains for all business managers
+      supabase
+        .from('bm_domains')
+        .select('bm_asset_id, domain_url')
+        .eq('organization_id', orgId)
+        .eq('is_active', true)
     ]);
 
     const { data: orgData, error: orgError } = orgResult;
     const { data: allAssets, error: assetsError } = assetsResult;
+    const { data: domainsData, error: domainsError } = domainsResult;
 
     if (orgError) {
       if (orgError.code === 'PGRST116') {
@@ -59,6 +67,10 @@ export async function GET(
 
     if (assetsError) {
       throw assetsError
+    }
+
+    if (domainsError) {
+      throw domainsError
     }
 
     // Separate business managers and ad accounts
@@ -72,7 +84,7 @@ export async function GET(
       return sum + amountSpent;
     }, 0);
 
-    // Create a map for faster lookups
+    // Create maps for faster lookups
     const adAccountsByBM = new Map();
     adAccounts.forEach(adBinding => {
       const bmId = adBinding.asset?.metadata?.business_manager_id;
@@ -82,6 +94,15 @@ export async function GET(
         }
         adAccountsByBM.get(bmId).push(adBinding);
       }
+    });
+
+    // Create domains map by BM asset ID
+    const domainsByBM = new Map();
+    domainsData?.forEach(domain => {
+      if (!domainsByBM.has(domain.bm_asset_id)) {
+        domainsByBM.set(domain.bm_asset_id, []);
+      }
+      domainsByBM.get(domain.bm_asset_id).push(domain.domain_url);
     });
 
     // Format organization data for frontend
@@ -102,8 +123,10 @@ export async function GET(
 
     // Calculate stats for each business manager efficiently
     const businessManagersWithStats = businessManagers.map((binding: any) => {
-      const bmId = binding.asset.dolphin_id;
-      const bmAdAccounts = adAccountsByBM.get(bmId) || [];
+      const bmDolphinId = binding.asset.dolphin_id;
+      const bmAssetId = binding.asset.asset_id;
+      const bmAdAccounts = adAccountsByBM.get(bmDolphinId) || [];
+      const bmDomains = domainsByBM.get(bmAssetId) || [];
       
       // Calculate total spend for this business manager
       const bmTotalSpend = bmAdAccounts.reduce((sum: number, adBinding: any) => {
@@ -121,6 +144,8 @@ export async function GET(
         totalSpend: bmTotalSpend,
         monthlyBudget: 0, // Placeholder for now
         createdAt: binding.bound_at,
+        domains: bmDomains,
+        domain_count: bmDomains.length,
       };
     });
 

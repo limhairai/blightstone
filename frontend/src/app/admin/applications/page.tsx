@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus, History } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus, History, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
@@ -34,6 +34,7 @@ interface ApplicationWithDetails extends Application {
   requestType: string;
   targetBmDolphinId?: string;
   websiteUrl: string;
+  domains?: string[]; // Add domains array
   approvedBy?: string;
   approvedAt?: string;
   rejectedBy?: string;
@@ -354,6 +355,7 @@ export default function AdminApplicationsPage() {
                     <TableRow className="border-border hover:bg-muted/50">
                       <TableHead className="text-muted-foreground">Organization</TableHead>
                       <TableHead className="text-muted-foreground">Request Type</TableHead>
+                      <TableHead className="text-muted-foreground">Domains</TableHead>
                       <TableHead className="text-muted-foreground">Applied</TableHead>
                       <TableHead className="text-muted-foreground">Actions</TableHead>
                     </TableRow>
@@ -391,6 +393,27 @@ export default function AdminApplicationsPage() {
                               )}
                             </div>
                           </TableCell>
+                          
+                          <TableCell>
+                            <div className="space-y-1 max-w-xs">
+                              {application.domains && application.domains.length > 0 ? (
+                                <>
+                                  {application.domains.map((domain, index) => (
+                                    <div key={index} className="flex items-center gap-1 text-xs text-foreground">
+                                      <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                      <span className="truncate">{domain}</span>
+                                    </div>
+                                  ))}
+                                </>
+                              ) : (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Globe className="h-3 w-3" />
+                                  <span className="truncate">{application.websiteUrl}</span>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          
                           <TableCell>
                             <div className="text-sm">{formatDate(application.createdAt)}</div>
                           </TableCell>

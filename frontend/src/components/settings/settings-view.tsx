@@ -21,11 +21,38 @@ import { Badge } from "../ui/badge"
 import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 import { useSubscription } from "../../hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
+import { getPlanPricing } from "../../lib/config/pricing-config"
 
 export function SettingsView() {
   const [isEditing, setIsEditing] = useState(false)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const { currentPlan, usage, billingHistory, isLoading } = useSubscription()
+
+  // Helper function to get plan limits from pricing config
+  const getPlanLimits = (plan: any) => {
+    if (!plan) return { teamMembers: 0, businessManagers: 0, adAccounts: 0 }
+    
+    const planId = plan.id as 'starter' | 'growth' | 'scale'
+    const planLimits = getPlanPricing(planId)
+    
+    if (!planLimits) {
+      // Free plan or unknown plan - use database fallback
+      return {
+        teamMembers: plan.maxTeamMembers,
+        businessManagers: plan.maxBusinesses,
+        adAccounts: plan.maxAdAccounts
+      }
+    }
+    
+    // Use pricing config limits
+    return {
+      teamMembers: -1, // No team limits in new pricing model
+      businessManagers: planLimits.businessManagers,
+      adAccounts: planLimits.adAccounts
+    }
+  }
+
+  const planLimits = getPlanLimits(currentPlan)
   const [formData, setFormData] = useState({
     businessName: "Test Org",
     businessType: "LLC",
@@ -348,19 +375,19 @@ export function SettingsView() {
                         <div className="flex items-center">
                           <Check className="h-3 w-3 mr-2 text-primary" />
                           <span className="text-xs">
-                            {currentPlan.maxTeamMembers === -1 ? 'Unlimited' : currentPlan.maxTeamMembers} team members
+                            {planLimits.teamMembers === -1 ? 'Unlimited' : planLimits.teamMembers} team members
                           </span>
                         </div>
                         <div className="flex items-center">
                           <Check className="h-3 w-3 mr-2 text-primary" />
                           <span className="text-xs">
-                            {currentPlan.maxBusinesses === -1 ? 'Unlimited' : currentPlan.maxBusinesses} business managers
+                            {planLimits.businessManagers === -1 ? 'Unlimited' : planLimits.businessManagers} business managers
                           </span>
                         </div>
                         <div className="flex items-center">
                           <Check className="h-3 w-3 mr-2 text-primary" />
                           <span className="text-xs">
-                            {currentPlan.maxAdAccounts === -1 ? 'Unlimited' : currentPlan.maxAdAccounts} ad accounts
+                            {planLimits.adAccounts === -1 ? 'Unlimited' : planLimits.adAccounts} ad accounts
                           </span>
                         </div>
                         <div className="flex items-center">

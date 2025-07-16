@@ -2,6 +2,107 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { getPlanPricing } from '@/lib/config/pricing-config';
+
+// Helper function to check plan limits using pricing config
+async function checkPlanLimit(organizationId: string, limitType: 'businessManagers' | 'adAccounts' | 'pixels'): Promise<boolean> {
+    const supabaseService = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    // Get organization plan
+    const { data: orgData, error: orgError } = await supabaseService
+        .from('organizations')
+        .select('plan_id')
+        .eq('organization_id', organizationId)
+        .single();
+
+    if (orgError || !orgData) {
+        console.error('Error fetching organization plan:', orgError);
+        return false;
+    }
+
+    const planId = orgData.plan_id || 'free';
+    const planLimits = getPlanPricing(planId);
+
+    if (!planLimits) {
+        return false;
+    }
+
+    // Get current usage counts
+    let currentCount = 0;
+    let pendingCount = 0;
+
+    if (limitType === 'businessManagers') {
+        // Count active business managers
+        const { count: activeCount } = await supabaseService
+            .from('asset_binding')
+            .select('*, asset!inner(type)', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('asset.type', 'business_manager')
+            .eq('status', 'active')
+            .eq('is_active', true);
+
+        // Count pending business manager applications
+        const { count: pendingBMCount } = await supabaseService
+            .from('application')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('request_type', 'new_business_manager')
+            .in('status', ['pending', 'processing']);
+
+        currentCount = (activeCount || 0) + (pendingBMCount || 0);
+        const limit = planLimits.businessManagers;
+        return limit === -1 || currentCount < limit;
+
+    } else if (limitType === 'adAccounts') {
+        // Count active ad accounts
+        const { count: activeCount } = await supabaseService
+            .from('asset_binding')
+            .select('*, asset!inner(type)', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('asset.type', 'ad_account')
+            .eq('status', 'active')
+            .eq('is_active', true);
+
+        // Count pending ad account applications
+        const { count: pendingAACount } = await supabaseService
+            .from('application')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('request_type', 'additional_accounts')
+            .in('status', ['pending', 'processing']);
+
+        currentCount = (activeCount || 0) + (pendingAACount || 0);
+        const limit = planLimits.adAccounts;
+        return limit === -1 || currentCount < limit;
+
+    } else if (limitType === 'pixels') {
+        // Count active pixels
+        const { count: activeCount } = await supabaseService
+            .from('asset_binding')
+            .select('*, asset!inner(type)', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('asset.type', 'pixel')
+            .eq('status', 'active')
+            .eq('is_active', true);
+
+        // Count pending pixel applications
+        const { count: pendingPixelCount } = await supabaseService
+            .from('application')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', organizationId)
+            .eq('request_type', 'pixel_connection')
+            .in('status', ['pending', 'processing']);
+
+        currentCount = (activeCount || 0) + (pendingPixelCount || 0);
+        const limit = planLimits.pixels;
+        return limit === -1 || currentCount < limit;
+    }
+
+    return false;
+}
 
 // POST /api/applications
 // Creates a new application (business manager or ad account)
@@ -31,7 +132,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { type, business_manager_id, timezone, website_url, pixel_id, pixel_name, target_bm_dolphin_id } = await request.json();
+        const { type, business_manager_id, timezone, website_url, pixel_id, pixel_name, target_bm_dolphin_id, domains } = await request.json();
 
         if (!type) {
             return NextResponse.json({ error: 'Application type is required.' }, { status: 400 });
@@ -71,19 +172,10 @@ export async function POST(request: NextRequest) {
             }, { status: 403 });
         }
 
-        // Check plan limits before allowing applications
+        // Check plan limits before allowing applications using pricing config
         if (type === 'business_manager') {
             // Check if organization can add more business managers
-            const { data: canAddBM, error: bmLimitError } = await supabaseService
-                .rpc('check_plan_limits', {
-                    org_id: organization_id,
-                    limit_type: 'businesses'
-                });
-
-            if (bmLimitError) {
-                console.error('Error checking business manager limits:', bmLimitError);
-                return NextResponse.json({ error: 'Failed to check plan limits.' }, { status: 500 });
-            }
+            const canAddBM = await checkPlanLimit(organization_id, 'businessManagers');
 
             if (!canAddBM) {
                 return NextResponse.json({ 
@@ -93,16 +185,7 @@ export async function POST(request: NextRequest) {
             }
         } else if (type === 'ad_account') {
             // Check if organization can add more ad accounts
-            const { data: canAddAccounts, error: accountLimitError } = await supabaseService
-                .rpc('check_plan_limits', {
-                    org_id: organization_id,
-                    limit_type: 'ad_accounts'
-                });
-
-            if (accountLimitError) {
-                console.error('Error checking ad account limits:', accountLimitError);
-                return NextResponse.json({ error: 'Failed to check plan limits.' }, { status: 500 });
-            }
+            const canAddAccounts = await checkPlanLimit(organization_id, 'adAccounts');
 
             if (!canAddAccounts) {
                 return NextResponse.json({ 
@@ -119,16 +202,7 @@ export async function POST(request: NextRequest) {
             }
 
             // Check if organization can add more pixels
-            const { data: canAddPixel, error: pixelLimitError } = await supabaseService
-                .rpc('check_plan_limits', {
-                    org_id: organization_id,
-                    limit_type: 'pixels'
-                });
-
-            if (pixelLimitError) {
-                console.error('Error checking pixel limits:', pixelLimitError);
-                return NextResponse.json({ error: 'Failed to check plan limits.' }, { status: 500 });
-            }
+            const canAddPixel = await checkPlanLimit(organization_id, 'pixels');
 
             if (!canAddPixel) {
                 return NextResponse.json({ 
@@ -309,24 +383,9 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Website URL is required for business manager applications.' }, { status: 400 });
             }
 
-            // Check if organization can add more promotion URLs
-            const { data: canAddPromotionUrl, error: urlLimitError } = await supabaseService
-                .rpc('check_plan_limits', {
-                    org_id: organization_id,
-                    limit_type: 'promotion_urls'
-                });
-
-            if (urlLimitError) {
-                console.error('Error checking promotion URL limits:', urlLimitError);
-                return NextResponse.json({ error: 'Failed to check promotion URL limits.' }, { status: 500 });
-            }
-
-            if (!canAddPromotionUrl) {
-                return NextResponse.json({ 
-                    error: 'Plan Limit Reached',
-                    message: 'You have reached the maximum number of promotion URLs for your current plan. Please upgrade to add more promotion URLs.'
-                }, { status: 403 });
-            }
+            // For business manager applications, we don't need to check promotion URL limits
+            // since domains are now handled per-BM and will be checked when adding domains
+            // This is handled by the domain system, not the application system
 
             // Check if this promotion URL is already in use by this organization
             const { data: existingUrl, error: urlCheckError } = await supabaseService
@@ -386,7 +445,8 @@ export async function POST(request: NextRequest) {
                     website_url,
                     organization_id,
                     request_type: 'new_business_manager',
-                    status: 'pending'
+                    status: 'pending',
+                    domains: domains || [] // Store domains array for later processing
                 })
                 .select()
                 .single();

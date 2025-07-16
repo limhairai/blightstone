@@ -120,24 +120,9 @@ export async function POST(request: NextRequest) {
 
         const organization_id = orgMembership.organization_id;
 
-        // Check if organization can add more promotion URLs
-        const { data: canAddPromotionUrl, error: urlLimitError } = await supabaseService
-            .rpc('check_plan_limits', {
-                org_id: organization_id,
-                limit_type: 'promotion_urls'
-            });
-
-        if (urlLimitError) {
-            console.error('Error checking promotion URL limits:', urlLimitError);
-            return NextResponse.json({ error: 'Failed to check promotion URL limits.' }, { status: 500 });
-        }
-
-        if (!canAddPromotionUrl) {
-            return NextResponse.json({ 
-                error: 'Plan Limit Reached',
-                message: 'You have reached the maximum number of promotion URLs for your current plan. Please upgrade to add more promotion URLs.'
-            }, { status: 403 });
-        }
+        // Note: Promotion URLs are deprecated in favor of per-BM domains
+        // This endpoint is maintained for backward compatibility
+        // Domain limits are now enforced per-BM, not organization-wide
 
         // Check if this promotion URL is already in use by this organization
         const { data: existingUrl, error: urlCheckError } = await supabase

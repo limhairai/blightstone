@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "../ui/button"
 import { useAuth } from "../../contexts/AuthContext"
+import { useSubscription } from "../../hooks/useSubscription"
 
 interface WelcomeOverlayProps {
   onDismiss: () => void
@@ -10,12 +11,17 @@ interface WelcomeOverlayProps {
 
 export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
   const { user } = useAuth()
+  const { currentPlan, subscriptionData } = useSubscription()
   const [isVisible, setIsVisible] = useState(true)
 
   const userName = user?.user_metadata?.full_name?.split(' ')[0] || 
                    user?.user_metadata?.name?.split(' ')[0] || 
                    user?.email?.split('@')[0] || 
                    'there'
+
+  // Determine the appropriate message based on plan status
+  const isOnFreePlan = subscriptionData?.free || subscriptionData?.subscriptionStatus === 'free' || currentPlan?.id === 'free'
+  const hasActivePlan = currentPlan && currentPlan.id !== 'free'
 
   // Remove auto timeout - only close when user clicks "Got it"
 
@@ -113,10 +119,13 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         <div className="space-y-3">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-white">
-              Next, choose a plan
+              {hasActivePlan ? 'Welcome to AdHub!' : 'Next, choose a plan'}
             </h2>
             <p className="text-sm text-white/90 leading-relaxed">
-              After you upgrade your plan, you'll be able to start requesting Business Managers and ad accounts.
+              {hasActivePlan 
+                ? `You're all set with your ${currentPlan.name} plan! Use the setup guide to get started with Business Managers and ad accounts.`
+                : 'After you upgrade your plan, you\'ll be able to start requesting Business Managers and ad accounts.'
+              }
             </p>
           </div>
           
