@@ -156,13 +156,18 @@ export async function GET(
     console.log('Active pixels:', activePixels)
     console.log('Subscription limit:', subscriptionLimit)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       pixels,
       active_pixels: activePixels,
       total_pixels: totalPixels,
       pending_pixels: pendingPixels,
       subscription_limit: subscriptionLimit
-    })
+    });
+    
+    // Add caching headers for better performance
+    response.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=60');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in pixel API:', error)

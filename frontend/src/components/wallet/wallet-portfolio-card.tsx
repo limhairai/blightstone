@@ -259,8 +259,19 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                     .map(
                       (point, i) => {
                         const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
-                        const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 80 : 50; // Default to middle if no value
-                        return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                        const minValue = Math.min(...balanceData.map((p) => p.value), 0);
+                        const range = maxValue - minValue;
+                        
+                        // Better Y positioning with proper scaling
+                        let yPos;
+                        if (range > 0) {
+                          yPos = 100 - ((point.value - minValue) / range) * 80;
+                        } else {
+                          // If all values are the same, show line in middle
+                          yPos = 50;
+                        }
+                        
+                        return `${(i / Math.max(balanceData.length - 1, 1)) * 100},${yPos}`;
                       }
                     )
                     .join(" L ")}`}
@@ -276,8 +287,19 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                     .map(
                       (point, i) => {
                         const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
-                        const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 80 : 50; // Default to middle if no value
-                        return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                        const minValue = Math.min(...balanceData.map((p) => p.value), 0);
+                        const range = maxValue - minValue;
+                        
+                        // Better Y positioning with proper scaling
+                        let yPos;
+                        if (range > 0) {
+                          yPos = 100 - ((point.value - minValue) / range) * 80;
+                        } else {
+                          // If all values are the same, show line in middle
+                          yPos = 50;
+                        }
+                        
+                        return `${(i / Math.max(balanceData.length - 1, 1)) * 100},${yPos}`;
                       }
                     )
                     .join(" L ")} L 100,100 L 0,100 Z`}
@@ -289,11 +311,21 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
             {/* Invisible hover areas */}
             {balanceData.map((point, i) => {
               const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
-              const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 80 : 50; // Default to middle if no value
-              return (
-                <circle
-                  key={`hover-${i}`}
-                  cx={(i / (balanceData.length - 1)) * 100}
+              const minValue = Math.min(...balanceData.map((p) => p.value), 0);
+              const range = maxValue - minValue;
+              
+              // Better Y positioning with proper scaling
+              let yPos;
+              if (range > 0) {
+                yPos = 100 - ((point.value - minValue) / range) * 80;
+              } else {
+                // If all values are the same, show line in middle
+                yPos = 50;
+              }
+                              return (
+                  <circle
+                    key={`hover-${i}`}
+                    cx={(i / Math.max(balanceData.length - 1, 1)) * 100}
                   cy={yPos}
                   r="3"
                   fill="transparent"

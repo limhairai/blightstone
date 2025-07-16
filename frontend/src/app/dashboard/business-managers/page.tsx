@@ -95,6 +95,38 @@ export default function BusinessManagersPage() {
     return `${current} / ${limit}`
   }
 
+  // Show loading state while initial data is loading
+  if (isLoading && !bms) {
+    return (
+      <div className="space-y-6">
+        {/* Header with Metrics and Add Button */}
+        <div className="flex items-center justify-between">
+          {/* Left: Metrics */}
+          <div className="flex items-start gap-12 text-sm">
+            <div className="flex flex-col">
+              <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                Active Business Managers
+              </span>
+              <div className="h-6 w-16 bg-muted animate-pulse rounded"></div>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">Active Ad Accounts</span>
+              <div className="h-6 w-16 bg-muted animate-pulse rounded"></div>
+            </div>
+          </div>
+          {/* Right: Add Button */}
+          <div className="h-10 w-20 bg-muted animate-pulse rounded"></div>
+        </div>
+        {/* Loading table */}
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header with Metrics and Add Button */}

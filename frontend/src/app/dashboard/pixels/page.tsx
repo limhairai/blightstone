@@ -236,8 +236,8 @@ export default function PixelsPage() {
         </Alert>
       )}
 
-      {/* Zero pixels allowed warning */}
-      {subscriptionLimit === 0 && (
+      {/* Zero pixels allowed warning - only show after data has loaded */}
+      {!loading && subscriptionLimit === 0 && (
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
@@ -246,8 +246,8 @@ export default function PixelsPage() {
         </Alert>
       )}
 
-      {/* No business managers warning */}
-      {businessManagers.length === 0 && (
+      {/* No business managers warning - only show after data has loaded */}
+      {!loading && businessManagers.length === 0 && (
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
