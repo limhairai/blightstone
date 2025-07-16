@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildApiUrl } from '../../../lib/api-utils'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
     try {
         const backendUrl = buildApiUrl('/api/health')
