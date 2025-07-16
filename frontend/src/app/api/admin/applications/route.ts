@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const statusParam = searchParams.get('status')
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '20', 10)
+    const search = searchParams.get('search')
     
     // Build the query using semantic ID columns
     let query = supabase
@@ -55,11 +58,10 @@ export async function GET(request: NextRequest) {
         fulfilled_by,
         fulfilled_at,
         client_notes,
-
         created_at,
         updated_at,
         organizations!inner(name)
-      `)
+      `, { count: 'exact' })
     
     // Add status filter if provided
     if (statusParam) {
@@ -67,8 +69,17 @@ export async function GET(request: NextRequest) {
       query = query.in('status', statuses)
     }
     
+    // Add search filter if provided
+    if (search) {
+      query = query.or(`website_url.ilike.%${search}%,domains.ilike.%${search}%,organizations.name.ilike.%${search}%`)
+    }
+    
+    // Add pagination
+    const offset = (page - 1) * limit
+    query = query.range(offset, offset + limit - 1)
+    
     // Execute query
-    const { data: applications, error } = await query.order('created_at', { ascending: false })
+    const { data: applications, error, count } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching applications:', error)
@@ -82,7 +93,14 @@ export async function GET(request: NextRequest) {
     const transformedApplications = applications?.map(transformApplicationToFrontend) || []
 
     const response = NextResponse.json({
-      applications: transformedApplications
+      applications: transformedApplications,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
+        hasMore: (page * limit) < (count || 0)
+      }
     });
     
     // **PERFORMANCE**: Optimized caching headers

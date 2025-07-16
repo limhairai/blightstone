@@ -8,8 +8,15 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
     try {
-        // Fetch organizations first
-        const { data: organizations, error } = await supabase
+        // Get pagination parameters
+        const { searchParams } = new URL(request.url)
+        const page = parseInt(searchParams.get('page') || '1', 10)
+        const limit = parseInt(searchParams.get('limit') || '25', 10)
+        const search = searchParams.get('search')
+        const status = searchParams.get('status')
+        
+        // Build organizations query with pagination
+        let organizationsQuery = supabase
             .from('organizations')
             .select(`
                 organization_id, 
@@ -19,7 +26,25 @@ export async function GET(request: NextRequest) {
                 subscription_status,
                 current_period_start,
                 current_period_end
-            `);
+            `, { count: 'exact' })
+        
+        // Add filters
+        if (search) {
+            organizationsQuery = organizationsQuery.ilike('name', `%${search}%`)
+        }
+        
+        if (status) {
+            organizationsQuery = organizationsQuery.eq('subscription_status', status)
+        }
+        
+        // Add pagination
+        const offset = (page - 1) * limit
+        organizationsQuery = organizationsQuery
+            .range(offset, offset + limit - 1)
+            .order('created_at', { ascending: false })
+        
+        // Fetch organizations first
+        const { data: organizations, error, count } = await organizationsQuery;
         
         if (error) {
             console.error('Error fetching organizations:', error);
@@ -104,7 +129,16 @@ export async function GET(request: NextRequest) {
             };
         }) || [];
 
-        return NextResponse.json({ organizations: transformedOrganizations });
+        return NextResponse.json({ 
+            organizations: transformedOrganizations,
+            pagination: {
+                page,
+                limit,
+                total: count || 0,
+                totalPages: Math.ceil((count || 0) / limit),
+                hasMore: (page * limit) < (count || 0)
+            }
+        });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

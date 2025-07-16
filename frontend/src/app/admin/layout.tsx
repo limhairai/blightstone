@@ -1,14 +1,24 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { AdminAccessCheck } from "../../components/admin/admin-access-check"
-import { AdminSidebar } from "../../components/admin/admin-sidebar";
-import { AdminTopbar } from "../../components/admin/admin-topbar";
 import { AdminProvider } from "../../contexts/AdminContext";
-// Removed dev tools for production
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Lazy load admin components for better performance
+const AdminSidebar = dynamic(() => import("../../components/admin/admin-sidebar").then(mod => ({ default: mod.AdminSidebar })), {
+  loading: () => <Skeleton className="h-full w-64" />,
+  ssr: false
+});
+
+const AdminTopbar = dynamic(() => import("../../components/admin/admin-topbar").then(mod => ({ default: mod.AdminTopbar })), {
+  loading: () => <Skeleton className="h-16 w-full" />,
+  ssr: false
+});
 
 function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

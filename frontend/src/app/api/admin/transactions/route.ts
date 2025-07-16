@@ -36,8 +36,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    // Fetch regular transactions (include all transactions for admin view)
-    const { data: transactions, error: transactionsError } = await supabase
+    // Get pagination parameters
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = parseInt(searchParams.get('limit') || '50', 10)
+    const search = searchParams.get('search')
+    const status = searchParams.get('status')
+    
+    // Build transactions query with pagination
+    let transactionsQuery = supabase
       .from('transactions')
       .select(`
         transaction_id,
@@ -49,9 +56,25 @@ export async function GET(request: NextRequest) {
         created_at,
         organization_id,
         organizations!inner(name)
-      `)
+      `, { count: 'exact' })
+    
+    // Add filters
+    if (status) {
+      transactionsQuery = transactionsQuery.eq('status', status)
+    }
+    
+    if (search) {
+      transactionsQuery = transactionsQuery.or(`description.ilike.%${search}%,transaction_id.ilike.%${search}%`)
+    }
+    
+    // Add pagination
+    const offset = (page - 1) * limit
+    transactionsQuery = transactionsQuery
+      .range(offset, offset + limit - 1)
       .order('created_at', { ascending: false })
-      .limit(500)
+
+    // Fetch regular transactions (include all transactions for admin view)
+    const { data: transactions, error: transactionsError, count: transactionsCount } = await transactionsQuery
     
     if (transactionsError) {
       console.error('Supabase transactions error:', transactionsError)
@@ -223,7 +246,13 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       transactions: allTransactions,
-      total: allTransactions.length
+      pagination: {
+        page,
+        limit,
+        total: transactionsCount || 0,
+        totalPages: Math.ceil((transactionsCount || 0) / limit),
+        hasMore: (page * limit) < (transactionsCount || 0)
+      }
     })
   } catch (error) {
     console.error('Error fetching transactions:', error)
