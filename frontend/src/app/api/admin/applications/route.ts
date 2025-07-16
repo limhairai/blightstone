@@ -85,8 +85,8 @@ export async function GET(request: NextRequest) {
       applications: transformedApplications
     });
     
-    // **PERFORMANCE**: Add caching headers
-    response.headers.set('Cache-Control', 'private, max-age=10, s-maxage=10'); // Reduced to 10 seconds for immediate responsiveness after fulfill operations
+    // **PERFORMANCE**: Optimized caching headers
+    response.headers.set('Cache-Control', 'private, max-age=15, s-maxage=15, stale-while-revalidate=30');
     response.headers.set('Vary', 'Authorization');
     
     return response;

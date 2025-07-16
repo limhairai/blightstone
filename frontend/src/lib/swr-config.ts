@@ -20,26 +20,26 @@ export const authenticatedFetcher = async (url: string, token: string) => {
   return response.json()
 }
 
-// **GLOBAL SWR CONFIG** - Consistent across ALL hooks
+// **GLOBAL SWR CONFIG** - Optimized for performance and UX
 export const swrConfig = {
-  // INSTANT FEEDBACK CONFIGURATION
-  dedupingInterval: 0,             // No deduping = instant UI updates
-  focusThrottleInterval: 0,        // No throttling = instant focus updates
+  // PERFORMANCE OPTIMIZATIONS
+  dedupingInterval: 2000,          // 2s deduping to prevent excessive requests
+  focusThrottleInterval: 5000,     // 5s throttling for focus events
   
-  // CACHE SETTINGS FOR INSTANT UPDATES
+  // CACHE SETTINGS FOR OPTIMAL PERFORMANCE
   compare: (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b), // Deep comparison for cache invalidation
   
-  // REVALIDATION BEHAVIOR
+  // REVALIDATION BEHAVIOR - Balanced for performance
   revalidateOnFocus: false,        // Don't spam API on focus (saves costs)
-  revalidateOnReconnect: false,    // Don't spam API on reconnect (saves costs)
+  revalidateOnReconnect: true,     // Revalidate on reconnect (user expects fresh data)
   revalidateOnMount: true,         // Always get fresh data on mount
   
-  // CACHE BEHAVIOR
-  refreshInterval: 0,              // No automatic refresh
+  // CACHE BEHAVIOR - Optimized for snappy UX
+  refreshInterval: 0,              // No automatic refresh (user-driven updates)
   revalidateIfStale: true,         // Revalidate if data is stale
   
-  // ERROR HANDLING
-  errorRetryInterval: 30 * 1000,   // Retry failed requests every 30 seconds
+  // ERROR HANDLING - Improved retry logic
+  errorRetryInterval: 5000,        // Retry failed requests every 5 seconds (faster recovery)
   errorRetryCount: 3,              // Maximum 3 retry attempts
   shouldRetryOnError: (error: Error) => {
     // Don't retry on 4xx errors (client errors)

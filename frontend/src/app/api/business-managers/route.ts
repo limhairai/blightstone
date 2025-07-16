@@ -82,69 +82,79 @@ export async function GET(request: NextRequest) {
       binding.asset && binding.asset.asset_id && binding.asset.name
     );
 
-    // Calculate ad account count and domain count for each business manager
-    const businessManagersWithCounts = await Promise.all(
-      validBoundAssets.map(async (binding: any) => {
-        const bmDolphinId = binding.asset?.dolphin_id;
-        const bmAssetId = binding.asset?.asset_id;
-        
-        // Count ad accounts bound to this business manager
-        let adAccountCount = 0;
+    // PERFORMANCE OPTIMIZATION: Fetch all data in 2 queries instead of N+1
+    // Get all ad accounts for this organization in one query
+    const { data: allAdAccounts, error: adAccountError } = await supabase
+      .from('asset_binding')
+      .select(`
+        asset:asset_id (
+          type,
+          metadata
+        )
+      `)
+      .eq('organization_id', organizationId)
+      .eq('status', 'active')
+      .eq('is_active', true)
+      .eq('asset.type', 'ad_account');
+
+    // Get all domains for all BMs in one query
+    const bmAssetIds = validBoundAssets.map(binding => binding.asset?.asset_id).filter(Boolean);
+    const { data: allDomains, error: domainError } = await supabase
+      .from('bm_domains')
+      .select('bm_asset_id, domain_url')
+      .in('bm_asset_id', bmAssetIds)
+      .eq('is_active', true)
+      .order('domain_url');
+
+    // Create lookup maps for efficient processing
+    const adAccountsByBM = new Map<string, number>();
+    const domainsByBM = new Map<string, string[]>();
+
+    // Process ad accounts
+    if (!adAccountError && allAdAccounts) {
+      allAdAccounts.forEach((adBinding: any) => {
+        const adAccountMetadata = adBinding.asset?.metadata;
+        const bmDolphinId = adAccountMetadata?.business_manager_id;
         if (bmDolphinId) {
-          const { data: adAccountBindings, error: adAccountError } = await supabase
-            .from('asset_binding')
-            .select(`
-              asset:asset_id (
-                type,
-                metadata
-              )
-            `)
-            .eq('organization_id', organizationId)
-            .eq('status', 'active')
-            .eq('is_active', true) // Only count active assets
-            .eq('asset.type', 'ad_account');
-
-          if (!adAccountError && adAccountBindings) {
-            // Filter ad accounts that belong to this business manager
-            adAccountCount = adAccountBindings.filter((adBinding: any) => {
-              const adAccountMetadata = adBinding.asset?.metadata;
-              return adAccountMetadata?.business_manager_id === bmDolphinId;
-            }).length;
-          }
+          adAccountsByBM.set(bmDolphinId, (adAccountsByBM.get(bmDolphinId) || 0) + 1);
         }
+      });
+    }
 
-        // Get domain count and actual domains for this business manager
-        let domainCount = 0;
-        let domains: string[] = [];
-        if (bmAssetId) {
-          const { data: domainData, error: domainError } = await supabase
-            .from('bm_domains')
-            .select('domain_url')
-            .eq('bm_asset_id', bmAssetId)
-            .eq('is_active', true)
-            .order('domain_url');
-
-          if (!domainError && domainData) {
-            domains = domainData.map(d => d.domain_url);
-            domainCount = domains.length;
-          }
+    // Process domains
+    if (!domainError && allDomains) {
+      allDomains.forEach((domain: any) => {
+        const bmAssetId = domain.bm_asset_id;
+        if (!domainsByBM.has(bmAssetId)) {
+          domainsByBM.set(bmAssetId, []);
         }
+        domainsByBM.get(bmAssetId)!.push(domain.domain_url);
+      });
+    }
 
-        return {
-          id: binding.asset?.dolphin_id, // Use dolphin_id for consistency with ad account filtering
-          name: binding.asset?.name,
-          status: binding.asset?.status,
-          is_active: binding.is_active, // Client-controlled activation status
-          created_at: binding.bound_at,
-          ad_account_count: adAccountCount, // Use calculated count instead of metadata
-          domain_count: domainCount, // Add domain count
-          domains: domains, // Add actual domains array
-          dolphin_business_manager_id: binding.asset?.dolphin_id,
-          binding_id: binding.binding_id,
-          asset_id: binding.asset?.asset_id // Keep the actual asset ID for reference
-        };
-      })
-    );
+    // Build business managers with counts (no more async operations!)
+    const businessManagersWithCounts = validBoundAssets.map((binding: any) => {
+      const bmDolphinId = binding.asset?.dolphin_id;
+      const bmAssetId = binding.asset?.asset_id;
+      
+      const adAccountCount = bmDolphinId ? (adAccountsByBM.get(bmDolphinId) || 0) : 0;
+      const domains = bmAssetId ? (domainsByBM.get(bmAssetId) || []) : [];
+      const domainCount = domains.length;
+
+      return {
+        id: binding.asset?.dolphin_id, // Use dolphin_id for consistency with ad account filtering
+        name: binding.asset?.name,
+        status: binding.asset?.status,
+        is_active: binding.is_active, // Client-controlled activation status
+        created_at: binding.bound_at,
+        ad_account_count: adAccountCount, // Use calculated count instead of metadata
+        domain_count: domainCount, // Add domain count
+        domains: domains, // Add actual domains array
+        dolphin_business_manager_id: binding.asset?.dolphin_id,
+        binding_id: binding.binding_id,
+        asset_id: binding.asset?.asset_id // Keep the actual asset ID for reference
+      };
+    });
 
     // Format pending/processing/rejected applications as business managers
     const formattedPendingApps = (pendingApps || []).map((app: any) => ({
@@ -160,12 +170,13 @@ export async function GET(request: NextRequest) {
       organization_id: app.organization_id
     }));
 
-    return NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps], {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Vary': 'Authorization'
-      }
-    });
+    const response = NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps]);
+    
+    // PERFORMANCE: Add optimized cache headers for better performance
+    response.headers.set('Cache-Control', 'private, max-age=60, s-maxage=60, stale-while-revalidate=120');
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in business managers API:', error);

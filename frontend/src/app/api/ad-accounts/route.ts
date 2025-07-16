@@ -136,12 +136,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ accounts: filteredData }, {
-      headers: {
-        'Cache-Control': 'private, max-age=120, s-maxage=120', // Cache for 2 minutes
-        'Vary': 'Authorization'
-      }
-    });
+    const response = NextResponse.json({ accounts: filteredData });
+    
+    // PERFORMANCE: Optimized cache headers with stale-while-revalidate
+    response.headers.set('Cache-Control', 'private, max-age=90, s-maxage=90, stale-while-revalidate=180');
+    response.headers.set('Vary', 'Authorization');
+    
+    return response;
 
   } catch (error) {
     console.error('Error in ad-accounts API:', error);

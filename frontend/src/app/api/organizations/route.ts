@@ -182,8 +182,8 @@ export async function GET(request: NextRequest) {
     
     const response = NextResponse.json(responseData);
     
-    // **PERFORMANCE**: Add caching headers
-    response.headers.set('Cache-Control', 'public, max-age=10, s-maxage=10') // Reduced to 10 seconds for wallet updates
+    // **PERFORMANCE**: Add optimized caching headers
+    response.headers.set('Cache-Control', 'private, max-age=30, s-maxage=30, stale-while-revalidate=60')
     response.headers.set('Vary', 'Authorization')
     response.headers.set('X-Cache', 'MISS')
     
