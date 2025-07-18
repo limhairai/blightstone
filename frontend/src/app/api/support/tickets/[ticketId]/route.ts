@@ -94,7 +94,7 @@ export async function GET(
       assignedTo: ticket.assigned_to,
       subject: ticket.subject,
       category: ticket.category,
-      priority: ticket.priority,
+
       status: ticket.status,
       affectedAssetIds: ticket.affected_asset_ids,
       tags: ticket.tags,
@@ -179,7 +179,7 @@ export async function PATCH(
     // Only admins can update most fields
     if (isAdmin) {
       if (body.status) updates.status = body.status
-      if (body.priority) updates.priority = body.priority
+  
       if (body.assignedTo !== undefined) updates.assigned_to = body.assignedTo
       if (body.tags) updates.tags = body.tags
       if (body.internalNotes !== undefined) updates.internal_notes = body.internalNotes

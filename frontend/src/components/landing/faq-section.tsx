@@ -31,6 +31,11 @@ const faqs = [
       "We offer 24/7 customer support through chat, email, and phone. Our team of ad account specialists is always ready to help with any questions or issues.",
   },
   {
+    question: "Do I need to verify my domains and landing pages?",
+    answer:
+      "Yes, we require domain and landing page verification to ensure compliance with Meta's advertising policies and to maintain platform integrity. This helps protect both your campaigns and our network.",
+  },
+  {
     question: "How secure is my account and payment information?",
     answer:
       "We use enterprise-grade security measures including SSL encryption, two-factor authentication, and comply with all major security standards to protect your data and funds.",

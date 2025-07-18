@@ -21,12 +21,18 @@ import { CreditCard, Calendar, Zap, AlertTriangle, Trash2, Plus, CheckCircle2, S
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { gradientTokens } from "../../lib/design-tokens"
 import { useAuth } from "@/contexts/AuthContext"
-import { useCurrentOrganization, useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
+import {
+  useCurrentOrganization,
+  useBusinessManagers,
+  useAdAccounts,
+  usePixelData,
+  useTopupUsage,
+  usePaymentMethods,
+  useBillingHistory
+} from "../../lib/swr-config"
+import { buildApiUrl, createAuthHeaders } from '../../lib/api-utils'
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
-import useSWR from 'swr'
-import { API_ENDPOINTS, createAuthHeaders } from '@/lib/api-config'
-import { buildApiUrl } from '../../lib/api-utils'
 import { getPlanPricing, shouldEnableTopupLimits, shouldEnablePixelLimits } from "@/lib/config/pricing-config"
 
 
@@ -66,66 +72,18 @@ export function OrganizationSettings() {
 
   const planLimits = getPlanLimits(subscriptionPlan)
 
-  // Use optimized hooks - remove individual API calls
+  // Use optimized hooks with smart caching
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useCurrentOrganization(currentOrganizationId);
   const { data: bizData, isLoading: isBizLoading } = useBusinessManagers();
   const { data: accData, isLoading: isAccLoading } = useAdAccounts();
   
-  // Fetch pixel data for usage display
-  const { data: pixelData, isLoading: isPixelLoading } = useSWR(
-    session?.access_token && currentOrganizationId 
-      ? [`/api/organizations/${currentOrganizationId}/pixels`, currentOrganizationId]
-      : null,
-    async ([url, orgId]) => {
-      const response = await fetch(url, {
-        headers: createAuthHeaders(session!.access_token)
-      });
-      if (!response.ok) throw new Error('Failed to fetch pixels');
-      return response.json();
-    }
+  // Optimized hooks for settings-specific data with longer cache times
+  const { data: pixelData, isLoading: isPixelLoading } = usePixelData(currentOrganizationId);
+  const { data: topupUsage, isLoading: isTopupLoading } = useTopupUsage(
+    shouldEnableTopupLimits() ? currentOrganizationId : null
   );
-
-  // Fetch monthly topup usage if feature is enabled
-  const { data: topupUsage, isLoading: isTopupLoading } = useSWR(
-    session?.access_token && currentOrganizationId && shouldEnableTopupLimits()
-      ? [`/api/topup-usage?organization_id=${currentOrganizationId}`, currentOrganizationId]
-      : null,
-    async ([url, orgId]) => {
-      const response = await fetch(url, {
-        headers: createAuthHeaders(session!.access_token)
-      });
-      if (!response.ok) throw new Error('Failed to fetch topup usage');
-      return response.json();
-    }
-  );
-  
-  // Fetch payment methods from backend API
-  const { data: paymentMethods = [], error: paymentMethodsError } = useSWR(
-    session?.access_token && currentOrganizationId 
-      ? [buildApiUrl('/api/payments/methods'), currentOrganizationId]
-      : null,
-    async ([url, orgId]) => {
-      const response = await fetch(`${url}?organization_id=${orgId}`, {
-        headers: createAuthHeaders(session!.access_token)
-      });
-      if (!response.ok) throw new Error('Failed to fetch payment methods');
-      return response.json();
-    }
-  );
-
-  // Fetch billing history from backend API
-  const { data: billingHistoryData, error: billingHistoryError } = useSWR(
-    session?.access_token && currentOrganizationId 
-      ? [buildApiUrl('/api/payments/billing/history'), currentOrganizationId]
-      : null,
-    async ([url, orgId]) => {
-      const response = await fetch(`${url}?organization_id=${orgId}&limit=10`, {
-        headers: createAuthHeaders(session!.access_token)
-      });
-      if (!response.ok) throw new Error('Failed to fetch billing history');
-      return response.json();
-    }
-  );
+  const { data: paymentMethods = [], error: paymentMethodsError } = usePaymentMethods(currentOrganizationId);
+  const { data: billingHistoryData, error: billingHistoryError } = useBillingHistory(currentOrganizationId);
 
   const billingHistory = billingHistoryData?.invoices || [];
 
@@ -182,16 +140,7 @@ export function OrganizationSettings() {
     const paymentSuccess = urlParams.get('payment');
     
     if (subscriptionSuccess === 'success' || paymentSuccess === 'success') {
-      // User returned from successful payment - force immediate cache invalidation
-      if (currentOrganizationId) {
-        // Import and trigger cache invalidation
-        import('@/hooks/useCacheInvalidation').then(({ triggerCacheInvalidation, invalidateSubscriptionCaches }) => {
-          triggerCacheInvalidation(currentOrganizationId, 'subscription');
-          invalidateSubscriptionCaches(currentOrganizationId);
-        });
-      }
-      
-      // Also do the manual refresh as backup
+      // User returned from successful payment - refresh data immediately
       handleManualRefresh();
       
       // Clean up URL params
@@ -220,6 +169,15 @@ export function OrganizationSettings() {
   const activeAccounts = accounts.filter((acc: any) => acc.status === 'active' && acc.is_active !== false).length
   const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
   const monthlyTopupUsage = topupUsage?.currentUsage || 0
+  
+  // Debug logging to understand the data structure
+  console.log('🔍 Settings Debug:', {
+    totalAccounts: accounts.length,
+    activeAccounts,
+    accountsData: accounts.slice(0, 2), // Show first 2 accounts for debugging
+    currentPlan: subscriptionPlan,
+    planLimits
+  })
   
   // Use real subscription plan data instead of hardcoded defaultPlans
   const currentPlan = subscriptionPlan || {
@@ -473,7 +431,7 @@ export function OrganizationSettings() {
                 {currentPlan.id !== 'free' && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Domains per BM</span>
-                    <span className="text-foreground font-medium">{planLimits.pixels ? `${getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}` : '0'}</span>
+                    <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
                   </div>
                 )}
               </div>
@@ -490,7 +448,7 @@ export function OrganizationSettings() {
                     Danger Zone
                   </CardTitle>
                   <CardDescription className="text-sm text-muted-foreground">
-                    These actions are permanent and cannot be undone.
+                    Permanently delete your organization and all associated data including businesses, ad accounts, pixels, team members, and billing history. This action cannot be undone.
                   </CardDescription>
                 </div>
                 <Button variant="destructive" size="sm" onClick={() => setDeleteOrgOpen(true)}>

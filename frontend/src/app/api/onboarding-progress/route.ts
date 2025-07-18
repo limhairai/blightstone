@@ -122,20 +122,31 @@ export async function GET(request: NextRequest) {
     
     const hasActiveBM = activeBMs && activeBMs.length > 0;
 
-    // Check if user has added a pixel
-    const { data: pixels } = await supabaseAdmin
-      .from('asset_binding')
-      .select(`
-        binding_id,
-        asset!inner(type)
-      `)
-      .eq('organization_id', profile.organization_id)
-      .eq('status', 'active')
-      .eq('is_active', true)
-      .eq('asset.type', 'pixel')
-      .limit(1);
+    // Check if user has added a pixel OR has submitted a pixel connection request
+    const [pixelsResult, pixelAppsResult] = await Promise.all([
+      supabaseAdmin
+        .from('asset_binding')
+        .select(`
+          binding_id,
+          asset!inner(type)
+        `)
+        .eq('organization_id', profile.organization_id)
+        .eq('status', 'active')
+        .eq('is_active', true)
+        .eq('asset.type', 'pixel')
+        .limit(1),
+      
+      supabaseAdmin
+        .from('application')
+        .select('application_id')
+        .eq('organization_id', profile.organization_id)
+        .eq('request_type', 'pixel_connection')
+        .limit(1)
+    ]);
     
-    const hasAddedPixel = pixels && pixels.length > 0;
+    const hasActivePixel = pixelsResult.data && pixelsResult.data.length > 0;
+    const hasPixelApplication = pixelAppsResult.data && pixelAppsResult.data.length > 0;
+    const hasAddedPixel = hasActivePixel || hasPixelApplication;
 
     // Check if user has submitted topup requests (decision: track on submission, not completion)
     const { data: topupRequests } = await supabaseAdmin

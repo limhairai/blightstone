@@ -173,8 +173,9 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.json([...businessManagersWithCounts, ...formattedPendingApps]);
     
     // PERFORMANCE: Add optimized cache headers for better performance
-    response.headers.set('Cache-Control', 'private, max-age=60, s-maxage=60, stale-while-revalidate=120');
-    response.headers.set('Vary', 'Authorization');
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     
     return response;
 

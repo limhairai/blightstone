@@ -177,7 +177,7 @@ export default function PricingPage() {
       <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="https://adhub.tech" className="flex items-center space-x-2">
               <div className="text-xl font-bold">
                 <span className="text-foreground">Ad</span>
                 <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">

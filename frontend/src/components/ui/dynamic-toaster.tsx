@@ -9,10 +9,12 @@ export function DynamicToaster() {
   return (
     <Toaster 
       theme={theme as "light" | "dark" | "system" | undefined}
-      position="bottom-right"
-      expand={true}
+      position="top-right"
+      expand={false}
       richColors={true}
       closeButton={true}
+      offset={20}
+      gap={8}
       toastOptions={{
         duration: 5000,
         style: {

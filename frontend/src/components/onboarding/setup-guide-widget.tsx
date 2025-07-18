@@ -50,49 +50,28 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   const { mutate } = useSWRConfig()
   const { session } = useAuth()
   
+  // FIXED: Use only the consolidated onboarding hook
   const {
     progressData,
     isLoading,
     isError,
     mutate: mutateOnboarding,
     dismissOnboarding,
+    rawData: onboardingProgress
   } = useAdvancedOnboarding()
 
-  // Fetch onboarding progress data using SWR
-  const { data: onboardingProgress, error: onboardingError, mutate: mutateProgress } = useSWR<OnboardingProgressData>(
-    session?.access_token ? '/api/onboarding-progress' : null,
-    async (url) => {
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      })
-      if (!response.ok) {
-        throw new Error('Failed to fetch onboarding progress')
-      }
-      return response.json()
-    },
-    {
-      refreshInterval: 0, // Disable automatic refresh - only refresh on events
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      revalidateOnMount: true,
-      dedupingInterval: 30000, // Cache for 30 seconds
-      revalidateIfStale: true,
-      focusThrottleInterval: 5000 // Throttle focus revalidation to 5 seconds
-    }
-  )
+  // REMOVED: Duplicate SWR call - now using only useAdvancedOnboarding
 
   // Handle initial render animation
   useEffect(() => {
     if (widgetState !== "closed") {
       setIsInitialRender(false)
     }
-    // Refresh progress data when widget is expanded
-    if (widgetState === "expanded") {
-      mutateProgress()
+    // Only refresh when widget is expanded AND we don't have data
+    if (widgetState === "expanded" && !onboardingProgress) {
+      mutateOnboarding()
     }
-  }, [widgetState, mutateProgress])
+  }, [widgetState, mutateOnboarding, onboardingProgress])
 
   // Detect successful payment and refresh progress
   useEffect(() => {
@@ -102,7 +81,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     if (paymentSuccess === 'true') {
       // Payment was successful, refresh onboarding progress with delay to ensure DB is updated
       setTimeout(() => {
-        mutateProgress()
+        mutateOnboarding()
       }, 1000) // 1 second delay to ensure payment processing is complete
       
       // Clean up URL parameter
@@ -110,27 +89,9 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
       newUrl.searchParams.delete('success')
       window.history.replaceState({}, '', newUrl.toString())
     }
-  }, [mutateProgress])
+  }, [mutateOnboarding])
 
-  // Refresh progress when navigating back to key pages
-  useEffect(() => {
-    if (pathname === '/dashboard/wallet') {
-      // User is on wallet page, refresh progress in case they funded wallet
-      setTimeout(() => mutateProgress(), 500) // Small delay to ensure page is loaded
-    } else if (pathname === '/dashboard/business-managers') {
-      // User is on business managers page, refresh progress in case they applied for BM
-      setTimeout(() => mutateProgress(), 500)
-    } else if (pathname === '/dashboard/pixels') {
-      // User is on pixels page, refresh progress in case they added a pixel
-      setTimeout(() => mutateProgress(), 500)
-    } else if (pathname === '/dashboard/accounts') {
-      // User is on accounts page, refresh progress in case they topped up an account
-      setTimeout(() => mutateProgress(), 500)
-    } else if (pathname === '/dashboard') {
-      // User is back on dashboard, refresh progress to catch any changes
-      setTimeout(() => mutateProgress(), 500)
-    }
-  }, [pathname, mutateProgress])
+  // REMOVED: Automatic route-based refresh that was causing excessive API calls
 
   // Handle smooth expansion animation
   useEffect(() => {
@@ -250,26 +211,14 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
           
         case 'business-setup':
           router.push('/dashboard/business-managers')
-          // Refresh onboarding progress after navigating to BM page
-          setTimeout(() => {
-            mutateProgress()
-          }, 2000)
           break
           
         case 'pixel-setup':
           router.push('/dashboard/pixels')
-          // Refresh onboarding progress after navigating to pixels page
-          setTimeout(() => {
-            mutateProgress()
-          }, 2000)
           break
           
         case 'ad-account-topup':
           router.push('/dashboard/accounts')
-          // Refresh onboarding progress after navigating to accounts page
-          setTimeout(() => {
-            mutateProgress()
-          }, 2000)
           break
           
         case 'ad-account-setup':
@@ -291,9 +240,9 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
   useEffect(() => {
     if (!upgradeDialogOpen) {
       // Refresh onboarding progress data when dialog closes
-      mutateProgress()
+      mutateOnboarding()
     }
-  }, [upgradeDialogOpen, mutateProgress])
+  }, [upgradeDialogOpen, mutateOnboarding])
 
   const handleDismiss = async () => {
     try {
@@ -395,7 +344,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
                 size="sm"
                 className="h-6 w-6 p-0 opacity-50 hover:opacity-100"
                 onClick={() => {
-                  mutateProgress()
+                  mutateOnboarding()
                   toast.success("Progress refreshed")
                 }}
                 title="Refresh progress"

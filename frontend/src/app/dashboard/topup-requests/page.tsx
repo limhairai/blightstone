@@ -105,22 +105,19 @@ export default function ClientTopupRequestsPage() {
   const [transactionTypeFilter, setTransactionTypeFilter] = useState("all")
   const [shouldLoadTransactions, setShouldLoadTransactions] = useState(false)
   
-  // OPTIMIZATION: Only load transactions when needed (user scrolls or filters)
-  const transactionsQuery = useTransactions({
-    type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
-    search: debouncedSearchQuery || undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    business_id: businessFilter !== 'all' ? businessFilter : undefined,
-    date: date ? format(date, 'yyyy-MM-dd') : undefined,
-  })
+  // OPTIMIZATION: Only load transactions when needed (conditional SWR)
+  const transactionsQuery = useTransactions(
+    shouldLoadTransactions ? {
+      type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
+      search: debouncedSearchQuery || undefined,
+      status: statusFilter !== 'all' ? statusFilter : undefined,
+      business_id: businessFilter !== 'all' ? businessFilter : undefined,
+      date: date ? format(date, 'yyyy-MM-dd') : undefined,
+    } : undefined // Pass undefined to disable the hook
+  )
   
-  // Only enable transactions loading when needed
-  const { data: transactionsData, error: transactionsError, isLoading: transactionsLoading, mutate: mutateTransactions } = {
-    ...transactionsQuery,
-    data: shouldLoadTransactions ? transactionsQuery.data : { transactions: [] },
-    isLoading: shouldLoadTransactions ? transactionsQuery.isLoading : false,
-    error: shouldLoadTransactions ? transactionsQuery.error : null
-  }
+  // Use the query result directly
+  const { data: transactionsData, error: transactionsError, isLoading: transactionsLoading, mutate: mutateTransactions } = transactionsQuery
   
   // Trigger transactions loading when user interacts with filters or after initial load
   useEffect(() => {

@@ -1,5 +1,53 @@
 # AdHub Frontend
 
+## Domain Architecture
+
+- **Landing Page**: `adhub.tech` (Framer)
+- **Application**: `app.adhub.tech` (Next.js)
+
+## Routing Behavior
+
+- `app.adhub.tech/` → Redirects to `/login` (unauthenticated) or `/dashboard` (authenticated)
+- `app.adhub.tech/login` → Login page
+- `app.adhub.tech/register` → Registration page
+- `app.adhub.tech/dashboard` → Main application (requires authentication)
+
+## Deployment Configuration
+
+### Vercel Setup
+
+1. **Main Domain**: Deploy to `app.adhub.tech`
+2. **Environment Variables**: Ensure all environment variables are set for the app subdomain
+3. **Redirects**: Configure any necessary redirects in `vercel.json`
+
+### DNS Configuration
+
+```
+A     adhub.tech          → [Framer IP]
+CNAME app.adhub.tech      → [Vercel deployment]
+```
+
+### CORS Configuration
+
+Update your Supabase project settings to allow:
+- `https://app.adhub.tech`
+- `https://app.adhub.tech/*`
+
+## Development
+
+For local development, you can:
+1. Run the app normally on `localhost:3000`
+2. Test subdomain behavior using `/etc/hosts` if needed:
+   ```
+   127.0.0.1 app.adhub.local
+   ```
+
+## Migration Notes
+
+- Landing page components are preserved in `/components/landing/` for reference
+- All auth-related links now point to `https://adhub.tech` for the marketing site
+- Root path (`/`) now handles authentication-based routing instead of showing landing page
+
 Enterprise-level frontend application for AdHub, built with Next.js.
 
 ## Features

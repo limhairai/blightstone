@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AdminInstantButton } from "@/components/ui/admin-instant-button";
+import { useAdminPerformance, useInstantAdminTable } from "@/lib/admin-performance";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,12 +37,19 @@ interface ApplicationWithDetails extends Application {
   targetBmDolphinId?: string;
   websiteUrl: string;
   domains?: string[]; // Add domains array
+  pixelId?: string;
+  pixelName?: string;
   approvedBy?: string;
   approvedAt?: string;
   rejectedBy?: string;
   rejectedAt?: string;
   fulfilledBy?: string;
   fulfilledAt?: string;
+
+  // User profiles
+  approvedByProfile?: { name: string; email: string };
+  rejectedByProfile?: { name: string; email: string };
+  fulfilledByProfile?: { name: string; email: string };
 
   createdAt: string;
   updatedAt: string;
@@ -65,6 +74,9 @@ const fetcher = async (url: string) => {
 
 export default function AdminApplicationsPage() {
   const { session } = useAuth();
+  const { performInstantAdminAction, updateAdminDataOptimistically } = useAdminPerformance();
+  const { selectedRows, toggleRowSelection, performBulkAction } = useInstantAdminTable();
+  
   const [selectedApplication, setSelectedApplication] = useState<ApplicationWithDetails | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -93,37 +105,39 @@ export default function AdminApplicationsPage() {
       return;
     }
 
-    setProcessingId(applicationToApprove.applicationId);
     setConfirmDialogOpen(false);
 
-    try {
-      const response = await fetch(`/api/admin/applications/${applicationToApprove.applicationId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          admin_user_id: session.user.id
-        }),
-      });
+    // Optimistic update
+    const optimisticData = applications.map((app: ApplicationWithDetails) => 
+      app.applicationId === applicationToApprove.applicationId 
+        ? { ...app, status: 'processing', approvedBy: session.user.id, approvedAt: new Date().toISOString() }
+        : app
+    );
 
-      if (!response.ok) {
-        throw new Error('Failed to approve application');
+    await updateAdminDataOptimistically(
+      '/api/admin/applications?status=pending,processing',
+      { applications: optimisticData },
+      async () => {
+        const response = await fetch(`/api/admin/applications/${applicationToApprove.applicationId}/approve`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            admin_user_id: session.user.id
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to approve application');
+        }
+
+        return response.json();
       }
+    );
 
-      // Show success and refresh data
-      toast.success('Application approved successfully');
-      
-      // Simple cache refresh - let SWR handle the rest
-      mutate();
-
-    } catch (error) {
-      console.error('Error approving application:', error);
-      toast.error('Failed to approve application');
-    } finally {
-      setProcessingId(null);
-      setApplicationToApprove(null);
-    }
+    toast.success('Application approved successfully');
+    setApplicationToApprove(null);
   };
 
   const handleReject = async (application: ApplicationWithDetails) => {
@@ -132,34 +146,36 @@ export default function AdminApplicationsPage() {
       return;
     }
 
-    setProcessingId(application.applicationId);
-    try {
-      const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          admin_user_id: session.user.id
-        }),
-      });
+    // Optimistic update
+    const optimisticData = applications.map((app: ApplicationWithDetails) => 
+      app.applicationId === application.applicationId 
+        ? { ...app, status: 'rejected', rejectedBy: session.user.id, rejectedAt: new Date().toISOString() }
+        : app
+    );
 
-      if (!response.ok) {
-        throw new Error('Failed to reject application');
+    await updateAdminDataOptimistically(
+      '/api/admin/applications?status=pending,processing',
+      { applications: optimisticData },
+      async () => {
+        const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            admin_user_id: session.user.id
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to reject application');
+        }
+
+        return response.json();
       }
+    );
 
-      // Show success and refresh data
-      toast.success('Application rejected successfully');
-      
-      // Simple cache refresh - let SWR handle the rest
-      mutate();
-
-    } catch (error) {
-      console.error('Error rejecting application:', error);
-      toast.error('Failed to reject application');
-    } finally {
-      setProcessingId(null);
-    }
+    toast.success('Application rejected successfully');
   };
 
   const handleFulfill = async (application: ApplicationWithDetails) => {
@@ -193,6 +209,10 @@ export default function AdminApplicationsPage() {
             }
           }
           break;
+        case 'pixel_connection':
+          // For pixel connections, we can fulfill them directly
+          await handlePixelConnectionFulfillment(application);
+          return;
       }
     }
 
@@ -200,6 +220,49 @@ export default function AdminApplicationsPage() {
     setDialogMode(mode);
     setExistingBMs(existingBMsForOrg);
     setDialogOpen(true);
+  };
+
+  const handlePixelConnectionFulfillment = async (application: ApplicationWithDetails) => {
+    if (!session?.user?.id) {
+      toast.error('Authentication required');
+      return;
+    }
+
+    setProcessingId(application.applicationId);
+
+    try {
+      const response = await fetch(`/api/admin/applications/${application.applicationId}/fulfill-pixel`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          admin_user_id: session.user.id
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fulfill pixel connection');
+      }
+
+      const result = await response.json();
+      
+      toast.success('Pixel connection fulfilled successfully!', {
+        description: `Pixel ${application.pixelId} has been connected to the business manager.`
+      });
+      
+      // Refresh the applications list
+      mutate();
+      
+    } catch (error) {
+      console.error('Error fulfilling pixel connection:', error);
+      toast.error('Failed to fulfill pixel connection', {
+        description: error instanceof Error ? error.message : 'An unknown error occurred'
+      });
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleDialogSuccess = async () => {
@@ -268,6 +331,8 @@ export default function AdminApplicationsPage() {
         } else {
           return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Choose BM)", variant: "secondary" as const };
         }
+      case 'pixel_connection':
+        return { icon: <Globe className="h-4 w-4" />, label: "Pixel Connection", variant: "destructive" as const };
       default:
         return { icon: <Building2 className="h-4 w-4" />, label: "Unknown Request", variant: "outline" as const };
     }
@@ -322,23 +387,25 @@ export default function AdminApplicationsPage() {
           </TabsList>
           
           <div className="flex items-center gap-2">
-            <Button
+            <AdminInstantButton
               variant="outline"
               size="sm"
               onClick={() => window.location.href = '/admin/applications/history'}
+              action="Navigating to history"
             >
               <History className="h-4 w-4 mr-2" />
               View History
-            </Button>
-            <Button
+            </AdminInstantButton>
+            <AdminInstantButton
               variant="outline"
               size="sm"
               onClick={() => mutate()}
               disabled={isLoading}
+              action="Refreshing data"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               Refresh
-            </Button>
+            </AdminInstantButton>
           </div>
         </div>
 
@@ -355,8 +422,9 @@ export default function AdminApplicationsPage() {
                     <TableRow className="border-border hover:bg-muted/50">
                       <TableHead className="text-muted-foreground">Organization</TableHead>
                       <TableHead className="text-muted-foreground">Request Type</TableHead>
-                      <TableHead className="text-muted-foreground">Domains</TableHead>
+                      <TableHead className="text-muted-foreground">Details</TableHead>
                       <TableHead className="text-muted-foreground">Applied</TableHead>
+                      <TableHead className="text-muted-foreground">Status</TableHead>
                       <TableHead className="text-muted-foreground">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -366,7 +434,7 @@ export default function AdminApplicationsPage() {
                       const isProcessing = processingId === application.applicationId;
                       
                       return (
-                        <TableRow key={application.applicationId} className="border-border hover:bg-muted/50">
+                        <TableRow key={application.applicationId} className="admin-table-row border-border hover:bg-muted/50">
                           <TableCell>
                             <div className="flex items-center gap-2 min-w-0">
                               <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
@@ -391,25 +459,48 @@ export default function AdminApplicationsPage() {
                                   Target: {application.targetBmDolphinId}
                                 </div>
                               )}
+                              {application.requestType === 'pixel_connection' && application.pixelId && (
+                                <div className="text-xs text-muted-foreground font-mono">
+                                  Pixel ID: {application.pixelId}
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           
                           <TableCell>
                             <div className="space-y-1 max-w-xs">
-                              {application.domains && application.domains.length > 0 ? (
-                                <>
-                                  {application.domains.map((domain, index) => (
-                                    <div key={index} className="flex items-center gap-1 text-xs text-foreground">
-                                      <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                      <span className="truncate">{domain}</span>
+                              {application.requestType === 'pixel_connection' ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1 text-xs text-foreground">
+                                    <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="font-medium truncate">
+                                      {application.pixelName || `Pixel ${application.pixelId}`}
+                                    </span>
+                                  </div>
+                                  {application.targetBmDolphinId && (
+                                    <div className="text-xs text-muted-foreground">
+                                      → BM: {application.targetBmDolphinId}
                                     </div>
-                                  ))}
-                                </>
-                              ) : (
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Globe className="h-3 w-3" />
-                                  <span className="truncate">{application.websiteUrl}</span>
+                                  )}
                                 </div>
+                              ) : (
+                                <>
+                                  {application.domains && application.domains.length > 0 ? (
+                                    <>
+                                      {application.domains.map((domain, index) => (
+                                        <div key={index} className="flex items-center gap-1 text-xs text-foreground">
+                                          <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                          <span className="truncate">{domain}</span>
+                                        </div>
+                                      ))}
+                                    </>
+                                  ) : (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Globe className="h-3 w-3" />
+                                      <span className="truncate">{application.websiteUrl}</span>
+                                    </div>
+                                  )}
+                                </>
                               )}
                             </div>
                           </TableCell>
@@ -418,42 +509,70 @@ export default function AdminApplicationsPage() {
                             <div className="text-sm">{formatDate(application.createdAt)}</div>
                           </TableCell>
                           <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1">
+                                <div className={`h-2 w-2 rounded-full ${
+                                  application.status === 'pending' ? 'bg-yellow-500' :
+                                  application.status === 'processing' ? 'bg-blue-500' :
+                                  application.status === 'fulfilled' ? 'bg-green-500' :
+                                  'bg-red-500'
+                                }`} />
+                                <span className="text-xs font-medium capitalize">{application.status}</span>
+                              </div>
+                              {application.status === 'processing' && application.approvedByProfile && (
+                                <div className="text-xs text-muted-foreground">
+                                  Approved by {application.approvedByProfile.name}
+                                </div>
+                              )}
+                              {application.status === 'fulfilled' && application.fulfilledByProfile && (
+                                <div className="text-xs text-muted-foreground">
+                                  Fulfilled by {application.fulfilledByProfile.name}
+                                </div>
+                              )}
+                              {application.status === 'rejected' && application.rejectedByProfile && (
+                                <div className="text-xs text-muted-foreground">
+                                  Rejected by {application.rejectedByProfile.name}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
                             <div className="flex gap-2">
                               {application.status === 'pending' && (
                                 <>
-                                  <Button
+                                  <AdminInstantButton
                                     variant="outline"
                                     size="sm"
                                     onClick={() => handleReject(application)}
-                                    disabled={isProcessing}
+                                    action="Rejecting application"
                                   >
-                                    {isProcessing ? (
-                                      <RefreshCw className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      'Reject'
-                                    )}
-                                  </Button>
-                                  <Button
+                                    Reject
+                                  </AdminInstantButton>
+                                  <AdminInstantButton
                                     size="sm"
                                     onClick={() => handleApprove(application)}
-                                    disabled={isProcessing}
+                                    action="Approving application"
+                                    style={{
+                                      background: 'linear-gradient(90deg, #b4a0ff 0%, #ffb4a0 100%)',
+                                      color: 'black',
+                                      border: 'none'
+                                    }}
+                                    className="hover:opacity-90"
                                   >
-                                    {isProcessing ? (
-                                      <RefreshCw className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      'Approve'
-                                    )}
-                                  </Button>
+                                    Approve
+                                  </AdminInstantButton>
                                 </>
                               )}
                               {application.status === 'processing' && (
-                                <Button
+                                <AdminInstantButton
                                   size="sm"
                                   onClick={() => handleFulfill(application)}
+                                  action="Marking as fulfilled"
                                   className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                                  disabled={processingId === application.applicationId}
                                 >
-                                  Mark as Fulfilled
-                                </Button>
+                                  {processingId === application.applicationId ? 'Processing...' : 'Mark as Fulfilled'}
+                                </AdminInstantButton>
                               )}
                             </div>
                           </TableCell>

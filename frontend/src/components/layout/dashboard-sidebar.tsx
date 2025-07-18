@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "../ui/button"
@@ -28,7 +28,7 @@ export function DashboardSidebar() {
   // Get organization and user data
   const { currentOrganizationId } = useOrganizationStore()
   const { data: orgData } = useCurrentOrganization(currentOrganizationId)
-  const { user } = useAuth()
+  const { user, session } = useAuth()
   
   // Get organization name or user name for initials
   const organization = orgData?.organizations?.[0]
@@ -106,6 +106,59 @@ export function DashboardSidebar() {
   }
 
   const toggleSidebar = () => setCollapsed(!collapsed)
+
+  // 🚀 PREDICTIVE PRELOADING: Preload data when user hovers over nav items
+  const preloadData = useCallback((route: string) => {
+    if (!session?.access_token || !currentOrganizationId) return
+
+    const headers = { 'Authorization': `Bearer ${session.access_token}` }
+    
+    switch (route) {
+      case '/dashboard/business-managers':
+        // Preload business managers data
+        fetch(`/api/organizations/${currentOrganizationId}/business-managers`, { headers })
+          .catch(() => {}) // Silent fail
+        break
+      
+      case '/dashboard/accounts':
+        // Preload ad accounts data (already loaded in dashboard)
+        break
+      
+      case '/dashboard/pixels':
+        // Preload pixels data
+        fetch(`/api/organizations/${currentOrganizationId}/pixels`, { headers })
+          .catch(() => {}) // Silent fail
+        break
+      
+      case '/dashboard/settings':
+        // REMOVED: Topup usage preloading - this endpoint is extremely slow (17+ seconds)
+        // Only load when user actually visits settings page
+        // fetch(`/api/topup-usage?organization_id=${currentOrganizationId}`, { headers })
+        //   .catch(() => {}) // Silent fail
+        break
+      
+      case '/dashboard/applications':
+        // Preload applications data
+        fetch('/api/applications', { headers })
+          .catch(() => {}) // Silent fail
+        break
+        
+      case '/dashboard/support':
+        // Preload support tickets
+        fetch('/api/support/tickets', { headers })
+          .catch(() => {}) // Silent fail
+        break
+    }
+  }, [session, currentOrganizationId])
+
+  // Debounced preload to avoid excessive requests
+  const debouncedPreload = useMemo(() => {
+    let timeoutId: NodeJS.Timeout
+    return (route: string) => {
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => preloadData(route), 200) // 200ms delay
+    }
+  }, [preloadData])
 
   return (
     <>
@@ -190,6 +243,7 @@ export function DashboardSidebar() {
                         collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
                       )}
                       prefetch={false}
+                      onMouseEnter={() => item.href && debouncedPreload(item.href)}
                     >
                       <Icon
                         className={cn(
@@ -217,6 +271,7 @@ export function DashboardSidebar() {
                                 ? "bg-accent/50 text-foreground"
                                 : "text-muted-foreground hover:text-foreground hover:bg-accent",
                             )}
+                            onMouseEnter={() => debouncedPreload(subItem.href)}
                           >
                             {SubIcon && <SubIcon className="h-3.5 w-3.5 mr-2" />}
                             <span className="text-xs">{subItem.name}</span>

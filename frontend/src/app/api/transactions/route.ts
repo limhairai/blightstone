@@ -107,11 +107,6 @@ export async function GET(request: NextRequest) {
       currentPage: page,
     });
     
-    // **PERFORMANCE**: Optimized caching headers for better performance
-    response.headers.set('Cache-Control', 'private, max-age=45, s-maxage=45, stale-while-revalidate=90');
-    response.headers.set('Vary', 'Authorization');
-    response.headers.set('ETag', `transactions-${organizationId}-${Math.floor(Date.now() / 30000)}`); // ETag changes every 30s
-    
     return response;
 
   } catch (error) {

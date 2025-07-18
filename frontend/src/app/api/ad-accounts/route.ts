@@ -56,6 +56,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch ad accounts' }, { status: 500 });
     }
 
+    // Get pending additional ad account applications
+    const { data: pendingApplications, error: appsError } = await supabase
+      .from('application')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .eq('request_type', 'additional_accounts')
+      .in('status', ['pending', 'processing']);
+
+    if (appsError) {
+      console.error('Error fetching pending ad account applications:', appsError);
+      return NextResponse.json({ error: 'Failed to fetch pending applications' }, { status: 500 });
+    }
+
     // Get all business managers for this organization to create a lookup map
     const { data: businessManagers, error: bmError } = await supabase.rpc('get_organization_assets', {
       p_organization_id: organizationId,
@@ -64,6 +77,16 @@ export async function GET(request: NextRequest) {
 
     if (bmError) {
       console.error('Error fetching business managers:', bmError);
+    }
+
+    // Get pixel assets for this organization
+    const { data: pixelAssets, error: pixelError } = await supabase.rpc('get_organization_assets', {
+      p_organization_id: organizationId,
+      p_asset_type: 'pixel'
+    });
+
+    if (pixelError) {
+      console.error('Error fetching pixel assets:', pixelError);
     }
 
     // Create a lookup map for business manager info: dolphin_id -> {name, id}
@@ -77,75 +100,172 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Transform to match expected frontend format
-    const enrichedData = (assets || []).map((asset: any) => {
+    // Create a lookup map for pixel info: pixel_id -> pixel data
+    const pixelLookup = new Map();
+    if (pixelAssets) {
+      pixelAssets.forEach((pixel: any) => {
+        pixelLookup.set(pixel.dolphin_id, {
+          id: pixel.asset_id,
+          name: pixel.name,
+          dolphin_id: pixel.dolphin_id,
+          status: pixel.status,
+          is_active: pixel.is_active,
+          metadata: pixel.metadata
+        });
+      });
+    }
+
+    // Process active assets
+    const processedAssets = (assets || []).map((asset: any) => {
       const metadata = asset.metadata || {};
+      const accountId = asset.dolphin_id || metadata.ad_account_id;
+      const businessManagerId = metadata.business_manager_id;
       
-      // Try to get business manager info from metadata first, then from lookup
-      let businessManagerName = metadata.business_manager || metadata.business_manager_name;
-      let businessManagerId = metadata.business_manager_id;
-      
-      // If metadata doesn't have BM info, try to find it from the lookup
-      if ((!businessManagerName || businessManagerName === 'N/A') && businessManagerId) {
+      // Try to get business manager name from metadata first, then from lookup
+      let businessManagerName = metadata.business_manager_name;
+      if (!businessManagerName && businessManagerId) {
         const bmInfo = bmLookup.get(businessManagerId);
-        if (bmInfo) {
-          businessManagerName = bmInfo.name;
+        businessManagerName = bmInfo?.name || 'Unknown BM';
+      }
+      if (!businessManagerName) {
+        businessManagerName = 'Unknown BM';
+      }
+
+      // Get pixel information - first try from metadata, then from pixel assets
+      let pixelId = metadata.pixel_id;
+      let pixelName = metadata.pixel_name;
+      let pixelStatus = 'active';
+      let pixelIsActive = true;
+
+      // If no pixel in metadata, check if there's a pixel asset that references this ad account
+      if (!pixelId && pixelAssets) {
+        // Look for pixel assets that might be associated with this ad account
+        // This is a fallback in case the metadata is not properly synced
+        const associatedPixel = pixelAssets.find((pixel: any) => {
+          const pixelMetadata = pixel.metadata || {};
+          const associatedAccounts = pixelMetadata.associated_ad_accounts || [];
+          return associatedAccounts.includes(accountId);
+        });
+
+        if (associatedPixel) {
+          pixelId = associatedPixel.dolphin_id;
+          pixelName = associatedPixel.name;
+          pixelStatus = associatedPixel.status;
+          pixelIsActive = associatedPixel.is_active;
         }
       }
-      
-      // If still no BM info and we have any BM in the organization, use the first one as fallback
-      if (!businessManagerName || businessManagerName === 'N/A') {
-        const firstBM = businessManagers?.[0];
-        if (firstBM) {
-          businessManagerName = firstBM.name;
-          businessManagerId = firstBM.dolphin_id;
+
+      // Handle status - if asset status is 'pending', try to determine actual status
+      let actualStatus = asset.status;
+      let actualIsActive = asset.is_active;
+
+      // If status is pending and we have Dolphin metadata, try to infer actual status
+      if (actualStatus === 'pending' && metadata.account_status) {
+        // Map Dolphin account status to our status values
+        const dolphinStatus = metadata.account_status;
+        if (dolphinStatus === 'ACTIVE') {
+          actualStatus = 'active';
+          actualIsActive = true;
+        } else if (dolphinStatus === 'PAUSED') {
+          actualStatus = 'paused';
+          actualIsActive = false;
+        } else if (dolphinStatus === 'SUSPENDED' || dolphinStatus === 'RESTRICTED') {
+          actualStatus = 'suspended';
+          actualIsActive = false;
         }
+      }
+
+      // If still pending and we have spend data, assume it's active
+      if (actualStatus === 'pending' && (metadata.spend || metadata.balance)) {
+        actualStatus = 'active';
+        actualIsActive = true;
       }
       
       return {
-        id: asset.asset_id || asset.id,
-        asset_id: asset.asset_id || asset.id,
-        name: asset.name || `Account ${(asset.asset_id || asset.id)?.substring(0, 8) || 'Unknown'}`,
-        ad_account_id: metadata.ad_account_id || asset.dolphin_id || 'unknown',
-        dolphin_account_id: asset.dolphin_id || 'unknown',
-        business_manager_name: businessManagerName || 'N/A',
-        business_manager_id: businessManagerId || 'unknown',
-        status: asset.status || 'unknown',
-        is_active: asset.is_active !== undefined ? asset.is_active : true, // Client-controlled activation
-        // Use Dolphin's balance field directly instead of calculated balance
-        balance_cents: Math.round((metadata.balance || 0) * 100),
-        spend_cents: Math.round((metadata.amount_spent || 0) * 100),
-        // spend_cap from Facebook/Dolphin - handle missing metadata gracefully
-        spend_cap_cents: metadata.spend_cap || 0,
-        binding_status: 'active',
-        last_sync_at: asset.last_synced_at,
-        
-        // Additional useful metrics
-        timezone: metadata.timezone_id || 'UTC',
-        bound_at: asset.bound_at,
-        binding_id: asset.binding_id,
-        metadata: metadata // Include full metadata for pixel_id and other data
+        id: asset.asset_id,
+        adAccount: accountId,
+        ad_account_id: accountId, // Add this field
+        dolphin_account_id: accountId, // Add this field
+        name: asset.name || `Account ${accountId}`,
+        status: actualStatus,
+        is_active: actualIsActive,
+        business: businessManagerName,
+        business_manager_name: businessManagerName, // Add this field for frontend compatibility
+        business_manager_id: businessManagerId,
+        bmId: businessManagerId,
+        balance: parseFloat(metadata.balance || '0'),
+        balance_cents: Math.round(parseFloat(metadata.balance || '0') * 100),
+        spend_cents: Math.round(parseFloat(metadata.spend || '0') * 100),
+        spend_cap_cents: Math.round(parseFloat(metadata.spend_limit || '0') * 100),
+        currency: metadata.currency || 'USD',
+        spend_limit: parseFloat(metadata.spend_limit || '0'),
+        timezone: metadata.timezone || 'UTC',
+        created_at: asset.created_at,
+        updated_at: asset.updated_at,
+        type: 'asset', // Mark as active asset
+        // Enhanced pixel information
+        pixel_id: pixelId,
+        pixel_name: pixelName,
+        pixel_status: pixelStatus,
+        pixel_is_active: pixelIsActive,
+        metadata: metadata
       };
     });
 
-    // Filter by business manager if specified (additional client-side filtering)
-    let filteredData = enrichedData;
+    // Process pending applications and add them to the list
+    const pendingAdAccounts = (pendingApplications || []).map((app: any) => ({
+      id: `app-${app.application_id}`,
+      adAccount: `pending-${app.application_id}`,
+      name: `Ad Account Request ${app.application_id.toString().substring(0, 8)}...`,
+      status: app.status,
+      is_active: false,
+      business: app.target_bm_dolphin_id ? 'Business Manager' : 'Pending Assignment',
+      bmId: app.target_bm_dolphin_id,
+      balance: 0,
+      currency: 'USD',
+      spend_limit: 0,
+      created_at: app.created_at,
+      updated_at: app.updated_at,
+      type: 'application', // Mark as pending application
+      application_id: app.application_id,
+      pixel_id: null, // Applications don't have pixels yet
+      metadata: {}
+    }));
+
+    // Apply business manager filter if specified
+    let filteredAccounts = [...processedAssets];
+    
+    // For business manager filtering, only include real ad accounts, not pending applications
     if (bmId) {
-      filteredData = enrichedData.filter((account: any) => 
-        account.business_manager_id === bmId
-      );
+      filteredAccounts = processedAssets.filter((account: any) => account.bmId === bmId);
+      
+      // Only add pending applications if they're specifically for this BM
+      const relevantPendingApps = pendingAdAccounts.filter(app => app.bmId === bmId);
+      filteredAccounts = [...filteredAccounts, ...relevantPendingApps];
+    } else {
+      // If no BM filter, include all accounts and applications
+      filteredAccounts = [...processedAssets, ...pendingAdAccounts];
     }
 
-    const response = NextResponse.json({ accounts: filteredData });
+    // Sort by created_at (newest first)
+    filteredAccounts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const response = NextResponse.json({
+      accounts: filteredAccounts,
+      total: filteredAccounts.length,
+      active_accounts: processedAssets.length,
+      pending_applications: pendingAdAccounts.length
+    });
     
-    // PERFORMANCE: Optimized cache headers with stale-while-revalidate
-    response.headers.set('Cache-Control', 'private, max-age=90, s-maxage=90, stale-while-revalidate=180');
-    response.headers.set('Vary', 'Authorization');
+    // No caching for immediate ad account updates
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     
     return response;
 
   } catch (error) {
-    console.error('Error in ad-accounts API:', error);
+    console.error('Error in ad accounts API:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

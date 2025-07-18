@@ -2,12 +2,13 @@
 // frontend/src/app/layout.tsx
 import type React from "react";
 import type { Metadata } from "next";
-import { Inter } from 'next/font/google';
+import { Inter, DM_Sans } from 'next/font/google';
 import "../styles/globals.css";
 import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
-
 import { DynamicToaster } from "../components/ui/dynamic-toaster";
+import { initializeAdminPerformance } from "@/lib/admin-performance";
+import { PredictiveLoadingProvider } from "../components/core/predictive-loading-provider";
 
 // Configure Inter font with minimal configuration to reduce loading issues
 const inter = Inter({ 
@@ -15,6 +16,14 @@ const inter = Inter({
   display: 'swap', // Show fallback immediately, swap when Inter loads
   weight: ['400', '500', '600', '700'], // Only load weights we use
   variable: '--font-inter', // CSS variable for easier usage
+});
+
+// Configure DM Sans font for headings
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-dm-sans',
 });
 
 // Add or edit your "generateMetadata" to include the Sentry trace data:
@@ -46,12 +55,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Initialize admin performance optimizations
+  if (typeof window !== 'undefined') {
+    initializeAdminPerformance();
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${inter.variable}`}>
+      <body className={`${inter.className} ${inter.variable} ${dmSans.variable}`}>
         <SimpleProviders>
-          {children}
-          <DynamicToaster />
+          <PredictiveLoadingProvider>
+            {children}
+            <DynamicToaster />
+          </PredictiveLoadingProvider>
         </SimpleProviders>
       </body>
     </html>

@@ -91,7 +91,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch assets' }, { status: 500 })
     }
 
+    // Get pending pixel connection applications
+    const { data: pendingPixelApps, error: pixelAppsError } = await supabase
+      .from('application')
+      .select('*')
+      .eq('organization_id', profile.organization_id)
+      .eq('request_type', 'pixel_connection')
+      .in('status', ['pending', 'processing'])
 
+    if (pixelAppsError) {
+      console.error('Error fetching pending pixel applications:', pixelAppsError)
+      return NextResponse.json({ error: 'Failed to fetch pending pixel applications' }, { status: 500 })
+    }
 
     // Get business managers for name lookup
     const { data: businessManagers } = await supabase
@@ -126,8 +137,6 @@ export async function GET(request: NextRequest) {
         const metadata = asset.metadata || {}
         const pixelId = metadata.pixel_id
         
-
-        
         if (pixelId) {
           const bmId = metadata.business_manager_id
           const bmName = bmLookup.get(bmId) || metadata.business_manager || 'Unknown BM'
@@ -153,8 +162,6 @@ export async function GET(request: NextRequest) {
             account_id: metadata.ad_account_id || asset.dolphin_id
           })
           
-          // Note: Removed last_seen tracking as it's not needed
-          
           // Update status based on asset status
           if (asset.status === 'inactive' || asset.status === 'suspended') {
             pixelData.status = 'inactive'
@@ -163,11 +170,44 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // Add pending pixel applications to the pixel map
+    if (pendingPixelApps) {
+      pendingPixelApps.forEach((app: any) => {
+        const pixelId = app.pixel_id
+        const bmId = app.target_bm_dolphin_id
+        const bmName = bmLookup.get(bmId) || 'Unknown BM'
+        
+        // Create unique key for pixel+BM combination
+        const pixelKey = `${pixelId}_${bmId}`
+        
+        if (!pixelMap.has(pixelKey)) {
+          pixelMap.set(pixelKey, {
+            pixel_id: pixelId,
+            bm_id: bmId || 'unknown',
+            bm_name: bmName,
+            status: app.status, // pending or processing
+            ad_accounts: [],
+            // type: 'application', // Mark as pending application (removed - not in PixelData type)
+            // application_id: app.application_id, // (removed - not in PixelData type)
+            pixel_name: app.pixel_name || `Pixel ${pixelId}`,
+            created_at: app.created_at,
+            updated_at: app.updated_at
+          } as any)
+        }
+      })
+    }
+
     const pixels = Array.from(pixelMap.values())
+
+    // Count active vs pending pixels
+    const activePixels = pixels.filter(p => p.status === 'active').length
+    const pendingPixels = pixels.filter((p: any) => p.status === 'pending' || p.status === 'processing').length
 
     return NextResponse.json({
       pixels,
       total_pixels: pixels.length,
+      active_pixels: activePixels,
+      pending_pixels: pendingPixels,
       total_bms: new Set(pixels.map(p => p.bm_id)).size,
       subscription_limit: subscriptionLimit
     })

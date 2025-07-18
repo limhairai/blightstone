@@ -186,10 +186,10 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
-            Binance Pay
+            Crypto Payment
           </DialogTitle>
           <DialogDescription>
-            Pay with cryptocurrency using Binance Pay
+            Pay with cryptocurrency
           </DialogDescription>
         </DialogHeader>
 
@@ -208,13 +208,13 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
             /* Create Order */
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Click below to create a Binance Pay payment order. You'll be able to pay with any cryptocurrency supported by Binance Pay.
+                Click below to create a crypto payment order. You'll be able to pay with any supported cryptocurrency.
               </div>
               
               <Button
                 onClick={createBinancePayOrder}
                 disabled={isCreating}
-                className="w-full bg-gradient-to-r from-[#f0b90b] to-[#fcd535] hover:opacity-90 text-black border-0"
+                className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
               >
                 {isCreating ? (
                   <>
@@ -224,7 +224,7 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
                 ) : (
                   <>
                     <Wallet className="mr-2 h-4 w-4" />
-                    Create Binance Pay Order
+                    Create Crypto Payment Order
                   </>
                 )}
               </Button>
@@ -284,22 +284,22 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
                     </div>
                   </div>
 
-                  {/* Open in Binance Button */}
+                  {/* Open Payment Button */}
                   <Button
                     variant="outline"
                     className="w-full"
                     onClick={() => window.open(order.paymentUrl, '_blank')}
                   >
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Open in Binance
+                    Open Payment Page
                   </Button>
 
                   {/* Instructions */}
                   <div className="text-sm text-muted-foreground space-y-1">
                     <div className="font-medium">How to pay:</div>
-                    <div>1. Open the Binance app or click "Open in Binance"</div>
-                    <div>2. Scan the QR code or use the payment URL</div>
-                    <div>3. Complete the payment in the Binance app</div>
+                    <div>1. Click "Open Payment Page" or scan the QR code</div>
+                    <div>2. Choose your preferred cryptocurrency</div>
+                    <div>3. Complete the payment using your crypto wallet</div>
                     <div>4. Your wallet will be credited automatically</div>
                   </div>
                 </>

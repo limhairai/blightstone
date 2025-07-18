@@ -2,6 +2,162 @@
 @tailwind components;
 @tailwind utilities;
 
+/* FRAMER-LEVEL PERFORMANCE OPTIMIZATIONS */
+
+/* GPU acceleration for smooth animations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Transform and opacity changes trigger GPU acceleration */
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Smooth scrolling with momentum */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Instant visual feedback */
+.instant-feedback {
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.instant-feedback:active {
+  transform: scale(0.98);
+}
+
+/* Optimized hover states */
+.hover-lift {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Smooth focus states */
+.focus-ring {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-ring:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Performance-optimized loading states */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Smooth page transitions */
+.page-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.page-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Optimized table rows */
+.table-row {
+  transition: background-color 0.15s ease;
+  contain: layout;
+}
+
+.table-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Smooth button animations */
+.button-smooth {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateZ(0);
+}
+
+.button-smooth:hover {
+  transform: translateY(-1px);
+}
+
+.button-smooth:active {
+  transform: translateY(0);
+}
+
+/* Optimized modal animations */
+.modal-backdrop {
+  transition: opacity 0.2s ease;
+}
+
+.modal-content {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent layout shifts */
+.layout-stable {
+  contain: layout;
+}
+
+/* Optimized scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Font classes for easier usage */
+.font-dm-sans {
+  font-family: var(--font-dm-sans), sans-serif;
+}
+
+.font-inter {
+  font-family: var(--font-inter), sans-serif;
+}
+
 @layer base {
   :root {
     /* Dark Mode Default */
@@ -140,4 +296,17 @@
 
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+/* Toast positioning fixes */
+[data-sonner-toaster] {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
+}
+
+[data-sonner-toast] {
+  position: relative !important;
+  z-index: 9999 !important;
 }

@@ -1,9 +1,10 @@
 -- Fix ambiguous column references in get_tickets_with_metadata function
 -- The issue is in the subquery where ticket_id and created_at are ambiguous
 
--- Drop and recreate the function with proper table aliases
+-- Drop existing function
 DROP FUNCTION IF EXISTS public.get_tickets_with_metadata(UUID);
 
+-- Create enhanced function with asset names
 CREATE OR REPLACE FUNCTION public.get_tickets_with_metadata(org_id UUID DEFAULT NULL)
 RETURNS TABLE (
     ticket_id UUID,
@@ -12,10 +13,9 @@ RETURNS TABLE (
     assigned_to UUID,
     subject TEXT,
     category TEXT,
-    priority TEXT,
     status TEXT,
     affected_asset_ids TEXT[],
-    affected_assets JSONB,
+    affected_assets TEXT,
     tags TEXT[],
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ,
@@ -38,7 +38,6 @@ BEGIN
         t.assigned_to,
         t.subject,
         t.category,
-        t.priority,
         t.status,
         t.affected_asset_ids,
         public.resolve_asset_names(t.affected_asset_ids) as affected_assets,

@@ -19,7 +19,7 @@ import { toast } from "sonner"
 import { validateBusinessManagerApplicationForm, showValidationErrors } from "@/lib/form-validation"
 import { useSubscription } from "@/hooks/useSubscription"
 import { normalizeDomain, isValidDomain, hasDuplicateDomains, removeDuplicateDomains, isSubdomain, getBaseDomain, SUBDOMAIN_POLICY } from "@/lib/utils/domain-utils"
-import { refreshAfterBusinessManagerChange } from "@/lib/subscription-utils"
+// import { refreshAfterBusinessManagerChange } from "@/lib/subscription-utils" // File not found
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { mutate } from 'swr'
 import { getPlanPricing } from '@/lib/config/pricing-config'

@@ -10,7 +10,6 @@ import { WalletFundingPanel } from "../../../components/wallet/wallet-funding-pa
 import { TransactionsHistory } from "../../../components/wallet/transactions-history"
 import { layout } from "../../../lib/layout-utils"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
-import { refreshAfterBusinessManagerChange, invalidateOrganizationCache } from "@/lib/subscription-utils"
 import { authenticatedFetcher } from "@/lib/swr-config"
 
 // Force dynamic rendering for authentication-protected page
@@ -36,9 +35,10 @@ export default function WalletPage() {
         mutate([`/api/organizations?id=${currentOrganizationId}`, session?.access_token], 
                () => authenticatedFetcher(`/api/organizations?id=${currentOrganizationId}&_t=${timestamp}`, session?.access_token!),
                { revalidate: true }),
-        // Invalidate other related caches
-        invalidateOrganizationCache(currentOrganizationId),
-        refreshAfterBusinessManagerChange(currentOrganizationId),
+        // Refresh related wallet data
+        mutate([`/api/transactions?organizationId=${currentOrganizationId}`, session?.access_token], 
+               () => authenticatedFetcher(`/api/transactions?organizationId=${currentOrganizationId}&_t=${timestamp}`, session?.access_token!),
+               { revalidate: true }),
       ])
       return true
     } catch (error) {

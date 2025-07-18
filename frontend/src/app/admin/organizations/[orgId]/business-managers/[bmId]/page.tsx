@@ -27,6 +27,7 @@ interface AdAccount {
   spend_cap_cents?: number
   spend_cents?: number
   pixel_id?: string
+  type?: 'application' | 'ad_account'
 }
 
 interface BusinessManager {
@@ -250,14 +251,19 @@ export default function BusinessManagerDetailPage() {
                         </div>
                       </td>
                       <td className="p-4">
-                        {account.metadata?.pixel_id ? (
-                          <div className="font-mono text-sm">{account.metadata.pixel_id}</div>
+                        {account.pixel_id ? (
+                          <div className="font-mono text-sm">{account.pixel_id}</div>
                         ) : (
                           <div className="text-sm text-muted-foreground">No pixel</div>
                         )}
                       </td>
                       <td className="p-4">
                         <StatusBadge status={account.status} size="sm" />
+                        {account.type === 'application' && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Application Request
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 text-right font-mono">
                         {formatCurrency(availableSpend)}

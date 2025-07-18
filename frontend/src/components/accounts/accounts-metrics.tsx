@@ -11,7 +11,7 @@ export default function AccountMetrics() {
   
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
   const { data: bizData, isLoading: isBizLoading } = useBusinessManagers();
-  const { data: accData, isLoading: isAccLoading } = useAdAccounts(currentOrganizationId);
+  const { data: accData, isLoading: isAccLoading } = useAdAccounts();
 
   const totalAccounts = accData?.accounts?.length ?? 0;
   const totalBalance = orgData?.balance_cents ? orgData.balance_cents / 100 : 0;

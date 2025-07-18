@@ -76,9 +76,8 @@ export default function BusinessManagersPage() {
   const handleApplicationSuccess = useCallback(async () => {
     await mutate()
     
-    // Also refresh the setup widget's onboarding progress
-    // This will trigger a refresh of the setup widget to show BM application completion
-    globalMutate('/api/onboarding-progress')
+    // REMOVED: Explicit onboarding-progress call that was causing excessive API calls
+    // The useAdvancedOnboarding hook will automatically update when needed
   }, [mutate])
 
   const activeManagers = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).length

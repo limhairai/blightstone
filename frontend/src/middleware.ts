@@ -122,7 +122,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Define public routes - include onboarding
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email', '/onboarding']
+  // Note: Root path '/' is no longer public since it redirects based on auth status
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email', '/onboarding']
 
   // If it's a public route, do nothing.
   if (publicRoutes.includes(pathname) || pathname.startsWith('/api/')) {

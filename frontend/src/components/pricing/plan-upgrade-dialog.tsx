@@ -1,8 +1,8 @@
 'use client'
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Check, Loader2 } from "lucide-react"
+import { Check, Loader2, AlertTriangle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSubscription } from "@/hooks/useSubscription"
@@ -19,6 +19,8 @@ interface PlanUpgradeDialogProps {
 export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }: PlanUpgradeDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false)
+  const [pendingDowngradePlan, setPendingDowngradePlan] = useState<string | null>(null)
   const { currentPlan } = useSubscription()
   const { currentOrganizationId } = useOrganizationStore()
   const router = useRouter()
@@ -75,14 +77,10 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
     const isDowngradeAction = isDowngrade(planId)
     
     if (isDowngradeAction) {
-      const planName = planId.charAt(0).toUpperCase() + planId.slice(1)
-      const confirmed = confirm(
-        `Are you sure you want to downgrade to ${planName}?\n\n` +
-        `Your current ${currentPlan?.name} plan will remain active until the end of your billing cycle. ` +
-        `The downgrade will take effect on your next billing date, and you won't be charged until then.`
-      )
-      
-      if (!confirmed) return
+      // Show custom confirmation dialog instead of browser confirm
+      setPendingDowngradePlan(planId)
+      setShowDowngradeConfirm(true)
+      return
     }
     
     setIsUpgrading(true)
@@ -129,6 +127,44 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
     }
   }
 
+  const handleConfirmDowngrade = async () => {
+    if (!pendingDowngradePlan) return
+    
+    setShowDowngradeConfirm(false)
+    setIsUpgrading(true)
+    
+    try {
+      const response = await fetch('/api/subscriptions/schedule-downgrade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          planId: pendingDowngradePlan,
+          organizationId: currentOrganizationId,
+          isDowngrade: true
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to schedule downgrade')
+      }
+
+      const planName = pendingDowngradePlan.charAt(0).toUpperCase() + pendingDowngradePlan.slice(1)
+      toast.success(
+        `Downgrade scheduled! Your plan will change to ${planName} at the end of your current billing cycle.`
+      )
+      onOpenChange(false)
+      
+    } catch (error) {
+      console.error('Error scheduling downgrade:', error)
+      toast.error('Failed to schedule downgrade')
+    } finally {
+      setIsUpgrading(false)
+      setPendingDowngradePlan(null)
+    }
+  }
+
   const isCurrentPlan = (planId: string) => {
     return currentPlan?.id === planId
   }
@@ -152,15 +188,23 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
   }).filter(Boolean)
 
   function getFeatures(plan: any): string[] {
-    return [
-      `Up to $${plan.monthlyTopupLimit.toLocaleString()}/month in ad spend`,
+    const features = [
+      plan.monthlyTopupLimit === -1 
+        ? 'Unlimited ad spend' 
+        : `Up to $${plan.monthlyTopupLimit.toLocaleString()}/month in ad spend`,
       `${plan.businessManagers} Active Business Manager${plan.businessManagers > 1 ? 's' : ''}`,
       `${plan.adAccounts} Active Ad Accounts`,
-      `${plan.pixels} Facebook Pixels`,
       `${plan.domainsPerBm} Promotion URLs per BM`,
       'Unlimited Replacements',
       ...getAdditionalFeatures(plan.id)
     ]
+    
+    // Only add pixel feature if plan has pixels (remove 0 pixel mentions)
+    if (plan.pixels > 0) {
+      features.splice(3, 0, `${plan.pixels} Facebook Pixels`)
+    }
+    
+    return features
   }
 
   function getAdditionalFeatures(planId: string): string[] {
@@ -177,6 +221,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center pb-6">
@@ -233,9 +278,15 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                       <span className="text-3xl font-bold">${formatPrice(plan.price)}</span>
                       <span className="text-muted-foreground ml-2">/month</span>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      + {plan.adSpendFee}% ad spend fee (capped at ${plan.spendFeeCap})
-                    </p>
+                    {plan.adSpendFee > 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        + {plan.adSpendFee}% ad spend fee
+                      </p>
+                    ) : (
+                      <p className="text-sm text-green-600 dark:text-green-400">
+                        No ad spend fee
+                      </p>
+                    )}
                   </div>
 
                   {/* Features */}
@@ -340,5 +391,61 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Downgrade Confirmation Dialog */}
+    <Dialog open={showDowngradeConfirm} onOpenChange={setShowDowngradeConfirm}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-600">
+            <AlertTriangle className="h-5 w-5" />
+            Confirm Downgrade
+          </DialogTitle>
+          <DialogDescription className="text-left">
+            Are you sure you want to downgrade to {pendingDowngradePlan ? (pendingDowngradePlan.charAt(0).toUpperCase() + pendingDowngradePlan.slice(1)) : 'selected plan'}?
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-3 py-4">
+          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              <strong>What happens next:</strong>
+            </p>
+            <ul className="text-sm text-amber-700 dark:text-amber-300 mt-2 space-y-1">
+              <li>• Your current {currentPlan?.name} plan remains active until the end of your billing cycle</li>
+              <li>• The downgrade takes effect on your next billing date</li>
+              <li>• You won't be charged until then</li>
+            </ul>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setShowDowngradeConfirm(false)
+              setPendingDowngradePlan(null)
+            }}
+            disabled={isUpgrading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={handleConfirmDowngrade}
+            disabled={isUpgrading}
+          >
+            {isUpgrading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              'Confirm Downgrade'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 } 

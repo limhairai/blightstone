@@ -13,6 +13,8 @@ import { useAuth } from "../../contexts/AuthContext"
 import { getGreeting } from "../../lib/utils"
 import { layoutTokens } from "../../lib/design-tokens"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { AdHubLogo } from "../core/AdHubLogo"
+import { Loader2 } from "lucide-react"
 
 interface AppShellProps {
   children: ReactNode
@@ -41,7 +43,7 @@ export const useSetupWidget = () => {
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { setPageTitle } = usePageTitle()
-  const { user, session } = useAuth()
+  const { user, session, loading: authLoading } = useAuth()
   const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("expanded") // Show widget expanded
   const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false)
   const { setOrganization } = useOrganizationStore()
@@ -53,7 +55,20 @@ export function AppShell({ children }: AppShellProps) {
     progressData
   } = useAdvancedOnboarding()
 
-
+  // Show simple loading screen during initial auth
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 bg-background z-50 flex items-center justify-center">
+        <div className="text-center">
+          <AdHubLogo size="lg" className="mb-6" />
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Loading AdHub...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // SIMPLIFIED LOGIC: Just manage widget state, don't overthink it
   useEffect(() => {

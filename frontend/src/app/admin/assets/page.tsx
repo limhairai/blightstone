@@ -108,6 +108,12 @@ export default function AssetsPage() {
         : `Sync Complete: Found ${result.profiles_found} profiles, ${result.business_managers_found} BMs, ${result.ad_accounts_found} ad accounts. Pixels refreshed.`;
         
       toast.success(message);
+      
+      // Emit custom event to update last sync time in topbar
+      window.dispatchEvent(new CustomEvent('admin-sync-completed', {
+        detail: { timestamp: new Date().toISOString(), result }
+      }));
+      
       await loadAssets()
       await loadPixels()
     } catch (err) {
@@ -116,7 +122,7 @@ export default function AssetsPage() {
     } finally {
       setSyncing(false)
     }
-  }, [loadAssets])
+  }, [loadAssets, loadPixels])
 
   // Future: Handle profile switching (A-Admin-1 → A-Backup-1)
   const handleProfileSwitch = useCallback(async (oldProfile: string, newProfile: string) => {

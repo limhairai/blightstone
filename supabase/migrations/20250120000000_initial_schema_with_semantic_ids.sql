@@ -658,4 +658,4 @@ CREATE POLICY "Service role can manage all topup requests" ON public.topup_reque
 -- MIGRATION COMPLETE
 -- ============================================================================
 
-COMMENT ON SCHEMA public IS 'AdHub comprehensive schema with semantic IDs and subscription system'; 
+COMMENT ON SCHEMA public IS 'AdHub initial schema with semantic IDs and subscription system - see subsequent migrations for current state'; 

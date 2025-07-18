@@ -4,7 +4,7 @@ import { useBusinessManagers, useAdAccounts } from "../../lib/swr-config"
 
 export function BusinessesMetrics() {
   const { data: businesses = [], isLoading: businessesLoading } = useBusinessManagers()
-  const { data: accounts = [], isLoading: accountsLoading } = useAdAccounts(null)
+  const { data: accounts = [], isLoading: accountsLoading } = useAdAccounts()
   
   if (businessesLoading || accountsLoading) {
     return (

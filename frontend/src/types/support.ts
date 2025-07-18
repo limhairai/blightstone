@@ -26,7 +26,6 @@ export interface SupportTicket {
     email?: string
   }
   category: TicketCategory
-  priority?: 'low' | 'medium' | 'high' | 'urgent'
   createdAt: string
   lastMessageAt?: string
   lastMessageContent?: string
@@ -76,7 +75,6 @@ export interface CreateTicketRequest {
   subject: string
   category: string
   message: string
-  priority?: 'low' | 'medium' | 'high' | 'urgent'
 }
 
 export interface UpdateTicketRequest {
@@ -165,13 +163,6 @@ export const TICKET_CATEGORIES = {
 } as const
 
 export type TicketCategory = keyof typeof TICKET_CATEGORIES
-
-export const TICKET_PRIORITIES = {
-  low: { label: 'Low', variant: 'secondary' as const },
-  medium: { label: 'Medium', variant: 'default' as const },
-  high: { label: 'High', variant: 'destructive' as const },
-  urgent: { label: 'Urgent', variant: 'destructive' as const },
-} as const
 
 // Status display configuration
 export const TICKET_STATUSES = {

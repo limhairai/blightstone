@@ -26,6 +26,8 @@ import { Skeleton } from "../ui/skeleton";
 import { formatCurrency } from "../../lib/config/financial"
 import { AssetDeactivationDialog } from "../dashboard/AssetDeactivationDialog"
 import { useAssetDeactivation } from "../../hooks/useAssetDeactivation"
+import { shouldEnableAdAccountStatusDisplay } from "@/lib/config/pricing-config"
+import { getClientFriendlyStatus } from "@/lib/utils/status-utils"
 
 const fetcher = (url: string, token: string) => 
   fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.json());
@@ -170,6 +172,31 @@ export function AccountsTable() {
     });
   }
 
+  const handleCancelApplication = async (account: any) => {
+    if (account.type !== 'application') return
+
+    try {
+      const response = await fetch(`/api/applications/${account.application_id}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to cancel application')
+      }
+
+      toast.success('Ad account request cancelled successfully')
+      mutate(accountsSWRKey) // Refresh the list
+    } catch (error) {
+      console.error('Error cancelling application:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel application')
+    }
+  }
+
   const onRefresh = () => {
     mutate(accountsSWRKey);
   }
@@ -213,6 +240,8 @@ export function AccountsTable() {
                     <SelectItem value="restricted">Restricted</SelectItem>
                     <SelectItem value="suspended">Suspended</SelectItem>
                     <SelectItem value="paused">Paused</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
                 </SelectContent>
             </Select>
             <Select value={filters.business} onValueChange={(v) => handleFilterChange('business', v)}>
@@ -253,7 +282,7 @@ export function AccountsTable() {
               <th className="p-2 text-left">Ad Account ID</th>
               <th className="p-2 text-left">Business Manager</th>
               <th className="p-2 text-left">BM ID</th>
-              <th className="p-2 text-left">Status</th>
+              {shouldEnableAdAccountStatusDisplay() && <th className="p-2 text-left">Status</th>}
               <th className="p-2 text-right">Available Spend</th>
               <th className="p-2 text-right">Spend</th>
               <th className="p-2 text-left">Timezone</th>
@@ -261,76 +290,126 @@ export function AccountsTable() {
             </tr>
           </thead>
           <tbody>
-            {accounts.map((account: AdAccount) => (
-              <tr key={account.id} className="border-b hover:bg-muted/50">
-                <td className="p-2 text-center"><Checkbox checked={selectedAccounts.includes(account.id)} onCheckedChange={() => handleSelectAccount(account.id)} /></td>
-                <td className="p-2">
-                    <div className="font-medium">{account.name}</div>
-                </td>
-                <td className="p-2">
-                    <div className="font-mono text-sm">{account.ad_account_id}</div>
-                </td>
-                <td className="p-2">
-                  <div>{account.metadata?.business_manager || account.business_manager_name || 'N/A'}</div>
-                </td>
-                <td className="p-2">
-                  <div className="font-mono text-xs text-muted-foreground">
-                    {account.metadata?.business_manager_id ? account.metadata.business_manager_id.substring(0, 12) : 'N/A'}
-                  </div>
-                </td>
-                <td className="p-2">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={account.status} />
-                    {account.is_active === false && (
-                      <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
-                        Deactivated
-                      </span>
+            {accounts.map((account: AdAccount) => {
+              const isPendingApplication = (account as any).type === 'application';
+              const isGreyedOut = isPendingApplication;
+              
+              // Use shared utility for client-friendly status
+              const clientStatus = getClientFriendlyStatus(account.status, account.metadata);
+              
+              return (
+                <tr key={account.id} className={`border-b hover:bg-muted/50 ${isGreyedOut ? 'opacity-60' : ''}`}>
+                  <td className="p-2 text-center">
+                    {!isPendingApplication && (
+                      <Checkbox checked={selectedAccounts.includes(account.id)} onCheckedChange={() => handleSelectAccount(account.id)} />
                     )}
-                  </div>
-                </td>
-                <td className="p-2 text-right font-mono">
-                  {formatCurrency(Math.max(0, ((account.spend_cap_cents || 0) / 100) - ((account.spend_cents || 0) / 100)))}
-                </td>
-                <td className="p-2 text-right font-mono">
-                  {formatCurrency((account.spend_cents || 0) / 100)}
-                </td>
-                <td className="p-2 text-sm text-muted-foreground">{account.timezone || 'UTC'}</td>
-                <td className="p-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View Details</DropdownMenuItem>
-                      <DropdownMenuItem>Top-up Balance</DropdownMenuItem>
-                      <DropdownMenuItem>View Transactions</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-red-500">
-                        Remove from Business
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={(e) => handleDeactivationClick(account, e)}
-                        className="text-muted-foreground"
-                      >
-                        {account.is_active === false ? (
-                          <>
-                            <Power className="h-4 w-4 mr-2" />
-                            Activate
-                          </>
-                        ) : (
-                          <>
-                            <PowerOff className="h-4 w-4 mr-2" />
-                            Deactivate
-                          </>
+                  </td>
+                  <td className="p-2">
+                    <div className={`font-medium ${isPendingApplication ? 'text-muted-foreground' : ''}`}>
+                      {account.name}
+                      {isPendingApplication && (
+                        <span className="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                          Application Pending
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className={`font-mono text-sm ${isPendingApplication ? 'text-muted-foreground' : ''}`}>
+                      {isPendingApplication ? 'Pending Assignment' : (account as any).adAccount || account.ad_account_id}
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className={isPendingApplication ? 'text-muted-foreground' : ''}>
+                      {isPendingApplication ? (account as any).business : (account.metadata?.business_manager || account.business_manager_name || 'N/A')}
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className={`font-mono text-xs ${isPendingApplication ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                      {isPendingApplication ? 
+                        ((account as any).bmId ? (account as any).bmId.substring(0, 12) : 'N/A') :
+                        (account.metadata?.business_manager_id ? account.metadata.business_manager_id.substring(0, 12) : 'N/A')
+                      }
+                    </div>
+                  </td>
+                  {shouldEnableAdAccountStatusDisplay() && (
+                    <td className="p-2">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={clientStatus as any} />
+                        {account.is_active === false && !isPendingApplication && (
+                          <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
+                            Deactivated
+                          </span>
                         )}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
-              </tr>
-            ))}
+                      </div>
+                    </td>
+                  )}
+                  <td className="p-2 text-right font-mono">
+                    {isPendingApplication ? 
+                      <span className="text-muted-foreground">-</span> :
+                      formatCurrency(Math.max(0, ((account.spend_cap_cents || 0) / 100) - ((account.spend_cents || 0) / 100)))
+                    }
+                  </td>
+                  <td className="p-2 text-right font-mono">
+                    {isPendingApplication ? 
+                      <span className="text-muted-foreground">-</span> :
+                      formatCurrency((account.spend_cents || 0) / 100)
+                    }
+                  </td>
+                  <td className="p-2 text-sm text-muted-foreground">
+                    {isPendingApplication ? '-' : (account.timezone || 'UTC')}
+                  </td>
+                  <td className="p-2">
+                    {!isPendingApplication && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem>Top-up Balance</DropdownMenuItem>
+                          <DropdownMenuItem>View Transactions</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-red-500">
+                            Remove from Business
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => handleDeactivationClick(account, e)}
+                            className="text-muted-foreground"
+                          >
+                            {account.is_active === false ? (
+                              <>
+                                <Power className="h-4 w-4 mr-2" />
+                                Activate
+                              </>
+                            ) : (
+                              <>
+                                <PowerOff className="h-4 w-4 mr-2" />
+                                Deactivate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    
+                    {/* Cancel button for pending applications */}
+                    {isPendingApplication && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCancelApplication(account)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

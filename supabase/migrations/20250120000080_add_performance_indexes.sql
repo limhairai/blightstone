@@ -162,11 +162,11 @@ CREATE INDEX IF NOT EXISTS idx_topup_requests_created_at ON topup_requests(creat
 
 -- Partial index for active business managers only
 CREATE INDEX IF NOT EXISTS idx_asset_binding_active_bm ON asset_binding(organization_id, asset_id) 
-WHERE status = 'active' AND asset_id IN (SELECT asset_id FROM asset WHERE type = 'business_manager');
+WHERE status = 'active';
 
 -- Partial index for active ad accounts only
 CREATE INDEX IF NOT EXISTS idx_asset_binding_active_ad ON asset_binding(organization_id, asset_id) 
-WHERE status = 'active' AND asset_id IN (SELECT asset_id FROM asset WHERE type = 'ad_account');
+WHERE status = 'active';
 
 -- Partial index for pending applications only
 CREATE INDEX IF NOT EXISTS idx_application_pending ON application(organization_id, created_at DESC) 
@@ -177,7 +177,7 @@ WHERE status IN ('pending', 'processing');
 -- ============================================
 
 -- Add comment for tracking
-COMMENT ON SCHEMA public IS 'Performance indexes added on ' || CURRENT_TIMESTAMP;
+COMMENT ON SCHEMA public IS 'Performance indexes added';
 
 -- Log the completion
 DO $$

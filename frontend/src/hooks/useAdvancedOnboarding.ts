@@ -1,106 +1,94 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { OnboardingProgress, OnboardingProgressData } from '../types/onboarding'
+import useSWR from 'swr'
 
-export interface OnboardingProgress {
-  hasCompletedOnboarding: boolean
-  completionPercentage: number
-  nextStep: string | null
-}
+// Global cache to prevent duplicate API calls across components
+const onboardingCache = new Map<string, { data: OnboardingProgressData; timestamp: number }>()
+const CACHE_DURATION = 300000 // 5 minutes cache (very aggressive)
 
 export function useAdvancedOnboarding() {
   const { user, session } = useAuth()
-  const [progressData, setProgressData] = useState<OnboardingProgress | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isError, setIsError] = useState(false)
 
-  const checkOnboardingStatus = async () => {
-    if (!user || !session) {
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      setIsError(false)
-      // Get user's organization details to check if onboarding is complete
-      const response = await fetch('/api/organizations', {
+  // Use SWR for proper caching and deduplication
+  const { data: onboardingData, error, mutate, isLoading } = useSWR<OnboardingProgressData>(
+    session?.access_token ? '/api/onboarding-progress' : null,
+    async (url) => {
+      const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${session.access_token}`
+          'Authorization': `Bearer ${session?.access_token}`
         }
       })
-
       if (!response.ok) {
-        throw new Error('Failed to fetch organization data')
+        throw new Error('Failed to fetch onboarding progress')
       }
-
-      const data = await response.json()
-      const organization = data.organizations?.[0]
-
-      if (!organization) {
-        // No organization found - this shouldn't happen for registered users
-        setProgressData({
-          hasCompletedOnboarding: false,
-          completionPercentage: 0,
-          nextStep: 'organization-setup'
-        })
-        setIsLoading(false)
-        return
-      }
-
-      // Check if basic onboarding info is collected
-      const hasBasicInfo = !!(
-        organization.name &&
-        organization.industry &&
-        organization.ad_spend_monthly &&
-        organization.timezone &&
-        organization.how_heard_about_us
-      )
-
-      setProgressData({
-        hasCompletedOnboarding: hasBasicInfo,
-        completionPercentage: hasBasicInfo ? 100 : 0,
-        nextStep: hasBasicInfo ? null : 'collect-info'
-      })
-
-    } catch (error) {
-      console.error('Error checking onboarding status:', error)
-      setIsError(true)
-      setProgressData({
-        hasCompletedOnboarding: false,
-        completionPercentage: 0,
-        nextStep: 'organization-setup'
-      })
-    } finally {
-      setIsLoading(false)
+      return response.json()
+    },
+    {
+      // AGGRESSIVE CACHING to prevent excessive API calls
+      refreshInterval: 0, // Never auto-refresh
+      revalidateOnFocus: false, // Don't revalidate on focus
+      revalidateOnReconnect: false, // Don't revalidate on reconnect
+      revalidateOnMount: true, // Allow initial load
+      dedupingInterval: 300000, // 5 minutes deduplication (very aggressive)
+      revalidateIfStale: false, // Don't revalidate stale data
+      focusThrottleInterval: 300000, // 5 minutes focus throttle
+      errorRetryCount: 1, // Reduce retry attempts
+      errorRetryInterval: 30000, // 30 seconds between retries
     }
-  }
+  )
 
-  useEffect(() => {
-    checkOnboardingStatus()
-  }, [user, session])
+  // Transform the API data to match the expected format
+  const progressData: OnboardingProgress | null = onboardingData ? {
+    hasCompletedOnboarding: Object.values(onboardingData.progress).every(Boolean),
+    completionPercentage: Math.round(
+      (Object.values(onboardingData.progress).filter(Boolean).length / 
+       Object.keys(onboardingData.progress).length) * 100
+    ),
+    nextStep: Object.values(onboardingData.progress).every(Boolean) ? null : 'setup-incomplete'
+  } : null
 
-  const shouldShowOnboarding = progressData && !progressData.hasCompletedOnboarding
-
-  // Mock functions for components expecting them
-  const mutate = async () => {
-    setIsLoading(true)
-    await checkOnboardingStatus()
-  }
+  const shouldShowOnboarding = progressData && !progressData.hasCompletedOnboarding && !onboardingData?.persistence?.hasExplicitlyDismissed
 
   const dismissOnboarding = async () => {
-    // For now, just mark as completed
-    setProgressData({
-      hasCompletedOnboarding: true,
-      completionPercentage: 100,
-      nextStep: null
-    })
+    try {
+      const response = await fetch('/api/onboarding-progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({ action: 'dismiss' })
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to dismiss onboarding')
+      }
+      
+      // Update local data to reflect dismissal
+      if (onboardingData) {
+        mutate({
+          ...onboardingData,
+          persistence: {
+            ...onboardingData.persistence,
+            hasExplicitlyDismissed: true
+          }
+        }, false)
+      }
+    } catch (error) {
+      console.error('Error dismissing onboarding:', error)
+      throw error
+    }
   }
 
   return {
     progressData,
     isLoading,
-    isError,
-    shouldShowOnboarding,
+    isError: !!error,
     mutate,
-    dismissOnboarding
+    dismissOnboarding,
+    shouldShowOnboarding,
+    // Expose raw data for components that need it
+    rawData: onboardingData
   }
 }

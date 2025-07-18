@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "../../lib/utils"
+import { useAdminPerformance } from "@/lib/admin-performance"
 import { Button } from "../ui/button"
 import {
   Home,
@@ -42,6 +43,7 @@ export function AdminSidebar({ className }: { className?: string }) {
     "System Management",
   ])
   const pathname = usePathname()
+  const { navigateToAdmin } = useAdminPerformance()
 
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/admin", icon: Home },
@@ -67,7 +69,7 @@ export function AdminSidebar({ className }: { className?: string }) {
     },
     {
       name: "Transactions",
-      href: "/admin/transactions",
+      href: "/admin/transactions/history",
       icon: CreditCard,
       subItems: [
         { name: "Top-up Requests", href: "/admin/transactions/topups", icon: TrendingUp },
@@ -135,7 +137,7 @@ export function AdminSidebar({ className }: { className?: string }) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 p-3" data-admin-nav>
         {sidebarItems.map((item) => {
           const Icon = item.icon
           const hasSub = !!item.subItems?.length
@@ -179,13 +181,12 @@ export function AdminSidebar({ className }: { className?: string }) {
                     {MainButton}
                   </div>
                                 ) : (
-                  <Link 
-                    href={item.href!} 
-                    className="flex-1"
-                    prefetch={true}
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => navigateToAdmin(item.href!)}
                   >
                     {MainButton}
-                  </Link>
+                  </div>
                 )}
               </div>
 
@@ -195,9 +196,10 @@ export function AdminSidebar({ className }: { className?: string }) {
                   {item.subItems!.map((sub) => {
                     const SubIcon = sub.icon
                     return (
-                      <Link href={sub.href} key={sub.name} prefetch={true}>
+                      <div key={sub.name} className="cursor-pointer">
                         <Button
                           variant="ghost"
+                          onClick={() => navigateToAdmin(sub.href)}
                       className={cn(
                             "h-8 w-full justify-start rounded-md px-3 text-sm",
                             isItemActive(sub.href)
@@ -208,7 +210,7 @@ export function AdminSidebar({ className }: { className?: string }) {
                           {SubIcon && <SubIcon className="mr-2 h-3.5 w-3.5" />}
                           <span className="text-xs">{sub.name}</span>
                         </Button>
-                    </Link>
+                    </div>
                     )
                   })}
                 </div>

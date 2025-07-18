@@ -1,6 +1,7 @@
 import { formatCurrency } from "../../lib/utils"
 import { CreditCard, Wallet, TrendingUp, AlertCircle } from "lucide-react"
 import { useAdAccounts } from "../../lib/swr-config"
+import { countAccountsByClientStatus } from "../../lib/utils/status-utils"
 
 export function AccountsMetrics() {
   const { data: accounts = [], isLoading } = useAdAccounts()
@@ -18,7 +19,9 @@ export function AccountsMetrics() {
   }
   
   const totalAccounts = accounts.length
-  const activeAccounts = accounts.filter((account: any) => account.status === "active").length
+  
+  // Use shared utility for client-friendly status metrics
+  const activeAccounts = countAccountsByClientStatus(accounts, "active")
   const totalAvailableSpend = accounts.reduce((total: any, account: any) => {
     const spendCap = (account.spend_cap_cents || 0) / 100;
     const spent = (account.spend_cents || 0) / 100;

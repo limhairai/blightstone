@@ -134,7 +134,7 @@ jobs:
     - name: Run production smoke tests
       run: npm run test:e2e:production
       env:
-        PLAYWRIGHT_BASE_URL: https://adhub.tech
+        PLAYWRIGHT_BASE_URL: https://app.adhub.tech
         # Only run critical path tests in production
         PLAYWRIGHT_GREP: "should login|should display|should load"
 

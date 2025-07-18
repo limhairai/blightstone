@@ -106,7 +106,7 @@ export function RegisterView() {
     <div className="min-h-screen flex bg-background">
       {/* Logo positioned at top left */}
       <div className="absolute top-6 left-6 z-10">
-        <Link href="/">
+        <Link href="https://adhub.tech">
           <AdHubLogo size="lg" />
         </Link>
       </div>

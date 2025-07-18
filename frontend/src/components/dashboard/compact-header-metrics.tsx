@@ -6,17 +6,20 @@ import { DollarSign, CreditCard, TrendingUp, AlertCircle } from "lucide-react"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useAuth } from "@/contexts/AuthContext"
 import { useAdAccounts } from "@/lib/swr-config"
+import { countAccountsByClientStatus } from "@/lib/utils/status-utils"
 
 export function CompactHeaderMetrics() {
   const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
   
-  const { data: accData, isLoading } = useAdAccounts(currentOrganizationId);
+  const { data: accData, isLoading } = useAdAccounts();
 
   const accounts = accData?.accounts || [];
   const totalAccounts = accounts.length;
-  const activeAccounts = accounts.filter((account: any) => account.status === "active").length;
-  const pendingAccounts = accounts.filter((account: any) => account.status === "pending").length;
+  
+  // Use shared utility for client-friendly status metrics
+  const activeAccounts = countAccountsByClientStatus(accounts, "active");
+  const pendingAccounts = countAccountsByClientStatus(accounts, "pending");
   
   // Calculate total available spend using spend_cap - amount_spent
   const totalAvailableSpend = accounts.reduce((total: number, account: any) => {

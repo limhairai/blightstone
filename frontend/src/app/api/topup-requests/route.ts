@@ -174,9 +174,10 @@ export async function GET(request: NextRequest) {
 
     const response = NextResponse.json(requestsWithUserData);
     
-    // **PERFORMANCE**: Add caching headers - reduced for immediate responsiveness
-    response.headers.set('Cache-Control', 'private, max-age=5, s-maxage=5'); // Reduced to 5 seconds for immediate admin changes
-    response.headers.set('Vary', 'Authorization');
+    // No caching for immediate topup request updates
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
     
     return response;
 
@@ -441,29 +442,25 @@ export async function POST(request: NextRequest) {
             console.log(`🔍 DEBUG: Calculated fee data:`, calculatedFeeData);
           } else {
             console.error('Fee calculation failed:', feeResponse.status, await feeResponse.text());
-            // Use default fee calculation (1% for new pricing model)
-            const defaultFeePercentage = 1.0;
-            const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
+            // Use no fee as fallback (new pricing model has 0% for Growth/Scale)
             calculatedFeeData = {
-              fee_amount_cents: defaultFeeAmount,
-              total_deducted_cents: amount_cents + defaultFeeAmount,
-              plan_fee_percentage: defaultFeePercentage
+              fee_amount_cents: 0,
+              total_deducted_cents: amount_cents,
+              plan_fee_percentage: 0
             };
             
-            console.log(`🔍 DEBUG: Using fallback fee calculation:`, calculatedFeeData);
+            console.log(`🔍 DEBUG: Using fallback fee calculation (0%):`, calculatedFeeData);
           }
         } catch (error) {
           console.error('Error calculating fee:', error);
-          // Use default fee calculation (1% for new pricing model)
-          const defaultFeePercentage = 1.0;
-          const defaultFeeAmount = Math.round(amount_cents * (defaultFeePercentage / 100));
+          // Use no fee as fallback (new pricing model has 0% for Growth/Scale)
           calculatedFeeData = {
-            fee_amount_cents: defaultFeeAmount,
-            total_deducted_cents: amount_cents + defaultFeeAmount,
-            plan_fee_percentage: defaultFeePercentage
+            fee_amount_cents: 0,
+            total_deducted_cents: amount_cents,
+            plan_fee_percentage: 0
           };
           
-          console.log(`🔍 DEBUG: Using fallback fee calculation after error:`, calculatedFeeData);
+          console.log(`🔍 DEBUG: Using fallback fee calculation after error (0%):`, calculatedFeeData);
         }
       } else {
         // No fees in new pricing model

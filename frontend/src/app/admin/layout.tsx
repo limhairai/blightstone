@@ -8,6 +8,8 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAdminPerformance, initializeAdminPerformance } from "@/lib/admin-performance";
+import { AdminPerformanceMonitor } from "@/components/admin/admin-performance-monitor";
 
 // Lazy load admin components for better performance
 const AdminSidebar = dynamic(() => import("../../components/admin/admin-sidebar").then(mod => ({ default: mod.AdminSidebar })), {
@@ -23,6 +25,13 @@ const AdminTopbar = dynamic(() => import("../../components/admin/admin-topbar").
 function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [pageTitle, setPageTitle] = useState("Dashboard");
+  
+  // Initialize admin performance optimizations
+  const adminPerformance = useAdminPerformance();
+  
+  useEffect(() => {
+    initializeAdminPerformance();
+  }, []);
 
   const getPageInfo = useCallback(() => {
     const segments = (pathname || "").split("/").filter(Boolean);
@@ -98,6 +107,9 @@ function AdminShell({ children }: { children: React.ReactNode }) {
         {/* Dev tools removed for cleaner production UI */}
         
         {/* Removed duplicate Toaster - using root layout's DynamicToaster */}
+        
+        {/* Performance Monitor */}
+        <AdminPerformanceMonitor />
       </div>
     </AdminProvider>
   );

@@ -28,36 +28,42 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const router = useRouter();
   const { user, signOut: authSignOut, session } = useAuth();
   const { theme, setTheme } = useTheme();
-  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   
   const userEmail = user?.email || 'admin@adhub.com';
   const userInitial = user?.email?.charAt(0).toUpperCase() || "A";
 
-  // Fetch sync status
+  // Get last sync time from localStorage and check for recent sync activity
   useEffect(() => {
-    const fetchSyncStatus = async () => {
-      try {
-        const response = await fetch('/api/admin/dolphin-assets/sync/status', {
-          headers: {
-            'Authorization': `Bearer ${session?.access_token}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setSyncStatus(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch sync status:', err);
+    const getLastSyncTime = () => {
+      // Check localStorage for last sync time
+      const stored = localStorage.getItem('admin_last_sync_time');
+      if (stored) {
+        setLastSyncTime(stored);
       }
     };
 
-    if (session) {
-      fetchSyncStatus();
-      // Refresh sync status every 30 seconds
-      const interval = setInterval(fetchSyncStatus, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [session]);
+    // Initial load
+    getLastSyncTime();
+
+    // Listen for sync events from other parts of the app
+    const handleSyncEvent = (event: CustomEvent) => {
+      const syncTime = new Date().toISOString();
+      localStorage.setItem('admin_last_sync_time', syncTime);
+      setLastSyncTime(syncTime);
+    };
+
+    // Listen for custom sync events
+    window.addEventListener('admin-sync-completed', handleSyncEvent as EventListener);
+    
+    // Check for updates every 30 seconds (just read from localStorage, no API calls)
+    const interval = setInterval(getLastSyncTime, 30000);
+
+    return () => {
+      window.removeEventListener('admin-sync-completed', handleSyncEvent as EventListener);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Get page title from pathname if not provided
   const getPageTitle = () => {
@@ -77,35 +83,30 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
       .join(' ');
   };
 
+  // Format last sync time
+  const formatLastSync = (timestamp: string | null) => {
+    if (!timestamp) return 'Never';
+    
+    try {
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+      
+      if (diffInMinutes < 1) return 'Just now';
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+      return `${Math.floor(diffInMinutes / 1440)}d ago`;
+    } catch (error) {
+      return 'Unknown';
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await authSignOut();
     } catch (error) {
       console.error("Error signing out:", error);
     }
-  };
-
-  // Format last sync time with detailed timestamp
-  const formatLastSync = (dateString?: string) => {
-    if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-    
-    // Show relative time for recent syncs, but include exact time for clarity
-    if (diffInMinutes < 1) {
-      return `Just now (${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
-    }
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes}m ago (${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
-    }
-    if (diffInMinutes < 1440) {
-      const hours = Math.floor(diffInMinutes / 60);
-      return `${hours}h ago (${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
-    }
-    
-    // For older dates, show the full date and time
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
   };
 
   return (
@@ -134,11 +135,10 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
         </div>
         
         {/* Last Autosync Timestamp */}
-        {syncStatus && (
-          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-            <RefreshCw className="h-4 w-4" />
-            <span>Last sync: {formatLastSync(syncStatus.last_sync)}</span>
-          </div>
+        {lastSyncTime && (
+          <span className="text-sm text-muted-foreground">
+            Last Sync: {formatLastSync(lastSyncTime)}
+          </span>
         )}
 
         {/* Admin Profile Dropdown */}

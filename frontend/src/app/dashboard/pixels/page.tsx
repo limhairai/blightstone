@@ -1,42 +1,40 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import useSWR from 'swr'
+import { authenticatedFetcher, useBusinessManagers } from '@/lib/swr-config'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { RefreshCw, Info, Building2, Loader2, Power, PowerOff, MoreHorizontal, ExternalLink } from 'lucide-react'
+import { RefreshCw, Info, Building2, Loader2, Power, PowerOff } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PixelRequestDialog } from '@/components/pixels/pixel-request-dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { AssetDeactivationDialog } from '@/components/dashboard/AssetDeactivationDialog'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu'
+// Dropdown menu imports removed - no longer needed
 import { toast } from 'sonner'
+import { shouldEnablePixelLimits } from '@/lib/config/pricing-config'
 
 interface PixelData {
   id: string
-  type: 'asset' | 'application'
+  type?: 'asset' | 'application'
   pixel_id: string
   pixel_name: string
   business_manager_id: string
   business_manager_name?: string
   status: 'active' | 'pending' | 'processing' | 'rejected'
   is_active?: boolean
-  created_at: string
-  updated_at: string
+  created_at?: string
+  updated_at?: string
   adAccounts?: any[] // Added for new display
+  application_id?: string // For pending applications
 }
 
 interface BusinessManager {
   asset_id: string
   name: string
-  dolphin_id: string
+  dolphin_business_manager_id: string
   status: string
   is_active: boolean
 }
@@ -44,96 +42,74 @@ interface BusinessManager {
 export default function PixelsPage() {
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
-  const [pixels, setPixels] = useState<PixelData[]>([])
-  const [businessManagers, setBusinessManagers] = useState<BusinessManager[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [subscriptionLimit, setSubscriptionLimit] = useState<number>(0)
   const [deactivationDialog, setDeactivationDialog] = useState<{
     open: boolean;
     asset: any | null;
   }>({ open: false, asset: null })
 
-  const fetchPixels = async () => {
-    if (!session?.access_token || !currentOrganizationId) return
-
-    try {
-      console.log('Fetching pixels for organization:', currentOrganizationId)
-      const response = await fetch(`/api/organizations/${currentOrganizationId}/pixels`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
-
-      if (!response.ok) {
-        console.error('Pixel fetch failed with status:', response.status)
-        const errorText = await response.text()
-        console.error('Error response:', errorText)
-        throw new Error('Failed to fetch pixels')
-      }
-
-      const data = await response.json()
-      console.log('Pixels response:', data)
-      
-      // Transform the pixels data to match the expected format
-      const transformedPixels = (data.pixels || []).map((pixel: any) => ({
-        id: pixel.id || pixel.pixelId,
-        pixel_id: pixel.pixelId,
-        pixel_name: pixel.pixelName,
-        business_manager_id: pixel.businessManagerId,
-        business_manager_name: pixel.businessManagerName,
-        adAccounts: pixel.adAccounts || [],
-        status: pixel.status,
-        is_active: pixel.is_active !== false
-      }))
-      
-      setPixels(transformedPixels)
-      setSubscriptionLimit(data.subscription_limit || 0)
-    } catch (error) {
-      console.error('Error fetching pixels:', error)
-      setError('Failed to load pixels')
+  // Optimized SWR data fetching with caching
+  const { data: pixelsData, error: pixelsError, isLoading: pixelsLoading, mutate: mutatePixels } = useSWR(
+    session?.access_token && currentOrganizationId 
+      ? [`/api/organizations/${currentOrganizationId}/pixels`, session.access_token] 
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 60 seconds - pixels don't change frequently
     }
-  }
+  )
 
-  const fetchBusinessManagers = async () => {
-    if (!session?.access_token || !currentOrganizationId) return
+  const { data: businessManagersData, error: bmError, isLoading: bmLoading, mutate: mutateBM } = useBusinessManagers()
 
-    try {
-      console.log('Fetching business managers for organization:', currentOrganizationId)
-      const response = await fetch(`/api/organizations/${currentOrganizationId}/business-managers`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      })
+  // Transform and extract data
+  const pixels = pixelsData?.pixels ? pixelsData.pixels.map((pixel: any) => ({
+    id: pixel.id || pixel.pixelId,
+    type: pixel.type || 'asset',
+    pixel_id: pixel.pixelId,
+    pixel_name: pixel.pixelName,
+    business_manager_id: pixel.businessManagerId,
+    business_manager_name: pixel.businessManagerName,
+    adAccounts: pixel.adAccounts || [],
+    status: pixel.status,
+    is_active: pixel.isActive !== false,
+    application_id: pixel.applicationId,
+    created_at: pixel.createdAt
+  })) : []
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch business managers')
-      }
+  // The API returns an array directly, not an object with business_managers property
+  const businessManagers = Array.isArray(businessManagersData) 
+    ? businessManagersData.filter((bm: BusinessManager) => 
+        bm.status === 'active' && bm.is_active !== false && bm.dolphin_business_manager_id
+      )
+    : []
 
-      const data = await response.json()
-      console.log('Business managers response:', data)
-      
-      // Only show active business managers for pixel connections
-      const activeBusinessManagers = data.business_managers?.filter((bm: BusinessManager) => 
-        bm.status === 'active' && bm.is_active !== false && bm.dolphin_id
-      ) || []
-      
-      console.log('Active business managers:', activeBusinessManagers)
-      setBusinessManagers(activeBusinessManagers)
-    } catch (error) {
-      console.error('Error fetching business managers:', error)
-      toast.error('Failed to load business managers')
+  // Debug logging to understand the data structure
+  console.log('🔍 Business Managers Debug:', {
+    businessManagersData,
+    filteredBusinessManagers: businessManagers,
+    bmError,
+    bmLoading
+  })
+  const loading = pixelsLoading || bmLoading
+  const error = pixelsError || bmError
+
+  // Update subscription limit when pixels data changes
+  useEffect(() => {
+    if (pixelsData?.subscriptionLimit) {
+      setSubscriptionLimit(pixelsData.subscriptionLimit)
     }
-  }
+  }, [pixelsData?.subscriptionLimit])
 
   const handleRefresh = async () => {
-    setLoading(true)
-    await Promise.all([fetchPixels(), fetchBusinessManagers()])
-    setLoading(false)
+    // Use SWR mutate to refresh data from cache
+    await Promise.all([mutatePixels(), mutateBM()])
   }
 
   const handleRequestSubmitted = () => {
-    fetchPixels() // Refresh to show new pending request
+    // Refresh pixels to show new pending request
+    mutatePixels()
   }
 
   const handleDeactivationClick = (pixel: PixelData) => {
@@ -155,7 +131,8 @@ export default function PixelsPage() {
     if (pixel.type !== 'application') return
 
     try {
-      const response = await fetch(`/api/applications/${pixel.id}/cancel`, {
+      const applicationId = pixel.application_id || pixel.id
+      const response = await fetch(`/api/applications/${applicationId}/cancel`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session?.access_token}`,
@@ -169,20 +146,18 @@ export default function PixelsPage() {
       }
 
       toast.success('Pixel connection request cancelled successfully')
-      fetchPixels() // Refresh the list
+      mutatePixels() // Refresh the list
     } catch (error) {
       console.error('Error cancelling application:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to cancel application')
     }
   }
 
-  useEffect(() => {
-    handleRefresh()
-  }, [session?.access_token, currentOrganizationId])
+  // SWR handles data fetching automatically, no need for manual useEffect
 
   // Calculate active pixels based on the new data structure
-  const activePixels = pixels.filter(pixel => pixel.is_active && pixel.status === 'active').length
-  const pendingPixels = 0 // TODO: Add pending pixel applications if needed from the API
+  const activePixels = pixels.filter((pixel: any) => pixel.is_active && pixel.status === 'active').length
+  const pendingPixels = pixels.filter((pixel: any) => pixel.status === 'pending' || pixel.status === 'processing').length
 
   return (
     <div className="space-y-6">
@@ -195,7 +170,7 @@ export default function PixelsPage() {
               Active Pixels
             </span>
             <div className="text-foreground font-semibold text-lg">
-              {activePixels} / {subscriptionLimit === -1 ? '∞' : subscriptionLimit}
+              {shouldEnablePixelLimits() ? `${activePixels} / ${subscriptionLimit === -1 ? '∞' : subscriptionLimit}` : activePixels}
             </div>
           </div>
           <div className="flex flex-col">
@@ -226,24 +201,29 @@ export default function PixelsPage() {
         </div>
       </div>
 
-      {/* Pixel limit warning */}
-      {subscriptionLimit > 0 && activePixels >= subscriptionLimit && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You've reached your pixel limit ({subscriptionLimit} pixels). Upgrade your plan to add more pixels.
-          </AlertDescription>
-        </Alert>
-      )}
+      {/* Pixel limit warnings - controlled by feature flag */}
+      {shouldEnablePixelLimits() && (
+        <>
+          {/* Pixel limit warning */}
+          {subscriptionLimit > 0 && activePixels >= subscriptionLimit && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                You've reached your pixel limit ({subscriptionLimit} pixels). Upgrade your plan to add more pixels.
+              </AlertDescription>
+            </Alert>
+          )}
 
-      {/* Zero pixels allowed warning - only show after data has loaded */}
-      {!loading && subscriptionLimit === 0 && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Your current plan doesn't include pixel connections. Upgrade your plan to add pixels.
-          </AlertDescription>
-        </Alert>
+          {/* Zero pixels allowed warning - only show after data has loaded */}
+          {!loading && subscriptionLimit === 0 && (
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Your current plan doesn't include pixel connections. Upgrade your plan to add pixels.
+              </AlertDescription>
+            </Alert>
+          )}
+        </>
       )}
 
       {/* No business managers warning - only show after data has loaded */}
@@ -268,73 +248,83 @@ export default function PixelsPage() {
             </p>
           </div>
         ) : (
-          pixels.map((pixel) => (
-            <div
-              key={pixel.id}
-              className={`bg-card border rounded-lg p-4 shadow-sm transition-all ${
-                pixel.is_active === false ? 'opacity-50 grayscale' : ''
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-foreground" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-foreground">
-                      {pixel.pixel_name || `Pixel ${pixel.pixel_id}`}
+          pixels.map((pixel: any) => {
+            const isPendingApplication = pixel.type === 'application';
+            const isGreyedOut = isPendingApplication || pixel.is_active === false;
+            
+            return (
+              <div
+                key={pixel.id}
+                className={`bg-card border rounded-lg p-4 shadow-sm transition-all ${
+                  isGreyedOut ? 'opacity-60' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-foreground" />
                     </div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-2">
-                      <span>ID: {pixel.pixel_id}</span>
-                      {pixel.business_manager_name && (
-                        <>
-                          <span>•</span>
-                          <span>BM: {pixel.business_manager_name}</span>
-                        </>
-                      )}
-                      <span>•</span>
-                      <span>
-                        {pixel.adAccounts?.length || 0} ad account{(pixel.adAccounts?.length || 0) !== 1 ? 's' : ''}
-                      </span>
+                    <div>
+                      <div className={`font-semibold ${isPendingApplication ? 'text-muted-foreground' : 'text-foreground'}`}>
+                        {(pixel as any).pixel_name || pixel.pixel_name || `Pixel ${pixel.pixel_id}`}
+                        {isPendingApplication && (
+                          <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5 animate-pulse"></div>
+                            Connection Pending
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-sm flex items-center gap-2 ${isPendingApplication ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
+                        <span>ID: {pixel.pixel_id}</span>
+                        {((pixel as any).bm_name || pixel.business_manager_name) && (
+                          <>
+                            <span>•</span>
+                            <span>BM: {(pixel as any).bm_name || pixel.business_manager_name}</span>
+                          </>
+                        )}
+                        <span>•</span>
+                        <span>
+                          {isPendingApplication ? 'Awaiting connection' : 
+                            `${pixel.adAccounts?.length || (pixel as any).ad_accounts?.length || 0} ad account${((pixel.adAccounts?.length || (pixel as any).ad_accounts?.length || 0) !== 1) ? 's' : ''}`
+                          }
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  {/* Status Badge */}
-                  <div className="flex items-center gap-2">
-                    {pixel.is_active === false ? (
-                      <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
-                        Deactivated
-                      </span>
-                    ) : (
-                      <StatusBadge 
-                        status={pixel.status as any} 
-                        size="sm" 
-                      />
+                  <div className="flex items-center gap-3">
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2">
+                      {pixel.is_active === false && !isPendingApplication ? (
+                        <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
+                          Deactivated
+                        </span>
+                      ) : (
+                        <StatusBadge 
+                          status={pixel.status as any} 
+                          size="sm" 
+                        />
+                      )}
+                    </div>
+
+                    {/* Actions dropdown removed - no functionality implemented */}
+                    
+                    {/* Cancel button for pending applications */}
+                    {isPendingApplication && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCancelApplication(pixel as any)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        Cancel
+                      </Button>
                     )}
                   </div>
-
-                  {/* Actions */}
-                  {pixel.status === 'active' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -347,7 +337,7 @@ export default function PixelsPage() {
             open, 
             asset: open ? deactivationDialog.asset : null 
           })}
-          onSuccess={handleRefresh}
+          onSuccess={mutatePixels}
         />
       )}
     </div>

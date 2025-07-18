@@ -30,8 +30,8 @@ export function TransactionsHistory({ limit, showFilters = true }: TransactionHi
     !limit ? {
       status: statusFilter !== "all" ? statusFilter : undefined,
       type: typeFilter !== "all" ? typeFilter : undefined,
-      page: currentPage,
-      limit: itemsPerPage
+      // page: currentPage, // Removed - not supported by useTransactions
+      // limit: itemsPerPage // Removed - not supported by useTransactions
     } : undefined
   );
 

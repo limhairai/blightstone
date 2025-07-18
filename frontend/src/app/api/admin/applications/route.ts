@@ -19,6 +19,8 @@ const transformApplicationToFrontend = (app: any) => ({
   targetBmDolphinId: app.target_bm_dolphin_id,
   websiteUrl: app.website_url,
   domains: app.domains || [],
+  pixelId: app.pixel_id,
+  pixelName: app.pixel_name,
   status: app.status,
   approvedBy: app.approved_by,
   approvedAt: app.approved_at,
@@ -27,6 +29,11 @@ const transformApplicationToFrontend = (app: any) => ({
   fulfilledBy: app.fulfilled_by,
   fulfilledAt: app.fulfilled_at,
   clientNotes: app.client_notes,
+  
+  // User information
+  approvedByProfile: app.approved_by_profile,
+  rejectedByProfile: app.rejected_by_profile,
+  fulfilledByProfile: app.fulfilled_by_profile,
   
   createdAt: app.created_at,
   updatedAt: app.updated_at
@@ -50,6 +57,8 @@ export async function GET(request: NextRequest) {
         target_bm_dolphin_id,
         website_url,
         domains,
+        pixel_id,
+        pixel_name,
         status,
         approved_by,
         approved_at,
@@ -60,7 +69,10 @@ export async function GET(request: NextRequest) {
         client_notes,
         created_at,
         updated_at,
-        organizations!inner(name)
+        organizations!inner(name),
+        approved_by_profile:profiles!application_approved_by_fkey(name, email),
+        rejected_by_profile:profiles!application_rejected_by_fkey(name, email),
+        fulfilled_by_profile:profiles!application_fulfilled_by_fkey(name, email)
       `, { count: 'exact' })
     
     // Add status filter if provided

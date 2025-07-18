@@ -245,15 +245,6 @@ export default function AdminSupportPage() {
                               {TICKET_CATEGORIES[ticket.category as keyof typeof TICKET_CATEGORIES]?.label || ticket.category}
                             </span>
                           </div>
-                          
-                          {ticket.priority && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs px-1.5 py-0.5"
-                            >
-                              {ticket.priority}
-                            </Badge>
-                          )}
                         </div>
                       </div>
                       

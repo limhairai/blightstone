@@ -1,8 +1,11 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { useDebounce } from 'use-debounce'
+import useSWR from 'swr'
+import { authenticatedFetcher } from '@/lib/swr-config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { 
@@ -44,74 +47,73 @@ export default function SupportPage() {
   const { currentOrganizationId } = useOrganizationStore()
   
   // State management
-  const [tickets, setTickets] = useState<SupportTicket[]>([])
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null)
-  const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  
+  // Debounce search query to prevent excessive API calls
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 500)
 
-  // Fetch tickets
-  const fetchTickets = async () => {
-    if (!session?.access_token) return
+  // Build query parameters
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams()
+    if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
+    if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter)
+    if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
+    return params.toString()
+  }, [statusFilter, categoryFilter, debouncedSearchQuery])
 
-    try {
-      const params = new URLSearchParams()
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
-      if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter)
-      if (searchQuery) params.append('search', searchQuery)
-
-      const response = await fetch(`/api/support/tickets?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch tickets')
-      }
-
-      const data: TicketsResponse = await response.json()
-      setTickets(data.tickets)
-      
-      // If no ticket is selected, select the first one
-      if (!selectedTicket && data.tickets.length > 0) {
-        setSelectedTicket(data.tickets[0])
-      }
-    } catch (error) {
-      console.error('Error fetching tickets:', error)
-      toast.error('Failed to load tickets')
-    } finally {
-      setLoading(false)
+  // Optimized SWR data fetching with caching
+  const { data: ticketsData, error, isLoading, mutate } = useSWR(
+    session?.access_token ? [`/api/support/tickets?${queryParams}`, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30000, // 30 seconds
     }
-  }
+  )
 
-  // Effects
+  const tickets = ticketsData?.tickets || []
+  const loading = isLoading
+
+  // Auto-select first ticket when tickets load
   useEffect(() => {
-    fetchTickets()
-  }, [session?.access_token, statusFilter, categoryFilter, searchQuery])
+    if (!selectedTicket && tickets.length > 0) {
+      setSelectedTicket(tickets[0])
+    }
+  }, [tickets, selectedTicket])
 
   // Handlers
   const handleTicketCreated = (newTicket: SupportTicket) => {
-    setTickets(prev => [newTicket, ...prev])
+    // Optimistically update the cache
+    mutate()
     setSelectedTicket(newTicket)
     setCreating(false)
     toast.success('Ticket created successfully')
   }
 
   const handleTicketUpdated = (updatedTicket: SupportTicket) => {
-    setTickets(prev => prev.map(ticket => 
-      ticket.id === updatedTicket.id ? updatedTicket : ticket
-    ))
+    // Optimistic update
+    const optimisticData = {
+      tickets: tickets.map((ticket: any) => 
+        ticket.id === updatedTicket.id ? updatedTicket : ticket
+      )
+    }
+    mutate(optimisticData, false)
+    
     if (selectedTicket?.id === updatedTicket.id) {
       setSelectedTicket(updatedTicket)
     }
+    
+    // Revalidate
+    mutate()
   }
 
   // Filter tickets based on search and filters
-  const filteredTickets = tickets.filter(ticket => {
+  const filteredTickets = tickets.filter((ticket: any) => {
     const matchesSearch = !searchQuery || 
       ticket.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
       ticket.ticketNumber.toString().includes(searchQuery) ||
@@ -124,11 +126,11 @@ export default function SupportPage() {
   })
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-[calc(100vh-7rem)] rounded-lg border border-border overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 flex min-h-0">
+      <div className="h-full flex">
         {/* Left Sidebar - Ticket List */}
-        <div className="w-80 border-r border-border flex flex-col">
+        <div className="w-80 border-r border-border flex flex-col bg-card">
           {/* Header */}
           <div className="p-3 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
@@ -201,7 +203,7 @@ export default function SupportPage() {
                   <p className="text-sm text-muted-foreground">No tickets found</p>
                 </div>
               ) : (
-                filteredTickets.map((ticket) => (
+                filteredTickets.map((ticket: any) => (
                   <div
                     key={ticket.id}
                     onClick={() => setSelectedTicket(ticket)}
@@ -238,14 +240,7 @@ export default function SupportPage() {
                             </span>
                           </div>
                           
-                          {ticket.priority && (
-                            <Badge 
-                              variant="outline" 
-                              className="text-xs px-1.5 py-0.5"
-                            >
-                              {ticket.priority}
-                            </Badge>
-                          )}
+
                         </div>
                       </div>
                       
@@ -269,15 +264,20 @@ export default function SupportPage() {
         </div>
 
         {/* Right Panel - Conversation */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 bg-background">
           {selectedTicket ? (
             <TicketConversation 
               ticket={selectedTicket} 
               isAdminPanel={false}
               onTicketUpdate={(updatedTicket) => {
-                setTickets(prev => prev.map(t => 
-                  t.id === updatedTicket.id ? updatedTicket : t
-                ))
+                // Optimistic update
+                const optimisticData = {
+                  tickets: tickets.map((t: any) => 
+                    t.id === updatedTicket.id ? updatedTicket : t
+                  )
+                }
+                mutate(optimisticData, false)
+                mutate() // Revalidate
                 setSelectedTicket(updatedTicket)
               }}
             />

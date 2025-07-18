@@ -9,14 +9,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// **PERFORMANCE**: Simple in-memory cache for organizations
-const orgCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 1000; // Reduced to 5 seconds for immediate wallet balance updates
-
-// Export cache for external invalidation
-if (typeof global !== 'undefined') {
-  global.orgCache = orgCache;
-}
+// Removed in-memory caching for immediate updates
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,40 +32,54 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // **PERFORMANCE**: Check server-side cache first
-    const cacheKey = `${user.id}-${orgId || 'all'}`;
-    const cached = orgCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      const response = NextResponse.json(cached.data);
-      response.headers.set('Cache-Control', 'public, max-age=10, s-maxage=10');
-      response.headers.set('Vary', 'Authorization');
-      response.headers.set('X-Cache', 'HIT');
-      return response;
-    }
+    // Removed cache checking for immediate updates
 
     // **OPTIMIZED**: Use basic queries with correct semantic IDs
     let organizations;
 
     if (orgId) {
-      // Get specific organization
-      const { data: specificOrg, error: specificError } = await supabase
-        .from('organizations')
-        .select(`
-          organization_id,
-          name,
-          created_at,
-          owner_id,
-          wallets(wallet_id, balance_cents, reserved_balance_cents)
-        `)
-        .eq('organization_id', orgId)
-        .eq('owner_id', user.id)
-        .maybeSingle();
+      // Get specific organization - check both ownership and membership
+      const [ownedOrgResult, memberOrgResult] = await Promise.all([
+        // Check if user owns this organization
+        supabase
+          .from('organizations')
+          .select(`
+            organization_id,
+            name,
+            created_at,
+            owner_id,
+            wallets(wallet_id, balance_cents, reserved_balance_cents)
+          `)
+          .eq('organization_id', orgId)
+          .eq('owner_id', user.id)
+          .maybeSingle(),
         
+        // Check if user is a member of this organization
+        supabase
+          .from('organizations')
+          .select(`
+            organization_id,
+            name,
+            created_at,
+            owner_id,
+            organization_members!inner(user_id),
+            wallets(wallet_id, balance_cents, reserved_balance_cents)
+          `)
+          .eq('organization_id', orgId)
+          .eq('organization_members.user_id', user.id)
+          .maybeSingle()
+      ]);
+      
+      const ownedOrg = ownedOrgResult.data;
+      const memberOrg = memberOrgResult.data;
+      
+      // Use owned org if available, otherwise use member org
+      const specificOrg = ownedOrg || memberOrg;
       organizations = specificOrg ? [specificOrg] : [];
       
-      if (specificError) {
-        console.error("Error fetching specific organization:", specificError);
-        return NextResponse.json({ error: 'Failed to fetch organization', details: specificError.message }, { status: 500 });
+      if (ownedOrgResult.error && memberOrgResult.error) {
+        console.error("Error fetching specific organization:", ownedOrgResult.error, memberOrgResult.error);
+        return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
       }
     } else {
       // **FIXED**: Get organizations using separate queries to avoid OR syntax issues
@@ -177,15 +184,8 @@ export async function GET(request: NextRequest) {
 
     const responseData = { organizations: mappedOrgs };
     
-    // **PERFORMANCE**: Cache the result server-side
-    orgCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
-    
+    // Real-time updates - no caching
     const response = NextResponse.json(responseData);
-    
-    // **PERFORMANCE**: Add optimized caching headers
-    response.headers.set('Cache-Control', 'private, max-age=30, s-maxage=30, stale-while-revalidate=60')
-    response.headers.set('Vary', 'Authorization')
-    response.headers.set('X-Cache', 'MISS')
     
     return response;
   } catch (error) {
@@ -323,8 +323,8 @@ export async function PATCH(request: NextRequest) {
 
     // Clear cache for this organization
     const cacheKey = `${user.id}-${targetOrgId}`;
-    orgCache.delete(cacheKey);
-    orgCache.delete(`${user.id}-all`);
+    orgCache?.delete(cacheKey);
+    orgCache?.delete(`${user.id}-all`);
 
     return NextResponse.json(updatedOrg);
   } catch (error) {

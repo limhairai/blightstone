@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
       assignedTo: ticket.assigned_to,
       subject: ticket.subject,
       category: ticket.category,
-      priority: ticket.priority,
+
       status: ticket.status,
       affectedAssetIds: ticket.affected_asset_ids,
       affectedAssets: ticket.affected_assets || [], // New field with asset details
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { subject, category, priority = 'medium', affectedAssetIds = [], initialMessage } = body
+    const { subject, category, affectedAssetIds = [], initialMessage } = body
 
     // Validate required fields
     if (!subject || !category || !initialMessage) {
@@ -184,11 +184,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 })
     }
 
-    // Validate priority
-    const validPriorities = ['low', 'medium', 'high', 'urgent']
-    if (!validPriorities.includes(priority)) {
-      return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
-    }
+    // Priority validation removed - we don't track priority
 
     // Create ticket
     const { data: ticket, error: ticketError } = await supabase
@@ -198,7 +194,6 @@ export async function POST(request: NextRequest) {
         created_by: user.id,
         subject,
         category,
-        priority,
         affected_asset_ids: affectedAssetIds,
         status: 'open'
       })
@@ -252,7 +247,7 @@ export async function POST(request: NextRequest) {
       assignedTo: createdTicket.assigned_to,
       subject: createdTicket.subject,
       category: createdTicket.category,
-      priority: createdTicket.priority,
+      
       status: createdTicket.status,
       affectedAssetIds: createdTicket.affected_asset_ids,
       affectedAssets: createdTicket.affected_assets || [], // New field with asset details

@@ -388,6 +388,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Add a small delay to prevent rapid successive calls
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Always fetch user's organizations to ensure we have access
       try {
         const response = await fetch('/api/organizations', {
@@ -491,14 +494,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           console.error('🏢 Failed to fetch organizations:', response.status, response.statusText);
+          orgInitialized.current = true; // Mark as initialized even on error to prevent retries
         }
       } catch (error) {
         console.error('🏢 Error fetching organizations for initialization:', error);
+        orgInitialized.current = true; // Mark as initialized even on error to prevent retries
       }
     };
 
     initializeOrganization();
-  }, [profile, currentOrganizationId, setOrganization, session]);
+  }, [profile?.organization_id, currentOrganizationId, setOrganization, session?.access_token]); // More specific dependencies
 
   useEffect(() => {
     // Don't run auth logic until hydrated

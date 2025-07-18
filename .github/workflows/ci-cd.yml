@@ -57,16 +57,16 @@ jobs:
         run: |
           echo "🔍 Environment variables for build:"
           echo "NEXT_PUBLIC_API_URL will be: ${{ github.ref == 'refs/heads/main' && 'https://api.adhub.tech' || 'https://api-staging.adhub.tech' }}"
-          echo "NEXT_PUBLIC_APP_URL will be: ${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}"
+          echo "NEXT_PUBLIC_APP_URL will be: ${{ github.ref == 'refs/heads/main' && 'https://app.adhub.tech' || 'https://staging.adhub.tech' }}"
           echo "SUPABASE_URL secret exists: ${{ secrets.SUPABASE_URL != '' }}"
           echo "SUPABASE_ANON_KEY secret exists: ${{ secrets.SUPABASE_ANON_KEY != '' }}"
           
       - name: Set environment variables
         run: |
           echo "NEXT_PUBLIC_API_URL=${{ github.ref == 'refs/heads/main' && 'https://api.adhub.tech' || 'https://api-staging.adhub.tech' }}" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_APP_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_SITE_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
-          echo "NEXT_PUBLIC_BASE_URL=${{ github.ref == 'refs/heads/main' && 'https://adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_APP_URL=${{ github.ref == 'refs/heads/main' && 'https://app.adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SITE_URL=${{ github.ref == 'refs/heads/main' && 'https://app.adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_BASE_URL=${{ github.ref == 'refs/heads/main' && 'https://app.adhub.tech' || 'https://staging.adhub.tech' }}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-supabase-url.supabase.co' }}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}" >> $GITHUB_ENV
           echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SERVICE_KEY || 'placeholder-service-key' }}" >> $GITHUB_ENV
@@ -316,9 +316,9 @@ jobs:
           vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           NEXT_PUBLIC_API_URL: https://api.adhub.tech
-          NEXT_PUBLIC_APP_URL: https://adhub.tech
-          NEXT_PUBLIC_SITE_URL: https://adhub.tech
-          NEXT_PUBLIC_BASE_URL: https://adhub.tech
+          NEXT_PUBLIC_APP_URL: https://app.adhub.tech
+          NEXT_PUBLIC_SITE_URL: https://app.adhub.tech
+          NEXT_PUBLIC_BASE_URL: https://app.adhub.tech
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -334,7 +334,7 @@ jobs:
           echo "🔍 Checking backend health..."
           curl -f https://api.adhub.tech/health || echo "⚠️ Backend health check failed"
           echo "🔍 Checking frontend..."
-          curl -f https://adhub.tech || echo "⚠️ Frontend health check failed"
+          curl -f https://app.adhub.tech || echo "⚠️ Frontend health check failed"
           
       - name: Update deployment status (success)
         if: success()
@@ -346,7 +346,7 @@ jobs:
               repo: context.repo.repo,
               deployment_id: ${{ steps.deployment.outputs.result }},
               state: 'success',
-              environment_url: 'https://adhub.tech'
+              environment_url: 'https://app.adhub.tech'
             });
             
       - name: Update deployment status (failure)
@@ -365,5 +365,5 @@ jobs:
         if: success()
         run: |
           echo "🚀 Production deployment successful!"
-          echo "🔗 Frontend: https://adhub.tech"
+          echo "🔗 Frontend: https://app.adhub.tech"
           echo "🔗 Backend: https://api.adhub.tech" 

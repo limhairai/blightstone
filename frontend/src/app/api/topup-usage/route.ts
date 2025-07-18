@@ -27,29 +27,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Verify user has access to this organization
-    const { data: orgAccess, error: orgError } = await supabase
-      .from('organization_members')
-      .select('role')
+    // 🚀 OPTIMIZED: Simplified organization access check
+    const { data: orgCheck } = await supabase
+      .from('organizations')
+      .select('owner_id')
       .eq('organization_id', organizationId)
-      .eq('user_id', user.id)
+      .eq('owner_id', user.id)
       .single();
 
-    if (orgError || !orgAccess) {
-      // Check if user is owner
-      const { data: ownerCheck, error: ownerError } = await supabase
-        .from('organizations')
-        .select('owner_id')
+    if (!orgCheck) {
+      // Quick check if user is member
+      const { data: memberCheck } = await supabase
+        .from('organization_members')
+        .select('user_id')
         .eq('organization_id', organizationId)
-        .eq('owner_id', user.id)
+        .eq('user_id', user.id)
         .single();
 
-      if (ownerError || !ownerCheck) {
+      if (!memberCheck) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
 
-    // Get current month's usage
+    // 🚀 OPTIMIZED: Get current month's usage with single query
     const currentMonthStart = new Date();
     currentMonthStart.setDate(1);
     currentMonthStart.setHours(0, 0, 0, 0);
@@ -66,12 +66,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch topup usage' }, { status: 500 });
     }
 
-    const currentUsageCents = topupData.reduce((sum, req) => sum + req.amount_cents, 0);
+    const currentUsageCents = topupData?.reduce((sum, req) => sum + req.amount_cents, 0) || 0;
 
     return NextResponse.json({
       currentUsage: currentUsageCents / 100, // Convert to dollars
       currentUsageCents,
       month: currentMonthStart.toISOString().substring(0, 7) // YYYY-MM format
+    }, {
+      headers: {
+        // 🚀 CACHE: Add aggressive caching to prevent repeated slow queries
+        'Cache-Control': 'private, max-age=300, stale-while-revalidate=600', // 5 minutes cache
+      }
     });
 
   } catch (error) {

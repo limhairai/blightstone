@@ -202,13 +202,6 @@ export async function GET(request: NextRequest) {
       canRequestAssets
     })
 
-    // Add caching headers - much shorter cache for subscription data
-    response.headers.set('Cache-Control', 'public, max-age=30, s-maxage=30') // 30 seconds for subscription data
-    response.headers.set('Vary', 'Authorization')
-    
-    // Add cache tags for revalidation
-    response.headers.set('Cache-Tag', `subscription-${organizationId},organization-${organizationId},subscriptions`)
-
     return response;
 
   } catch (error) {

@@ -92,14 +92,14 @@ if (IS_PRODUCTION && !process.env.NEXT_PUBLIC_API_URL) {
   console.warn('⚠️ NEXT_PUBLIC_API_URL not set in production')
 }
 
-// 🎯 Development logging
-if (IS_DEVELOPMENT) {
-  console.log('🌍 Environment Configuration:', {
-    NODE_ENV: process.env.NODE_ENV,
-    BASE_URL: ENV_CONFIG.BASE_URL,
-    API_URL: ENV_CONFIG.API_URL,
-  })
-}
+// 🎯 Development logging - REMOVED to reduce console noise
+// if (IS_DEVELOPMENT) {
+//   console.log('🌍 Environment Configuration:', {
+//     NODE_ENV: process.env.NODE_ENV,
+//     BASE_URL: ENV_CONFIG.BASE_URL,
+//     API_URL: ENV_CONFIG.API_URL,
+//   })
+// }
 
 // ✅ SECURE: Export for backward compatibility
 export const {

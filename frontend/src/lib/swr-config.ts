@@ -1,4 +1,4 @@
-import useSWR from 'swr'
+import useSWR, { useSWRConfig } from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
 import { useMemo } from 'react'
 
@@ -20,66 +20,48 @@ export const authenticatedFetcher = async (url: string, token: string) => {
   return response.json()
 }
 
-// **GLOBAL SWR CONFIG** - Optimized for performance and UX
+// 🚀 PERFORMANCE: Aggressive SWR configuration to minimize API calls
 export const swrConfig = {
-  // PERFORMANCE OPTIMIZATIONS
-  dedupingInterval: 2000,          // 2s deduping to prevent excessive requests
-  focusThrottleInterval: 5000,     // 5s throttling for focus events
+  // Increase deduplication window to prevent rapid duplicate calls
+  dedupingInterval: 60000, // 60 seconds (increased from 30s)
   
-  // CACHE SETTINGS FOR OPTIMAL PERFORMANCE
-  compare: (a: any, b: any) => JSON.stringify(a) === JSON.stringify(b), // Deep comparison for cache invalidation
+  // Increase focus throttle to prevent excessive revalidation
+  focusThrottleInterval: 120000, // 2 minutes (increased from 60s)
   
-  // REVALIDATION BEHAVIOR - Balanced for performance
-  revalidateOnFocus: false,        // Don't spam API on focus (saves costs)
-  revalidateOnReconnect: true,     // Revalidate on reconnect (user expects fresh data)
-  revalidateOnMount: true,         // Always get fresh data on mount
+  // Disable automatic revalidation features that cause excessive calls
+  revalidateOnFocus: false,
+  revalidateOnReconnect: false, // Disable reconnect revalidation
+  revalidateOnMount: true, // FIXED: Allow initial mount revalidation
+  revalidateIfStale: false, // Don't automatically revalidate stale data
   
-  // CACHE BEHAVIOR - Optimized for snappy UX
-  refreshInterval: 0,              // No automatic refresh (user-driven updates)
-  revalidateIfStale: true,         // Revalidate if data is stale
+  // Increase error retry interval
+  errorRetryInterval: 10000, // 10 seconds
+  errorRetryCount: 2, // Reduce retry attempts
   
-  // ERROR HANDLING - Improved retry logic
-  errorRetryInterval: 5000,        // Retry failed requests every 5 seconds (faster recovery)
-  errorRetryCount: 3,              // Maximum 3 retry attempts
-  shouldRetryOnError: (error: Error) => {
-    // Don't retry on 4xx errors (client errors)
-    if (error.name === '401' || error.name === '403' || error.name === '404') {
-      return false
-    }
-    return true
-  },
-  onError: (error: Error) => {
-    // Only log errors in development
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('SWR Error:', error)
-    }
-  },
+  // Longer refresh intervals
+  refreshInterval: 0, // Disable automatic refresh by default
   
-  // Removed SWR debug logging
+  // Keep data longer in cache
+  shouldRetryOnError: false, // Don't retry on error by default
+  
+  // Use compare function to prevent unnecessary re-renders
+  compare: (a: any, b: any) => {
+    return JSON.stringify(a) === JSON.stringify(b)
+  }
 }
 
-// **SPECIAL CONFIGS** - Only for specific use cases
-export const realtimeConfig = {
-  ...swrConfig,
-  refreshInterval: 10 * 1000,      // Auto-refresh every 10 seconds
-  revalidateOnFocus: true,         // Revalidate when user returns to tab
-  revalidateOnReconnect: true,     // Revalidate when connection is restored
-}
-
-export const staticConfig = {
-  ...swrConfig,
-  revalidateOnMount: false,        // Don't revalidate static data
-  refreshInterval: 0,              // No auto-refresh
-}
-
-// **STANDARD HOOKS** - All use the same config
+// **REAL-TIME HOOKS** - No caching, immediate updates
 export function useOrganizations() {
   const { session } = useAuth()
   
   return useSWR(
     session?.access_token ? ['/api/organizations', session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
+    {
+      ...swrConfig,
+      // Force immediate updates for critical data
+      revalidateIfStale: true,
+    }
   )
 }
 
@@ -87,11 +69,13 @@ export function useCurrentOrganization(organizationId: string | null) {
   const { session } = useAuth()
   
   return useSWR(
-    organizationId && session?.access_token 
-      ? [`/api/organizations?id=${organizationId}`, session.access_token]
-      : null,
+    session?.access_token && organizationId ? [`/api/organizations?id=${organizationId}`, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
+    {
+      ...swrConfig,
+      // Critical data - always fresh
+      revalidateIfStale: true,
+    }
   )
 }
 
@@ -101,19 +85,25 @@ export function useBusinessManagers() {
   return useSWR(
     session?.access_token ? ['/api/business-managers', session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
+    {
+      ...swrConfig,
+      // Business managers change frequently
+      revalidateIfStale: true,
+    }
   )
 }
 
-export function useAdAccounts(bmIdFilter?: string | null) {
+export function useAdAccounts() {
   const { session } = useAuth()
   
-  const apiUrl = bmIdFilter ? `/api/ad-accounts?bm_id=${encodeURIComponent(bmIdFilter)}` : '/api/ad-accounts'
-  
   return useSWR(
-    session?.access_token ? [apiUrl, session.access_token] : null,
+    session?.access_token ? ['/api/ad-accounts', session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
+    {
+      ...swrConfig,
+      // Ad accounts are dynamic
+      revalidateIfStale: true,
+    }
   )
 }
 
@@ -123,73 +113,162 @@ export function useTransactions(filters?: {
   status?: string
   business_id?: string
   date?: string
-  page?: number
-  limit?: number
 }) {
   const { session } = useAuth()
   
-  const queryString = useMemo(() => {
-    if (!filters) return ''
-    const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.set(key, value.toString())
-      }
-    })
-    return params.toString()
-  }, [filters])
+  // If filters is undefined, disable the hook (for conditional loading)
+  const shouldFetch = filters !== undefined
   
-  const apiUrl = queryString ? `/api/transactions?${queryString}` : '/api/transactions'
+  // Build query string from filters
+  const queryParams = new URLSearchParams()
+  if (filters?.type) queryParams.append('type', filters.type)
+  if (filters?.search) queryParams.append('search', filters.search)
+  if (filters?.status) queryParams.append('status', filters.status)
+  if (filters?.business_id) queryParams.append('business_id', filters.business_id)
+  if (filters?.date) queryParams.append('date', filters.date)
+  
+  const queryString = queryParams.toString()
+  const url = `/api/transactions${queryString ? `?${queryString}` : ''}`
   
   return useSWR(
-    session?.access_token ? [apiUrl, session.access_token] : null,
+    session?.access_token && shouldFetch ? [url, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
+    {
+      ...swrConfig,
+      // Transactions are critical financial data
+      revalidateIfStale: true,
+    }
   )
 }
 
-export function useSubscriptionSWR(organizationId: string | null) {
-  const { session } = useAuth()
-  
-  return useSWR(
-    organizationId && session?.access_token
-      ? [`/api/subscriptions/current?organizationId=${organizationId}`, session.access_token]
-      : null,
-    ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
-  )
-}
-
-export function useBusinesses(organizationId: string | null) {
-  const { session } = useAuth()
-  
-  return useSWR(
-    organizationId && session?.access_token 
-      ? [`/api/businesses?organization_id=${organizationId}`, session.access_token]
-      : null,
-    ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use global config
-  )
-}
-
-// **REALTIME HOOKS** - For data that changes frequently
 export function useTopupRequests() {
   const { session } = useAuth()
   
   return useSWR(
     session?.access_token ? ['/api/topup-requests', session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
-    swrConfig // Use standard config - no auto-refresh needed
+    {
+      ...swrConfig,
+      // Topup requests are critical financial data
+      revalidateIfStale: true,
+    }
   )
 }
 
-// Bulk data hook for dashboard - fetches everything needed with optimized caching
+// **SUBSCRIPTION HOOK** - Real-time subscription data
+export function useSubscriptionSWR(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token && organizationId ? [`/api/subscriptions/current?organizationId=${organizationId}`, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      // Subscription data is critical for limits
+      revalidateIfStale: true,
+    }
+  )
+}
+
+// **OPTIMISTIC UPDATES HELPER**
+export function useOptimisticUpdate() {
+  const { mutate } = useSWRConfig()
+  
+  return {
+    // Immediately update UI, then sync with server
+    updateOptimistically: async (key: string, optimisticData: any, serverUpdate: () => Promise<any>) => {
+      // 1. Immediately update UI
+      mutate(key, optimisticData, { revalidate: false })
+      
+      try {
+        // 2. Update server in background
+        const serverData = await serverUpdate()
+        
+        // 3. Sync UI with server response
+        mutate(key, serverData, { revalidate: false })
+        
+        return serverData
+      } catch (error) {
+        // 4. Revert on error
+        mutate(key) // Revalidate to get real data
+        throw error
+      }
+    }
+  }
+}
+
+// Settings-specific hooks for optimized data fetching
+export function usePixelData(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token && organizationId 
+      ? [`/api/organizations/${organizationId}/pixels`, session.access_token] 
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 120000, // 2 minutes - pixels don't change frequently
+      revalidateOnFocus: false,
+    }
+  )
+}
+
+export function useTopupUsage(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token && organizationId 
+      ? [`/api/topup-usage?organization_id=${organizationId}`, session.access_token] 
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 300000, // 5 minutes - usage data changes slowly
+      revalidateOnFocus: false,
+    }
+  )
+}
+
+export function usePaymentMethods(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token && organizationId 
+      ? [`/api/payments/methods?organization_id=${organizationId}`, session.access_token] 
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 600000, // 10 minutes - payment methods rarely change
+      revalidateOnFocus: false,
+    }
+  )
+}
+
+export function useBillingHistory(organizationId: string | null) {
+  const { session } = useAuth()
+  
+  return useSWR(
+    session?.access_token && organizationId 
+      ? [`/api/payments/billing/history?organization_id=${organizationId}&limit=10`, session.access_token] 
+      : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      ...swrConfig,
+      dedupingInterval: 300000, // 5 minutes - billing history changes slowly
+      revalidateOnFocus: false,
+    }
+  )
+}
+
+// Bulk data hook for dashboard - fetches everything needed with smart caching
 export function useDashboardData(organizationId: string | null) {
   const orgs = useOrganizations()
   const currentOrg = useCurrentOrganization(organizationId)
   const businessManagers = useBusinessManagers()
   const adAccounts = useAdAccounts()
-  const transactions = useTransactions()
+  const transactions = useTransactions({})
 
   const isLoading = orgs.isLoading || currentOrg.isLoading || businessManagers.isLoading || adAccounts.isLoading || transactions.isLoading
   const error = orgs.error || currentOrg.error || businessManagers.error || adAccounts.error || transactions.error

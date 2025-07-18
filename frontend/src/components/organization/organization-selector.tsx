@@ -54,12 +54,15 @@ export function OrganizationSelector() {
   const hasAuthError = orgError && (orgError.message.includes('401') || orgError.message.includes('403'))
   const hasCurrentOrgAuthError = currentOrgError && (currentOrgError.message.includes('401') || currentOrgError.message.includes('403'))
   
-  // Only show loading if we don't have any data yet AND we're actually loading
-  // This prevents flickering when data is already available
+  // FIXED: Improved loading logic to prevent infinite loading states
   const shouldShowLoading = componentIsLoading || (
+    // Show loading only if we're actively loading and don't have data yet
     (isOrgLoading && !orgData) || 
-    (isCurrentOrgLoading && !currentOrgData) || 
+    // For current org, only show loading if we're loading AND we have a valid org ID
+    (isCurrentOrgLoading && !currentOrgData && currentOrganizationId) ||
+    // Business managers loading only if we have an org ID and are loading
     (isBizLoading && !bizData && currentOrganizationId) ||
+    // Auth errors
     hasAuthError || 
     hasCurrentOrgAuthError
   )
@@ -67,17 +70,8 @@ export function OrganizationSelector() {
   // Get current organization directly from the dedicated hook instead of filtering all orgs
   const currentOrganization = currentOrgData?.organizations?.[0] || null;
 
-  // Use real organization data from context with better fallback logic
+  // FIXED: Better fallback logic to prevent infinite loading
   const selectedOrg = useMemo<Organization>(() => {
-    if (shouldShowLoading && !currentOrganization) {
-      return {
-        id: "loading",
-        name: "Loading...",
-        role: "Loading",
-        businessCount: 0,
-      };
-    }
-    
     // If we have current organization data, use it
     if (currentOrganization) {
       // For the current organization, prefer actual business manager count over stored count
@@ -115,11 +109,33 @@ export function OrganizationSelector() {
       }
     }
     
-    // Final fallback
+    // If we have organizations but no current org ID, use the first one
+    if (allOrganizations.length > 0 && !currentOrganizationId) {
+      const firstOrg = allOrganizations[0];
+      return {
+        id: firstOrg.id,
+        name: firstOrg.name,
+        avatar: firstOrg.avatar,
+        role: "Owner",
+        businessCount: firstOrg.business_count || 0,
+      };
+    }
+    
+    // Show loading state only if we're actually loading
+    if (shouldShowLoading) {
+      return {
+        id: "loading",
+        name: "Loading...",
+        role: "Loading",
+        businessCount: 0,
+      };
+    }
+    
+    // Final fallback - no organization found
     return {
-      id: "loading",
-      name: "Loading...",
-      role: "Loading",
+      id: "no-org",
+      name: "No Organization",
+      role: "None",
       businessCount: 0,
     };
   }, [currentOrganization, allBusinessManagers, currentOrganizationId, shouldShowLoading, isBizLoading, bizData, allOrganizations]);
@@ -319,6 +335,28 @@ export function OrganizationSelector() {
           </div>
         </div>
         <Loader2 className="h-4 w-4 ml-2 text-muted-foreground animate-spin" />
+      </Button>
+    )
+  }
+
+  // Handle case where user has no organizations
+  if (selectedOrg.id === "no-org" && !globalLoading) {
+    return (
+      <Button
+        variant="outline"
+        className="w-full justify-between bg-background border-border text-muted-foreground"
+        disabled
+      >
+        <div className="flex items-center">
+          <div className="h-6 w-6 mr-2 rounded-full bg-muted flex items-center justify-center">
+            <span className="text-muted-foreground text-xs">?</span>
+          </div>
+          <div className="flex flex-col items-start">
+            <span className="text-sm font-medium">No Organization</span>
+            <span className="text-xs text-muted-foreground">Contact support</span>
+          </div>
+        </div>
+        <ChevronDown className="h-4 w-4 ml-2 text-muted-foreground" />
       </Button>
     )
   }

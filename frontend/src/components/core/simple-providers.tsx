@@ -11,7 +11,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
 import { SWRConfig } from 'swr'
 import { swrConfig } from '@/lib/swr-config'
-import { useCacheInvalidation } from "../../hooks/useCacheInvalidation"
+import { PageTransition } from '@/lib/instant-transitions'
+import { useAggressivePreloading, usePredictiveLoading } from '@/lib/bundle-optimization'
+import { ResourceHints, CriticalCSS } from '@/lib/bundle-components'
+import { MicroInteractionsProvider } from '@/lib/micro-interactions'
+import { useInstantPerformance } from '@/lib/instant-performance'
 
 // PageTitle Context
 const PageTitleContext = createContext<{
@@ -62,9 +66,11 @@ function isAdminPage(pathname: string): boolean {
 function AppRouter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
-  
-  // Enable cache invalidation for immediate subscription updates
-  useCacheInvalidation();
+
+  // Initialize performance optimizations
+  useAggressivePreloading()
+  usePredictiveLoading()
+  useInstantPerformance()
 
   // While the authentication state is loading, show a loader to prevent a flash of the wrong content.
   if (authLoading) {
@@ -87,17 +93,19 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   if (isAuthenticated && isProtectedPage) {
     if (pathname && (isAdminPage(pathname) || pathname === '/onboarding')) {
       // Admin pages and onboarding handle their own layout and don't need AppShell
-      return <>{children}</>;
+      return <PageTransition>{children}</PageTransition>;
     }
     
     return (
-        <AppShell>{children}</AppShell>
+        <AppShell>
+          <PageTransition>{children}</PageTransition>
+        </AppShell>
     );
   }
 
   // For public pages (like /login) or when the user is not authenticated,
   // render the children directly without the AppShell.
-  return <>{children}</>;
+  return <PageTransition>{children}</PageTransition>;
 }
 
 export function SimpleProviders({ children }: { children: React.ReactNode }) {
@@ -106,13 +114,17 @@ export function SimpleProviders({ children }: { children: React.ReactNode }) {
       <TooltipProvider>
         <QueryClientProvider client={new QueryClient()}>
           <SWRConfig value={swrConfig}>
-            <AuthProvider>
-              <PageTitleProvider>
-                <AppRouter>{children}</AppRouter>
-              </PageTitleProvider>
-            </AuthProvider>
-                                  </SWRConfig>
-          </QueryClientProvider>
+            <MicroInteractionsProvider>
+              <AuthProvider>
+                <PageTitleProvider>
+                  <ResourceHints />
+                  <CriticalCSS />
+                  <AppRouter>{children}</AppRouter>
+                </PageTitleProvider>
+              </AuthProvider>
+            </MicroInteractionsProvider>
+          </SWRConfig>
+        </QueryClientProvider>
       </TooltipProvider>
     </ThemeProvider>
   );

@@ -26,6 +26,7 @@ import {
   formatRelativeTime,
   transactionColors
 } from "../../utils/format"
+import { Transaction } from "../../types/transaction"
 
 
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
@@ -35,7 +36,8 @@ import { formatCurrency as financialFormatCurrency } from '@/lib/config/financia
 
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
-import { useDashboardData } from "../../lib/swr-config"
+import { useDashboardData, useTopupRequests } from "../../lib/swr-config"
+import { DashboardLoadingScreen } from "../core/dashboard-loading-screen"
 
 export function DashboardView() {
   // ALL HOOKS MUST BE CALLED FIRST - NEVER AFTER CONDITIONAL LOGIC
@@ -44,10 +46,11 @@ export function DashboardView() {
   const router = useRouter()
   const pathname = usePathname()
   const [activeTab, setActiveTab] = useState("balance")
-  const [timeFilter, setTimeFilter] = useState("7 Days") // Start with shortest timeframe for new users
+  const [timeFilter, setTimeFilter] = useState("7 Days") // Start with 7 days for new users
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
+  const [showLoadingScreen, setShowLoadingScreen] = useState(true)
 
   // Check onboarding status - RESTORED
   const { shouldShowOnboarding, progressData, isLoading: onboardingLoading } = useAdvancedOnboarding()
@@ -78,6 +81,44 @@ export function DashboardView() {
     adAccountsError,
     transactionsError,
   } = useDashboardData(currentOrganizationId)
+
+  // 🚀 PERFORMANCE: Fetch pending topup requests for complete topup tracking
+  const { data: topupRequestsData, isLoading: isLoadingTopupRequests } = useTopupRequests()
+
+  // 🚀 PREDICTIVE PRELOADING: Preload core app data that users will likely need
+  useEffect(() => {
+    if (!user || !session || !currentOrganizationId || authLoading || showLoadingScreen) return
+
+    // Only preload after the loading screen is complete
+    const preloadCriticalData = async () => {
+      try {
+        // Preload pixels data (for pixels page)
+        fetch(`/api/organizations/${currentOrganizationId}/pixels`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        }).catch(() => {}) // Silent fail for preload
+
+        // Preload business managers details (for business managers page)
+        fetch(`/api/organizations/${currentOrganizationId}/business-managers`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        }).catch(() => {}) // Silent fail for preload
+
+        // REMOVED: Topup usage preloading - this endpoint is extremely slow (17+ seconds)
+        // Only load when user actually visits settings page
+        // fetch(`/api/topup-usage?organization_id=${currentOrganizationId}`, {
+        //   headers: { 'Authorization': `Bearer ${session.access_token}` }
+        // }).catch(() => {}) // Silent fail for preload
+
+        console.log('🚀 Preloaded critical data for instant navigation')
+      } catch (error) {
+        // Silent fail for preloading
+      }
+    }
+
+    // Preload after loading screen is complete
+    const preloadTimer = setTimeout(preloadCriticalData, 1000)
+    
+    return () => clearTimeout(preloadTimer)
+  }, [user, session, currentOrganizationId, authLoading, showLoadingScreen])
 
   // Setup widget is now handled by AppShell - no local state needed
   
@@ -131,117 +172,327 @@ export function DashboardView() {
   // We always have real data now - no more demo data
 
   // ALL USEMEMO AND USEEFFECT HOOKS MUST BE BEFORE EARLY RETURNS
-  // Generate HONEST balance data based on actual account history
+  // Generate REAL balance data based on actual transaction history
   const balanceData = useMemo(() => {
-    const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
+    // Calculate data points and intervals based on time filter
+    let dataPoints, intervalType, intervalSize
+    
+    switch (timeFilter) {
+      case "1 Day":
+        dataPoints = 24
+        intervalType = "hours"
+        intervalSize = 1
+        break
+      case "7 Days":
+        dataPoints = 7
+        intervalType = "days"
+        intervalSize = 1
+        break
+      case "1 Month":
+        dataPoints = 30
+        intervalType = "days"
+        intervalSize = 1
+        break
+      case "3 Months":
+        dataPoints = 13
+        intervalType = "weeks"
+        intervalSize = 7
+        break
+      case "Lifetime":
+        // For lifetime, we'll use the transaction history to determine the range
+        if (transactionsData.length === 0) {
+          // No transactions yet, show last 30 days as placeholder
+          dataPoints = 30
+          intervalType = "days"
+          intervalSize = 1
+        } else {
+          const oldestTransaction = new Date(Math.min(...transactionsData.map((tx: Transaction) => new Date(tx.created_at).getTime())))
+          const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
+          
+          // Ensure minimum of 1 data point
+          const safeDaysSinceOldest = Math.max(1, daysSinceOldest)
+          
+          if (safeDaysSinceOldest <= 30) {
+            dataPoints = Math.max(2, safeDaysSinceOldest) // Ensure minimum 2 points for chart rendering
+            intervalType = "days"
+            intervalSize = 1
+          } else if (safeDaysSinceOldest <= 90) {
+            dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 7))
+            intervalType = "weeks"
+            intervalSize = 7
+          } else {
+            dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 30))
+            intervalType = "months"
+            intervalSize = 30
+          }
+        }
+        break
+      default:
+        dataPoints = 7
+        intervalType = "days"
+        intervalSize = 1
+    }
     
     // Generate time points
     const today = new Date()
     const timePoints = Array.from({ length: dataPoints }).map((_, i) => {
       let pointDate = new Date(today)
       
-      if (timeFilter === "1 Year") {
-        pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
-      } else if (timeFilter === "3 Months") {
-        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
-      } else if (timeFilter === "1 Month") {
-        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
-      } else { // 7 Days
-        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+      if (intervalType === "hours") {
+        pointDate.setHours(today.getHours() - (dataPoints - 1 - i))
+      } else if (intervalType === "days") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      } else if (intervalType === "weeks") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      } else if (intervalType === "months") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      }
+      
+      // Format date labels based on interval type
+      let dateLabel
+      if (intervalType === "hours") {
+        dateLabel = pointDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+      } else if (intervalType === "days") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (intervalType === "weeks") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (intervalType === "months") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       }
       
       return {
         index: i,
-        date: timeFilter === "1 Year" 
-          ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-          : pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: dateLabel,
         pointDate,
         value: 0 // Default to zero
       }
     })
     
-    // For new accounts with no transaction history, show flat line at current balance
-    if (transactionsData.length <= 5) {
+    // Calculate historical balance based on transactions
+    if (transactionsData.length > 0) {
+      // Sort transactions by date (newest first)
+      const sortedTransactions = [...transactionsData].sort((a, b) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      
       timePoints.forEach((point, i) => {
-        // Show current balance across all points for smooth line
-        point.value = realBalance
+        // Calculate balance at this point in time by working backwards from current balance
+        let balanceAtPoint = realBalance
+        
+        // For each transaction that happened after this point, reverse its effect
+        sortedTransactions.forEach(tx => {
+          const txDate = new Date(tx.created_at)
+          if (txDate > point.pointDate) {
+            // This transaction happened after this point, so reverse its effect
+            const txAmount = (tx.amount_cents || 0) / 100
+            
+            // If it was a credit (topup), subtract it from the balance at this point
+            // If it was a debit (spend), add it back to the balance at this point
+            if (tx.type === 'credit' || tx.type === 'topup' || tx.type === 'deposit') {
+              balanceAtPoint -= txAmount
+            } else if (tx.type === 'debit' || tx.type === 'spend' || tx.type === 'withdrawal') {
+              balanceAtPoint += Math.abs(txAmount) // Add back the spent amount
+            }
+          }
+        })
+        
+        point.value = Math.max(0, balanceAtPoint) // Ensure non-negative balance
       })
     } else {
-      // For accounts with transaction history, we'd build actual historical balance
-      // For now, still show honest data: zero until today
+      // For new accounts with no transaction history, show flat line at current balance
       timePoints.forEach((point, i) => {
-        if (i === dataPoints - 1) {
-          point.value = realBalance
-        }
+        point.value = realBalance
       })
     }
     
-    // Ensure we always have at least some data to show a line
-    if (timePoints.every(point => point.value === 0)) {
-      // If all values are zero, set a minimal value to show a flat line
-      timePoints.forEach(point => {
-        point.value = 1 // Use 1 to ensure line is visible
+    // Debug logging for All Time filter
+    if (timeFilter === "Lifetime") {
+      console.log('🔍 Balance Chart Final Data:', {
+        timeFilter,
+        dataPointsGenerated: timePoints.length,
+        firstPoint: timePoints[0],
+        lastPoint: timePoints[timePoints.length - 1],
+        allValues: timePoints.map(p => p.value)
       })
     }
     
     return timePoints
-  }, [realBalance, timeFilter, transactionsData.length])
+  }, [realBalance, timeFilter, transactionsData])
   
 
 
-  // Generate spend data - show realistic patterns for new users  
+    // Generate ad account topup data based on actual wallet-to-ad-account transfers + pending requests
   const spendData = useMemo(() => {
-    const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
+    // Use the same time range logic as balance data
+    let dataPoints, intervalType, intervalSize
     
-    // For new users with no spending yet, show all zeros
-    if (monthlySpend === 0) {
-      return Array.from({ length: dataPoints }).map((_, i) => {
-        // Generate recent dates based on time filter
-        const today = new Date()
-        let pointDate = new Date(today)
-        
-        if (timeFilter === "1 Year") {
-          pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
-        } else if (timeFilter === "3 Months") {
-          pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
-        } else if (timeFilter === "1 Month") {
-          pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+    switch (timeFilter) {
+      case "1 Day":
+        dataPoints = 24
+        intervalType = "hours"
+        intervalSize = 1
+        break
+      case "7 Days":
+        dataPoints = 7
+        intervalType = "days"
+        intervalSize = 1
+        break
+      case "1 Month":
+        dataPoints = 30
+        intervalType = "days"
+        intervalSize = 1
+        break
+      case "3 Months":
+        dataPoints = 13
+        intervalType = "weeks"
+        intervalSize = 7
+        break
+      case "Lifetime":
+        // For lifetime, we'll use the transaction history to determine the range
+        if (transactionsData.length === 0) {
+          // No transactions yet, show last 30 days as placeholder
+          dataPoints = 30
+          intervalType = "days"
+          intervalSize = 1
         } else {
-          pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+          const oldestTransaction = new Date(Math.min(...transactionsData.map((tx: any) => new Date(tx.created_at).getTime())))
+          const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
+          
+          // Ensure minimum of 1 data point
+          const safeDaysSinceOldest = Math.max(1, daysSinceOldest)
+          
+          if (safeDaysSinceOldest <= 30) {
+            dataPoints = Math.max(2, safeDaysSinceOldest) // Ensure minimum 2 points for chart rendering
+            intervalType = "days"
+            intervalSize = 1
+          } else if (safeDaysSinceOldest <= 90) {
+            dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 7))
+            intervalType = "weeks"
+            intervalSize = 7
+          } else {
+            dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 30))
+            intervalType = "months"
+            intervalSize = 30
+          }
         }
-        
-        return {
-          index: i,
-          date: timeFilter === "1 Year" 
-            ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-            : timeFilter === "3 Months"
-            ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : timeFilter === "1 Month"
-            ? pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : pointDate.toLocaleDateString('en-US', { weekday: 'short' }),
-          value: 0,
-        }
-      })
+        break
+      default:
+        dataPoints = 7
+        intervalType = "days"
+        intervalSize = 1
     }
-
-    // For users with spending, show realistic progression
-    return Array.from({ length: dataPoints }).map((_, i) => {
-      const progressRatio = i / (dataPoints - 1)
-              const historicalSpend = (monthlySpend / 30) * progressRatio * 0.65 // Use 65% as baseline
+    
+    // Generate time points
+    const today = new Date()
+    const timePoints = Array.from({ length: dataPoints }).map((_, i) => {
+      let pointDate = new Date(today)
+      
+      if (intervalType === "hours") {
+        pointDate.setHours(today.getHours() - (dataPoints - 1 - i))
+      } else if (intervalType === "days") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      } else if (intervalType === "weeks") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      } else if (intervalType === "months") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      }
+      
+      // Format date labels based on interval type
+      let dateLabel
+      if (intervalType === "hours") {
+        dateLabel = pointDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+      } else if (intervalType === "days") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (intervalType === "weeks") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (intervalType === "months") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      }
       
       return {
         index: i,
-        date: timeFilter === "1 Year" 
-          ? `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i % 12]} ${Math.floor(i / 12) + 2024}`
-          : timeFilter === "3 Months"
-          ? `${['Feb', 'Mar', 'Apr', 'May'][Math.floor(i / 30)] || 'May'} ${(i % 30) + 1}`
-          : timeFilter === "1 Month"
-          ? `May ${i + 1}`
-          : `${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i % 7]}`,
-        value: Math.max(0, Math.round(historicalSpend)),
+        date: dateLabel,
+        pointDate,
+        value: 0 // Default to zero
       }
     })
-  }, [monthlySpend, timeFilter])
+    
+    // Get topup requests data
+    const topupRequests = Array.isArray(topupRequestsData) ? topupRequestsData : topupRequestsData?.requests || []
+    
+    // Calculate ad account topups from completed transactions
+    if (transactionsData.length > 0) {
+      // Filter for ad account topup transactions (type 'topup' with negative amount)
+      const topupTransactions = transactionsData.filter((tx: any) => 
+        tx.type === 'topup' && (tx.amount_cents < 0 || tx.description?.includes('Ad Account Top-up'))
+      )
+      
+      timePoints.forEach((point, i) => {
+        // Find all topup transactions that occurred during this time period
+        const nextPoint = timePoints[i + 1]
+        const periodStart = point.pointDate
+        const periodEnd = nextPoint ? nextPoint.pointDate : new Date()
+        
+        const topupsInPeriod = topupTransactions.filter((tx: any) => {
+          const txDate = new Date(tx.created_at)
+          return txDate >= periodStart && txDate < periodEnd
+        })
+        
+        // Sum up all topups in this period (convert to positive amounts, exclude fees)
+        const totalTopups = topupsInPeriod.reduce((sum: number, tx: any) => {
+          // Use the actual transfer amount, not including fees
+          // If metadata has the original amount, use that; otherwise use the transaction amount
+          const amount = tx.metadata?.original_amount_cents 
+            ? Math.abs(tx.metadata.original_amount_cents / 100)
+            : Math.abs((tx.amount_cents || 0) / 100)
+          return sum + amount
+        }, 0)
+        
+        point.value = totalTopups
+      })
+    }
+    
+    // Add pending/processing topup requests to show reserved amounts
+    if (topupRequests.length > 0) {
+      const pendingRequests = topupRequests.filter((req: any) => 
+        req.status === 'pending' || req.status === 'processing'
+      )
+      
+      timePoints.forEach((point, i) => {
+        // Find all pending requests that were created during this time period
+        const nextPoint = timePoints[i + 1]
+        const periodStart = point.pointDate
+        const periodEnd = nextPoint ? nextPoint.pointDate : new Date()
+        
+        const pendingInPeriod = pendingRequests.filter((req: any) => {
+          const reqDate = new Date(req.created_at)
+          return reqDate >= periodStart && reqDate < periodEnd
+        })
+        
+        // Sum up all pending requests in this period (exclude fees - use actual transfer amount)
+        const totalPending = pendingInPeriod.reduce((sum: number, req: any) => {
+          // The amount_cents in topup requests is the actual transfer amount (after fees deducted)
+          const amount = Math.abs((req.amount_cents || 0) / 100)
+          return sum + amount
+        }, 0)
+        
+        point.value += totalPending
+      })
+    }
+    
+    // Debug logging for All Time filter
+    if (timeFilter === "Lifetime") {
+      console.log('🔍 Spend Chart Final Data:', {
+        timeFilter,
+        dataPointsGenerated: timePoints.length,
+        firstPoint: timePoints[0],
+        lastPoint: timePoints[timePoints.length - 1],
+        allValues: timePoints.map(p => p.value)
+      })
+    }
+    
+    return timePoints
+  }, [timeFilter, transactionsData, topupRequestsData])
   
 
   
@@ -356,16 +607,37 @@ export function DashboardView() {
     }
   }
 
-  // Time filter options (simplified for now)
+  // Time filter options (practical ranges)
   const timeFilterOptions = [
+    { value: "1 Day", label: "24 Hours" },
     { value: "7 Days", label: "7 Days" },
     { value: "1 Month", label: "1 Month" },
     { value: "3 Months", label: "3 Months" },
-    { value: "6 Months", label: "6 Months" },
-    { value: "1 Year", label: "1 Year" }
+    { value: "Lifetime", label: "All Time" }
   ]
 
   const globalLoading = authLoading || isOrgLoading || isBizLoading || isAccLoading || isTransLoading;
+
+  // 🚀 LOADING SCREEN: Show beautiful loading screen during initial load
+  const shouldShowLoadingScreen = false && showLoadingScreen && (
+    authLoading || 
+    !user || 
+    !currentOrganizationId || 
+    isOrgLoading || 
+    isBizLoading || 
+    isAccLoading || 
+    isTransLoading
+  )
+
+  // Hide loading screen when data is ready
+  useEffect(() => {
+    if (!authLoading && user && currentOrganizationId && !isOrgLoading && !isBizLoading && !isAccLoading && !isTransLoading) {
+      // Add a small delay to show the completion
+      setTimeout(() => {
+        setShowLoadingScreen(false)
+      }, 500)
+    }
+  }, [authLoading, user, currentOrganizationId, isOrgLoading, isBizLoading, isAccLoading, isTransLoading])
 
   // Log errors for debugging but don't show debug panel
   if (adAccountsError || businessManagersError) {
@@ -376,8 +648,17 @@ export function DashboardView() {
     })
   }
 
-  // NOW we can have early returns - all hooks have been called
-  // Early return for loading states
+  // 🚀 SHOW LOADING SCREEN: Beautiful loading experience
+  if (shouldShowLoadingScreen) {
+    return (
+      <DashboardLoadingScreen 
+        isLoading={true}
+        onComplete={() => setShowLoadingScreen(false)}
+      />
+    )
+  }
+
+  // Simple loading state for now until we fix performance
   if (globalLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -464,7 +745,7 @@ export function DashboardView() {
                         className="text-sm data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-[#b4a0ff] data-[state=active]:shadow-none rounded-none px-2 py-1 h-8"
                       >
                         <CreditCard className="mr-2 h-4 w-4 text-[#b4a0ff]" />
-                        Account Spend
+                        Topups
                       </TabsTrigger>
                     </TabsList>
                   </div>
@@ -479,23 +760,17 @@ export function DashboardView() {
                         
                         {/* Time filter dropdown and refresh indicator */}
                         <div className="flex items-center gap-2">
-                        {/* Auto-refresh indicator and manual refresh */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
-                            <span className="hidden sm:inline">Auto-refresh (30min)</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={manualRefresh}
-                            disabled={isRefreshing}
-                            title="Refresh now"
-                          >
-                            <RefreshCw className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        {/* Manual refresh button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={manualRefresh}
+                          disabled={isRefreshing}
+                          title="Refresh now"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                        </Button>
                         
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -530,7 +805,8 @@ export function DashboardView() {
                                     (point, i) => {
                                       const maxValue = Math.max(...balanceData.map((p) => p.value), 1); // Ensure at least 1 to avoid division by zero
                                       const yPos = maxValue > 0 ? 100 - (point.value / maxValue) * 60 : 50; // Default to middle if no value
-                                      return `${(i / (balanceData.length - 1)) * 100},${yPos}`;
+                                      const xPos = balanceData.length > 1 ? (i / (balanceData.length - 1)) * 100 : 50;
+                                      return `${xPos},${yPos}`;
                                     }
                                   )
                                   .join(" L ")}`}
@@ -551,7 +827,7 @@ export function DashboardView() {
                                 key={i}
                                 className="absolute w-8 h-8 -translate-x-4 -translate-y-4 cursor-pointer z-20 flex items-center justify-center"
                                 style={{
-                                  left: `${(i / (balanceData.length - 1)) * 100}%`,
+                                  left: `${balanceData.length > 1 ? (i / (balanceData.length - 1)) * 100 : 50}%`,
                                   top: `${yPosition}%`,
                                 }}
                                 onMouseEnter={() => setHoveredBalanceIndex(i)}
@@ -596,29 +872,23 @@ export function DashboardView() {
                     <div className="p-4 pt-3">
                       <div className={typographyTokens.patterns.mutedMedium}>{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
                       
-                      {/* Spend amount with aligned controls */}
+                      {/* Ad Account Topups amount with aligned controls */}
                       <div className="flex justify-between items-center mb-4">
-                        <div className={typographyTokens.patterns.balanceLarge}>{formatCurrency(monthlySpend)}</div>
+                        <div className={typographyTokens.patterns.balanceLarge}>{formatCurrency(spendData.reduce((sum, point) => sum + point.value, 0))}</div>
                         
                         {/* Time filter dropdown and refresh indicator */}
                         <div className="flex items-center gap-2">
-                        {/* Auto-refresh indicator and manual refresh */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
-                            <span className="hidden sm:inline">Auto-refresh (30min)</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={manualRefresh}
-                            disabled={isRefreshing}
-                            title="Refresh now"
-                          >
-                            <RefreshCw className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        {/* Manual refresh button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={manualRefresh}
+                          disabled={isRefreshing}
+                          title="Refresh now"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+                        </Button>
                         
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -646,7 +916,7 @@ export function DashboardView() {
                               <div
                                 key={i}
                                 className="relative h-full flex items-end group cursor-pointer z-10"
-                                style={{ width: `${100 / spendData.length}%` }}
+                                style={{ width: `${spendData.length > 0 ? 100 / spendData.length : 100}%` }}
                                 onMouseEnter={() => setHoveredSpendIndex(i)}
                                 onMouseLeave={() => setHoveredSpendIndex(null)}
                               >
@@ -657,9 +927,9 @@ export function DashboardView() {
                                       : 'bg-gradient-to-t from-[#b4a0ff]/70 to-[#ffb4a0]/70'
                                   }`}
                                   style={{ 
-                                    height: monthlySpend > 0 
+                                    height: spendData.some(p => p.value > 0)
                                       ? `${Math.max(4, (point.value / Math.max(...spendData.map(p => p.value), 1)) * 100)}%`
-                                      : '4px' // Show minimal bars for zero spend
+                                      : '4px' // Show minimal bars for zero topups
                                   }}
                                 />
                                 {hoveredSpendIndex === i && (
@@ -685,8 +955,8 @@ export function DashboardView() {
                       </div>
 
                       <div className="flex justify-between items-center mt-4 pt-3 border-t">
-                        <div className={typographyTokens.patterns.mutedMedium}>Total spend this month</div>
-                        <div className={typographyTokens.patterns.balanceSmall}>{formatCurrency(monthlySpend)}</div>
+                        <div className={typographyTokens.patterns.mutedMedium}>Total topups (completed + pending)</div>
+                        <div className={typographyTokens.patterns.balanceSmall}>{formatCurrency(spendData.reduce((sum, point) => sum + point.value, 0))}</div>
                       </div>
                     </div>
                   </TabsContent>

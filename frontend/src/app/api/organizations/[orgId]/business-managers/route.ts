@@ -83,12 +83,15 @@ export async function GET(
     }))
 
     return NextResponse.json({
-      business_managers: transformedBusinessManagers,
-      total: transformedBusinessManagers.length
+      business_managers: transformedBusinessManagers
+    }, {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300', // Cache for 1 minute
+      }
     })
 
   } catch (error) {
-    console.error('Error in business managers API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error fetching business managers:', error)
+    return NextResponse.json({ error: 'Failed to fetch business managers' }, { status: 500 })
   }
 } 

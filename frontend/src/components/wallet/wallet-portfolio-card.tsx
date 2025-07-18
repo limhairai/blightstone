@@ -22,7 +22,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
   // Use optimized hooks instead of direct SWR calls
   const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
-  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions();
+  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({});
 
   const organization = data?.organizations?.[0];
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
@@ -88,28 +88,95 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       return [];
     }
     
-    const dataPoints = timeFilter === "1 Year" ? 12 : timeFilter === "3 Months" ? 12 : timeFilter === "1 Month" ? 30 : 7
+    // Use the same time range logic as dashboard
+    let dataPoints, intervalType, intervalSize
+    
+    switch (timeFilter) {
+      case "1 Day":
+        dataPoints = 24
+        intervalType = "hours"
+        intervalSize = 1
+        break
+      case "7 Days":
+        dataPoints = 7
+        intervalType = "days"
+        intervalSize = 1
+        break
+      case "1 Month":
+        dataPoints = 30
+        intervalType = "days"
+        intervalSize = 1
+        break
+      case "3 Months":
+        dataPoints = 13
+        intervalType = "weeks"
+        intervalSize = 7
+        break
+      case "Lifetime":
+        // For lifetime, we'll use the transaction history to determine the range
+        if (transactions.length === 0) {
+          // No transactions yet, show last 30 days as placeholder
+          dataPoints = 30
+          intervalType = "days"
+          intervalSize = 1
+        } else {
+          const oldestTransaction = new Date(Math.min(...transactions.map((tx: any) => new Date(tx.created_at).getTime())))
+          const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
+          
+          // Ensure minimum of 1 data point
+          const safeDaysSinceOldest = Math.max(1, daysSinceOldest)
+          
+          if (safeDaysSinceOldest <= 30) {
+            dataPoints = Math.max(2, safeDaysSinceOldest) // Ensure minimum 2 points for chart rendering
+            intervalType = "days"
+            intervalSize = 1
+          } else if (safeDaysSinceOldest <= 90) {
+            dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 7))
+            intervalType = "weeks"
+            intervalSize = 7
+          } else {
+            dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 30))
+            intervalType = "months"
+            intervalSize = 30
+          }
+        }
+        break
+      default:
+        dataPoints = 7
+        intervalType = "days"
+        intervalSize = 1
+    }
     
     // Generate time points
     const today = new Date()
     const timePoints = Array.from({ length: dataPoints }).map((_, i) => {
       let pointDate = new Date(today)
       
-      if (timeFilter === "1 Year") {
-        pointDate.setMonth(today.getMonth() - (dataPoints - 1 - i))
-      } else if (timeFilter === "3 Months") {
-        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * 7)
-      } else if (timeFilter === "1 Month") {
-        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
-      } else { // 7 Days
-        pointDate.setDate(today.getDate() - (dataPoints - 1 - i))
+      if (intervalType === "hours") {
+        pointDate.setHours(today.getHours() - (dataPoints - 1 - i))
+      } else if (intervalType === "days") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      } else if (intervalType === "weeks") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      } else if (intervalType === "months") {
+        pointDate.setDate(today.getDate() - (dataPoints - 1 - i) * intervalSize)
+      }
+      
+      // Format date labels based on interval type
+      let dateLabel
+      if (intervalType === "hours") {
+        dateLabel = pointDate.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+      } else if (intervalType === "days") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (intervalType === "weeks") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      } else if (intervalType === "months") {
+        dateLabel = pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       }
       
       return {
         index: i,
-        date: timeFilter === "1 Year" 
-          ? pointDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-          : pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: dateLabel,
         pointDate,
         value: 0 // Default to zero
       }
@@ -138,15 +205,30 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       });
     }
     
+    // Debug logging for wallet chart
+    if (timeFilter === "Lifetime") {
+      console.log('🔍 Wallet Chart Debug:', {
+        timeFilter,
+        transactionsCount: transactions.length,
+        dataPointsGenerated: timePoints.length,
+        firstPoint: timePoints[0],
+        lastPoint: timePoints[timePoints.length - 1],
+        allValues: timePoints.map(p => p.value),
+        totalBalance,
+        organization: organization?.balance_cents
+      })
+    }
+    
     return timePoints
   }, [totalBalance, timeFilter, transactions, organization])
 
-  // Time filter options
+  // Time filter options (practical ranges)
   const timeFilterOptions = [
+    { value: "1 Day", label: "24 Hours" },
     { value: "7 Days", label: "7 Days" },
     { value: "1 Month", label: "1 Month" },
     { value: "3 Months", label: "3 Months" },
-    { value: "1 Year", label: "1 Year" }
+    { value: "Lifetime", label: "All Time" }
   ]
   
   if (isDataLoading) {
@@ -348,7 +430,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
             <div
               className="absolute w-3 h-3 rounded-full bg-primary border-2 border-background pointer-events-none z-10 transition-all duration-200"
               style={{
-                left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
+                left: `${(hoveredIndex / Math.max(balanceData.length - 1, 1)) * 100}%`,
                 top: `${(() => {
                   const maxValue = Math.max(...balanceData.map((p) => p.value), 1);
                   return maxValue > 0 ? 100 - (balanceData[hoveredIndex].value / maxValue) * 80 : 50;
@@ -363,7 +445,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
             <div
               className="absolute bg-popover border border-border rounded-md px-2 py-1 text-xs shadow-lg pointer-events-none z-20"
               style={{
-                left: `${(hoveredIndex / (balanceData.length - 1)) * 100}%`,
+                left: `${(hoveredIndex / Math.max(balanceData.length - 1, 1)) * 100}%`,
                 top: `${(() => {
                   const maxValue = Math.max(...balanceData.map((p) => p.value), 1);
                   return maxValue > 0 ? 100 - (balanceData[hoveredIndex].value / maxValue) * 80 : 50;

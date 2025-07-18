@@ -61,8 +61,42 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(errorData, { status: response.status });
         }
 
-        const data = await response.json();
-        return NextResponse.json(data);
+        const backendData = await response.json();
+        
+        // After successful backend sync, also sync pixels
+        console.log('🔍 Sync API: Backend sync completed, now syncing pixels...');
+        
+        let pixelSyncResults = null;
+        try {
+            const pixelSyncResponse = await fetch(`${request.url.split('/sync')[0]}/sync-pixels`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': request.headers.get('Authorization') || '',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (pixelSyncResponse.ok) {
+                pixelSyncResults = await pixelSyncResponse.json();
+                console.log('🔍 Sync API: Pixel sync completed successfully');
+            } else {
+                console.error('🔍 Sync API: Pixel sync failed:', pixelSyncResponse.status);
+            }
+        } catch (pixelError) {
+            console.error('🔍 Sync API: Pixel sync error:', pixelError);
+        }
+
+        // Return combined results
+        return NextResponse.json({
+            ...backendData,
+            pixel_sync: pixelSyncResults ? {
+                success: true,
+                results: pixelSyncResults.results
+            } : {
+                success: false,
+                error: 'Pixel sync failed'
+            }
+        });
 
     } catch (error) {
         console.error('Admin sync API proxy error:', error);

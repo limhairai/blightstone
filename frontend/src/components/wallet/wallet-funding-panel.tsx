@@ -13,7 +13,7 @@ import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useAuth } from '@/contexts/AuthContext'
 import { useSWRConfig } from 'swr'
 import { formatCurrency } from '@/utils/format'
-import { refreshAfterBusinessManagerChange } from '@/lib/subscription-utils'
+// import { refreshAfterBusinessManagerChange } from '@/lib/subscription-utils' // File not found
 import { BankTransferDialog } from './bank-transfer-dialog'
 import { BinancePayDialog } from './binance-pay-dialog'
 
@@ -69,15 +69,15 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
         return
       }
       if (amountNum < 10) {
-        toast.error('Minimum Binance Pay amount is $10')
+        toast.error('Minimum crypto payment amount is $10')
         return
       }
       if (amountNum > 10000) {
-        toast.error('Maximum Binance Pay amount is $10,000')
+        toast.error('Maximum crypto payment amount is $10,000')
         return
       }
       
-      // Open Binance Pay dialog with the amount
+      // Open crypto payment dialog with the amount
       setShowBinancePayDialog(true)
       return;
     }
@@ -143,7 +143,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
     setShowBinancePayDialog(false)
     setAmount('')
     onSuccess?.()
-    toast.success('Binance Pay payment completed successfully')
+    toast.success('Crypto payment completed successfully')
   }
 
   const getMinAmount = () => {
@@ -278,7 +278,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
         onSuccess={handleBankTransferSuccess}
       />
 
-      {/* Binance Pay Dialog */}
+      {/* Crypto Payment Dialog */}
       <BinancePayDialog
         isOpen={showBinancePayDialog}
         onClose={() => setShowBinancePayDialog(false)}

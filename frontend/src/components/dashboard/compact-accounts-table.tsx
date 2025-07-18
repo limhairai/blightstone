@@ -27,6 +27,8 @@ import { useOrganizationStore } from "../../lib/stores/organization-store"
 import { useAdAccounts, useBusinessManagers } from "@/lib/swr-config"
 import { AssetDeactivationDialog } from "@/components/dashboard/AssetDeactivationDialog"
 import { useAssetDeactivation } from "@/hooks/useAssetDeactivation"
+import { shouldEnableAdAccountStatusDisplay } from "@/lib/config/pricing-config"
+import { getClientFriendlyStatus } from "@/lib/utils/status-utils"
 
 interface CompactAccountsTableProps {
   initialBusinessFilter?: string
@@ -55,7 +57,7 @@ export function CompactAccountsTable({
   }>({ open: false, asset: null });
 
   // Use optimized hooks instead of direct SWR calls
-  const { data: accounts, error, isLoading, mutate } = useAdAccounts(bmIdFilter);
+  const { data: accounts, error, isLoading, mutate } = useAdAccounts();
   const { data: businessManagers } = useBusinessManagers();
 
   // Transform accounts data
@@ -76,6 +78,9 @@ export function CompactAccountsTable({
       const quota = balanceDollars + spentDollars;
       const quotaUsage = quota > 0 ? Math.round((spentDollars / quota) * 100) : 0;
 
+      // Use shared utility for client-friendly status
+      const clientStatus = getClientFriendlyStatus(account.status, account.metadata);
+
       return {
         id: account.id,
         asset_id: account.asset_id || account.id,
@@ -83,7 +88,8 @@ export function CompactAccountsTable({
         adAccount: account.ad_account_id || account.dolphin_account_id,
         business: account.business_manager_name || 'Unknown',
         bmId: account.business_manager_id || null,
-        status: account.status,
+        status: clientStatus, // Use client-friendly status
+        rawStatus: account.status, // Keep original status for debugging
         is_active: account.is_active !== false, // Add is_active field
         balance: balanceDollars, // Keep original balance for backward compatibility
         availableSpend: availableSpend, // NEW: Available spend calculation

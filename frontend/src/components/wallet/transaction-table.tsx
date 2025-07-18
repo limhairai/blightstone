@@ -23,7 +23,7 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
   const { currentOrganizationId } = useOrganizationStore()
 
   // Use optimized hook instead of direct SWR call
-  const { data: fetchedTransactions, isLoading } = useTransactions();
+  const { data: fetchedTransactions, isLoading } = useTransactions({});
 
   // Transform API data to match our interface
   const transformedTransactions = fetchedTransactions?.transactions?.map((t: any) => ({
