@@ -174,6 +174,22 @@ export async function POST(request: NextRequest) {
 
         // Check plan limits before allowing applications using pricing config
         if (type === 'business_manager') {
+            // Check for existing pending application for the same domains
+            const { data: existingApplication, error: existingAppError } = await supabaseService
+                .from('application')
+                .select('application_id')
+                .eq('organization_id', organization_id)
+                .eq('request_type', 'new_business_manager')
+                .in('status', ['pending', 'processing'])
+                .contains('domains', domains)
+
+            if (existingApplication && existingApplication.length > 0) {
+                return NextResponse.json({
+                    error: 'Duplicate Application',
+                    message: 'An application for a business manager with these domains is already pending.'
+                }, { status: 409 });
+            }
+
             // Check if organization can add more business managers
             const canAddBM = await checkPlanLimit(organization_id, 'businessManagers');
 

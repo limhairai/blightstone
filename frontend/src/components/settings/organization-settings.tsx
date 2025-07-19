@@ -36,6 +36,27 @@ import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 import { getPlanPricing, shouldEnableTopupLimits, shouldEnablePixelLimits } from "@/lib/config/pricing-config"
 import { countAccountsByClientStatus } from "@/lib/utils/status-utils"
 
+function UsageLimitItem({ label, used, limit }: { label: string; used: number; limit: number }) {
+  const displayLimit = limit === -1 ? '∞' : limit
+  const percentage = limit === -1 || limit === 0 ? 0 : Math.min(100, (used / limit) * 100)
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">{label}</Label>
+        <span className="text-sm text-muted-foreground">
+          {used} / {displayLimit}
+        </span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2">
+        <div
+          className="bg-gradient-to-r from-violet-500 to-red-400 h-2 rounded-full"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
@@ -354,105 +375,40 @@ export function OrganizationSettings() {
                 Your current usage across different resources
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Business Managers Usage */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-foreground">Business Managers</Label>
-                  <span className="text-sm text-muted-foreground">
-                                            {activeBusinesses} / {planLimits.businessManagers === -1 ? '∞' : planLimits.businessManagers}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
-                    style={{ 
-                      width: `${planLimits.businessManagers === -1 ? 0 : Math.min(100, (activeBusinesses / planLimits.businessManagers) * 100)}%` 
-                    }}
-                  ></div>
-                </div>
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                <UsageLimitItem 
+                  label="Business Managers" 
+                  used={activeBusinesses} 
+                  limit={planLimits.businessManagers} 
+                />
+                <UsageLimitItem 
+                  label="Ad Accounts" 
+                  used={activeAccounts} 
+                  limit={planLimits.adAccounts} 
+                />
+                {shouldEnablePixelLimits() && (
+                  <UsageLimitItem 
+                    label="Pixels" 
+                    used={activePixels} 
+                    limit={planLimits.pixels} 
+                  />
+                )}
               </div>
-
-              {/* Ad Accounts Usage */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-foreground">Ad Accounts</Label>
-                  <span className="text-sm text-muted-foreground">
-                                            {activeAccounts} / {planLimits.adAccounts === -1 ? '∞' : planLimits.adAccounts}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
-                    style={{ 
-                      width: `${planLimits.adAccounts === -1 ? 0 : Math.min(100, (activeAccounts / planLimits.adAccounts) * 100)}%` 
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Pixels Usage */}
-              {shouldEnablePixelLimits() && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-foreground">Facebook Pixels</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {activePixels} / {planLimits.pixels === -1 ? '∞' : planLimits.pixels}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
-                      style={{ 
-                        width: `${planLimits.pixels === -1 ? 0 : Math.min(100, (activePixels / planLimits.pixels) * 100)}%` 
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Monthly Topup Usage */}
-              {shouldEnableTopupLimits() && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-foreground">Monthly Topup Limit</Label>
-                    <span className="text-sm text-muted-foreground">
-                      ${monthlyTopupUsage.toLocaleString()} / ${planLimits.monthlyTopupLimit === -1 ? '∞' : planLimits.monthlyTopupLimit.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
-                      style={{ 
-                        width: `${planLimits.monthlyTopupLimit === -1 ? 0 : Math.min(100, (monthlyTopupUsage / planLimits.monthlyTopupLimit) * 100)}%` 
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Current Plan Summary */}
-              <div className="pt-2 border-t border-border">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Current Plan</span>
-                  <span className="text-foreground font-medium">{currentPlan.name}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
+              
+              <div className="mt-6 pt-4 border-t border-border/20">
+                <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Ad Spend Fee</span>
-                  <span className="text-foreground font-medium">{currentPlan.adSpendFee}%</span>
+                  <span className="font-semibold text-foreground">
+                    {currentPlan.adSpendFee > 0 ? `${currentPlan.adSpendFee}%` : '0%'}
+                  </span>
                 </div>
-                {planLimits.monthlyTopupLimit && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly Topup Limit</span>
-                    <span className="text-foreground font-medium">${planLimits.monthlyTopupLimit.toLocaleString()}</span>
-                  </div>
-                )}
-                {currentPlan.id !== 'free' && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Domains per BM</span>
-                    <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
-                  </div>
-                )}
+                <div className="flex justify-between items-center text-sm mt-2">
+                  <span className="text-muted-foreground">Domains per BM</span>
+                  <span className="font-semibold text-foreground">
+                    {getPlanPricing(subscriptionPlan?.id as 'starter' | 'growth' | 'scale')?.domainsPerBm}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>

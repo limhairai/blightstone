@@ -448,17 +448,21 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                   <h3 className="text-sm font-medium text-foreground mb-3">Monthly Limits</h3>
                   {limitInfo.hasLimit ? (
                     <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Monthly Limit:</span>
-                        <span className="text-sm font-medium text-foreground">${limitInfo.limit?.toLocaleString()}</span>
+                      <div className="flex justify-between items-center text-sm">
+                        <p className="text-muted-foreground">Monthly Limit:</p>
+                        <p className="font-medium text-foreground">
+                          {limitInfo.limit === -1 ? 'Unlimited' : formatCurrency(limitInfo.limit)}
+                        </p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Used:</span>
-                        <span className="text-sm font-medium text-foreground">${limitInfo.currentUsage.toLocaleString()}</span>
+                      <div className="flex justify-between items-center text-sm">
+                        <p className="text-muted-foreground">Used:</p>
+                        <p className="font-medium text-foreground">{formatCurrency(limitInfo.currentUsage)}</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Available:</span>
-                        <span className="text-sm font-medium text-green-400">${limitInfo.available?.toLocaleString()}</span>
+                      <div className="flex justify-between items-center text-sm">
+                        <p className="text-muted-foreground">Available:</p>
+                        <p className={`font-medium ${limitInfo.available > 0 || limitInfo.limit === -1 ? 'text-green-500' : 'text-red-500'}`}>
+                          {limitInfo.limit === -1 ? 'Unlimited' : formatCurrency(limitInfo.available)}
+                        </p>
                       </div>
                     </div>
                   ) : (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -30,12 +30,44 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
   const [loading, setLoading] = useState(false)
   const [showBankTransferDialog, setShowBankTransferDialog] = useState(false)
   const [showBinancePayDialog, setShowBinancePayDialog] = useState(false)
+  const [feeCalculation, setFeeCalculation] = useState<any>(null)
 
   // Use optimized hook instead of direct SWR call
   const { data: orgData, isLoading: isOrgLoading } = useCurrentOrganization(currentOrganizationId);
 
   const organization = orgData?.organizations?.[0];
   const currentBalance = (organization?.balance_cents ?? 0) / 100;
+
+  useEffect(() => {
+    const amountNum = parseFloat(amount)
+    if (isNaN(amountNum) || amountNum <= 0) {
+      setFeeCalculation(null)
+      return
+    }
+
+    let feePercentage = 0;
+    switch (paymentMethod) {
+      case 'credit_card':
+        feePercentage = 0.03; // 3%
+        break;
+      case 'crypto':
+        feePercentage = 0.01; // 1%
+        break;
+      case 'bank_transfer':
+        feePercentage = 0.005; // 0.5%
+        break;
+    }
+
+    const feeAmount = amountNum * feePercentage;
+    const totalAmount = amountNum + feeAmount;
+
+    setFeeCalculation({
+      baseAmount: amountNum,
+      feeAmount,
+      totalAmount,
+      feePercentage: feePercentage * 100
+    })
+  }, [amount, paymentMethod])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -109,7 +141,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
           'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          amount: amountNum,
+          amount: feeCalculation?.totalAmount, // Use totalAmount from feeCalculation
           organizationId: currentOrganizationId,
           returnUrl: `${window.location.origin}/dashboard/wallet`
         })
@@ -205,9 +237,16 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
               required
               disabled={loading}
             />
-            <p className="text-xs text-muted-foreground">
-              {getAmountDescription()}
-            </p>
+            {feeCalculation ? (
+              <p className="text-xs text-muted-foreground pt-1">
+                + ${formatCurrency(feeCalculation.feeAmount)} ({feeCalculation.feePercentage.toFixed(1)}%) gateway fee =
+                <span className="text-foreground font-semibold"> ${formatCurrency(feeCalculation.totalAmount)} Total</span>
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground pt-1">
+                {getAmountDescription()}
+              </p>
+            )}
           </div>
 
           {/* Quick Amount Buttons */}
@@ -227,7 +266,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
             ))}
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 pt-4 border-t border-border/20">
             <Label>Payment Method</Label>
             <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} disabled={loading}>
               <div className="flex items-center space-x-2">
@@ -253,24 +292,25 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
               </div>
             </RadioGroup>
           </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0" 
-            disabled={loading}
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {paymentMethod === 'bank_transfer' 
-              ? 'Get Bank Transfer Details' 
-              : paymentMethod === 'crypto'
-                ? 'Pay with Crypto'
-                : `Add ${formatCurrency(parseFloat(amount) || 0)} to Wallet`
-            }
-          </Button>
         </form>
       </CardContent>
-      
-      {/* Bank Transfer Dialog */}
+      <Button
+        onClick={handleSubmit}
+        disabled={loading || !amount || parseFloat(amount) <= 0}
+        className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black h-12 text-base"
+      >
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <span>
+            {feeCalculation
+              ? `Continue with $${formatCurrency(feeCalculation.totalAmount)}`
+              : 'Add Funds to Wallet'}
+          </span>
+        )}
+      </Button>
+
+      {/* Dialogs for Bank Transfer and Crypto */}
       <BankTransferDialog
         isOpen={showBankTransferDialog}
         onClose={() => setShowBankTransferDialog(false)}
