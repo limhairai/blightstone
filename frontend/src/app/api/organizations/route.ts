@@ -322,9 +322,10 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
 
     // Clear cache for this organization
+    const orgCache = global.orgCache || new Map()
     const cacheKey = `${user.id}-${targetOrgId}`;
-    orgCache?.delete(cacheKey);
-    orgCache?.delete(`${user.id}-all`);
+    orgCache.delete(cacheKey);
+    orgCache.delete(`${user.id}-all`);
 
     return NextResponse.json(updatedOrg);
   } catch (error) {

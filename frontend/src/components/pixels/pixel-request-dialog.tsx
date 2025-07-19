@@ -41,6 +41,12 @@ export function PixelRequestDialog({ businessManagers, onRequestSubmitted }: Pix
       return
     }
 
+    // Validate that pixel_id is numeric
+    if (!/^\d+$/.test(formData.pixel_id)) {
+      toast.error('Pixel ID must contain only numbers')
+      return
+    }
+
     setLoading(true)
     
     try {
@@ -117,30 +123,34 @@ export function PixelRequestDialog({ businessManagers, onRequestSubmitted }: Pix
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="pixel_id">Pixel ID</Label>
-            <Input
-              id="pixel_id"
-              value={formData.pixel_id}
-              onChange={(e) => setFormData(prev => ({ 
-                ...prev, 
-                pixel_id: e.target.value
-              }))}
-              placeholder="Enter your pixel ID"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="pixel_name">Pixel Name (Optional)</Label>
-            <Input
-              id="pixel_name"
-              value={formData.pixel_name}
-              onChange={(e) => setFormData(prev => ({ ...prev, pixel_name: e.target.value }))}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="pixel_id">Pixel ID</Label>
+                  <Input
+                    id="pixel_id"
+                    value={formData.pixel_id}
+                    onChange={(e) => {
+                      // Only allow numeric characters
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '')
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        pixel_id: numericValue
+                      }))
+                    }}
+                    placeholder="Enter your pixel ID (numbers only)"
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="pixel_name">Pixel Name (Optional)</Label>
+                  <Input
+                    id="pixel_name"
+                    value={formData.pixel_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, pixel_name: e.target.value }))}
               placeholder="Enter pixel name (optional)"
-            />
+                  />
           </div>
 
           <div className="flex justify-end space-x-2">

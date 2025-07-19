@@ -132,12 +132,12 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
             intervalSize = 1
           } else if (safeDaysSinceOldest <= 90) {
             dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 7))
-            intervalType = "weeks"
-            intervalSize = 7
-          } else {
+          intervalType = "weeks"
+          intervalSize = 7
+        } else {
             dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 30))
-            intervalType = "months"
-            intervalSize = 30
+          intervalType = "months"
+          intervalSize = 30
           }
         }
         break

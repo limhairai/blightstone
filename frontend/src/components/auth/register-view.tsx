@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { Skeleton } from "../ui/skeleton"
 import { toast } from "sonner"
 import { validateRegistrationForm, showValidationErrors } from "../../lib/form-validation"
+import { ArrowLeft } from "lucide-react"
 
 export function RegisterView() {
   const [email, setEmail] = useState("");
@@ -91,49 +92,127 @@ export function RegisterView() {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    setError("");
+    
+    try {
+      const result = await signInWithGoogle();
+      if (result.error) {
+        let errorMessage = "Failed to sign up with Google. Please try again.";
+        
+        if (result.error.message.includes('popup_closed_by_user')) {
+          errorMessage = "Google sign-up was cancelled.";
+        } else if (result.error.message.includes('access_denied')) {
+          errorMessage = "Google sign-up access was denied.";
+        } else {
+          errorMessage = result.error.message;
+        }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+      
+      toast.success("Account created!", {
+        description: "Welcome to AdHub."
+      });
+    } catch (err: any) {
+      const errorMessage = err?.message || "An unexpected error occurred during Google sign up.";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleMagicLinkSignUp = async () => {
+    if (!email) {
+      setError("Please enter your email address first.");
+      return;
+    }
+    
+    setError("");
+    
+    try {
+      const result = await signInWithMagicLink(email);
+      if (result.error) {
+        const errorMessage = result.error.message || "Failed to send magic link. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return;
+      }
+    } catch (err: any) {
+      const errorMessage = err?.message || "An unexpected error occurred while sending magic link.";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center space-y-4">
-          <Skeleton className="w-24 h-24 mx-auto" />
-          <p className="text-muted-foreground">Creating your account...</p>
+      <div className="min-h-screen bg-black relative overflow-hidden">
+        {/* Subtle gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+        
+        {/* Main content */}
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+          <div className="w-full max-w-md text-center space-y-4">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-gray-400">Creating your account...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Logo positioned at top left */}
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      
+      {/* Home button */}
       <div className="absolute top-6 left-6 z-10">
-        <Link href="https://adhub.tech">
-          <AdHubLogo size="lg" />
-        </Link>
+        <a 
+          href="https://adhub.tech" 
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Home
+        </a>
       </div>
       
-      {/* Left side - Register Form */}
-      <div className="flex-1 flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-20 xl:px-24 bg-muted/30">
-        <div className="mx-auto w-full max-w-sm lg:w-96">
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Create your account</h2>
-            <p className="text-muted-foreground mb-6">And get access to ad accounts on demand.</p>
+      {/* Main content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+        <div className="w-full max-w-md space-y-8">
+          
+          {/* Logo */}
+          <div className="flex justify-center">
+            <AdHubLogo size="sm" />
           </div>
 
-          {/* Google OAuth button */}
-          <div className="mb-4">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-semibold text-white">Create a AdHub Account</h1>
+            <p className="text-gray-400">
+              Already have an account?{" "}
+              <Link href="/login" className="text-white underline hover:no-underline">
+                Log in
+              </Link>
+              .
+            </p>
+          </div>
+
+          {/* Social login buttons */}
+          <div className="grid grid-cols-2 gap-3">
             <Button
-              className="w-full h-11 rounded-md border border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-3"
               type="button"
-              onClick={async () => {
-                try {
-                  await signInWithGoogle({ redirectTo: `${window.location.origin}/onboarding` });
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to sign up with Google");
-                }
-              }}
+              onClick={handleGoogleSignUp}
               disabled={loading}
+              className="h-11 bg-gradient-to-r from-[#b4a0ff]/30 to-[#ffb4a0]/30 hover:from-[#b4a0ff]/40 hover:to-[#ffb4a0]/40 border border-gray-600 text-white rounded-md font-normal"
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -151,136 +230,100 @@ export function RegisterView() {
                   fill="#EA4335"
                 />
               </svg>
-              {loading ? "Signing up..." : "Continue with Google"}
+              Continue with Google
             </Button>
-          </div>
 
-          {/* Magic Link button */}
-          <div className="mb-4">
             <Button
-              className="w-full h-11 rounded-md border border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-3"
               type="button"
-              onClick={async () => {
-                if (!email) {
-                  toast.error("Please enter your email address first");
-                  return;
-                }
-                try {
-                  await signInWithMagicLink(email, { redirectTo: `${window.location.origin}/onboarding` });
-                  toast.success("Magic link sent! Check your email to complete registration.");
-                } catch (err: any) {
-                  toast.error(err?.message || "Failed to send magic link");
-                }
-              }}
-              disabled={loading || !email}
+              onClick={handleMagicLinkSignUp}
+              disabled={loading}
+              className="h-11 bg-gradient-to-r from-[#b4a0ff]/30 to-[#ffb4a0]/30 hover:from-[#b4a0ff]/40 hover:to-[#ffb4a0]/40 border border-gray-600 text-white rounded-md font-normal"
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
-              {loading ? "Sending..." : "Continue with Magic Link"}
+              Continue with Magic Link
             </Button>
           </div>
 
-          <div className="relative mb-4">
+          {/* Divider */}
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-muted-foreground/20" />
+              <div className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-background px-4 text-muted-foreground">or</span>
+              <span className="bg-black px-4 text-gray-400">or</span>
             </div>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
+              <label htmlFor="email" className="block text-sm text-gray-300 mb-1">
                 Email
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
-                className="h-10 rounded-md px-3 text-sm bg-background border-border"
+                placeholder="alan.turing@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                autoComplete="email"
+                disabled={loading}
+                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
+              <label htmlFor="password" className="block text-sm text-gray-300 mb-1">
                 Password
               </label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
-                className="h-10 rounded-md px-3 text-sm bg-background border-border"
+                placeholder="••••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="new-password"
+                disabled={loading}
+                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
               />
             </div>
 
             {error && (
-              <div className="text-red-500 text-sm">{error}</div>
+              <div className="text-red-400 text-sm">{error}</div>
             )}
 
-            <div className="pt-2">
               <Button
-                className="w-full h-10 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black font-medium"
                 type="submit"
                 disabled={loading}
+              className="w-full h-11 bg-white text-black hover:bg-gray-100 rounded-md font-medium"
               >
-                {loading ? "Creating account..." : "Sign Up"}
+              {loading ? "Creating Account..." : "Create Account"}
               </Button>
-            </div>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              Have an account?{" "}
-              <Link
-                href="/login"
-                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity font-medium underline"
-              >
-                Sign In Now
+          {/* Terms */}
+          <div className="text-center">
+            <p className="text-xs text-gray-500">
+              By signing up, you agree to our{" "}
+              <Link href="/terms" className="text-gray-400 underline hover:no-underline">
+                Terms
               </Link>
+              ,{" "}
+              <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
+                Acceptable Use
+              </Link>
+              , and{" "}
+              <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
+                Privacy Policy
+              </Link>
+              .
             </p>
-          </div>
-
-          <div className="mt-6 text-xs text-muted-foreground text-center">
-            By continuing, you agree to AdHub&apos;s{" "}
-            <Link href="/terms" className="underline hover:text-foreground">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline hover:text-foreground">
-              Privacy Policy
-            </Link>
-            , and to receive periodic emails with updates.
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Testimonial/Quote */}
-      <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-20 xl:px-24 bg-background">
-        <div className="mx-auto max-w-xl">
-          <blockquote className="text-xl font-medium text-foreground leading-relaxed mb-8">
-            "AdHub has revolutionized how we manage our Facebook ad campaigns. The seamless integration and instant account access has saved us countless hours of setup time. Our team can now focus on what matters most - creating winning ad strategies."
-          </blockquote>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">SM</span>
-            </div>
-            <div>
-              <div className="font-medium text-foreground">@SarahMarketing</div>
-            </div>
           </div>
         </div>
       </div>
     </div>
-  );
+  )
 } 

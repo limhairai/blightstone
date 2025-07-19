@@ -62,20 +62,20 @@ export default function PixelsPage() {
   )
 
   const { data: businessManagersData, error: bmError, isLoading: bmLoading, mutate: mutateBM } = useBusinessManagers()
-
+      
   // Transform and extract data
   const pixels = pixelsData?.pixels ? pixelsData.pixels.map((pixel: any) => ({
-    id: pixel.id || pixel.pixelId,
+        id: pixel.id || pixel.pixelId,
     type: pixel.type || 'asset',
-    pixel_id: pixel.pixelId,
-    pixel_name: pixel.pixelName,
-    business_manager_id: pixel.businessManagerId,
-    business_manager_name: pixel.businessManagerName,
-    adAccounts: pixel.adAccounts || [],
-    status: pixel.status,
-    is_active: pixel.isActive !== false,
-    application_id: pixel.applicationId,
-    created_at: pixel.createdAt
+        pixel_id: pixel.pixelId,
+        pixel_name: pixel.pixelName,
+        business_manager_id: pixel.businessManagerId,
+        business_manager_name: pixel.businessManagerName,
+        adAccounts: pixel.adAccounts || [],
+        status: pixel.status,
+        is_active: pixel.isActive !== false,
+        application_id: pixel.applicationId,
+        created_at: pixel.createdAt
   })) : []
 
   // The API returns an array directly, not an object with business_managers property
@@ -282,12 +282,12 @@ export default function PixelsPage() {
                             <span>BM: {(pixel as any).bm_name || pixel.business_manager_name}</span>
                           </>
                         )}
-                        <span>•</span>
-                        <span>
-                          {isPendingApplication ? 'Awaiting connection' : 
-                            `${pixel.adAccounts?.length || (pixel as any).ad_accounts?.length || 0} ad account${((pixel.adAccounts?.length || (pixel as any).ad_accounts?.length || 0) !== 1) ? 's' : ''}`
-                          }
-                        </span>
+                        {isPendingApplication && (
+                          <>
+                            <span>•</span>
+                            <span>Awaiting connection</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

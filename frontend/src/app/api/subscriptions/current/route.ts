@@ -140,14 +140,13 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('organization_id', organizationId)
 
-    // Count active business managers (bound AND client-activated)
-    const { count: activeBMCount } = await supabase
-      .from('asset_binding')
-      .select('*, asset!inner(type)', { count: 'exact', head: true })
-      .eq('organization_id', organizationId)
-      .eq('asset.type', 'business_manager')
-      .eq('status', 'active')
-      .eq('is_active', true)
+    // Count active business managers using the same RPC as other APIs
+    const { data: bmAssets, error: bmError } = await supabase.rpc('get_organization_assets', {
+      p_organization_id: organizationId,
+      p_asset_type: 'business_manager'
+    })
+    
+    const activeBMCount = bmError ? 0 : (bmAssets || []).length
 
     // Count pending business manager applications
     const { count: pendingBMCount } = await supabase
@@ -157,14 +156,13 @@ export async function GET(request: NextRequest) {
       .eq('request_type', 'new_business_manager')
       .in('status', ['pending', 'processing'])
 
-    // Count active ad accounts (bound AND client-activated)
-    const { count: activeAdAccountsCount } = await supabase
-      .from('asset_binding')
-      .select('*, asset!inner(type)', { count: 'exact', head: true })
-      .eq('organization_id', organizationId)
-      .eq('asset.type', 'ad_account')
-      .eq('status', 'active')
-      .eq('is_active', true)
+    // Count active ad accounts using the same RPC as ad accounts API
+    const { data: adAccountAssets, error: adAccountError } = await supabase.rpc('get_organization_assets', {
+      p_organization_id: organizationId,
+      p_asset_type: 'ad_account'
+    })
+    
+    const activeAdAccountsCount = adAccountError ? 0 : (adAccountAssets || []).length
 
     // Count pending ad account applications
     const { count: pendingAdAccountsCount } = await supabase

@@ -52,15 +52,15 @@ export default function SupportPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
-  
+
   // Debounce search query to prevent excessive API calls
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500)
 
   // Build query parameters
   const queryParams = useMemo(() => {
-    const params = new URLSearchParams()
-    if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
-    if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter)
+      const params = new URLSearchParams()
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
+      if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter)
     if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
     return params.toString()
   }, [statusFilter, categoryFilter, debouncedSearchQuery])
@@ -99,7 +99,7 @@ export default function SupportPage() {
     // Optimistic update
     const optimisticData = {
       tickets: tickets.map((ticket: any) => 
-        ticket.id === updatedTicket.id ? updatedTicket : ticket
+      ticket.id === updatedTicket.id ? updatedTicket : ticket
       )
     }
     mutate(optimisticData, false)
@@ -273,7 +273,7 @@ export default function SupportPage() {
                 // Optimistic update
                 const optimisticData = {
                   tickets: tickets.map((t: any) => 
-                    t.id === updatedTicket.id ? updatedTicket : t
+                  t.id === updatedTicket.id ? updatedTicket : t
                   )
                 }
                 mutate(optimisticData, false)

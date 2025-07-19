@@ -108,11 +108,11 @@ export default function ClientTopupRequestsPage() {
   // OPTIMIZATION: Only load transactions when needed (conditional SWR)
   const transactionsQuery = useTransactions(
     shouldLoadTransactions ? {
-      type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
-      search: debouncedSearchQuery || undefined,
-      status: statusFilter !== 'all' ? statusFilter : undefined,
-      business_id: businessFilter !== 'all' ? businessFilter : undefined,
-      date: date ? format(date, 'yyyy-MM-dd') : undefined,
+    type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
+    search: debouncedSearchQuery || undefined,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    business_id: businessFilter !== 'all' ? businessFilter : undefined,
+    date: date ? format(date, 'yyyy-MM-dd') : undefined,
     } : undefined // Pass undefined to disable the hook
   )
   

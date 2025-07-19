@@ -44,50 +44,67 @@ export function ForgotPasswordView() {
 
   if (sent) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <div className="px-6 py-4 md:px-8">
-          <AdHubLogo size="lg" />
+      <div className="min-h-screen bg-black relative overflow-hidden">
+        {/* Subtle gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+        
+        {/* Home button */}
+        <div className="absolute top-6 left-6 z-10">
+          <a 
+            href="https://adhub.tech" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Home
+          </a>
         </div>
         
-        <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        {/* Main content */}
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
           <div className="w-full max-w-md space-y-8">
-            <Card className="border-border">
-              <CardHeader className="text-center pb-4">
-                <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle className="w-8 h-8 text-[#34D197] dark:text-[#34D197]" />
+            
+            {/* Success icon */}
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-400" />
+              </div>
+            </div>
+
+            {/* Header */}
+            <div className="text-center space-y-2">
+              <h1 className="text-2xl font-semibold text-white">Check Your Email</h1>
+              <p className="text-gray-400">
+                We've sent password reset instructions to {email}
+              </p>
                 </div>
-                <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
-                <CardDescription>
-                  We&apos;ve sent password reset instructions to {email}
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent className="space-y-6">
-                <div className="text-center text-sm text-muted-foreground space-y-2">
-                  <p>
+
+            {/* Instructions */}
+            <div className="text-center">
+              <p className="text-sm text-gray-500">
                     Click the link in the email to reset your password. 
-                    If you don&apos;t see it, check your spam folder.
+                If you don't see it, check your spam folder.
                   </p>
                 </div>
 
+            {/* Actions */}
                 <div className="space-y-3">
-                  <Link href="/login" className="block">
-                    <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black">
+              <Link href="/login">
+                <Button className="w-full h-11 bg-white text-black hover:bg-gray-100 rounded-md font-medium">
                       <ArrowLeft className="w-4 h-4 mr-2" />
                       Back to Sign In
                     </Button>
                   </Link>
                   
                   <Button
-                    variant="outline"
-                    className="w-full"
                     onClick={() => setSent(false)}
+                className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white rounded-md font-normal"
                   >
                     Try Different Email
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
@@ -95,66 +112,85 @@ export function ForgotPasswordView() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <div className="px-6 py-4 md:px-8">
-        <AdHubLogo size="lg" />
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      
+      {/* Home button */}
+      <div className="absolute top-6 left-6 z-10">
+        <Link 
+          href="https://adhub.tech" 
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Home
+        </Link>
       </div>
       
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Main content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md space-y-8">
-          <Card className="border-border">
-            <CardHeader className="text-center pb-4">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <Mail className="w-8 h-8 text-primary" />
+          
+          {/* Icon */}
+          <div className="flex justify-center">
+            <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+              <Mail className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-semibold text-white">Forgot Password?</h1>
+            <p className="text-gray-400">
+              No worries! Enter your email and we'll send you reset instructions.
+            </p>
               </div>
-              <CardTitle className="text-2xl font-bold">Forgot Password?</CardTitle>
-              <CardDescription>
-                No worries! Enter your email and we&apos;ll send you reset instructions.
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-2">
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm text-gray-300 mb-1">
+                Email
+              </label>
                   <Input
+                id="email"
                     type="email"
-                    placeholder="Enter your email address"
+                placeholder="alan.turing@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                required
                     disabled={loading}
-                    required
-                    className="h-12 px-4"
+                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
                   />
                 </div>
 
-                <div className="space-y-3">
                   <Button
                     type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
                     disabled={loading}
+              className="w-full h-11 bg-white text-black hover:bg-gray-100 rounded-md font-medium"
                   >
                     {loading ? "Sending..." : "Send Reset Instructions"}
                   </Button>
-                  
-                  <Link href="/login" className="block">
-                    <Button variant="outline" className="w-full h-12">
-                      <ArrowLeft className="w-4 h-4 mr-2" />
+          </form>
+
+          {/* Back to login */}
+          <div className="text-center">
+            <Link href="/login" className="text-gray-400 hover:text-white text-sm">
+              <ArrowLeft className="w-4 h-4 inline mr-1" />
                       Back to Sign In
-                    </Button>
                   </Link>
                 </div>
-              </form>
 
-              <div className="mt-6 text-center text-sm text-muted-foreground">
-                <p>
+          {/* Footer link */}
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
                   Remember your password?{" "}
-                  <Link href="/login" className="text-primary hover:underline">
+              <Link href="/login" className="text-white underline hover:no-underline">
                     Sign in
                   </Link>
                 </p>
               </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

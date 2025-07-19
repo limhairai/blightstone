@@ -190,6 +190,8 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       .from('organizations')
       .update({
         plan_id: planId,
+        stripe_subscription_id: subscription.id, // Add this line
+        stripe_customer_id: subscription.customer as string, // Add this line
         subscription_status: subscription.status,
         current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
         current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : new Date().toISOString(),
@@ -252,6 +254,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     const { error: updateOrgError } = await supabase
       .from('organizations')
       .update({
+        stripe_subscription_id: subscription.id, // Add this line
+        stripe_customer_id: subscription.customer as string, // Add this line
         subscription_status: subscription.status,
         current_period_start: (subscription as any).current_period_start ? new Date((subscription as any).current_period_start * 1000).toISOString() : new Date().toISOString(),
         current_period_end: (subscription as any).current_period_end ? new Date((subscription as any).current_period_end * 1000).toISOString() : new Date().toISOString(),
@@ -299,6 +303,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     .from('organizations')
     .update({
       plan_id: 'free',
+      stripe_subscription_id: null, // Clear the subscription ID
       subscription_status: 'canceled',
       updated_at: new Date().toISOString(),
     })

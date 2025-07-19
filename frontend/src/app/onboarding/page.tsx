@@ -116,13 +116,11 @@ export default function OnboardingPage() {
               <SelectValue placeholder="Select your monthly ad spend" />
             </SelectTrigger>
             <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
-              <SelectItem value="0-1000" className="cursor-pointer hover:bg-accent/50 transition-colors">$0 - $1,000</SelectItem>
-              <SelectItem value="1000-5000" className="cursor-pointer hover:bg-accent/50 transition-colors">$1,000 - $5,000</SelectItem>
-              <SelectItem value="5000-10000" className="cursor-pointer hover:bg-accent/50 transition-colors">$5,000 - $10,000</SelectItem>
-              <SelectItem value="10000-25000" className="cursor-pointer hover:bg-accent/50 transition-colors">$10,000 - $25,000</SelectItem>
-              <SelectItem value="25000-50000" className="cursor-pointer hover:bg-accent/50 transition-colors">$25,000 - $50,000</SelectItem>
-              <SelectItem value="50000-100000" className="cursor-pointer hover:bg-accent/50 transition-colors">$50,000 - $100,000</SelectItem>
-              <SelectItem value="100000+" className="cursor-pointer hover:bg-accent/50 transition-colors">$100,000+</SelectItem>
+              <SelectItem value="1000-10000" className="cursor-pointer hover:bg-accent/50 transition-colors">$1K - $10K</SelectItem>
+              <SelectItem value="10000-100000" className="cursor-pointer hover:bg-accent/50 transition-colors">$10K - $100K</SelectItem>
+              <SelectItem value="100000-500000" className="cursor-pointer hover:bg-accent/50 transition-colors">$100K - $500K</SelectItem>
+              <SelectItem value="500000-1000000" className="cursor-pointer hover:bg-accent/50 transition-colors">$500K - $1M</SelectItem>
+              <SelectItem value="1000000+" className="cursor-pointer hover:bg-accent/50 transition-colors">$1M+</SelectItem>
             </SelectContent>
           </Select>
         </div>

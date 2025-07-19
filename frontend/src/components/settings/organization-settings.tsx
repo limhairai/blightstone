@@ -34,6 +34,7 @@ import { buildApiUrl, createAuthHeaders } from '../../lib/api-utils'
 import { useSubscription } from "@/hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 import { getPlanPricing, shouldEnableTopupLimits, shouldEnablePixelLimits } from "@/lib/config/pricing-config"
+import { countAccountsByClientStatus } from "@/lib/utils/status-utils"
 
 
 export function OrganizationSettings() {
@@ -82,9 +83,13 @@ export function OrganizationSettings() {
   const { data: topupUsage, isLoading: isTopupLoading } = useTopupUsage(
     shouldEnableTopupLimits() ? currentOrganizationId : null
   );
-  const { data: paymentMethods = [], error: paymentMethodsError } = usePaymentMethods(currentOrganizationId);
+  const { data: paymentMethodsData = [], error: paymentMethodsError } = usePaymentMethods(currentOrganizationId);
   const { data: billingHistoryData, error: billingHistoryError } = useBillingHistory(currentOrganizationId);
 
+  // Extract payment methods array from the API response
+  const paymentMethods = paymentMethodsData?.paymentMethods || [];
+
+  // Extract billing history from the API response
   const billingHistory = billingHistoryData?.invoices || [];
 
   const organization = orgData?.organizations?.[0];
@@ -100,15 +105,12 @@ export function OrganizationSettings() {
   const [loading, setLoading] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
 
-
   // Define handleManualRefresh before useEffect
   const handleManualRefresh = useCallback(async () => {
     if (refreshing) return;
     
     setRefreshing(true);
     try {
-      
-      
       // Refresh all organization-related data
       await Promise.all([
         mutate(`/api/organizations?id=${currentOrganizationId}`),
@@ -166,17 +168,31 @@ export function OrganizationSettings() {
 
   // Count only ACTIVE assets (not total)
   const activeBusinesses = businesses.filter((bm: any) => bm.status === 'active' && bm.is_active !== false).length
-  const activeAccounts = accounts.filter((acc: any) => acc.status === 'active' && acc.is_active !== false).length
+  const activeAccounts = countAccountsByClientStatus(accounts, 'active')
   const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
   const monthlyTopupUsage = topupUsage?.currentUsage || 0
-  
+
   // Debug logging to understand the data structure
   console.log('🔍 Settings Debug:', {
     totalAccounts: accounts.length,
     activeAccounts,
     accountsData: accounts.slice(0, 2), // Show first 2 accounts for debugging
     currentPlan: subscriptionPlan,
-    planLimits
+    planLimits,
+    // Add more detailed debugging
+    rawAccountsData: accData,
+    accountStatuses: accounts.map((acc: any) => ({ 
+      name: acc.name, 
+      status: acc.status, 
+      is_active: acc.is_active,
+      rawStatus: acc.rawStatus 
+    })),
+    filteringResults: {
+      totalCount: accounts.length,
+      activeStatusCount: accounts.filter((acc: any) => acc.status === 'active').length,
+      isActiveCount: accounts.filter((acc: any) => acc.is_active !== false).length,
+      bothConditions: accounts.filter((acc: any) => acc.status === 'active' && acc.is_active !== false).length
+    }
   })
   
   // Use real subscription plan data instead of hardcoded defaultPlans
@@ -218,14 +234,17 @@ export function OrganizationSettings() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update organization");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.details || errorData.error || "Failed to update organization";
+        throw new Error(errorMessage);
       }
       
       mutate(`/api/organizations?id=${currentOrganizationId}`);
       toast.success("Organization details updated successfully.")
       setEditOrgOpen(false)
     } catch (error) {
-      toast.error("Failed to update organization. Please try again.")
+      const errorMessage = error instanceof Error ? error.message : "Failed to update organization. Please try again.";
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

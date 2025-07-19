@@ -207,23 +207,23 @@ export function DashboardView() {
           intervalSize = 1
         } else {
           const oldestTransaction = new Date(Math.min(...transactionsData.map((tx: Transaction) => new Date(tx.created_at).getTime())))
-          const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
-          
+        const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
+        
           // Ensure minimum of 1 data point
           const safeDaysSinceOldest = Math.max(1, daysSinceOldest)
           
           if (safeDaysSinceOldest <= 30) {
             dataPoints = Math.max(2, safeDaysSinceOldest) // Ensure minimum 2 points for chart rendering
-            intervalType = "days"
-            intervalSize = 1
+          intervalType = "days"
+          intervalSize = 1
           } else if (safeDaysSinceOldest <= 90) {
             dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 7))
-            intervalType = "weeks"
-            intervalSize = 7
-          } else {
+          intervalType = "weeks"
+          intervalSize = 7
+        } else {
             dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 30))
-            intervalType = "months"
-            intervalSize = 30
+          intervalType = "months"
+          intervalSize = 30
           }
         }
         break
@@ -356,23 +356,23 @@ export function DashboardView() {
           intervalSize = 1
         } else {
           const oldestTransaction = new Date(Math.min(...transactionsData.map((tx: any) => new Date(tx.created_at).getTime())))
-          const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
-          
+        const daysSinceOldest = Math.ceil((new Date().getTime() - oldestTransaction.getTime()) / (1000 * 60 * 60 * 24))
+        
           // Ensure minimum of 1 data point
           const safeDaysSinceOldest = Math.max(1, daysSinceOldest)
           
           if (safeDaysSinceOldest <= 30) {
             dataPoints = Math.max(2, safeDaysSinceOldest) // Ensure minimum 2 points for chart rendering
-            intervalType = "days"
-            intervalSize = 1
+          intervalType = "days"
+          intervalSize = 1
           } else if (safeDaysSinceOldest <= 90) {
             dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 7))
-            intervalType = "weeks"
-            intervalSize = 7
-          } else {
+          intervalType = "weeks"
+          intervalSize = 7
+        } else {
             dataPoints = Math.max(2, Math.ceil(safeDaysSinceOldest / 30))
-            intervalType = "months"
-            intervalSize = 30
+          intervalType = "months"
+          intervalSize = 30
           }
         }
         break
