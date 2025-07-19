@@ -13,7 +13,7 @@ export function DynamicToaster() {
       expand={false}
       richColors={true}
       closeButton={true}
-      offset={20}
+      offset={0}
       gap={8}
       toastOptions={{
         duration: 5000,

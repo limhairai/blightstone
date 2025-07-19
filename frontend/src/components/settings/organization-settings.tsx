@@ -171,7 +171,7 @@ export function OrganizationSettings() {
   const activeAccounts = countAccountsByClientStatus(accounts, 'active')
   const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
   const monthlyTopupUsage = topupUsage?.currentUsage || 0
-
+  
   // Debug logging to understand the data structure
   console.log('🔍 Settings Debug:', {
     totalAccounts: accounts.length,

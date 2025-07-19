@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Loader } from "../core/Loader"
 import { validateLoginForm, showValidationErrors } from "../../lib/form-validation"
+import { ArrowLeft } from "lucide-react"
 
 export function LoginView() {
   const [email, setEmail] = useState("");
@@ -118,33 +119,62 @@ export function LoginView() {
     }
   };
 
+  if (authIsLoading) {
+    return (
+      <div className="min-h-screen bg-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+          <div className="w-full max-w-md text-center space-y-4">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-gray-400">Signing in...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Logo positioned at top left */}
-      <div className="absolute top-6 left-6 z-10">
-        <Link href="https://adhub.tech">
-          <AdHubLogo size="lg" />
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      
+      <div className="absolute top-6 left-6 z-20">
+        <Link 
+          href="https://adhub.tech"
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Home
         </Link>
       </div>
       
-      {/* Left side - Login Form */}
-      <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-20 xl:px-24 bg-muted/30">
-        <div className="mx-auto w-full max-w-sm lg:w-96">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+        <div className="w-full max-w-md space-y-8">
           
-          <div>
-            <h2 className="text-3xl font-bold text-foreground mb-2">Welcome back</h2>
-            <p className="text-muted-foreground mb-8">Sign in to your account</p>
+          <div className="flex justify-center">
+            <AdHubLogo size="sm" />
           </div>
 
-          {/* GitHub-style button (placeholder for now) */}
-          <div className="mb-6">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-semibold text-white">Welcome Back</h1>
+            <p className="text-gray-400">
+              Don't have an account?{" "}
+              <Link href="/register" className="text-white underline hover:no-underline">
+                Sign up
+              </Link>
+              .
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <Button
-              className="w-full h-12 rounded-md border border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-3"
               type="button"
               onClick={handleGoogleSignIn}
               disabled={authIsLoading}
+              className="h-11 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-md font-normal"
             >
-              <svg className="h-5 w-5" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -162,19 +192,16 @@ export function LoginView() {
                   fill="#EA4335"
                 />
               </svg>
-              {authIsLoading ? "Signing in..." : "Continue with Google"}
+              Continue with Google
             </Button>
-          </div>
 
-          {/* Magic Link Button */}
-          <div className="mb-6">
             <Button
-              className="w-full h-12 rounded-md border border-border bg-background hover:bg-muted text-foreground flex items-center justify-center gap-3"
               type="button"
               onClick={handleMagicLinkSignIn}
               disabled={authIsLoading}
+              className="h-11 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-md font-normal"
             >
-              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
@@ -182,47 +209,33 @@ export function LoginView() {
             </Button>
           </div>
 
-          <div className="relative mb-6">
+          <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-muted-foreground/20" />
+              <div className="w-full border-t border-gray-600" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-background px-4 text-muted-foreground">or</span>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-black px-2 text-gray-400">Or continue with</span>
             </div>
           </div>
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                Email
-              </label>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
               <Input
                 id="email"
                 type="email"
-                placeholder="limhairai@gmail.com"
-                className="h-12 rounded-md px-4 text-sm bg-background border-border"
+                placeholder="Email"
+                className="h-11 bg-gray-900 border-gray-700 text-white"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
                 disabled={authIsLoading}
               />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                  Password
-                </label>
-                <Link href="/forgot-password" className="text-sm bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity">
-                  Forgot Password?
-                </Link>
-              </div>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
-                className="h-12 rounded-md px-4 text-sm bg-background border-border"
+                placeholder="Password"
+                className="h-11 bg-gray-900 border-gray-700 text-white"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
@@ -230,61 +243,27 @@ export function LoginView() {
                 disabled={authIsLoading}
               />
             </div>
-
-            {error && (
-              <div className="text-red-500 text-sm">{error}</div>
-            )}
-
-            <div>
-              <Button
-                className="w-full h-12 rounded-md bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black font-medium"
-                type="submit"
-                disabled={authIsLoading}
-              >
-                {authIsLoading ? "Signing in..." : "Sign In"}
-              </Button>
+            
+            <div className="flex items-center justify-between">
+                <div/>
+              <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white">
+                Forgot Password?
+              </Link>
             </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            
+            <Button
+              type="submit"
+              className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
+              disabled={authIsLoading}
+            >
+              {authIsLoading ? "Signing In..." : "Sign In"}
+            </Button>
           </form>
 
-                      <div className="mt-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent hover:opacity-80 transition-opacity font-medium underline">
-                  Sign Up Now
-                </Link>
-              </p>
-            </div>
-
-          <div className="mt-8 text-xs text-muted-foreground text-center">
-            By continuing, you agree to AdHub&apos;s{" "}
-            <Link href="/terms" className="underline hover:text-foreground">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="/privacy" className="underline hover:text-foreground">
-              Privacy Policy
-            </Link>
-            , and to receive periodic emails with updates.
-          </div>
-        </div>
-      </div>
-
-      {/* Right side - Testimonial/Quote */}
-      <div className="hidden lg:flex lg:flex-1 lg:flex-col lg:justify-center lg:px-20 xl:px-24 bg-background">
-        <div className="mx-auto max-w-xl">
-          <blockquote className="text-xl font-medium text-foreground leading-relaxed mb-8">
-            "Using AdHub I&apos;m really pleased on the power of Facebook advertising (and social media in general). Despite being a bit dubious about the whole backend as a service thing I have to say I really don&apos;t miss anything. The whole experience feels very robust and secure."
-          </blockquote>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] flex items-center justify-center">
-              <span className="text-white font-semibold text-lg">PR</span>
-            </div>
-            <div>
-              <div className="font-medium text-foreground">@PaoloRicciuti</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
-  )
+  );
 } 

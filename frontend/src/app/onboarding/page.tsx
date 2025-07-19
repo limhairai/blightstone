@@ -32,19 +32,14 @@ export default function OnboardingPage() {
       title: "",
       subtitle: "",
       component: (
-        <div className="relative min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="relative flex flex-col items-center justify-center">
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-8">
-              Welcome to <span className="text-white">Ad</span><span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Hub</span>
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-6">
+              Welcome to Ad<span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Hub</span>
             </h1>
-            <div className="space-y-4">
-              <p className="text-base text-muted-foreground">
-                We'll collect a few details to personalize your experience
-              </p>
-              <p className="text-sm text-muted-foreground/80">
-                This will only take a minute
-              </p>
-            </div>
+            <p className="text-lg text-gray-400">
+              Let's get your account set up in just a few steps.
+            </p>
           </div>
         </div>
       ),
@@ -60,17 +55,14 @@ export default function OnboardingPage() {
             <Input
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
-              placeholder="Enter your team name (e.g., Marketing, Sales, etc.)"
-              className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 focus:scale-105 focus:shadow-lg bg-background/50 backdrop-blur-sm pr-20"
+              placeholder="Your Team Name"
+              className="h-12 bg-gray-900 border-gray-700 text-white rounded-md w-full"
               autoFocus
             />
-            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-muted-foreground text-lg">
-              's Team
-            </div>
           </div>
           {orgName && (
-            <div className="text-sm text-muted-foreground">
-              Your team will be called: <span className="font-medium text-foreground">{orgName}'s Team</span>
+            <div className="text-sm text-gray-400">
+              Your team will be called: <span className="font-medium text-white">{orgName}'s Team</span>
             </div>
           )}
         </div>
@@ -84,11 +76,11 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={industry} onValueChange={setIndustry}>
-            <SelectTrigger className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 hover:scale-105 focus-visible:scale-105 hover:shadow-lg focus-visible:shadow-lg bg-background/50 backdrop-blur-sm">
+            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
               <SelectValue placeholder="Select your industry" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
-              <SelectItem value="ecommerce" className="cursor-pointer hover:bg-accent/50 transition-colors">E-commerce</SelectItem>
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+              <SelectItem value="ecommerce" className="cursor-pointer hover:bg-gray-800 transition-colors">E-commerce</SelectItem>
               <SelectItem value="saas" className="cursor-pointer hover:bg-accent/50 transition-colors">SaaS</SelectItem>
               <SelectItem value="agency" className="cursor-pointer hover:bg-accent/50 transition-colors">Marketing Agency</SelectItem>
               <SelectItem value="consulting" className="cursor-pointer hover:bg-accent/50 transition-colors">Consulting</SelectItem>
@@ -112,11 +104,11 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={monthlySpend} onValueChange={setMonthlySpend}>
-            <SelectTrigger className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 hover:scale-105 focus-visible:scale-105 hover:shadow-lg focus-visible:shadow-lg bg-background/50 backdrop-blur-sm">
+            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
               <SelectValue placeholder="Select your monthly ad spend" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
-              <SelectItem value="1000-10000" className="cursor-pointer hover:bg-accent/50 transition-colors">$1K - $10K</SelectItem>
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+              <SelectItem value="1000-10000" className="cursor-pointer hover:bg-gray-800 transition-colors">$1K - $10K</SelectItem>
               <SelectItem value="10000-100000" className="cursor-pointer hover:bg-accent/50 transition-colors">$10K - $100K</SelectItem>
               <SelectItem value="100000-500000" className="cursor-pointer hover:bg-accent/50 transition-colors">$100K - $500K</SelectItem>
               <SelectItem value="500000-1000000" className="cursor-pointer hover:bg-accent/50 transition-colors">$500K - $1M</SelectItem>
@@ -134,11 +126,11 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 hover:scale-105 focus-visible:scale-105 hover:shadow-lg focus-visible:shadow-lg bg-background/50 backdrop-blur-sm">
+            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
               <SelectValue placeholder="Select your timezone" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
-              <SelectItem value="UTC-12" className="cursor-pointer hover:bg-accent/50 transition-colors">UTC-12 (Baker Island)</SelectItem>
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+              <SelectItem value="UTC-12" className="cursor-pointer hover:bg-gray-800 transition-colors">UTC-12 (Baker Island)</SelectItem>
               <SelectItem value="UTC-11" className="cursor-pointer hover:bg-accent/50 transition-colors">UTC-11 (American Samoa)</SelectItem>
               <SelectItem value="UTC-10" className="cursor-pointer hover:bg-accent/50 transition-colors">UTC-10 (Hawaii)</SelectItem>
               <SelectItem value="UTC-9" className="cursor-pointer hover:bg-accent/50 transition-colors">UTC-9 (Alaska)</SelectItem>
@@ -176,11 +168,11 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={howHeardAboutUs} onValueChange={setHowHeardAboutUs}>
-            <SelectTrigger className="h-14 text-lg border-2 focus:border-primary transition-all duration-300 hover:scale-105 focus-visible:scale-105 hover:shadow-lg focus-visible:shadow-lg bg-background/50 backdrop-blur-sm">
+            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
               <SelectValue placeholder="Select how you found us" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto">
-              <SelectItem value="google" className="cursor-pointer hover:bg-accent/50 transition-colors">Google Search</SelectItem>
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+              <SelectItem value="google" className="cursor-pointer hover:bg-gray-800 transition-colors">Google Search</SelectItem>
               <SelectItem value="social-media" className="cursor-pointer hover:bg-accent/50 transition-colors">Social Media</SelectItem>
               <SelectItem value="referral" className="cursor-pointer hover:bg-accent/50 transition-colors">Referral from Friend/Colleague</SelectItem>
               <SelectItem value="blog" className="cursor-pointer hover:bg-accent/50 transition-colors">Blog/Article</SelectItem>
@@ -257,89 +249,78 @@ export default function OnboardingPage() {
     }
   }
 
-  const progressPercentage = (currentStep / totalSteps) * 100
+  const handleNextWithValidation = () => {
+    if (currentQuestion.isValid()) {
+      handleNext()
+    } else {
+      toast.error("Please fill out the field to continue")
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
-        <div className="h-1 bg-muted">
-          <div 
-            className="h-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] transition-all duration-500 ease-out shadow-sm"
-            style={{ width: `${progressPercentage}%` }}
-          />
-        </div>
-        <div className="px-6 py-4 flex items-center justify-between">
-          <AdHubLogo size="lg" />
-          <div className="flex items-center gap-6">
-            <div className="text-sm text-muted-foreground">
-              Step {currentStep} of {totalSteps}
-            </div>
-            <button
-              onClick={() => router.push('/dashboard?welcome=true')}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Skip for now
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      
+      <div className="absolute top-6 left-6 z-10">
+        <AdHubLogo size="sm" />
       </div>
-
-      {/* Main Content */}
-      <div className="pt-24 pb-32 px-6">
-        <div className="max-w-xl mx-auto">
-          <div className="min-h-[60vh] flex flex-col justify-center">
-            {/* Question */}
-            <div className="space-y-8 animate-in fade-in-0 duration-300" key={`question-${currentStep}`}>
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold text-foreground leading-tight">
-                  {currentQuestion.title}
-                </h1>
-                <p className="text-lg text-muted-foreground">
-                  {currentQuestion.subtitle}
-                </p>
-              </div>
-
-              {/* Answer Component */}
-              <div className="w-full">
-                {currentQuestion.component}
-              </div>
+      <div className="relative flex min-h-screen items-center justify-center">
+        <div className="w-full max-w-2xl px-6">
+          <div className="text-center mb-12">
+            <div className="w-full bg-gray-700 h-1 rounded-full mb-2">
+              <div 
+                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-1 rounded-full transition-all duration-500 ease-in-out" 
+                style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+              />
             </div>
+            <p className="text-sm text-gray-400">Step {currentStep} of {totalSteps}</p>
           </div>
-
-          {/* Navigation */}
-          <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border px-6 py-6">
-            <div className="max-w-2xl mx-auto flex justify-between items-center">
-              <Button
-                variant="ghost"
-                onClick={handleBack}
-                disabled={currentStep === 1}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              
-              {currentStep < totalSteps ? (
-                <Button
-                  onClick={handleNext}
-                  disabled={!currentQuestion.isValid()}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:from-[#a690ff] hover:to-[#ff9a90] text-black px-8 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  Next
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleComplete}
-                  disabled={!currentQuestion.isValid() || loading}
-                  className="flex items-center gap-2 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:from-[#a690ff] hover:to-[#ff9a90] text-black px-8 py-3 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-                >
-                  {loading ? "Setting up..." : "Complete Setup"}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+          
+          <div className="space-y-8 min-h-[240px] flex flex-col justify-center">
+            <div className="text-center">
+              {currentQuestion.title && (
+                <h2 className="text-3xl font-bold mb-2">{currentQuestion.title}</h2>
+              )}
+              {currentQuestion.subtitle && (
+                <p className="text-gray-400 max-w-xl mx-auto">{currentQuestion.subtitle}</p>
               )}
             </div>
+            
+            <div>
+              {currentQuestion.component}
+            </div>
+          </div>
+          
+          <div className="mt-12 flex justify-between items-center">
+            {currentStep > 1 && (
+              <Button 
+                onClick={handleBack}
+                variant="ghost"
+                className="flex items-center gap-2 text-gray-400 hover:text-white"
+              >
+                <ArrowLeft size={16} />
+                Back
+              </Button>
+            )}
+            <div /> {/* Spacer */}
+            
+            {currentStep < totalSteps ? (
+              <Button 
+                onClick={handleNextWithValidation}
+                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 py-3 rounded-md font-semibold flex items-center gap-2"
+              >
+                Next <ArrowRight size={16} />
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleComplete}
+                disabled={loading}
+                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 py-3 rounded-md font-semibold"
+              >
+                {loading ? "Finalizing..." : "Complete Setup"}
+              </Button>
+            )}
           </div>
         </div>
       </div>

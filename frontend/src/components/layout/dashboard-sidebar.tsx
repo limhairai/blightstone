@@ -148,6 +148,11 @@ export function DashboardSidebar() {
         fetch('/api/support/tickets', { headers })
           .catch(() => {}) // Silent fail
         break
+      case '/dashboard/topup-requests':
+        // Preload transactions data
+        fetch('/api/transactions', { headers })
+          .catch(() => {}) // Silent fail
+        break
     }
   }, [session, currentOrganizationId])
 
