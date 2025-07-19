@@ -26,11 +26,6 @@ class Settings(BaseSettings):
     # ✅ SECURE: CORS origins
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     
-    # ✅ SECURE: Security settings
-    SECRET_KEY: str = "your-secret-key-change-in-production"
-    JWT_SECRET: str = "your-jwt-secret-change-in-production"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
     # ✅ SECURE: External services
     STRIPE_SECRET_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
