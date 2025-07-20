@@ -69,8 +69,9 @@ function generateExactCacheKeys(organizationId?: string, sessionToken?: string) 
       // Current organization (array key format)
       keys.push([`/api/organizations?id=${orgId}`, token])
       
-      // Subscription data (array key format)
+      // Subscription data (both array and string key formats)
       keys.push([`/api/subscriptions/current?organizationId=${orgId}`, token])
+      keys.push(`/api/subscriptions/current?organizationId=${orgId}`)
       
       // Onboarding progress
       keys.push('/api/onboarding-progress')
@@ -136,6 +137,63 @@ export async function invalidateAllKnownKeys(organizationId?: string, sessionTok
 }
 
 /**
+ * Subscription-specific cache invalidation (for plan upgrades)
+ */
+export async function invalidateSubscriptionCaches(organizationId?: string): Promise<void> {
+  const orgId = organizationId || getOrganizationId()
+  const token = getSessionToken()
+  
+  if (!token || !orgId) {
+    console.warn('Missing token or org ID for subscription cache invalidation')
+    return
+  }
+  
+  const subscriptionKeys = [
+    // All possible subscription cache key formats
+    [`/api/subscriptions/current?organizationId=${orgId}`, token],
+    `/api/subscriptions/current?organizationId=${orgId}`,
+    [`/api/organizations?id=${orgId}`, token],
+    ['/api/organizations', token],
+    '/api/onboarding-progress',
+    '/api/plans',
+  ]
+  
+  console.log('🔄 Invalidating subscription-specific caches:', subscriptionKeys)
+  
+  for (const key of subscriptionKeys) {
+    try {
+      await mutate(key, undefined, { revalidate: true })
+    } catch (error) {
+      console.warn('Failed to invalidate subscription key:', key, error)
+    }
+  }
+  
+  // Pattern-based fallback for subscription-related keys
+  await mutate(
+    (key) => {
+      if (typeof key === 'string') {
+        return key.includes('subscription') || key.includes('organization')
+      }
+      if (Array.isArray(key) && typeof key[0] === 'string') {
+        return key[0].includes('subscription') || key[0].includes('organization')
+      }
+      return false
+    },
+    undefined,
+    { revalidate: true }
+  )
+  
+  // Trigger a custom event for components to listen to
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('subscription-cache-invalidated', {
+      detail: { organizationId: orgId, timestamp: Date.now() }
+    }))
+  }
+  
+  console.log('✅ Subscription caches invalidated')
+}
+
+/**
  * Payment-specific cache invalidation
  */
 export async function invalidatePaymentCaches(organizationId?: string): Promise<void> {
@@ -150,6 +208,7 @@ export async function invalidatePaymentCaches(organizationId?: string): Promise<
   const paymentKeys = [
     // Subscription data is most critical after payment
     [`/api/subscriptions/current?organizationId=${orgId}`, token],
+    `/api/subscriptions/current?organizationId=${orgId}`, // Both array and string versions
     [`/api/organizations?id=${orgId}`, token],
     ['/api/organizations', token],
     '/api/onboarding-progress',
@@ -222,6 +281,7 @@ export function initializeCacheInvalidation(): void {
   
   // Add global functions for easy access
   ;(window as any).invalidateAllKnownKeys = invalidateAllKnownKeys
+  ;(window as any).invalidateSubscriptionCaches = invalidateSubscriptionCaches
   ;(window as any).invalidatePaymentCaches = invalidatePaymentCaches
   ;(window as any).forceRefreshCriticalData = forceRefreshCriticalData
   

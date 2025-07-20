@@ -145,7 +145,13 @@ export function OrganizationSettings() {
       // User returned from successful payment - invalidate all caches and refresh
       const invalidateAllCaches = async () => {
         const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
-        await CacheInvalidationScenarios.paymentSuccess()
+        const { invalidateSubscriptionCaches } = await import('@/lib/surgical-cache-invalidation')
+        
+        // Use both general and surgical subscription invalidation
+        await Promise.all([
+          CacheInvalidationScenarios.paymentSuccess(),
+          invalidateSubscriptionCaches() // Surgical subscription cache invalidation
+        ])
       }
       
       invalidateAllCaches()

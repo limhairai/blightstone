@@ -64,10 +64,18 @@ export const CacheInvalidationScenarios = {
   /**
    * After subscription change
    */
-  subscriptionChange: () => invalidateCaches(
-    ['subscription', 'organization', 'plans', 'onboarding'],
-    'Subscription Change'
-  ),
+  subscriptionChange: async () => {
+    await invalidateCaches(
+      ['subscription', 'organization', 'plans', 'onboarding'],
+      'Subscription Change'
+    )
+    
+    // Also use surgical subscription invalidation
+    if (typeof window !== 'undefined') {
+      const { invalidateSubscriptionCaches } = await import('./surgical-cache-invalidation')
+      await invalidateSubscriptionCaches()
+    }
+  },
   
   /**
    * After onboarding progress update
