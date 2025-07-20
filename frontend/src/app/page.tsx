@@ -40,10 +40,11 @@ export default function HomePage() {
             
             if (response.ok) {
               const onboardingData = await response.json();
-              // UNSKIPPABLE: Always send to onboarding if not 100% complete
-              const needsOnboarding = !Object.values(onboardingData.progress).every(Boolean);
+              // ONBOARDING = Basic info collection only (org name, industry, etc.)
+              // SETUP = Business operations (plan, wallet, BM, etc.) - handled by setup widget
+              const hasCompletedBasicOnboarding = onboardingData.progress.hasSetupOrganization;
               
-              if (needsOnboarding) {
+              if (!hasCompletedBasicOnboarding) {
                 router.replace('/onboarding');
               } else {
                 router.replace('/dashboard');
