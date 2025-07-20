@@ -17,6 +17,8 @@ export function MagicLinkView() {
   const [sent, setSent] = useState(false);
   const { signInWithMagicLink } = useAuth();
   const router = useRouter();
+  
+  console.log('🔗 MagicLinkView state and hooks initialized');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,6 +133,8 @@ export function MagicLinkView() {
       </div>
     )
   }
+
+  console.log('🔗 MagicLinkView about to render main form');
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
