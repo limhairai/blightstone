@@ -29,8 +29,11 @@ export function ResetPasswordView() {
         const token = urlParams.get('token');
         const type = urlParams.get('type');
         
+        console.log('🔐 Reset password component - checking URL params:', { token: !!token, type });
+        
         if (token && type === 'recovery') {
           // This is a direct Supabase recovery link - redirect to auth callback for processing
+          console.log('🔐 Direct recovery link detected - redirecting to auth callback');
           window.location.href = `/auth/callback?token=${token}&type=${type}`;
           return;
         }

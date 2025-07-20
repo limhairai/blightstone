@@ -90,9 +90,9 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [user]) // Remove dependency on API data
 
-  // Show welcome overlay for new users - IMMEDIATE display
+  // Show welcome overlay for new users - IMMEDIATE display (NO API DEPENDENCY)
   useEffect(() => {
-    if (!user || isLoading) return
+    if (!user) return // Remove isLoading dependency
     
     // Check if user is new (hasn't seen welcome overlay before)
     const hasSeenWelcome = localStorage.getItem(`adhub_welcome_seen_${user.id}`)
@@ -108,12 +108,12 @@ export function AppShell({ children }: AppShellProps) {
       
       // Show for ANY new user or anyone from onboarding
       if (fromOnboarding || isNewUser || !hasSeenWelcome) {
-        console.log('🎉 Showing welcome overlay for new user');
+        console.log('🎉 Showing welcome overlay for new user IMMEDIATELY');
         setShowWelcomeOverlay(true)
         setSetupWidgetState("expanded") // Also expand setup guide immediately
       }
     }
-  }, [user, isLoading])
+  }, [user]) // Remove isLoading dependency completely
 
   const handleWelcomeOverlayDismiss = () => {
     if (user) {

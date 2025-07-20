@@ -35,10 +35,23 @@ export default function AuthCallbackPage() {
           console.log('🔐 Processing Supabase verification token:', { 
             type: verificationType, 
             hasToken: !!verificationToken,
-            source: tokenFromSearch ? 'search' : 'hash'
+            source: tokenFromSearch ? 'search' : 'hash',
+            searchParams: Object.fromEntries(searchParams.entries()),
+            hashParams: Object.fromEntries(hashParams.entries())
           });
           
-          // Update loading message
+          // CRITICAL: Check if this is a recovery token BEFORE processing
+          if (verificationType === 'recovery') {
+            console.log('🔐 RECOVERY TOKEN DETECTED - Redirecting to password reset');
+            setProcessingMessage("Verifying password reset link...");
+            toast.success("Password reset link verified!", {
+              description: "Redirecting to password reset form..."
+            });
+            router.push('/reset-password');
+            return; // EXIT EARLY - don't process further
+          }
+          
+          // Update loading message for other types
           setProcessingMessage("Setting up your account...");
           
           try {
