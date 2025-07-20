@@ -27,6 +27,9 @@ export class GlobalDataPrefetcher {
       // Core organization data
       this.prefetchOrganizationData(),
       
+      // Onboarding progress (for setup widget)
+      this.prefetchOnboardingData(),
+      
       // Wallet & financial data
       this.prefetchWalletData(),
       
@@ -68,6 +71,26 @@ export class GlobalDataPrefetcher {
       this.prefetchComplete.add('organization')
     } catch (error) {
       console.warn('Failed to prefetch organization data:', error)
+    }
+  }
+
+  private async prefetchOnboardingData() {
+    try {
+      const cacheKey = '/api/onboarding-progress'
+      await mutate(cacheKey, async () => {
+        const response = await fetch(cacheKey, {
+          headers: {
+            'Authorization': `Bearer ${this.session.access_token}`
+          }
+        })
+        if (!response.ok) throw new Error('Failed to fetch onboarding progress')
+        return response.json()
+      }, { revalidate: false })
+      
+      this.prefetchComplete.add('onboarding')
+      console.log('✅ Onboarding progress prefetched')
+    } catch (error) {
+      console.warn('Failed to prefetch onboarding data:', error)
     }
   }
 
