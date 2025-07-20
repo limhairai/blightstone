@@ -11,13 +11,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { organizationId, type } = await request.json()
+    const body = await request.json()
+    
+    // Support both old format { organizationId, type } and new format { tags, context }
+    const { organizationId, type, tags, context } = body
 
-    if (!organizationId || !type) {
-      return NextResponse.json({ error: 'organizationId and type are required' }, { status: 400 })
+    // New format with tags array
+    if (tags && Array.isArray(tags)) {
+      // Invalidate Next.js cache tags based on categories
+      tags.forEach(tag => {
+        switch (tag) {
+          case 'subscription':
+            revalidateTag('subscriptions')
+            revalidateTag('subscription')
+            break
+          case 'organization':
+            revalidateTag('organizations')
+            revalidateTag('organization')
+            break
+          case 'wallet':
+            revalidateTag('wallet')
+            revalidateTag('wallets')
+            break
+          case 'transactions':
+            revalidateTag('transactions')
+            break
+          case 'onboarding':
+            revalidateTag('onboarding')
+            break
+          case 'plans':
+            revalidateTag('plans')
+            break
+          case 'accounts':
+            revalidateTag('accounts')
+            break
+          case 'businesses':
+            revalidateTag('businesses')
+            break
+          case 'pixels':
+            revalidateTag('pixels')
+            break
+        }
+      })
+      
+      console.log(`✅ Cache invalidated for tags: ${tags.join(', ')} (${context || 'no context'})`)
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: `Cache invalidated for tags: ${tags.join(', ')}` 
+      })
     }
 
-    // Invalidate Next.js cache tags
+    // Legacy format support
+    if (!organizationId || !type) {
+      return NextResponse.json({ error: 'Either tags array or organizationId and type are required' }, { status: 400 })
+    }
+
+    // Invalidate Next.js cache tags (legacy format)
     switch (type) {
       case 'subscription':
         revalidateTag(`subscription-${organizationId}`)

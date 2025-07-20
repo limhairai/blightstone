@@ -28,17 +28,10 @@ export async function invalidateCaches(
       body: JSON.stringify({ tags: categories })
     })
     
-    // Invalidate client-side SWR caches
+    // Invalidate client-side SWR caches using surgical precision
     if (typeof window !== 'undefined') {
-      const { mutate } = await import('swr')
-      
-      // Create a pattern to match any key containing the categories
-      const shouldRevalidate = (key: any): boolean => {
-        if (typeof key !== 'string') return false
-        return categories.some(category => key.includes(category))
-      }
-      
-      await mutate(shouldRevalidate, undefined, { revalidate: true })
+      const { invalidatePaymentCaches } = await import('./surgical-cache-invalidation')
+      await invalidatePaymentCaches()
     }
     
     console.log(`✅ ${context}: Caches invalidated for categories:`, categories)
