@@ -41,7 +41,7 @@ export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
   const { mutate } = useSWRConfig();
   const { session } = useAuth();
-  const { currentPlan: subscriptionPlan, usage, subscriptionData } = useSubscription();
+  const { currentPlan: subscriptionPlan, usage, subscriptionData, refresh: refreshSubscription } = useSubscription();
 
   // Helper function to get plan limits from pricing config
   const getPlanLimits = (plan: any) => {
@@ -118,13 +118,13 @@ export function OrganizationSettings() {
         mutate('/api/ad-accounts'),
         // CRITICAL: Also invalidate subscription cache
         mutate([`/api/subscriptions/current?organizationId=${currentOrganizationId}`, session?.access_token]),
-        mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`)
+        mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`),
+        // Also refresh the subscription hook directly
+        refreshSubscription ? refreshSubscription() : Promise.resolve()
       ]);
       
       // Small delay to allow data to refresh
-      setTimeout(() => {
-        toast.success('Subscription data refreshed!');
-      }, 500);
+      // REMOVED: Annoying toast notification
       
       // Silent refresh - no toast needed since this is called automatically
     } catch (error) {
@@ -155,6 +155,14 @@ export function OrganizationSettings() {
       }
       
       invalidateAllCaches()
+      
+      // Force immediate refresh of subscription hook data
+      setTimeout(async () => {
+        if (refreshSubscription) {
+          await refreshSubscription()
+        }
+      }, 100)
+      
       handleManualRefresh()
       
       // Clean up URL params
@@ -184,8 +192,10 @@ export function OrganizationSettings() {
   const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
   const monthlyTopupUsage = topupUsage?.currentUsage || 0
   
-  // Debug logging to understand the data structure
+  // Debug logging to understand the data structure and subscription data
   console.log('🔍 Settings Debug:', {
+    subscriptionPlan,
+    subscriptionData,
     totalAccounts: accounts.length,
     activeAccounts,
     accountsData: accounts.slice(0, 2), // Show first 2 accounts for debugging
