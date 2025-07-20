@@ -275,7 +275,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
       ? `${window.location.origin}/reset-password`
-      : 'https://adhub.tech/reset-password'; 
+      : 'https://xewhfrwuzkfbnpwtdxuf.supabase.co/reset-password'; 
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: options?.redirectTo || defaultRedirectTo,
@@ -293,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const defaultRedirectTo = typeof window !== 'undefined' 
       ? `${window.location.origin}/auth/callback`
-      : 'https://staging.adhub.tech/auth/callback'; 
+      : 'https://xewhfrwuzkfbnpwtdxuf.supabase.co/auth/callback'; 
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -316,7 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
       ? `${window.location.origin}/auth/callback`
-      : 'https://staging.adhub.tech/auth/callback'; 
+      : 'https://xewhfrwuzkfbnpwtdxuf.supabase.co/auth/callback'; 
 
     // For magic links, we want to handle both new and existing users
     // Try to sign up first (will fail if user exists, but that's OK)
