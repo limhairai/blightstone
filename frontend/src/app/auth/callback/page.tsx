@@ -9,6 +9,7 @@ import { toast } from "sonner"
 export default function AuthCallbackPage() {
   const router = useRouter()
   const [isProcessing, setIsProcessing] = useState(true)
+  const [processingMessage, setProcessingMessage] = useState("Confirming your email...")
 
   useEffect(() => {
     const handleAuthCallback = async () => {
@@ -35,6 +36,9 @@ export default function AuthCallbackPage() {
             hasToken: !!verificationToken,
             source: tokenFromSearch ? 'search' : 'hash'
           });
+          
+          // Update loading message
+          setProcessingMessage("Setting up your account...");
           
           try {
             // Try session exchange first (for magic links)
@@ -96,21 +100,26 @@ export default function AuthCallbackPage() {
           fullURL: window.location.href
         });
 
+        // Update loading message for better UX
+        setProcessingMessage("Verifying your session...");
+        
         // For magic links, we need to wait longer and try multiple approaches
         let data, error;
         
-        // First attempt - wait for Supabase to process URL tokens automatically
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Reduced wait time for faster UX - Supabase is usually quick
+        await new Promise(resolve => setTimeout(resolve, 200));
         ({ data, error } = await supabase.auth.getSession());
         
         // If still no session, try getting user which might trigger token exchange
         if (!data.session && !error) {
           console.log('🔐 No session found, trying getUser to trigger token exchange...');
+          setProcessingMessage("Setting up your account...");
+          
           const { data: userData, error: userError } = await supabase.auth.getUser();
           
           if (userData.user && !userError) {
             console.log('🔐 User found via getUser, trying session again...');
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 100)); // Even faster retry
             ({ data, error } = await supabase.auth.getSession());
           }
         }
@@ -151,6 +160,9 @@ export default function AuthCallbackPage() {
             (now.getTime() - new Date(user.email_confirmed_at).getTime()) < (5 * 60 * 1000) // Confirmed within 5 minutes
           
           console.log('🔐 User analysis:', { isVeryNewUser, justConfirmed });
+          
+          // Update loading message
+          setProcessingMessage("Almost done...");
           
           try {
             const response = await fetch('/api/organizations', {
@@ -301,7 +313,10 @@ export default function AuthCallbackPage() {
             <Skeleton className="h-4 w-[250px]" />
             <Skeleton className="h-4 w-[200px]" />
           </div>
-          <p className="text-muted-foreground">Confirming your email...</p>
+          <p className="text-muted-foreground">{processingMessage}</p>
+          <div className="text-xs text-muted-foreground/70">
+            This should only take a moment...
+          </div>
         </div>
       </div>
     )
