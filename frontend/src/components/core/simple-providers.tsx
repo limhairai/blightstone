@@ -52,9 +52,9 @@ function ErrorScreen({ message }: { message: string }) {
 }
 
 function isPublicOrAuthPage(pathname: string): boolean {
-  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/confirm-email', '/magic-link'];
+  const publicRoutes = ['/', '/login', '/register', '/forgot-password', '/confirm-email', '/magic-link', '/reset-password'];
   if (publicRoutes.includes(pathname)) return true;
-  // Handle routes like /auth/callback
+  // Handle routes like /auth/callback, /auth/update-password
   if (pathname.startsWith('/auth/')) return true;
   return false;
 }

@@ -272,24 +272,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string, options?: { redirectTo?: string }) => {
-    setLoading(true);
+    // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/update-password`
-      : 'https://adhub.tech/auth/update-password'; 
+      ? `${window.location.origin}/reset-password`
+      : 'https://adhub.tech/reset-password'; 
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: options?.redirectTo || defaultRedirectTo,
     });
 
-    setLoading(false);
-
     if (error) {
       console.error("Error sending password reset email:", error);
-      toast.error(`Password reset error: ${error.message}`);
       return { data: null, error };
     }
 
-    toast.success("If an account exists for this email, a password reset link has been sent. Please check your inbox.");
     return { data: data || {}, error: null }; 
   };
 
@@ -297,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const defaultRedirectTo = typeof window !== 'undefined' 
       ? `${window.location.origin}/auth/callback`
-      : 'https://adhub.tech/auth/callback'; 
+      : 'https://staging.adhub.tech/auth/callback'; 
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -319,22 +315,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithMagicLink = async (email: string, options?: { redirectTo?: string }) => {
     // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/dashboard`
-      : 'https://adhub.tech/dashboard'; 
+      ? `${window.location.origin}/auth/callback`
+      : 'https://staging.adhub.tech/auth/callback'; 
 
-    const { data, error } = await supabase.auth.signInWithOtp({
+    // For magic links, we want to handle both new and existing users
+    // Try to sign up first (will fail if user exists, but that's OK)
+    const { data: signupData, error: signupError } = await supabase.auth.signUp({
       email,
+      password: Math.random().toString(36), // Random password that user won't know
       options: {
         emailRedirectTo: options?.redirectTo || defaultRedirectTo,
+        data: {
+          via_magic_link: true // Mark this as a magic link signup
+        }
       },
     });
 
-    if (error) {
-      console.error("Error sending magic link:", error);
-      return { data: null, error };
+    // If signup worked (new user), return success
+    if (signupData?.user && !signupError) {
+      return { data: signupData, error: null };
     }
 
-    return { data, error: null }; 
+    // If signup failed because user exists, try magic link for existing user
+    if (signupError?.message?.includes('already registered') || signupError?.message?.includes('already been registered')) {
+      const { data: signinData, error: signinError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: options?.redirectTo || defaultRedirectTo,
+        },
+      });
+
+      if (signinError) {
+        console.error("Error sending magic link for existing user:", signinError);
+        return { data: null, error: signinError };
+      }
+
+      return { data: signinData, error: null };
+    }
+
+    // If signup failed for other reasons, return the error
+    console.error("Error sending magic link:", signupError);
+    return { data: null, error: signupError }; 
   };
 
   const resendVerification = async (email: string) => {

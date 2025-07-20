@@ -31,9 +31,11 @@ export function ForgotPasswordView() {
       
       if (error) {
         toast.error(error.message || "Failed to send reset email")
+        setLoading(false)
       } else {
         setSent(true)
-        toast.success("Password reset email sent!")
+        setLoading(false)
+        toast.success("If an account exists for this email, a password reset link has been sent. Please check your inbox.")
       }
     } catch (err) {
       toast.error("An unexpected error occurred")

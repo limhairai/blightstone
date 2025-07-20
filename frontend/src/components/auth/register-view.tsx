@@ -13,6 +13,7 @@ import { Skeleton } from "../ui/skeleton"
 import { toast } from "sonner"
 import { validateRegistrationForm, showValidationErrors } from "../../lib/form-validation"
 import { ArrowLeft } from "lucide-react"
+import { supabase } from "../../lib/stores/supabase-client"
 
 export function RegisterView() {
   const [email, setEmail] = useState("");
@@ -50,11 +51,15 @@ export function RegisterView() {
         setError(error.message);
         setLoading(false);
         
-        if (error.message.includes('User already registered')) {
+        if (error.message.includes('User already registered') || 
+            error.message.includes('already been registered') ||
+            error.message.includes('already exists')) {
           toast.error("An account with this email already exists. Redirecting to login...");
           setTimeout(() => {
             router.push('/login');
-          }, 3000);
+          }, 2000);
+        } else {
+          toast.error(error.message);
         }
         return;
       }

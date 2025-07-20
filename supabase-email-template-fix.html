@@ -1,0 +1,45 @@
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+  <div style="text-align: center; margin-bottom: 40px;">
+    <h1 style="margin: 0; font-size: 24px; color: #1a1a1a;">
+      <span style="color: #1a1a1a;">Ad</span><span style="background: linear-gradient(135deg, #b4a0ff 0%, #ffb4a0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Hub</span>
+    </h1>
+  </div>
+
+  <h2 style="color: #1a1a1a; font-size: 20px; margin-bottom: 16px;">Welcome to AdHub!</h2>
+
+  <p style="color: #4a4a4a; line-height: 1.6; margin-bottom: 24px;">
+    Thanks for signing up for AdHub. Please verify your email address by clicking the button below:
+  </p>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="{{ .ConfirmationURL }}" 
+       style="background: linear-gradient(135deg, #b4a0ff 0%, #ffb4a0 100%); 
+              color: #1a1a1a; 
+              padding: 16px 32px; 
+              text-decoration: none; 
+              border-radius: 8px; 
+              display: inline-block;
+              font-weight: 600;
+              font-size: 16px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      Verify Email Address
+    </a>
+  </div>
+
+  <p style="color: #666; font-size: 14px; margin-bottom: 8px;">
+    If the button doesn't work, copy and paste this link into your browser:
+  </p>
+  <p style="word-break: break-all; color: #666; font-size: 14px; background: #f8f9fa; padding: 12px; border-radius: 4px; margin-bottom: 24px;">
+    {{ .ConfirmationURL }}
+  </p>
+
+  <p style="color: #666; font-size: 14px; margin-bottom: 32px;">
+    This link will expire in 24 hours.
+  </p>
+
+  <hr style="margin: 32px 0; border: none; border-top: 1px solid #e5e5e5;">
+
+  <p style="color: #999; font-size: 12px; text-align: center; margin: 0;">
+    If you didn't sign up for AdHub, you can safely ignore this email.
+  </p>
+</div> 

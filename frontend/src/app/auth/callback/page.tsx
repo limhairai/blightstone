@@ -22,11 +22,77 @@ export default function AuthCallbackPage() {
         const tokenFromSearch = searchParams.get('token');
         const tokenFromHash = hashParams.get('access_token');
         const authType = hashParams.get('type') || searchParams.get('type');
+        const isMagicLink = tokenFromHash && !tokenFromSearch; // Magic links come as hash params
+        
+                // Handle direct Supabase verification URLs that might come here
+        // Check for both URL params and hash params for maximum compatibility
+        const verificationToken = tokenFromSearch || hashParams.get('token');
+        const verificationType = authType || hashParams.get('type');
+        
+        if (verificationToken && verificationType) {
+          console.log('🔐 Processing Supabase verification token:', { 
+            type: verificationType, 
+            hasToken: !!verificationToken,
+            source: tokenFromSearch ? 'search' : 'hash'
+          });
+          
+          try {
+            // Try session exchange first (for magic links)
+            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionData?.session && !sessionError) {
+              console.log('🔐 Session already established from verification');
+            } else {
+              // Try to exchange the token for a session
+              const { data, error } = await supabase.auth.verifyOtp({
+                token_hash: verificationToken,
+                type: verificationType as any,
+              });
+              
+              if (error) {
+                console.error('🔐 Token verification failed:', error);
+                if (verificationType === 'recovery') {
+                  toast.error("Password reset link has expired", {
+                    description: "Please request a new password reset email"
+                  });
+                  router.push('/forgot-password');
+                  return;
+                } else {
+                  toast.error("Verification link has expired", {
+                    description: "Please try again"
+                  });
+                  router.push('/login');
+                  return;
+                }
+              }
+              
+              console.log('🔐 Token verification successful:', data);
+            }
+            
+            // For recovery type, redirect to password reset page
+            if (verificationType === 'recovery') {
+              toast.success("Password reset link verified!", {
+                description: "Please enter your new password"
+              });
+              router.push('/reset-password');
+              return;
+            }
+            
+            // For other types, continue with normal flow below
+            
+          } catch (verifyError) {
+            console.error('🔐 Token verification exception:', verifyError);
+            toast.error("Verification failed");
+            router.push('/login');
+            return;
+          }
+        }
         
         console.log('🔐 URL params:', { 
           searchToken: !!tokenFromSearch,
           hashAccessToken: !!tokenFromHash, 
           type: authType,
+          isMagicLink,
           fullURL: window.location.href
         });
 
@@ -101,20 +167,18 @@ export default function AuthCallbackPage() {
               if ((isVeryNewUser || justConfirmed) && hasOrganization) {
                 // New user who just confirmed - go to onboarding even though they have an org
                 let message = "🎉 Welcome to AdHub!";
-                if (authType === 'signup') {
-                  message = "🎉 Email verified successfully! Welcome to AdHub!";
+                if (authType === 'signup' || isMagicLink) {
+                  message = "🎉 Welcome to AdHub! Let's get you set up.";
                 } else if (authType === 'magiclink') {
                   message = "🎉 Magic link sign in successful! Welcome to AdHub!";
                 } else {
                   message = "🎉 Email confirmed successfully! Welcome to AdHub!";
                 }
-                toast.success(message, {
-                  description: "Let's get you set up"
-                })
+                toast.success(message)
                 router.push('/onboarding')
               } else if (hasOrganization) {
                 // Existing user with organization - go to dashboard
-                const message = authType === 'magiclink' ? 
+                const message = (authType === 'magiclink' || isMagicLink) ? 
                   "🎉 Magic link sign in successful! Welcome back!" : 
                   "Welcome back!";
                 toast.success(message, {
@@ -148,12 +212,10 @@ export default function AuthCallbackPage() {
             console.error("Error checking organization:", orgError)
             // If we can't check organization but user is new, default to onboarding
             if (isVeryNewUser || justConfirmed) {
-              const message = authType === 'signup' ? 
-                "🎉 Email verified successfully! Welcome to AdHub!" : 
+              const message = (authType === 'signup' || isMagicLink) ? 
+                "🎉 Welcome to AdHub! Let's get you set up." : 
                 "🎉 Email confirmed successfully! Welcome to AdHub!";
-              toast.success(message, {
-                description: "Let's get you set up"
-              })
+              toast.success(message)
               router.push('/onboarding')
             } else {
               // Fallback to dashboard for existing users
@@ -165,7 +227,7 @@ export default function AuthCallbackPage() {
           // No session found - likely came from email link but confirmation failed
           console.log("No session found in auth callback - tokens may be invalid/expired")
           
-          if (authType === 'magiclink') {
+          if (authType === 'magiclink' || isMagicLink) {
             toast.error("Magic link has expired or is invalid.", {
               description: "Please request a new magic link"
             })
