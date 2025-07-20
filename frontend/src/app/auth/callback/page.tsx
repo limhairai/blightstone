@@ -21,21 +21,27 @@ export default function AuthCallbackPage() {
         
         const tokenFromSearch = searchParams.get('token');
         const tokenFromHash = hashParams.get('access_token');
+        const authType = hashParams.get('type') || searchParams.get('type');
         
         console.log('🔐 URL params:', { 
           searchToken: !!tokenFromSearch,
           hashAccessToken: !!tokenFromHash, 
-          type: hashParams.get('type') || searchParams.get('type'),
+          type: authType,
           fullURL: window.location.href
         });
+
+        // Wait a moment for Supabase to process URL tokens automatically
+        await new Promise(resolve => setTimeout(resolve, 100));
         
-        // Handle the auth callback from Supabase (for magic links, email confirmation, OAuth, etc.)
+        // Now get the session
         const { data, error } = await supabase.auth.getSession()
         
         console.log('🔐 Session result:', { 
           hasSession: !!data.session, 
           error: error?.message,
-          userEmail: data.session?.user?.email 
+          userEmail: data.session?.user?.email,
+          userCreated: data.session?.user?.created_at,
+          emailConfirmed: data.session?.user?.email_confirmed_at
         });
         
         if (error) {
@@ -81,7 +87,10 @@ export default function AuthCallbackPage() {
               // If user is very new AND just confirmed email, send to onboarding regardless of org
               if ((isVeryNewUser || justConfirmed) && hasOrganization) {
                 // New user who just confirmed - go to onboarding even though they have an org
-                toast.success("🎉 Email confirmed successfully! Welcome to AdHub!", {
+                const message = authType === 'signup' ? 
+                  "🎉 Email verified successfully! Welcome to AdHub!" : 
+                  "🎉 Email confirmed successfully! Welcome to AdHub!";
+                toast.success(message, {
                   description: "Let's get you set up"
                 })
                 router.push('/onboarding')
@@ -101,7 +110,10 @@ export default function AuthCallbackPage() {
             } else {
               // Can't check organization, but if user is very new, send to onboarding
               if (isVeryNewUser || justConfirmed) {
-                toast.success("🎉 Email confirmed successfully! Welcome to AdHub!", {
+                const message = authType === 'signup' ? 
+                  "🎉 Email verified successfully! Welcome to AdHub!" : 
+                  "🎉 Email confirmed successfully! Welcome to AdHub!";
+                toast.success(message, {
                   description: "Let's get you set up"
                 })
                 router.push('/onboarding')
@@ -115,7 +127,10 @@ export default function AuthCallbackPage() {
             console.error("Error checking organization:", orgError)
             // If we can't check organization but user is new, default to onboarding
             if (isVeryNewUser || justConfirmed) {
-              toast.success("🎉 Email confirmed successfully! Welcome to AdHub!", {
+              const message = authType === 'signup' ? 
+                "🎉 Email verified successfully! Welcome to AdHub!" : 
+                "🎉 Email confirmed successfully! Welcome to AdHub!";
+              toast.success(message, {
                 description: "Let's get you set up"
               })
               router.push('/onboarding')

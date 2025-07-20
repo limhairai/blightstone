@@ -122,30 +122,7 @@ export function LoginView() {
     }
   };
 
-  const handleMagicLinkSignIn = async () => {
-    if (!email) {
-      setError("Please enter your email address first.");
-      return;
-    }
-    
-    setError("");
-    
-    try {
-      const result = await signInWithMagicLink(email);
-      if (result.error) {
-        const errorMessage = result.error.message || "Failed to send magic link. Please try again.";
-        setError(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-      
-      // Success message is handled by the auth context
-    } catch (err: any) {
-      const errorMessage = err?.message || "An unexpected error occurred while sending magic link.";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    }
-  };
+  // Magic link handler removed - now handled by dedicated /magic-link page
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
@@ -214,18 +191,19 @@ export function LoginView() {
               Continue with Google
             </Button>
 
-            <Button
-              type="button"
-              onClick={handleMagicLinkSignIn}
-              disabled={authIsLoading}
-              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
-            >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-              </svg>
-              Continue with Magic Link
-            </Button>
+            <Link href="/magic-link">
+              <Button
+                type="button"
+                disabled={authIsLoading}
+                className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal w-full"
+              >
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                Continue with Magic Link
+              </Button>
+            </Link>
           </div>
 
           {/* Divider */}
