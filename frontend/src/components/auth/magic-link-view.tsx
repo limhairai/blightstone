@@ -25,9 +25,17 @@ export function MagicLinkView() {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
     setLoading(true);
 
     try {
+      console.log('🔗 Sending magic link for:', email);
       const result = await signInWithMagicLink(email);
       
       if (result.error) {

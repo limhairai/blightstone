@@ -78,24 +78,27 @@ export function AppShell({ children }: AppShellProps) {
     // Let the widget manage its own visibility based on actual progress
   }, [isLoading])
 
-  // Show welcome overlay for new users
+  // Show welcome overlay for new users - IMMEDIATE display
   useEffect(() => {
     if (!user || isLoading) return
     
     // Check if user is new (hasn't seen welcome overlay before)
     const hasSeenWelcome = localStorage.getItem(`adhub_welcome_seen_${user.id}`)
     
-    // Only show welcome overlay if user hasn't seen it before
+    // Show welcome overlay IMMEDIATELY for:
+    // 1. Any user who hasn't seen it before
+    // 2. Users coming from onboarding
+    // 3. New users (created within last 48 hours - more generous)
     if (!hasSeenWelcome) {
-      // Show welcome overlay if:
-      // 1. User is coming from onboarding (has URL parameter)
-      // 2. User is new (created recently)
       const urlParams = new URLSearchParams(window.location.search)
       const fromOnboarding = urlParams.get('welcome') === 'true'
-      const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Created within last 24 hours
+      const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 48 * 60 * 60 * 1000) // 48 hours
       
-      if (fromOnboarding || isNewUser) {
+      // Show for ANY new user or anyone from onboarding
+      if (fromOnboarding || isNewUser || !hasSeenWelcome) {
+        console.log('🎉 Showing welcome overlay for new user');
         setShowWelcomeOverlay(true)
+        setSetupWidgetState("expanded") // Also expand setup guide immediately
       }
     }
   }, [user, isLoading])
@@ -165,16 +168,22 @@ export function AppShell({ children }: AppShellProps) {
             onSetupWidgetStateChange={setSetupWidgetState}
             showEmptyStateElements={progressData ? progressData.completionPercentage < 100 : true}
           />
-          <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>{children}</main>
+          <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>
+            {/* Blocking overlay for new users until they see welcome */}
+            {showWelcomeOverlay && (
+              <div className="absolute inset-0 bg-black/50 z-30 backdrop-blur-sm" />
+            )}
+            {children}
+          </main>
         </div>
 
-        {/* Global Setup Guide Widget */}
+        {/* Global Setup Guide Widget - Higher z-index when blocking */}
         <SetupGuideWidget 
           widgetState={setupWidgetState} 
           onStateChange={setSetupWidgetState}
         />
 
-        {/* Welcome Overlay for New Users */}
+        {/* Welcome Overlay for New Users - Always on top */}
         {showWelcomeOverlay && (
           <WelcomeOverlay onDismiss={handleWelcomeOverlayDismiss} />
         )}

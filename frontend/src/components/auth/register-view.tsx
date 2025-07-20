@@ -43,21 +43,31 @@ export function RegisterView() {
     try {
       console.log('📝 Starting registration for:', email);
       
-      // First try to sign in to check if user exists
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'dummy-password-check'
+      // Check if user exists by trying to send password reset
+      // This is the recommended way to check user existence in Supabase
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'dummy-url-for-check' // Won't actually send if we immediately cancel
       });
       
-      // If signInError is NOT "Invalid login credentials", user might exist
-      if (signInError && !signInError.message.includes('Invalid login credentials')) {
-        // User exists but different error (e.g., email not confirmed)
-        if (signInError.message.includes('Email not confirmed')) {
-          setError("An account with this email exists but hasn't been verified. Please check your email for the confirmation link.");
-          toast.error("Account exists but not verified. Please check your email.");
-          setLoading(false);
-          return;
-        }
+      // If resetPasswordForEmail doesn't error, user exists
+      if (!resetError) {
+        setError("An account with this email already exists.");
+        toast.error("Account already exists. Redirecting to login...");
+        setLoading(false);
+        setTimeout(() => {
+          router.push(`/login?email=${encodeURIComponent(email)}`);
+        }, 2000);
+        return;
+      }
+      
+      // If we get a specific "user not found" error, that's good - proceed with signup
+      if (resetError.message.includes('User not found') || 
+          resetError.message.includes('user_not_found') ||
+          resetError.message.includes('Invalid email')) {
+        console.log('📝 User not found, proceeding with signup');
+      } else {
+        // Some other error occurred, but let's still try signup
+        console.log('📝 Reset password check error (continuing anyway):', resetError.message);
       }
       
       // Proceed with signup

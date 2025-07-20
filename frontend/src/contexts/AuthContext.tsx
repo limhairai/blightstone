@@ -318,44 +318,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ? `${window.location.origin}/auth/callback`
       : 'https://xewhfrwuzkfbnpwtdxuf.supabase.co/auth/callback'; 
 
-    // For magic links, we want to handle both new and existing users
-    // Try to sign up first (will fail if user exists, but that's OK)
-    const { data: signupData, error: signupError } = await supabase.auth.signUp({
+    // Simplified approach: Just try magic link for any user
+    // Supabase will handle both new and existing users
+    const { data, error } = await supabase.auth.signInWithOtp({
       email,
-      password: Math.random().toString(36), // Random password that user won't know
       options: {
         emailRedirectTo: options?.redirectTo || defaultRedirectTo,
-        data: {
-          via_magic_link: true // Mark this as a magic link signup
-        }
       },
     });
 
-    // If signup worked (new user), return success
-    if (signupData?.user && !signupError) {
-      return { data: signupData, error: null };
+    if (error) {
+      console.error("Error sending magic link:", error);
+      return { data: null, error };
     }
 
-    // If signup failed because user exists, try magic link for existing user
-    if (signupError?.message?.includes('already registered') || signupError?.message?.includes('already been registered')) {
-      const { data: signinData, error: signinError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: options?.redirectTo || defaultRedirectTo,
-        },
-      });
-
-      if (signinError) {
-        console.error("Error sending magic link for existing user:", signinError);
-        return { data: null, error: signinError };
-      }
-
-      return { data: signinData, error: null };
-    }
-
-    // If signup failed for other reasons, return the error
-    console.error("Error sending magic link:", signupError);
-    return { data: null, error: signupError }; 
+    console.log("Magic link sent successfully:", data);
+    return { data, error: null }; 
   };
 
   const resendVerification = async (email: string) => {
