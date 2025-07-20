@@ -11,14 +11,11 @@ import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
 
 export function MagicLinkView() {
-  console.log('🔗 MagicLinkView component rendering');
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const { signInWithMagicLink } = useAuth();
   const router = useRouter();
-  
-  console.log('🔗 MagicLinkView state and hooks initialized');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +31,6 @@ export function MagicLinkView() {
       const result = await signInWithMagicLink(email);
       
       if (result.error) {
-        console.error('🔗 Magic link error:', result.error);
         toast.error(result.error.message || "Failed to send magic link. Please try again.");
         setLoading(false);
         return;
@@ -43,7 +39,6 @@ export function MagicLinkView() {
       setSent(true);
       setLoading(false);
     } catch (err: any) {
-      console.error('🔗 Magic link exception:', err);
       const errorMessage = err?.message || "An unexpected error occurred while sending magic link.";
       toast.error(errorMessage);
       setLoading(false);
@@ -100,7 +95,7 @@ export function MagicLinkView() {
             </div>
 
             {/* Actions */}
-            <div className="space-y-3">
+            <div className="space-y-6">
               <Button 
                 onClick={() => {
                   setSent(false)
@@ -111,7 +106,7 @@ export function MagicLinkView() {
                 Try Different Email
               </Button>
               
-              <Link href="/login">
+              <Link href="/login" className="block mt-6">
                 <Button className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Sign In
@@ -133,8 +128,6 @@ export function MagicLinkView() {
       </div>
     )
   }
-
-  console.log('🔗 MagicLinkView about to render main form');
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">

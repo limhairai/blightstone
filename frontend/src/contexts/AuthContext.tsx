@@ -317,7 +317,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string, options?: { redirectTo?: string }) => {
-    setLoading(true);
+    // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
       ? `${window.location.origin}/dashboard`
       : 'https://adhub.tech/dashboard'; 
@@ -331,13 +331,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error("Error sending magic link:", error);
-      toast.error(`Magic link error: ${error.message}`);
-      setLoading(false);
       return { data: null, error };
     }
 
-    toast.success("Magic link sent! Check your email for the login link.");
-    setLoading(false);
     return { data, error: null }; 
   };
 

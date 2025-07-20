@@ -6,6 +6,5 @@ import { MagicLinkView } from "@/components/auth/magic-link-view"
 export const dynamic = 'force-dynamic'
 
 export default function MagicLinkPage() {
-  console.log('🔗 MagicLinkPage rendering');
   return <MagicLinkView />
 } 
