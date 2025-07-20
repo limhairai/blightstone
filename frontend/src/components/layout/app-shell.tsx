@@ -77,15 +77,12 @@ export function AppShell({ children }: AppShellProps) {
     // Check if user is new (created within last 48 hours - generous window)
     const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 48 * 60 * 60 * 1000)
     
-    // Check if user has explicitly dismissed the widget before
-    const hasExplicitlyDismissed = localStorage.getItem(`adhub_setup_dismissed_${user.id}`) === 'true'
-    
-    // IMMEDIATELY show setup widget for new users who haven't dismissed it
-    if (isNewUser && !hasExplicitlyDismissed) {
+    // UNSKIPPABLE: Always show setup widget for all users - no dismissal option
+    if (isNewUser) {
       console.log('🚀 New user detected - showing setup widget immediately');
       setSetupWidgetState("expanded")
-    } else if (!isNewUser || hasExplicitlyDismissed) {
-      // Older users or those who dismissed get collapsed widget
+    } else {
+      // Older users get collapsed widget by default
       setSetupWidgetState("collapsed")
     }
   }, [user]) // Remove dependency on API data

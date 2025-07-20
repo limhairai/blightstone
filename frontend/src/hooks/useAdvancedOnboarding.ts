@@ -49,7 +49,8 @@ export function useAdvancedOnboarding() {
     nextStep: Object.values(onboardingData.progress).every(Boolean) ? null : 'setup-incomplete'
   } : null
 
-  const shouldShowOnboarding = progressData && !progressData.hasCompletedOnboarding && !onboardingData?.persistence?.hasExplicitlyDismissed
+  // UNSKIPPABLE: Always show onboarding if not completed, regardless of dismissal
+  const shouldShowOnboarding = progressData && !progressData.hasCompletedOnboarding
 
   const dismissOnboarding = async () => {
     try {

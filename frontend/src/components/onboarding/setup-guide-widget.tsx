@@ -249,30 +249,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     }
   }, [upgradeDialogOpen, mutateOnboarding])
 
-  const handleDismiss = async () => {
-    try {
-      // Store dismiss in localStorage for immediate future loads
-      if (session?.user) {
-        localStorage.setItem(`adhub_setup_dismissed_${session.user.id}`, 'true')
-      }
-      
-      // Change state to closed first for immediate UI feedback
-      onStateChange("closed")
-      
-      // Then dismiss the onboarding in the background
-      await dismissOnboarding()
-      
-      toast.success("Setup Guide Dismissed", {
-        description: "You can access this from the Setup Guide button in the topbar.",
-      })
-    } catch (error) {
-      // If dismissing fails, we can still keep it closed since user requested it
-      console.error("Failed to dismiss onboarding:", error)
-      toast.success("Setup Guide Closed", {
-        description: "You can access this from the Setup Guide button in the topbar.",
-      })
-    }
-  }
+  // UNSKIPPABLE: Removed handleDismiss function - users cannot dismiss setup
 
   // Calculate actual progress based on our simplified steps
   const completedSteps = steps.filter(s => s.isCompleted).length
@@ -314,14 +291,7 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
                 >
                   <ChevronUp className={`h-3 w-3 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 w-6 p-0 transition-all duration-200 hover:scale-110 hover:text-red-500" 
-                  onClick={handleDismiss}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                {/* UNSKIPPABLE: Removed dismiss button - users must complete setup */}
               </div>
             </div>
             

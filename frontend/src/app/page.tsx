@@ -40,8 +40,8 @@ export default function HomePage() {
             
             if (response.ok) {
               const onboardingData = await response.json();
-              const needsOnboarding = !Object.values(onboardingData.progress).every(Boolean) && 
-                                     !onboardingData.persistence?.hasExplicitlyDismissed;
+              // UNSKIPPABLE: Always send to onboarding if not 100% complete
+              const needsOnboarding = !Object.values(onboardingData.progress).every(Boolean);
               
               if (needsOnboarding) {
                 router.replace('/onboarding');
