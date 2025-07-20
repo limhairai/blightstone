@@ -158,14 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user && !data.session) {
-        // Email confirmation required
-        if (typeof window !== 'undefined') {
-          setTimeout(() => {
-            toast.success(authMessages.signUp.success.description, {
-              duration: authMessages.signUp.success.duration
-            });
-          }, 100);
-        }
+        // Email confirmation required - don't show toast here, let register component handle it
         setLoading(false);
         return { data: { user: data.user, session: data.session }, error: null };
       }
@@ -208,13 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Handle specific Supabase error messages with better UX
         if (errorMessage === 'Invalid login credentials') {
-          // Ensure we're on client side for toast with small delay for hydration
           if (typeof window !== 'undefined') {
             setTimeout(() => {
-              toast.error(authMessages.signIn.invalidCredentials.description);
+              toast.error("Invalid email or password. If you just registered, please check your email to confirm your account first.");
             }, 100);
           }
-        } else if (errorMessage === 'Email not confirmed') {
+        } else if (errorMessage === 'Email not confirmed' || errorMessage.includes('not confirmed')) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(authMessages.signIn.emailNotConfirmed.description);

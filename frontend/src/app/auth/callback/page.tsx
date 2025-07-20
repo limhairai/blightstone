@@ -13,12 +13,13 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
+        console.log('🔐 Auth callback started');
         // Handle the auth callback from Supabase
         const { data, error } = await supabase.auth.getSession()
         
         if (error) {
           console.error("Auth callback error:", error)
-          toast.error(error.message, {
+          toast.error("Email confirmation failed. Please try again.", {
             description: "Authentication Error"
           })
           router.push('/login')
@@ -27,6 +28,12 @@ export default function AuthCallbackPage() {
 
         if (data.session) {
           const user = data.session.user
+          console.log('🔐 Auth callback - user session found:', {
+            user_id: user.id,
+            email: user.email,
+            email_confirmed_at: user.email_confirmed_at,
+            created_at: user.created_at
+          });
           
           // Check if this is a new user who just confirmed their email
           const now = new Date()
@@ -36,6 +43,8 @@ export default function AuthCallbackPage() {
           // Check if user was just confirmed (email_confirmed_at is very recent)
           const justConfirmed = user.email_confirmed_at && 
             (now.getTime() - new Date(user.email_confirmed_at).getTime()) < (5 * 60 * 1000) // Confirmed within 5 minutes
+          
+          console.log('🔐 User analysis:', { isVeryNewUser, justConfirmed });
           
           try {
             const response = await fetch('/api/organizations', {
@@ -51,8 +60,8 @@ export default function AuthCallbackPage() {
               // If user is very new AND just confirmed email, send to onboarding regardless of org
               if ((isVeryNewUser || justConfirmed) && hasOrganization) {
                 // New user who just confirmed - go to onboarding even though they have an org
-                toast.success("Welcome to AdHub! Let's get you set up.", {
-                  description: "Account confirmed successfully"
+                toast.success("🎉 Email confirmed successfully! Welcome to AdHub!", {
+                  description: "Let's get you set up"
                 })
                 router.push('/onboarding')
               } else if (hasOrganization) {
@@ -71,8 +80,8 @@ export default function AuthCallbackPage() {
             } else {
               // Can't check organization, but if user is very new, send to onboarding
               if (isVeryNewUser || justConfirmed) {
-                toast.success("Welcome to AdHub! Let's get you set up.", {
-                  description: "Account confirmed successfully"
+                toast.success("🎉 Email confirmed successfully! Welcome to AdHub!", {
+                  description: "Let's get you set up"
                 })
                 router.push('/onboarding')
               } else {
@@ -85,8 +94,8 @@ export default function AuthCallbackPage() {
             console.error("Error checking organization:", orgError)
             // If we can't check organization but user is new, default to onboarding
             if (isVeryNewUser || justConfirmed) {
-              toast.success("Welcome to AdHub! Let's get you set up.", {
-                description: "Account confirmed successfully"
+              toast.success("🎉 Email confirmed successfully! Welcome to AdHub!", {
+                description: "Let's get you set up"
               })
               router.push('/onboarding')
             } else {
@@ -96,9 +105,10 @@ export default function AuthCallbackPage() {
             }
           }
         } else {
-          // No session found
-          toast.error("Please try signing in with your credentials.", {
-            description: "Confirmation Issue"
+          // No session found - likely came from email link but confirmation failed
+          console.log("No session found in auth callback")
+          toast.error("Email confirmation may have failed. Please try signing in.", {
+            description: "Please enter your credentials"
           })
           router.push('/login')
         }

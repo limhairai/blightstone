@@ -40,13 +40,18 @@ export function RegisterView() {
     setLoading(true);
 
     try {
+      console.log('📝 Starting registration for:', email);
       const { data, error } = await signUp(email, password);
+      
+      console.log('📝 Registration result:', { user: data?.user?.id, session: !!data?.session, error: error?.message });
       
       if (error) {
         console.error('📝 Registration error:', error);
         setError(error.message);
+        setLoading(false);
         
         if (error.message.includes('User already registered')) {
+          toast.error("An account with this email already exists. Redirecting to login...");
           setTimeout(() => {
             router.push('/login');
           }, 3000);
@@ -56,27 +61,35 @@ export function RegisterView() {
 
       if (data?.user && !data.session) {
         // New user registration that requires email confirmation
+        console.log('📝 Registration successful - email confirmation required');
         toast.success("Registration successful! Please check your email to confirm your account.", {
           duration: 5000
         });
+        setLoading(false);
         // Immediately redirect to confirmation page
         router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
         return;
       } else if (data?.user && data.session) {
+        // Auto-confirmed registration (shouldn't happen with email confirmation enabled)
+        console.log('📝 Registration successful - auto-confirmed');
         toast.success("Registration successful! Let's get you set up...");
+        setLoading(false);
         setTimeout(() => {
           router.push("/onboarding");
         }, 1000);
+        return;
       } else {
+        // Unexpected state
+        console.error('📝 Unexpected registration state:', data);
         setError("Registration failed. Please try again.");
         toast.error("Registration failed. Please try again.");
+        setLoading(false);
       }
     } catch (err: any) {
       console.error('📝 Registration exception:', err);
       const errorMessage = err?.message || "An unexpected error occurred during registration.";
       setError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setLoading(false);
     }
   };
