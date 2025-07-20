@@ -103,24 +103,44 @@ export default function AuthCallbackPage() {
         // Update loading message for better UX
         setProcessingMessage("Verifying your session...");
         
-        // For magic links, we need to wait longer and try multiple approaches
+        // Give Supabase time to process URL tokens automatically
         let data, error;
         
-        // Reduced wait time for faster UX - Supabase is usually quick
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // Wait for Supabase to auto-process tokens
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait for stability
         ({ data, error } = await supabase.auth.getSession());
         
-        // If still no session, try getting user which might trigger token exchange
+        // If still no session, try multiple approaches
         if (!data.session && !error) {
-          console.log('🔐 No session found, trying getUser to trigger token exchange...');
-          setProcessingMessage("Setting up your account...");
+          console.log('🔐 No session found, trying alternative methods...');
+          setProcessingMessage("Establishing your session...");
           
+          // Try getUser first
           const { data: userData, error: userError } = await supabase.auth.getUser();
           
           if (userData.user && !userError) {
             console.log('🔐 User found via getUser, trying session again...');
-            await new Promise(resolve => setTimeout(resolve, 100)); // Even faster retry
+            await new Promise(resolve => setTimeout(resolve, 500));
             ({ data, error } = await supabase.auth.getSession());
+          }
+          
+          // If still no session but we have verification tokens, try manual verification
+          if (!data.session && verificationToken && verificationType) {
+            console.log('🔐 Trying manual token verification...');
+            try {
+              const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+                token_hash: verificationToken,
+                type: verificationType as any,
+              });
+              
+              if (!verifyError && verifyData.session) {
+                console.log('🔐 Manual verification successful');
+                data = { session: verifyData.session };
+                error = null;
+              }
+            } catch (verifyErr) {
+              console.error('🔐 Manual verification failed:', verifyErr);
+            }
           }
         }
         
