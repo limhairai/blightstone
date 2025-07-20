@@ -65,14 +65,17 @@ export default function SupportPage() {
     return params.toString()
   }, [statusFilter, categoryFilter, debouncedSearchQuery])
 
-  // Optimized SWR data fetching with caching
+  // ⚡ INSTANT LOADING: Use prefetched data for 0ms page load
   const { data: ticketsData, error, isLoading, mutate } = useSWR(
     session?.access_token ? [`/api/support/tickets?${queryParams}`, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 30000, // 30 seconds
+      dedupingInterval: 300000, // 5 minutes - much longer since we prefetch
+      revalidateIfStale: false, // Use cached data immediately
+      revalidateOnMount: false, // Don't fetch on mount, use cache
+      fallbackData: [], // Provide empty fallback to prevent loading states
     }
   )
 

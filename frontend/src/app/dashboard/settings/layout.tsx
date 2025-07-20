@@ -30,11 +30,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
   const { session } = useAuth();
   const { mutate: globalMutate } = useSWRConfig();
   
-  // Use the optimized hook
+  // ⚡ INSTANT LOADING: Use prefetched organization data
   const { data, error, isLoading, mutate } = useCurrentOrganization(currentOrganizationId);
   const currentOrganization = data?.organizations?.[0];
   
-  // Use subscription hook for plan data
+  // ⚡ INSTANT LOADING: Use prefetched subscription data
   const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
   const planName = currentPlan?.name || 'Free';
 

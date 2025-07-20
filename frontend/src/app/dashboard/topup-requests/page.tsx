@@ -90,11 +90,11 @@ export default function ClientTopupRequestsPage() {
   
   // Remove tab state - no longer needed
   
-  // OPTIMIZATION: Only load topup requests initially, load transactions on demand
+  // ⚡ INSTANT LOADING: Use prefetched data from global prefetcher
   const { data: requestsData, error: requestsError, isLoading: requestsLoading, mutate: mutateRequests } = useTopupRequests()
   const requests: TopupRequest[] = Array.isArray(requestsData) ? requestsData : requestsData?.requests || []
   
-  // Transactions data - LAZY LOADING
+  // State management for filters and pagination
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500)
@@ -103,37 +103,20 @@ export default function ClientTopupRequestsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [transactionTypeFilter, setTransactionTypeFilter] = useState("all")
-  const [shouldLoadTransactions, setShouldLoadTransactions] = useState(false)
   
-  // OPTIMIZATION: Only load transactions when needed (conditional SWR)
-  const transactionsQuery = useTransactions(
-    shouldLoadTransactions ? {
+  // ⚡ INSTANT LOADING: Always load transactions immediately using prefetched cache
+  const transactionsQuery = useTransactions({
     type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
     search: debouncedSearchQuery || undefined,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     business_id: businessFilter !== 'all' ? businessFilter : undefined,
     date: date ? format(date, 'yyyy-MM-dd') : undefined,
-    } : undefined // Pass undefined to disable the hook
-  )
+  })
   
   // Use the query result directly
   const { data: transactionsData, error: transactionsError, isLoading: transactionsLoading, mutate: mutateTransactions } = transactionsQuery
   
-  // Trigger transactions loading when user interacts with filters or after initial load
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShouldLoadTransactions(true)
-    }, 500) // Load transactions 500ms after page loads
-    
-    return () => clearTimeout(timer)
-  }, [])
-  
-  // Also load transactions when user applies filters
-  useEffect(() => {
-    if (debouncedSearchQuery || statusFilter !== 'all' || businessFilter !== 'all' || date || transactionTypeFilter !== 'all') {
-      setShouldLoadTransactions(true)
-    }
-  }, [debouncedSearchQuery, statusFilter, businessFilter, date, transactionTypeFilter])
+  // ⚡ REMOVED: No need to trigger loading - data is prefetched and always available
   
   const allTransactions = transactionsData?.transactions || []
   

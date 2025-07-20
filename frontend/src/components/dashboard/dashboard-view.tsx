@@ -38,6 +38,7 @@ import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useDashboardData, useTopupRequests } from "../../lib/swr-config"
 import { DashboardLoadingScreen } from "../core/dashboard-loading-screen"
+import { GlobalDataPrefetcher } from "../../lib/global-prefetcher"
 
 export function DashboardView() {
   // ALL HOOKS MUST BE CALLED FIRST - NEVER AFTER CONDITIONAL LOGIC
@@ -85,11 +86,24 @@ export function DashboardView() {
   // 🚀 PERFORMANCE: Fetch pending topup requests for complete topup tracking
   const { data: topupRequestsData, isLoading: isLoadingTopupRequests } = useTopupRequests()
 
-  // 🚀 PREDICTIVE PRELOADING: Preload core app data that users will likely need
+  // 🚀 AGGRESSIVE GLOBAL PREFETCHING: Load ALL dashboard data immediately for instant navigation
   useEffect(() => {
     if (!user || !session || !currentOrganizationId || authLoading || showLoadingScreen) return
 
-    // Only preload after the loading screen is complete
+    // Aggressive prefetching for 0ms page loads
+    const prefetcher = new GlobalDataPrefetcher({
+      session,
+      organizationId: currentOrganizationId
+    })
+
+    // Start prefetching immediately in background
+    prefetcher.prefetchAllDashboardData().then(() => {
+      console.log('🎯 All dashboard data prefetched - navigation will be instant!')
+    }).catch((error) => {
+      console.warn('Some prefetch tasks failed:', error)
+    })
+
+    // Legacy preloading (keeping for compatibility)
     const preloadCriticalData = async () => {
       try {
         // Preload pixels data (for pixels page)
