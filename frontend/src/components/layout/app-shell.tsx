@@ -70,29 +70,25 @@ export function AppShell({ children }: AppShellProps) {
     )
   }
 
-  // Show setup widget IMMEDIATELY for new users, then update based on progress
+  // SIMPLE APPROACH: Show widget immediately for new users, no API dependency
   useEffect(() => {
     if (!user) return
     
-    // Check if user is new (created within last 24 hours)
-    const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    // Check if user is new (created within last 48 hours - generous window)
+    const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 48 * 60 * 60 * 1000)
     
-    // IMMEDIATELY show setup widget for new users
-    if (isNewUser) {
+    // Check if user has explicitly dismissed the widget before
+    const hasExplicitlyDismissed = localStorage.getItem(`adhub_setup_dismissed_${user.id}`) === 'true'
+    
+    // IMMEDIATELY show setup widget for new users who haven't dismissed it
+    if (isNewUser && !hasExplicitlyDismissed) {
       console.log('🚀 New user detected - showing setup widget immediately');
       setSetupWidgetState("expanded")
+    } else if (!isNewUser || hasExplicitlyDismissed) {
+      // Older users or those who dismissed get collapsed widget
+      setSetupWidgetState("collapsed")
     }
-    
-    // Once progress loads, adjust widget state based on completion
-    if (!isLoading && progressData) {
-      if (progressData.hasCompletedOnboarding) {
-        setSetupWidgetState("collapsed") // Completed users get collapsed widget
-      } else if (isNewUser) {
-        // Keep expanded for new users who haven't completed
-        setSetupWidgetState("expanded")
-      }
-    }
-  }, [user, isLoading, progressData])
+  }, [user]) // Remove dependency on API data
 
   // Show welcome overlay for new users - IMMEDIATE display
   useEffect(() => {

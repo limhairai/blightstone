@@ -246,6 +246,11 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
 
   const handleDismiss = async () => {
     try {
+      // Store dismiss in localStorage for immediate future loads
+      if (session?.user) {
+        localStorage.setItem(`adhub_setup_dismissed_${session.user.id}`, 'true')
+      }
+      
       // Change state to closed first for immediate UI feedback
       onStateChange("closed")
       
