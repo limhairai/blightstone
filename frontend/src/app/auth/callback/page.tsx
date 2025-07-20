@@ -26,11 +26,51 @@ export default function AuthCallbackPage() {
         }
 
         if (data.session) {
-          // User is now authenticated
-          toast.success("Your account has been verified. Let's get you set up!", {
-            description: "Email Confirmed!"
-          })
-          router.push('/onboarding')
+          const user = data.session.user
+          
+          // Check if this is a new user or existing user
+          const isNewUser = user.user_metadata?.iss && !user.email_confirmed_at && user.created_at === user.updated_at
+          
+          // For Google OAuth, check if they have an organization
+          try {
+            const response = await fetch('/api/organizations', {
+              headers: {
+                'Authorization': `Bearer ${data.session.access_token}`
+              }
+            })
+            
+            if (response.ok) {
+              const orgData = await response.json()
+              const hasOrganization = orgData.organizations && orgData.organizations.length > 0
+              
+              if (hasOrganization) {
+                // Existing user with organization - go to dashboard
+                toast.success("Welcome back!", {
+                  description: "Signed in successfully"
+                })
+                router.push('/dashboard')
+              } else {
+                // New user or user without organization - go to onboarding
+                toast.success("Welcome to AdHub! Let's get you set up.", {
+                  description: "Account Created"
+                })
+                router.push('/onboarding')
+              }
+            } else {
+              // Can't check organization, assume new user
+              toast.success("Welcome to AdHub! Let's get you set up.", {
+                description: "Account Created"
+              })
+              router.push('/onboarding')
+            }
+          } catch (orgError) {
+            console.error("Error checking organization:", orgError)
+            // If we can't check organization, default to onboarding
+            toast.success("Welcome to AdHub! Let's get you set up.", {
+              description: "Account Created"
+            })
+            router.push('/onboarding')
+          }
         } else {
           // No session found
           toast.error("Please try signing in with your credentials.", {

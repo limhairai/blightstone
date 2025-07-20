@@ -36,12 +36,17 @@ export async function POST(request: NextRequest) {
 
     const { 
       amount, 
+      totalAmount,
+      fee,
+      paymentMethod,
       organizationId,
       returnUrl 
     } = await request.json()
     
-    // Set wallet credit to the same as amount for wallet funding
+    // Set wallet credit to the original amount (what goes to wallet)
     const wallet_credit = amount
+    // Use totalAmount for Stripe charge (includes processing fees)
+    const chargeAmount = totalAmount || amount
     const success_url = returnUrl || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/wallet?success=true`
     const cancel_url = returnUrl || `${process.env.NEXT_PUBLIC_FRONTEND_URL}/dashboard/wallet?canceled=true`
 
@@ -73,9 +78,9 @@ export async function POST(request: NextRequest) {
             currency: 'usd',
             product_data: {
               name: 'AdHub Wallet Credit',
-              description: `Add $${wallet_credit.toFixed(2)} to your wallet`,
+              description: `Add $${wallet_credit.toFixed(2)} to your wallet${fee ? ` (includes $${fee.toFixed(2)} processing fee)` : ''}`,
             },
-            unit_amount: Math.round(amount * 100),
+            unit_amount: Math.round(chargeAmount * 100),
           },
           quantity: 1,
         },
@@ -88,6 +93,9 @@ export async function POST(request: NextRequest) {
         organization_id: organization_id,
         user_id: user.id,
         wallet_credit: wallet_credit.toString(),
+        processing_fee: fee ? fee.toString() : '0',
+        payment_method: paymentMethod || 'credit_card',
+        total_charged: chargeAmount.toString(),
       },
       billing_address_collection: 'required',
     })

@@ -391,25 +391,7 @@ export function OrganizationSettings() {
                 </div>
               </div>
 
-              {/* Pixels Usage */}
-              {shouldEnablePixelLimits() && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-foreground">Facebook Pixels</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {activePixels} / {planLimits.pixels === -1 ? '∞' : planLimits.pixels}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
-                      style={{ 
-                        width: `${planLimits.pixels === -1 ? 0 : Math.min(100, (activePixels / planLimits.pixels) * 100)}%` 
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              )}
+
 
               {/* Monthly Topup Usage */}
               {shouldEnableTopupLimits() && (
@@ -431,29 +413,14 @@ export function OrganizationSettings() {
                 </div>
               )}
 
-              {/* Current Plan Summary */}
-              <div className="pt-2 border-t border-border">
+              {/* Domains per BM */}
+              {currentPlan.id !== 'free' && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Current Plan</span>
-                  <span className="text-foreground font-medium">{currentPlan.name}</span>
+                  <span className="text-muted-foreground">Domains per BM</span>
+                  <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Ad Spend Fee</span>
-                  <span className="text-foreground font-medium">{currentPlan.adSpendFee}%</span>
-                </div>
-                {planLimits.monthlyTopupLimit && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly Topup Limit</span>
-                    <span className="text-foreground font-medium">${planLimits.monthlyTopupLimit.toLocaleString()}</span>
-                  </div>
-                )}
-                {currentPlan.id !== 'free' && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Domains per BM</span>
-                    <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
-                  </div>
-                )}
-              </div>
+              )}
+
             </CardContent>
           </Card>
 

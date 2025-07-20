@@ -171,16 +171,14 @@ export function RegisterView() {
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
       
       {/* Home button */}
-      <div className="absolute top-6 left-6 z-10">
-        <a 
-          href="https://adhub.tech" 
-          target="_blank"
-          rel="noopener noreferrer"
+      <div className="absolute top-6 left-6 z-50">
+        <Link 
+          href="https://adhub.tech"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Home
-        </a>
+        </Link>
       </div>
       
       {/* Main content */}
@@ -210,7 +208,7 @@ export function RegisterView() {
               type="button"
               onClick={handleGoogleSignUp}
               disabled={loading}
-              className="h-11 bg-gradient-to-r from-[#b4a0ff]/30 to-[#ffb4a0]/30 hover:from-[#b4a0ff]/40 hover:to-[#ffb4a0]/40 border border-gray-600 text-white rounded-md font-normal"
+              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
@@ -237,7 +235,7 @@ export function RegisterView() {
               type="button"
               onClick={handleMagicLinkSignUp}
               disabled={loading}
-              className="h-11 bg-gradient-to-r from-[#b4a0ff]/30 to-[#ffb4a0]/30 hover:from-[#b4a0ff]/40 hover:to-[#ffb4a0]/40 border border-gray-600 text-white rounded-md font-normal"
+              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
             >
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -298,7 +296,7 @@ export function RegisterView() {
               <Button
                 type="submit"
                 disabled={loading}
-              className="w-full h-11 bg-white text-black hover:bg-gray-100 rounded-md font-medium"
+              className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
               >
               {loading ? "Creating Account..." : "Create Account"}
               </Button>

@@ -396,7 +396,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
     <Dialog open={showDowngradeConfirm} onOpenChange={setShowDowngradeConfirm}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-amber-600">
+          <DialogTitle className="flex items-center gap-2 text-foreground">
             <AlertTriangle className="h-5 w-5" />
             Confirm Downgrade
           </DialogTitle>
@@ -406,11 +406,11 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
         </DialogHeader>
         
         <div className="space-y-3 py-4">
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-            <p className="text-sm text-amber-800 dark:text-amber-200">
+          <div className="p-3 bg-muted rounded-lg border">
+            <p className="text-sm text-foreground">
               <strong>What happens next:</strong>
             </p>
-            <ul className="text-sm text-amber-700 dark:text-amber-300 mt-2 space-y-1">
+            <ul className="text-sm text-muted-foreground mt-2 space-y-1">
               <li>• Your current {currentPlan?.name} plan remains active until the end of your billing cycle</li>
               <li>• The downgrade takes effect on your next billing date</li>
               <li>• You won't be charged until then</li>

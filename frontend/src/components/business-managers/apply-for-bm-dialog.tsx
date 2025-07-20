@@ -318,7 +318,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             </div>
             
             <p className="text-xs text-muted-foreground">
-              Add all domains you plan to promote with this Business Manager. The first domain will be used as your primary website. Your {planId || 'current'} plan allows up to {maxDomainsPerBm} domains per BM.
+              Add all domains you plan to promote with this Business Manager. Your {planId || 'current'} plan allows up to {maxDomainsPerBm} domains per BM.
             </p>
           </div>
 

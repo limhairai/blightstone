@@ -110,6 +110,9 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
         },
         body: JSON.stringify({
           amount: amountNum,
+          totalAmount: totalAmount, // Include total amount with fees
+          fee: fee,
+          paymentMethod: paymentMethod,
           organizationId: currentOrganizationId,
           returnUrl: `${window.location.origin}/dashboard/wallet`
         })
@@ -169,15 +172,46 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
   }
 
   const getAmountDescription = () => {
-    switch (paymentMethod) {
-      case 'bank_transfer':
-        return 'Minimum: $50.00 • Maximum: $50,000.00'
+    // Show fee information if amount is entered
+    if (amountNum > 0 && fee > 0) {
+      return `Processing fee: ${formatCurrency(fee)} (${getFeePercentage(paymentMethod)}) • Total: ${formatCurrency(totalAmount)}`
+    }
+    
+    // No description when no amount is entered
+    return ''
+  }
+
+  const getPaymentFee = (amount: number, method: string) => {
+    if (isNaN(amount) || amount <= 0) return 0
+    
+    switch (method) {
+      case 'credit_card':
+        return amount * 0.03 // 3% for Stripe
       case 'crypto':
-        return 'Minimum: $10.00 • Maximum: $10,000.00'
+        return amount * 0.01 // 1% for crypto
+      case 'bank_transfer':
+        return amount * 0.005 // 0.5% for bank transfer
       default:
-        return 'Minimum amount: $10.00'
+        return 0
     }
   }
+
+  const getFeePercentage = (method: string) => {
+    switch (method) {
+      case 'credit_card':
+        return '3%'
+      case 'crypto':
+        return '1%'
+      case 'bank_transfer':
+        return '0.5%'
+      default:
+        return '0%'
+    }
+  }
+
+  const amountNum = parseFloat(amount) || 0
+  const fee = getPaymentFee(amountNum, paymentMethod)
+  const totalAmount = amountNum + fee
 
   const isLoading = isOrgLoading || loading
 
@@ -260,11 +294,9 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {paymentMethod === 'bank_transfer' 
-              ? 'Get Bank Transfer Details' 
-              : paymentMethod === 'crypto'
-                ? 'Pay with Crypto'
-                : `Add ${formatCurrency(parseFloat(amount) || 0)} to Wallet`
+            {amountNum > 0 
+              ? `Pay ${formatCurrency(totalAmount)}`
+              : 'Enter Amount'
             }
           </Button>
         </form>

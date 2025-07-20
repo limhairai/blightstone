@@ -304,8 +304,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async (options?: { redirectTo?: string }) => {
     setLoading(true);
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/`
-      : 'https://adhub.tech/'; 
+      ? `${window.location.origin}/auth/callback`
+      : 'https://adhub.tech/auth/callback'; 
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
