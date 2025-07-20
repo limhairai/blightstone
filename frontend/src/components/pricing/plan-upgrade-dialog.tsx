@@ -392,35 +392,60 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
       </DialogContent>
     </Dialog>
 
-    {showDowngradeConfirm && (
-      <Dialog open={showDowngradeConfirm} onOpenChange={setShowDowngradeConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <AlertTriangle className="text-yellow-500 mr-2" />
-              Confirm Downgrade
-            </DialogTitle>
-            <DialogDescription>
-              Are you sure you want to downgrade to {pendingDowngradePlan?.charAt(0).toUpperCase() + pendingDowngradePlan!.slice(1)}?
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-muted p-4 rounded-lg my-4">
-            <h3 className="font-semibold text-foreground mb-2">What happens next:</h3>
-            <ul className="list-disc list-inside text-muted-foreground space-y-1">
-              <li>Your current Scale plan remains active until the end of your billing cycle</li>
-              <li>The downgrade takes effect on your next billing date</li>
-              <li>You won’t be charged until then</li>
+    {/* Downgrade Confirmation Dialog */}
+    <Dialog open={showDowngradeConfirm} onOpenChange={setShowDowngradeConfirm}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <AlertTriangle className="h-5 w-5" />
+            Confirm Downgrade
+          </DialogTitle>
+          <DialogDescription className="text-left">
+            Are you sure you want to downgrade to {pendingDowngradePlan ? (pendingDowngradePlan.charAt(0).toUpperCase() + pendingDowngradePlan.slice(1)) : 'selected plan'}?
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-3 py-4">
+          <div className="p-3 bg-muted rounded-lg border">
+            <p className="text-sm text-foreground">
+              <strong>What happens next:</strong>
+            </p>
+            <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+              <li>• Your current {currentPlan?.name} plan remains active until the end of your billing cycle</li>
+              <li>• The downgrade takes effect on your next billing date</li>
+              <li>• You won't be charged until then</li>
             </ul>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDowngradeConfirm(false)}>Cancel</Button>
-            <Button variant="secondary" onClick={handleConfirmDowngrade}>
-              {isUpgrading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Downgrade'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    )}
+        </div>
+
+        <DialogFooter>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setShowDowngradeConfirm(false)
+              setPendingDowngradePlan(null)
+            }}
+            disabled={isUpgrading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={handleConfirmDowngrade}
+            disabled={isUpgrading}
+          >
+            {isUpgrading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              'Confirm Downgrade'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   )
 } 

@@ -123,7 +123,7 @@ export async function middleware(request: NextRequest) {
 
   // Define public routes - include onboarding
   // Note: Root path '/' is no longer public since it redirects based on auth status
-  const publicRoutes = ['/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email', '/onboarding']
+  const publicRoutes = ['/login', '/register', '/forgot-password', '/auth/callback', '/confirm-email', '/magic-link', '/onboarding']
 
   // If it's a public route, do nothing.
   if (publicRoutes.includes(pathname) || pathname.startsWith('/api/')) {
@@ -143,11 +143,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
   
-  // If there is a session and the user is on a public-only page (like login), redirect to dashboard
-  // BUT: Don't redirect if user is on register page and might be in the process of email confirmation
-  if (session && pathname === '/login') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
+  // If there is a session and the user is on a public-only page (like login), let them proceed
+  // The login component will handle checking onboarding status and redirecting appropriately
+  // Don't auto-redirect to dashboard anymore - let components handle the flow
   
   // For register page, only redirect if user is fully authenticated (email confirmed)
   if (session && pathname === '/register') {

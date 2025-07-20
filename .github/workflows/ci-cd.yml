@@ -2,9 +2,19 @@ name: AdHub CI/CD Pipeline
 
 on:
   push:
-    branches: [ staging, main ]
+    branches: [ main ]  # Only auto-run on main branch
   pull_request:
     branches: [ staging, main ]
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
 
 # Add permissions for security scanning
 permissions:

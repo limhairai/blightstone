@@ -13,6 +13,7 @@ import { Skeleton } from "../ui/skeleton"
 import { toast } from "sonner"
 import { validateRegistrationForm, showValidationErrors } from "../../lib/form-validation"
 import { ArrowLeft } from "lucide-react"
+import { supabase } from "../../lib/stores/supabase-client"
 
 export function RegisterView() {
   const [email, setEmail] = useState("");
@@ -40,54 +41,62 @@ export function RegisterView() {
     setLoading(true);
 
     try {
+      console.log('📝 Starting registration for:', email);
+      
+      // Just try to register - let Supabase handle duplicate detection naturally
       const { data, error } = await signUp(email, password);
+      
+      console.log('📝 Registration result:', { user: data?.user?.id, session: !!data?.session, error: error?.message });
       
       if (error) {
         console.error('📝 Registration error:', error);
         setError(error.message);
+        setLoading(false);
         
-        if (error.message.includes('User already registered')) {
+        if (error.message.includes('User already registered') || 
+            error.message.includes('already been registered') ||
+            error.message.includes('already exists')) {
+          toast.error("An account with this email already exists. Redirecting to login...");
           setTimeout(() => {
             router.push('/login');
-          }, 3000);
+          }, 2000);
+        } else {
+          toast.error(error.message);
         }
         return;
       }
 
       if (data?.user && !data.session) {
-        const isExistingUser = data.user.email_confirmed_at !== null;
-        
-        if (isExistingUser) {
-          toast.error("An account with this email already exists. Redirecting to login...", {
-            duration: 3000
-          });
-          setTimeout(() => {
-            router.push(`/login?email=${encodeURIComponent(email)}`);
-          }, 3000);
-          return;
-        }
-        
+        // New user registration that requires email confirmation
+        console.log('📝 Registration successful - email confirmation required');
         toast.success("Registration successful! Please check your email to confirm your account.", {
-          duration: 10000
+          duration: 5000
         });
-        setTimeout(() => {
-          router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
-        }, 1000);
+        setLoading(false);
+        // Immediately redirect to confirmation page
+        router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
+        return;
       } else if (data?.user && data.session) {
+        // Auto-confirmed registration (shouldn't happen with email confirmation enabled)
+        console.log('📝 Registration successful - auto-confirmed');
         toast.success("Registration successful! Let's get you set up...");
+        setLoading(false);
         setTimeout(() => {
           router.push("/onboarding");
         }, 1000);
+        return;
       } else {
+        // Unexpected state
+        console.error('📝 Unexpected registration state:', data);
         setError("Registration failed. Please try again.");
         toast.error("Registration failed. Please try again.");
+        setLoading(false);
       }
     } catch (err: any) {
       console.error('📝 Registration exception:', err);
       const errorMessage = err?.message || "An unexpected error occurred during registration.";
       setError(errorMessage);
       toast.error(errorMessage);
-    } finally {
       setLoading(false);
     }
   };
@@ -123,28 +132,7 @@ export function RegisterView() {
     }
   };
 
-  const handleMagicLinkSignUp = async () => {
-    if (!email) {
-      setError("Please enter your email address first.");
-      return;
-    }
-    
-    setError("");
-    
-    try {
-      const result = await signInWithMagicLink(email);
-      if (result.error) {
-        const errorMessage = result.error.message || "Failed to send magic link. Please try again.";
-        setError(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-    } catch (err: any) {
-      const errorMessage = err?.message || "An unexpected error occurred while sending magic link.";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    }
-  };
+  // Magic link handler removed - now handled by dedicated /magic-link page
 
   if (loading) {
     return (
@@ -171,7 +159,7 @@ export function RegisterView() {
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
       
       {/* Home button */}
-      <div className="absolute top-6 left-6 z-20">
+      <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://adhub.tech"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
@@ -208,7 +196,7 @@ export function RegisterView() {
               type="button"
               onClick={handleGoogleSignUp}
               disabled={loading}
-              className="h-11 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-md font-normal"
+              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
@@ -231,18 +219,19 @@ export function RegisterView() {
               Continue with Google
             </Button>
 
-            <Button
-              type="button"
-              onClick={handleMagicLinkSignUp}
-              disabled={loading}
-              className="h-11 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-md font-normal"
-            >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-              </svg>
-              Continue with Magic Link
-            </Button>
+            <Link href="/magic-link">
+              <Button
+                type="button"
+                disabled={loading}
+                className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal w-full"
+              >
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                </svg>
+                Continue with Magic Link
+              </Button>
+            </Link>
           </div>
 
           {/* Divider */}
@@ -256,15 +245,15 @@ export function RegisterView() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
               <label htmlFor="email" className="block text-sm text-gray-300 mb-1">
                 Email
               </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="alan.turing@example.com"
+                placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -273,7 +262,7 @@ export function RegisterView() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div>
               <label htmlFor="password" className="block text-sm text-gray-300 mb-1">
                 Password
               </label>
@@ -288,16 +277,18 @@ export function RegisterView() {
                 className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
               />
             </div>
-            
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            
-            <Button
-              type="submit"
+
+            {error && (
+              <div className="text-red-400 text-sm">{error}</div>
+            )}
+
+              <Button
+                type="submit"
+                disabled={loading}
               className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
-              disabled={loading}
-            >
+              >
               {loading ? "Creating Account..." : "Create Account"}
-            </Button>
+              </Button>
           </form>
 
           {/* Terms */}

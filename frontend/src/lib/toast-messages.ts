@@ -16,7 +16,7 @@ export const authMessages = {
     success: { description: "Welcome back! You've been signed in successfully." },
     loading: { description: "Signing you in..." },
     invalidCredentials: { description: "Incorrect email or password. Please check your credentials and try again." },
-    emailNotConfirmed: { description: "Please check your email and confirm your account before signing in." },
+    emailNotConfirmed: { description: "Your email address hasn't been confirmed yet. Please check your email and click the confirmation link." },
     tooManyRequests: { description: "Too many login attempts. Please wait a moment and try again." },
     userNotFound: { description: "No account found with this email address." },
     invalidApiKey: { description: "Authentication service unavailable. Please try again later." },

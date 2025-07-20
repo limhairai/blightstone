@@ -26,7 +26,20 @@ export function LoginView() {
     if (emailParam) {
       setEmail(emailParam);
     }
-  }, [searchParams]);
+    
+    // Check for error parameters from failed verification
+    const errorParam = searchParams?.get('error');
+    const errorCode = searchParams?.get('error_code');
+    const errorDescription = searchParams?.get('error_description');
+    
+    if (errorCode === 'otp_expired' && errorParam === 'access_denied') {
+      toast.error("Verification link has expired", {
+        description: "Please try requesting a new verification email"
+      });
+      // Clean up URL parameters
+      router.replace('/login', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,10 +63,8 @@ export function LoginView() {
       }
       
       // Success toast is now handled by AuthContext
-      // Wait a moment for auth state to update, then redirect
-      setTimeout(() => {
+      // Quick redirect - let the dashboard handle onboarding checks
         router.push('/dashboard');
-      }, 100);
     } catch (err: any) {
       console.error('🔐 Login exception:', err);
       const errorMessage = err?.message || "An unexpected error occurred during sign in.";
@@ -94,52 +105,16 @@ export function LoginView() {
     }
   };
 
-  const handleMagicLinkSignIn = async () => {
-    if (!email) {
-      setError("Please enter your email address first.");
-      return;
-    }
-    
-    setError("");
-    
-    try {
-      const result = await signInWithMagicLink(email);
-      if (result.error) {
-        const errorMessage = result.error.message || "Failed to send magic link. Please try again.";
-        setError(errorMessage);
-        toast.error(errorMessage);
-        return;
-      }
-      
-      // Success message is handled by the auth context
-    } catch (err: any) {
-      const errorMessage = err?.message || "An unexpected error occurred while sending magic link.";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    }
-  };
-
-  if (authIsLoading) {
-    return (
-      <div className="min-h-screen bg-black relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
-        <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
-          <div className="w-full max-w-md text-center space-y-4">
-            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-gray-400">Signing in...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Magic link handler removed - now handled by dedicated /magic-link page
 
   return (
     <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
       
-      <div className="absolute top-6 left-6 z-20">
+      {/* Home button - now clickable */}
+      <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://adhub.tech"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
@@ -149,15 +124,18 @@ export function LoginView() {
         </Link>
       </div>
       
+      {/* Main content */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md space-y-8">
           
+          {/* Logo */}
           <div className="flex justify-center">
             <AdHubLogo size="sm" />
           </div>
 
+          {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Welcome Back</h1>
+            <h1 className="text-2xl font-semibold text-white">Welcome back</h1>
             <p className="text-gray-400">
               Don't have an account?{" "}
               <Link href="/register" className="text-white underline hover:no-underline">
@@ -167,12 +145,13 @@ export function LoginView() {
             </p>
           </div>
 
+          {/* Social login buttons - changed to grey */}
           <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
               onClick={handleGoogleSignIn}
               disabled={authIsLoading}
-              className="h-11 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-md font-normal"
+              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
@@ -195,75 +174,99 @@ export function LoginView() {
               Continue with Google
             </Button>
 
+            <Link href="/magic-link">
             <Button
               type="button"
-              onClick={handleMagicLinkSignIn}
               disabled={authIsLoading}
-              className="h-11 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-white rounded-md font-normal"
+                className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal w-full"
             >
-              <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
               </svg>
               Continue with Magic Link
             </Button>
+            </Link>
           </div>
 
+          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600" />
+              <div className="w-full border-t border-gray-700" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-black px-2 text-gray-400">Or continue with</span>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-black px-4 text-gray-400">or</span>
             </div>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm text-gray-300 mb-1">
+                Email
+              </label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Email"
-                className="h-11 bg-gray-900 border-gray-700 text-white"
+                placeholder="you@company.com"
                 value={email}
-                onChange={e => setEmail(e.target.value)}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                autoComplete="email"
                 disabled={authIsLoading}
+                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
               />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label htmlFor="password" className="block text-sm text-gray-300">
+                  Password
+                </label>
+                <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white transition-colors">
+                  Forgot Password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"
-                placeholder="Password"
-                className="h-11 bg-gray-900 border-gray-700 text-white"
+                placeholder="••••••••"
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                autoComplete="current-password"
                 disabled={authIsLoading}
+                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
               />
             </div>
-            
-            <div className="flex items-center justify-between">
-                <div/>
-              <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white">
-                Forgot Password?
-              </Link>
-            </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            
-            <Button
-              type="submit"
+            {error && (
+              <div className="text-red-400 text-sm">{error}</div>
+            )}
+
+              <Button
+                type="submit"
+                disabled={authIsLoading}
               className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
-              disabled={authIsLoading}
-            >
-              {authIsLoading ? "Signing In..." : "Sign In"}
-            </Button>
+              >
+                {authIsLoading ? "Signing in..." : "Sign In"}
+              </Button>
           </form>
 
+          {/* Terms */}
+          <div className="text-center">
+            <p className="text-xs text-gray-500">
+              By continuing, you agree to AdHub's{" "}
+              <Link href="/terms" className="text-gray-400 underline hover:no-underline">
+                Terms of Service
+                </Link>
+              {" "}and{" "}
+              <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
+              Privacy Policy
+            </Link>
+            , and to receive periodic emails with updates.
+            </p>
+          </div>
         </div>
       </div>
     </div>
-  );
+  )
 } 

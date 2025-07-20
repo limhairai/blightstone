@@ -80,6 +80,12 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
               
               if (data.status === 'completed') {
                 toast.success('Payment completed successfully!')
+                
+                // Invalidate caches after successful crypto payment
+                import('@/lib/cache-invalidation').then(({ CacheInvalidationScenarios }) => {
+                  CacheInvalidationScenarios.walletFunding()
+                })
+                
                 onSuccess?.()
                 setTimeout(() => onClose(), 2000)
               } else if (data.status === 'failed') {

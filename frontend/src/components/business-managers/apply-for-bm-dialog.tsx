@@ -317,8 +317,8 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
               })}
             </div>
             
-            <p className="text-sm text-muted-foreground mt-2">
-              Add all domains you plan to promote with this Business Manager. Your scale plan allows up to 5 domains per BM.
+            <p className="text-xs text-muted-foreground">
+              Add all domains you plan to promote with this Business Manager. Your {planId || 'current'} plan allows up to {maxDomainsPerBm} domains per BM.
             </p>
           </div>
 

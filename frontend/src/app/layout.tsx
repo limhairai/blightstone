@@ -9,6 +9,7 @@ import { SimpleProviders } from "../components/core/simple-providers";
 import { DynamicToaster } from "../components/ui/dynamic-toaster";
 import { initializeAdminPerformance } from "@/lib/admin-performance";
 import { PredictiveLoadingProvider } from "../components/core/predictive-loading-provider";
+import { CacheManagerInit } from "../components/core/cache-manager-init";
 
 // Configure Inter font with minimal configuration to reduce loading issues
 const inter = Inter({ 
@@ -65,6 +66,7 @@ export default function RootLayout({
       <body className={`${inter.className} ${inter.variable} ${dmSans.variable}`}>
         <SimpleProviders>
           <PredictiveLoadingProvider>
+            <CacheManagerInit />
             {children}
             <DynamicToaster />
           </PredictiveLoadingProvider>

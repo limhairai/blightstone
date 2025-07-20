@@ -100,7 +100,7 @@ describe('LoginView', () => {
     render(<LoginView />);
     
     // Fill in the form
-    fireEvent.change(screen.getByPlaceholderText(/limhairai@gmail.com/i), { 
+    fireEvent.change(screen.getByPlaceholderText(/you@company.com/i), { 
       target: { value: 'test@example.com' } 
     });
     fireEvent.change(screen.getByPlaceholderText(/••••••••/i), { 

@@ -36,33 +36,12 @@ import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
 import { getPlanPricing, shouldEnableTopupLimits, shouldEnablePixelLimits } from "@/lib/config/pricing-config"
 import { countAccountsByClientStatus } from "@/lib/utils/status-utils"
 
-function UsageLimitItem({ label, used, limit }: { label: string; used: number; limit: number }) {
-  const displayLimit = limit === -1 ? '∞' : limit
-  const percentage = limit === -1 || limit === 0 ? 0 : Math.min(100, (used / limit) * 100)
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">{label}</Label>
-        <span className="text-sm text-muted-foreground">
-          {used} / {displayLimit}
-        </span>
-      </div>
-      <div className="w-full bg-muted rounded-full h-2">
-        <div
-          className="bg-gradient-to-r from-violet-500 to-red-400 h-2 rounded-full"
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  )
-}
 
 export function OrganizationSettings() {
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore();
   const { mutate } = useSWRConfig();
   const { session } = useAuth();
-  const { currentPlan: subscriptionPlan, usage, subscriptionData } = useSubscription();
+  const { currentPlan: subscriptionPlan, usage, subscriptionData, refresh: refreshSubscription } = useSubscription();
 
   // Helper function to get plan limits from pricing config
   const getPlanLimits = (plan: any) => {
@@ -139,13 +118,13 @@ export function OrganizationSettings() {
         mutate('/api/ad-accounts'),
         // CRITICAL: Also invalidate subscription cache
         mutate([`/api/subscriptions/current?organizationId=${currentOrganizationId}`, session?.access_token]),
-        mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`)
+        mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`),
+        // Also refresh the subscription hook directly
+        refreshSubscription ? refreshSubscription() : Promise.resolve()
       ]);
       
       // Small delay to allow data to refresh
-      setTimeout(() => {
-        toast.success('Subscription data refreshed!');
-      }, 500);
+      // REMOVED: Annoying toast notification
       
       // Silent refresh - no toast needed since this is called automatically
     } catch (error) {
@@ -163,8 +142,28 @@ export function OrganizationSettings() {
     const paymentSuccess = urlParams.get('payment');
     
     if (subscriptionSuccess === 'success' || paymentSuccess === 'success') {
-      // User returned from successful payment - refresh data immediately
-      handleManualRefresh();
+      // User returned from successful payment - invalidate all caches and refresh
+      const invalidateAllCaches = async () => {
+        const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
+        const { invalidateSubscriptionCaches } = await import('@/lib/surgical-cache-invalidation')
+        
+        // Use both general and surgical subscription invalidation
+        await Promise.all([
+          CacheInvalidationScenarios.paymentSuccess(),
+          invalidateSubscriptionCaches() // Surgical subscription cache invalidation
+        ])
+      }
+      
+      invalidateAllCaches()
+      
+      // Force immediate refresh of subscription hook data
+      setTimeout(async () => {
+        if (refreshSubscription) {
+          await refreshSubscription()
+        }
+      }, 100)
+      
+      handleManualRefresh()
       
       // Clean up URL params
       const newUrl = window.location.pathname;
@@ -193,8 +192,10 @@ export function OrganizationSettings() {
   const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
   const monthlyTopupUsage = topupUsage?.currentUsage || 0
   
-  // Debug logging to understand the data structure
+  // Debug logging to understand the data structure and subscription data
   console.log('🔍 Settings Debug:', {
+    subscriptionPlan,
+    subscriptionData,
     totalAccounts: accounts.length,
     activeAccounts,
     accountsData: accounts.slice(0, 2), // Show first 2 accounts for debugging
@@ -329,12 +330,46 @@ export function OrganizationSettings() {
   const globalLoading = isOrgLoading || isBizLoading || isAccLoading || isPixelLoading || isTopupLoading;
 
   if (globalLoading) {
-    return <div>Loading organization settings...</div>;
+          return (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <div className="h-8 bg-gray-800/20 rounded w-1/3 animate-pulse"></div>
+            <div className="h-4 bg-gray-800/20 rounded w-1/2 animate-pulse"></div>
+          </div>
+          
+          <div className="grid gap-6">
+            {/* Organization Info Card Skeleton */}
+            <div className="border border-gray-700 rounded-lg p-6 space-y-4 bg-gray-900/20">
+              <div className="h-6 bg-gray-800/30 rounded w-1/4 animate-pulse"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-800/20 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-gray-800/20 rounded w-3/4 animate-pulse"></div>
+              </div>
+            </div>
+            
+            {/* Subscription Card Skeleton */}
+            <div className="border border-gray-700 rounded-lg p-6 space-y-4 bg-gray-900/20">
+              <div className="h-6 bg-gray-800/30 rounded w-1/3 animate-pulse"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-800/20 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-gray-800/20 rounded w-2/3 animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
   }
   
   // Safety check - show loading if no organization ID or if still loading
   if (!currentOrganizationId) {
-    return <div>Loading organization...</div>
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-2">
+          <div className="h-6 w-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-500">Loading organization...</p>
+        </div>
+      </div>
+    )
   }
   
   // If we have an organization ID but no organization data (and not loading), 
@@ -375,41 +410,73 @@ export function OrganizationSettings() {
                 Your current usage across different resources
               </CardDescription>
             </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-4">
-                <UsageLimitItem 
-                  label="Business Managers" 
-                  used={activeBusinesses} 
-                  limit={planLimits.businessManagers} 
-                />
-                <UsageLimitItem 
-                  label="Ad Accounts" 
-                  used={activeAccounts} 
-                  limit={planLimits.adAccounts} 
-                />
-                {shouldEnablePixelLimits() && (
-                  <UsageLimitItem 
-                    label="Pixels" 
-                    used={activePixels} 
-                    limit={planLimits.pixels} 
-                  />
+            <CardContent className="space-y-4">
+              {/* Business Managers Usage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-foreground">Business Managers</Label>
+                  <span className="text-sm text-muted-foreground">
+                                            {activeBusinesses} / {planLimits.businessManagers === -1 ? '∞' : planLimits.businessManagers}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                    style={{ 
+                      width: `${planLimits.businessManagers === -1 ? 0 : Math.min(100, (activeBusinesses / planLimits.businessManagers) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Ad Accounts Usage */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-foreground">Ad Accounts</Label>
+                  <span className="text-sm text-muted-foreground">
+                                            {activeAccounts} / {planLimits.adAccounts === -1 ? '∞' : planLimits.adAccounts}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                    style={{ 
+                      width: `${planLimits.adAccounts === -1 ? 0 : Math.min(100, (activeAccounts / planLimits.adAccounts) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+
+
+              {/* Monthly Topup Usage */}
+              {shouldEnableTopupLimits() && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-foreground">Monthly Topup Limit</Label>
+                    <span className="text-sm text-muted-foreground">
+                      ${monthlyTopupUsage.toLocaleString()} / ${planLimits.monthlyTopupLimit === -1 ? '∞' : planLimits.monthlyTopupLimit.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                      style={{ 
+                        width: `${planLimits.monthlyTopupLimit === -1 ? 0 : Math.min(100, (monthlyTopupUsage / planLimits.monthlyTopupLimit) * 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Domains per BM */}
+                {currentPlan.id !== 'free' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Domains per BM</span>
+                    <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
+                  </div>
                 )}
-              </div>
-              
-              <div className="mt-6 pt-4 border-t border-border/20">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Ad Spend Fee</span>
-                  <span className="font-semibold text-foreground">
-                    {currentPlan.adSpendFee > 0 ? `${currentPlan.adSpendFee}%` : '0%'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-sm mt-2">
-                  <span className="text-muted-foreground">Domains per BM</span>
-                  <span className="font-semibold text-foreground">
-                    {getPlanPricing(subscriptionPlan?.id as 'starter' | 'growth' | 'scale')?.domainsPerBm}
-                  </span>
-                </div>
-              </div>
+
             </CardContent>
           </Card>
 

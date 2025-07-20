@@ -21,16 +21,22 @@ import { Badge } from "../ui/badge"
 import { validateForm, validators, showValidationErrors, showSuccessToast } from "../../lib/form-validation"
 import { useSubscription } from "../../hooks/useSubscription"
 import { PlanUpgradeDialog } from "../pricing/plan-upgrade-dialog"
-import { getPlanPricing } from "../../lib/config/pricing-config"
+import { getPlanPricing, shouldEnableTopupLimits } from "../../lib/config/pricing-config"
+import { useTopupUsage } from "../../lib/swr-config"
+import { useOrganizationStore } from "../../lib/stores/organization-store"
 
 export function SettingsView() {
   const [isEditing, setIsEditing] = useState(false)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const { currentPlan, usage, billingHistory, isLoading } = useSubscription()
+  const { currentOrganizationId } = useOrganizationStore()
+  const { data: topupUsage } = useTopupUsage(
+    shouldEnableTopupLimits() ? currentOrganizationId : null
+  )
 
   // Helper function to get plan limits from pricing config
   const getPlanLimits = (plan: any) => {
-    if (!plan) return { teamMembers: 0, businessManagers: 0, adAccounts: 0 }
+    if (!plan) return { teamMembers: 0, businessManagers: 0, adAccounts: 0, monthlyTopupLimit: 0 }
     
     const planId = plan.id as 'starter' | 'growth' | 'scale'
     const planLimits = getPlanPricing(planId)
@@ -40,7 +46,8 @@ export function SettingsView() {
       return {
         teamMembers: plan.maxTeamMembers,
         businessManagers: plan.maxBusinesses,
-        adAccounts: plan.maxAdAccounts
+        adAccounts: plan.maxAdAccounts,
+        monthlyTopupLimit: 0
       }
     }
     
@@ -48,7 +55,8 @@ export function SettingsView() {
     return {
       teamMembers: -1, // No team limits in new pricing model
       businessManagers: planLimits.businessManagers,
-      adAccounts: planLimits.adAccounts
+      adAccounts: planLimits.adAccounts,
+      monthlyTopupLimit: planLimits.monthlyTopupLimit
     }
   }
 
@@ -285,21 +293,27 @@ export function SettingsView() {
                   <CardDescription className="text-xs">Manage your subscription and billing details.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 p-3 pt-0">
-                  <div className="flex items-center justify-between p-3 rounded-lg border bg-card/50">
-                    <div>
-                      <p className="font-medium text-xs">Current Plan</p>
-                      <p className="text-xs text-muted-foreground">
-                        {isLoading ? 'Loading...' : currentPlan ? `${currentPlan.name} Plan` : 'No Plan'}
-                      </p>
+                  
+                  {/* Monthly Topup Usage */}
+                  {shouldEnableTopupLimits() && planLimits.monthlyTopupLimit > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-xs">Monthly Topup Limit</h4>
+                        <span className="text-xs text-muted-foreground">
+                          ${(topupUsage?.currentUsage || 0).toLocaleString()} / ${planLimits.monthlyTopupLimit === -1 ? '∞' : planLimits.monthlyTopupLimit.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                          style={{ 
+                            width: `${planLimits.monthlyTopupLimit === -1 ? 0 : Math.min(100, ((topupUsage?.currentUsage || 0) / planLimits.monthlyTopupLimit) * 100)}%` 
+                          }}
+                        ></div>
+                      </div>
                     </div>
-                    <Badge className={`text-xs ${
-                      currentPlan?.id === 'free' 
-                        ? 'bg-blue-100 text-blue-800 border-blue-200' 
-                        : 'bg-[#f0e6ff] text-[#6941c6] border-[#e9d7fe]'
-                    }`}>
-                      {currentPlan?.id === 'free' ? 'Free' : 'Active'}
-                    </Badge>
-                  </div>
+                  )}
+
                   <div className="space-y-2">
                     <h4 className="font-medium text-xs">Payment Method</h4>
                     <div className="flex items-center gap-3 p-3 rounded-lg border">

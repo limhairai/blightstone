@@ -110,10 +110,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       
+      const defaultRedirectTo = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback`
+        : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '')}/auth/callback`; 
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options
+        options: {
+          ...options,
+          emailRedirectTo: defaultRedirectTo,
+        }
       });
       
       if (error) {
@@ -158,14 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.user && !data.session) {
-        // Email confirmation required
-        if (typeof window !== 'undefined') {
-          setTimeout(() => {
-            toast.success(authMessages.signUp.success.description, {
-              duration: authMessages.signUp.success.duration
-            });
-          }, 100);
-        }
+        // Email confirmation required - don't show toast here, let register component handle it
         setLoading(false);
         return { data: { user: data.user, session: data.session }, error: null };
       }
@@ -208,13 +208,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Handle specific Supabase error messages with better UX
         if (errorMessage === 'Invalid login credentials') {
-          // Ensure we're on client side for toast with small delay for hydration
           if (typeof window !== 'undefined') {
             setTimeout(() => {
-              toast.error(authMessages.signIn.invalidCredentials.description);
+              toast.error("Invalid email or password. If you just registered, please check your email to confirm your account first.");
             }, 100);
           }
-        } else if (errorMessage === 'Email not confirmed') {
+        } else if (errorMessage === 'Email not confirmed' || errorMessage.includes('not confirmed')) {
           if (typeof window !== 'undefined') {
             setTimeout(() => {
               toast.error(authMessages.signIn.emailNotConfirmed.description);
@@ -280,32 +279,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string, options?: { redirectTo?: string }) => {
-    setLoading(true);
+    // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/update-password`
-      : 'https://adhub.tech/auth/update-password'; 
+      ? `${window.location.origin}/auth/callback`
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '')}/auth/callback`; 
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: options?.redirectTo || defaultRedirectTo,
     });
 
-    setLoading(false);
-
     if (error) {
       console.error("Error sending password reset email:", error);
-      toast.error(`Password reset error: ${error.message}`);
       return { data: null, error };
     }
 
-    toast.success("If an account exists for this email, a password reset link has been sent. Please check your inbox.");
     return { data: data || {}, error: null }; 
   };
 
   const signInWithGoogle = async (options?: { redirectTo?: string }) => {
     setLoading(true);
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/`
-      : 'https://adhub.tech/'; 
+      ? `${window.location.origin}/auth/callback`
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '')}/auth/callback`; 
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -325,11 +320,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithMagicLink = async (email: string, options?: { redirectTo?: string }) => {
-    setLoading(true);
+    // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/dashboard`
-      : 'https://adhub.tech/dashboard'; 
+      ? `${window.location.origin}/auth/callback`
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '')}/auth/callback`; 
 
+    // Simplified approach: Just try magic link for any user
+    // Supabase will handle both new and existing users
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -339,13 +336,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error("Error sending magic link:", error);
-      toast.error(`Magic link error: ${error.message}`);
-      setLoading(false);
       return { data: null, error };
     }
 
-    toast.success("Magic link sent! Check your email for the login link.");
-    setLoading(false);
+    console.log("Magic link sent successfully:", data);
     return { data, error: null }; 
   };
 

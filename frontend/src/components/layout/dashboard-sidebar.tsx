@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "../ui/button"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { AdHubLogo } from "../core/AdHubLogo"
@@ -24,11 +24,36 @@ export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [expandedItems, setExpandedItems] = useState<string[]>(["Assets"]) // Only expand Assets by default
   const pathname = usePathname()
+  const router = useRouter()
   
   // Get organization and user data
   const { currentOrganizationId } = useOrganizationStore()
   const { data: orgData } = useCurrentOrganization(currentOrganizationId)
   const { user, session } = useAuth()
+
+  // ⚡ AGGRESSIVE ROUTE PREFETCHING: Prefetch all dashboard routes for instant navigation
+  useEffect(() => {
+    const routesToPrefetch = [
+      '/dashboard/wallet',
+      '/dashboard/support', 
+      '/dashboard/settings',
+      '/dashboard/topup-requests',
+      '/dashboard/business-managers',
+      '/dashboard/accounts',
+      '/dashboard/pixels',
+      '/dashboard/applications'
+    ]
+
+    // Prefetch all routes after a short delay to not interfere with initial load
+    const timer = setTimeout(() => {
+      routesToPrefetch.forEach(route => {
+        router.prefetch(route)
+      })
+      console.log('🚀 All dashboard routes prefetched for instant navigation!')
+    }, 2000)
+
+    return () => clearTimeout(timer)
+  }, [router])
   
   // Get organization name or user name for initials
   const organization = orgData?.organizations?.[0]

@@ -94,7 +94,10 @@ export default function WalletPage() {
         sessionStorage.removeItem('pending_payment_amount')
         
         // Background sync after optimistic update (user already sees the change)
-        setTimeout(() => {
+        setTimeout(async () => {
+          const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
+          await CacheInvalidationScenarios.walletFunding()
+          
           refreshAllData()
         }, 1000)
       } else {
