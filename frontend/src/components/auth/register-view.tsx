@@ -55,24 +55,13 @@ export function RegisterView() {
       }
 
       if (data?.user && !data.session) {
-        const isExistingUser = data.user.email_confirmed_at !== null;
-        
-        if (isExistingUser) {
-          toast.error("An account with this email already exists. Redirecting to login...", {
-            duration: 3000
-          });
-          setTimeout(() => {
-            router.push(`/login?email=${encodeURIComponent(email)}`);
-          }, 3000);
-          return;
-        }
-        
+        // New user registration that requires email confirmation
         toast.success("Registration successful! Please check your email to confirm your account.", {
-          duration: 10000
+          duration: 5000
         });
-        setTimeout(() => {
-          router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
-        }, 1000);
+        // Immediately redirect to confirmation page
+        router.push(`/confirm-email?email=${encodeURIComponent(email)}`);
+        return;
       } else if (data?.user && data.session) {
         toast.success("Registration successful! Let's get you set up...");
         setTimeout(() => {
@@ -264,7 +253,7 @@ export function RegisterView() {
               <Input
                 id="email"
                 type="email"
-                placeholder="alan.turing@example.com"
+                placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

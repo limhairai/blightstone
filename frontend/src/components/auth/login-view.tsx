@@ -219,7 +219,7 @@ export function LoginView() {
               <Input
                 id="email"
                 type="email"
-                placeholder="limhairai@gmail.com"
+                placeholder="you@company.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
