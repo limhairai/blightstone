@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { AdHubLogo } from "../core/AdHubLogo"
 import { useAuth } from "../../contexts/AuthContext"
 import { toast } from "sonner"
-import { Mail, CheckCircle, RefreshCw } from "lucide-react"
+import { Mail, CheckCircle, RefreshCw, ArrowLeft } from "lucide-react"
 
 export function EmailConfirmationView() {
   const router = useRouter()
@@ -43,91 +44,103 @@ export function EmailConfirmationView() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <div className="px-6 py-4 md:px-8">
-        <AdHubLogo size="lg" />
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      
+      {/* Home button */}
+      <div className="absolute top-6 left-6 z-50">
+        <Link 
+          href="https://adhub.tech"
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Home
+        </Link>
       </div>
       
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* Main content */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
         <div className="w-full max-w-md space-y-8">
-          <Card className="border-border">
-            <CardHeader className="text-center pb-4">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <Mail className="w-8 h-8 text-primary" />
+          
+          {/* Logo */}
+          <div className="flex justify-center">
+            <AdHubLogo size="sm" />
+          </div>
+
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+              <Mail className="w-8 h-8 text-blue-400" />
+            </div>
+            <h1 className="text-2xl font-semibold text-white">Check Your Email</h1>
+            <p className="text-gray-400">
+              We've sent a confirmation email to{" "}
+              <span className="font-medium text-white break-all">{email}</span>
+            </p>
+          </div>
+
+          {/* Instructions */}
+          <div className="bg-gray-900/50 rounded-lg p-4 space-y-3 border border-gray-700">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-white">Click the confirmation link</p>
+                <p className="text-gray-400">Check your email and click the confirmation link to activate your account.</p>
               </div>
-              <CardTitle className="text-2xl font-bold">Check Your Email</CardTitle>
-            </CardHeader>
+            </div>
             
-            <CardContent className="space-y-6">
-              <div className="text-center space-y-2">
-                <p className="text-muted-foreground">
-                  We&apos;ve sent a confirmation email to:
-                </p>
-                <p className="font-medium text-foreground break-all">
-                  {email}
-                </p>
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-white">Return to sign in</p>
+                <p className="text-gray-400">Once confirmed, you can sign in with your email and password.</p>
               </div>
+            </div>
+          </div>
 
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium">Click the confirmation link</p>
-                    <p className="text-muted-foreground">Check your email and click the confirmation link to activate your account.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="text-sm">
-                    <p className="font-medium">Return to sign in</p>
-                    <p className="text-muted-foreground">Once confirmed, you can sign in with your email and password.</p>
-                  </div>
-                </div>
-              </div>
+          <div className="text-center text-sm text-gray-500">
+            <p>Didn't receive the email? Check your spam folder</p>
+          </div>
 
-              <div className="text-center text-sm text-muted-foreground">
-                <p>Didn&apos;t receive the email? Check your spam folder or</p>
-              </div>
+          {/* Actions */}
+          <div className="space-y-3">
+            <Button
+              onClick={handleResendEmail}
+              disabled={isResending || !email}
+              className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
+            >
+              {isResending ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 mr-2" />
+                  Resend confirmation email
+                </>
+              )}
+            </Button>
 
-              <div className="space-y-3">
-                <Button
-                  onClick={handleResendEmail}
-                  disabled={isResending || !email}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {isResending ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-4 h-4 mr-2" />
-                      Resend confirmation email
-                    </>
-                  )}
-                </Button>
+            <Button
+              onClick={handleBackToLogin}
+              className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
+            >
+              Back to Sign In
+            </Button>
+          </div>
 
-                <Button
-                  onClick={handleBackToLogin}
-                  className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
-                >
-                  Back to Sign In
-                </Button>
-              </div>
-
-              <div className="text-center text-xs text-muted-foreground">
-                <p>
-                  Need help?{" "}
-                  <a href="mailto:support@adhub.com" className="text-primary hover:underline">
-                    Contact support
-                  </a>
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Terms */}
+          <div className="text-center">
+            <p className="text-xs text-gray-500">
+              Need help?{" "}
+              <a href="mailto:support@adhub.com" className="text-gray-400 underline hover:no-underline">
+                Contact support
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </div>
