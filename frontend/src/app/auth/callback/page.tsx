@@ -28,7 +28,8 @@ export default function AuthCallbackPage() {
                 // Handle direct Supabase verification URLs that might come here
         // Check for both URL params and hash params for maximum compatibility
         const verificationToken = tokenFromSearch || hashParams.get('token');
-        const verificationType = authType || hashParams.get('type');
+        // For verification type, prioritize search params (where recovery tokens come from)
+        const verificationType = searchParams.get('type') || hashParams.get('type');
         
         if (verificationToken && verificationType) {
           console.log('🔐 Processing Supabase verification token:', { 
