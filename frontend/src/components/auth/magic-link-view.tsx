@@ -11,6 +11,7 @@ import { toast } from "sonner"
 import { ArrowLeft } from "lucide-react"
 
 export function MagicLinkView() {
+  console.log('🔗 MagicLinkView component rendering');
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);

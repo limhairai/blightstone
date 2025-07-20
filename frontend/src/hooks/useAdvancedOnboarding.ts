@@ -5,7 +5,7 @@ import useSWR from 'swr'
 
 // Global cache to prevent duplicate API calls across components
 const onboardingCache = new Map<string, { data: OnboardingProgressData; timestamp: number }>()
-const CACHE_DURATION = 300000 // 5 minutes cache (very aggressive)
+const CACHE_DURATION = 30000 // 30 seconds cache (much faster for setup guide)
 
 export function useAdvancedOnboarding() {
   const { user, session } = useAuth()
@@ -25,16 +25,16 @@ export function useAdvancedOnboarding() {
       return response.json()
     },
     {
-      // AGGRESSIVE CACHING to prevent excessive API calls
+      // FAST LOADING for setup guide
       refreshInterval: 0, // Never auto-refresh
       revalidateOnFocus: false, // Don't revalidate on focus
       revalidateOnReconnect: false, // Don't revalidate on reconnect
       revalidateOnMount: true, // Allow initial load
-      dedupingInterval: 300000, // 5 minutes deduplication (very aggressive)
-      revalidateIfStale: false, // Don't revalidate stale data
-      focusThrottleInterval: 300000, // 5 minutes focus throttle
-      errorRetryCount: 1, // Reduce retry attempts
-      errorRetryInterval: 30000, // 30 seconds between retries
+      dedupingInterval: 5000, // 5 seconds deduplication (much faster)
+      revalidateIfStale: true, // Allow revalidation of stale data
+      focusThrottleInterval: 10000, // 10 seconds focus throttle
+      errorRetryCount: 2, // Allow retries
+      errorRetryInterval: 5000, // 5 seconds between retries
     }
   )
 

@@ -50,7 +50,7 @@ export function DashboardView() {
   const [hoveredBalanceIndex, setHoveredBalanceIndex] = useState<number | null>(null)
   const [hoveredSpendIndex, setHoveredSpendIndex] = useState<number | null>(null)
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
-  const [showLoadingScreen, setShowLoadingScreen] = useState(true)
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false) // Disable slow loading screen
 
   // Check onboarding status - RESTORED
   const { shouldShowOnboarding, progressData, isLoading: onboardingLoading } = useAdvancedOnboarding()
