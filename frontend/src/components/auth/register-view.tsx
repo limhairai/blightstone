@@ -43,34 +43,8 @@ export function RegisterView() {
     try {
       console.log('📝 Starting registration for:', email);
       
-      // Check if user exists by trying to send password reset
-      // This is the recommended way to check user existence in Supabase
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'dummy-url-for-check' // Won't actually send if we immediately cancel
-      });
-      
-      // If resetPasswordForEmail doesn't error, user exists
-      if (!resetError) {
-        setError("An account with this email already exists.");
-        toast.error("Account already exists. Redirecting to login...");
-        setLoading(false);
-        setTimeout(() => {
-          router.push(`/login?email=${encodeURIComponent(email)}`);
-        }, 2000);
-        return;
-      }
-      
-      // If we get a specific "user not found" error, that's good - proceed with signup
-      if (resetError.message.includes('User not found') || 
-          resetError.message.includes('user_not_found') ||
-          resetError.message.includes('Invalid email')) {
-        console.log('📝 User not found, proceeding with signup');
-      } else {
-        // Some other error occurred, but let's still try signup
-        console.log('📝 Reset password check error (continuing anyway):', resetError.message);
-      }
-      
-      // Proceed with signup
+      // Just try to register - let Supabase handle duplicate detection
+      // This is simpler and more reliable than trying to check existence first
       const { data, error } = await signUp(email, password);
       
       console.log('📝 Registration result:', { user: data?.user?.id, session: !!data?.session, error: error?.message });
