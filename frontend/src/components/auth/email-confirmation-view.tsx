@@ -67,15 +67,15 @@ export function EmailConfirmationView() {
           {/* Logo */}
           <div className="flex justify-center">
             <AdHubLogo size="sm" />
-          </div>
+              </div>
 
           {/* Success icon */}
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
               <CheckCircle className="w-8 h-8 text-green-400" />
-            </div>
-          </div>
-
+                  </div>
+                </div>
+                
           {/* Header */}
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-semibold text-white">Check Your Email</h1>
@@ -83,7 +83,7 @@ export function EmailConfirmationView() {
               We've sent a confirmation email to{" "}
               <span className="font-medium text-white break-all">{email}</span>
             </p>
-          </div>
+              </div>
 
           {/* Instructions */}
           <div className="text-center">
@@ -91,45 +91,45 @@ export function EmailConfirmationView() {
               Click the link in the email to confirm your account. 
               If you don't see it, check your spam folder.
             </p>
-          </div>
+              </div>
 
           {/* Actions */}
-          <div className="space-y-3">
-            <Button
-              onClick={handleResendEmail}
-              disabled={isResending || !email}
+              <div className="space-y-3">
+                <Button
+                  onClick={handleResendEmail}
+                  disabled={isResending || !email}
               className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
-            >
-              {isResending ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4 mr-2" />
-                  Resend confirmation email
-                </>
-              )}
-            </Button>
+                >
+                  {isResending ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4 mr-2" />
+                      Resend confirmation email
+                    </>
+                  )}
+                </Button>
 
-            <Button
-              onClick={handleBackToLogin}
+                <Button
+                  onClick={handleBackToLogin}
               className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
-            >
-              Back to Sign In
-            </Button>
-          </div>
+                >
+                  Back to Sign In
+                </Button>
+              </div>
 
           {/* Terms */}
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              Need help?{" "}
+                  Need help?{" "}
               <a href="mailto:support@adhub.com" className="text-gray-400 underline hover:no-underline">
-                Contact support
-              </a>
-            </p>
-          </div>
+                    Contact support
+                  </a>
+                </p>
+              </div>
         </div>
       </div>
     </div>

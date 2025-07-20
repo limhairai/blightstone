@@ -54,7 +54,7 @@ export function ForgotPasswordView() {
         {/* Home button */}
         <div className="absolute top-6 left-6 z-50">
           <Link 
-            href="https://adhub.tech"
+            href="https://adhub.tech" 
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -79,35 +79,35 @@ export function ForgotPasswordView() {
               <p className="text-gray-400">
                 We've sent password reset instructions to {email}
               </p>
-            </div>
+                </div>
 
             {/* Instructions */}
             <div className="text-center">
               <p className="text-sm text-gray-500">
-                Click the link in the email to reset your password. 
+                    Click the link in the email to reset your password. 
                 If you don't see it, check your spam folder.
-              </p>
-            </div>
+                  </p>
+                </div>
 
             {/* Actions */}
-            <div className="space-y-3">
+                <div className="space-y-3">
               <Link href="/login">
                 <Button className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Sign In
-                </Button>
-              </Link>
-              
-              <Button 
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Back to Sign In
+                    </Button>
+                  </Link>
+                  
+                  <Button
                 onClick={() => {
                   setSent(false)
                   setEmail("")
                 }}
                 className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
-              >
-                Try Different Email
-              </Button>
-            </div>
+                  >
+                    Try Different Email
+                  </Button>
+                </div>
           </div>
         </div>
       </div>
@@ -120,10 +120,10 @@ export function ForgotPasswordView() {
       <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
       
-              {/* Home button */}
+      {/* Home button */}
         <div className="absolute top-6 left-6 z-50">
         <Link 
-          href="https://adhub.tech"
+          href="https://adhub.tech" 
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -150,7 +150,7 @@ export function ForgotPasswordView() {
               </Link>
               .
             </p>
-          </div>
+              </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -158,33 +158,33 @@ export function ForgotPasswordView() {
               <label htmlFor="email" className="block text-sm text-gray-300 mb-1">
                 Email
               </label>
-              <Input
+                  <Input
                 id="email"
-                type="email"
+                    type="email"
                 placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={loading}
+                    disabled={loading}
                 className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
-              />
-            </div>
+                  />
+                </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
+                  <Button
+                    type="submit"
+                    disabled={loading}
               className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
-            >
+                  >
               {loading ? "Sending..." : "Send Reset Link"}
-            </Button>
+                  </Button>
           </form>
 
           {/* Back link */}
           <div className="text-center">
             <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
               ← Back to Sign In
-            </Link>
-          </div>
+                  </Link>
+              </div>
         </div>
       </div>
     </div>

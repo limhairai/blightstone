@@ -232,8 +232,8 @@ export default function AuthCallbackPage() {
                   "🎉 Email confirmed successfully! Welcome to AdHub!";
                 toast.success(message, {
                   description: "Let's get you set up"
-                })
-                router.push('/onboarding')
+          })
+          router.push('/onboarding')
               } else {
                 // Fallback to dashboard for existing users
                 toast.success("Welcome back!")
@@ -306,8 +306,8 @@ export default function AuthCallbackPage() {
             } else {
               toast.error("Authentication failed. Please try signing in again.", {
                 description: "Link may be expired or invalid"
-              })
-              router.push('/login')
+          })
+          router.push('/login')
             }
           }
         }

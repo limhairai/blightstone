@@ -281,8 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const resetPassword = async (email: string, options?: { redirectTo?: string }) => {
     // Don't set global loading state - let components handle their own loading
     const defaultRedirectTo = typeof window !== 'undefined' 
-      ? `${window.location.origin}/reset-password`
-      : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '')}/reset-password`; 
+      ? `${window.location.origin}/auth/callback`
+      : `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('/rest/v1', '')}/auth/callback`; 
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: options?.redirectTo || defaultRedirectTo,

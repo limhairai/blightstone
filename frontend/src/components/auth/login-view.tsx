@@ -64,7 +64,7 @@ export function LoginView() {
       
       // Success toast is now handled by AuthContext
       // Quick redirect - let the dashboard handle onboarding checks
-      router.push('/dashboard');
+        router.push('/dashboard');
     } catch (err: any) {
       console.error('🔐 Login exception:', err);
       const errorMessage = err?.message || "An unexpected error occurred during sign in.";
@@ -175,17 +175,17 @@ export function LoginView() {
             </Button>
 
             <Link href="/magic-link">
-              <Button
-                type="button"
-                disabled={authIsLoading}
+            <Button
+              type="button"
+              disabled={authIsLoading}
                 className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal w-full"
-              >
+            >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                  <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                </svg>
-                Continue with Magic Link
-              </Button>
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+              </svg>
+              Continue with Magic Link
+            </Button>
             </Link>
           </div>
 
@@ -242,13 +242,13 @@ export function LoginView() {
               <div className="text-red-400 text-sm">{error}</div>
             )}
 
-            <Button
-              type="submit"
-              disabled={authIsLoading}
+              <Button
+                type="submit"
+                disabled={authIsLoading}
               className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
-            >
-              {authIsLoading ? "Signing in..." : "Sign In"}
-            </Button>
+              >
+                {authIsLoading ? "Signing in..." : "Sign In"}
+              </Button>
           </form>
 
           {/* Terms */}
@@ -257,12 +257,12 @@ export function LoginView() {
               By continuing, you agree to AdHub's{" "}
               <Link href="/terms" className="text-gray-400 underline hover:no-underline">
                 Terms of Service
-              </Link>
+                </Link>
               {" "}and{" "}
               <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
-                Privacy Policy
-              </Link>
-              , and to receive periodic emails with updates.
+              Privacy Policy
+            </Link>
+            , and to receive periodic emails with updates.
             </p>
           </div>
         </div>

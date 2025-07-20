@@ -70,13 +70,29 @@ export function AppShell({ children }: AppShellProps) {
     )
   }
 
-  // SIMPLIFIED LOGIC: Just manage widget state, don't overthink it
+  // Show setup widget IMMEDIATELY for new users, then update based on progress
   useEffect(() => {
-    if (isLoading) return
+    if (!user) return
     
-    // Don't auto-reopen if user has closed it
-    // Let the widget manage its own visibility based on actual progress
-  }, [isLoading])
+    // Check if user is new (created within last 24 hours)
+    const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 24 * 60 * 60 * 1000)
+    
+    // IMMEDIATELY show setup widget for new users
+    if (isNewUser) {
+      console.log('🚀 New user detected - showing setup widget immediately');
+      setSetupWidgetState("expanded")
+    }
+    
+    // Once progress loads, adjust widget state based on completion
+    if (!isLoading && progressData) {
+      if (progressData.hasCompletedOnboarding) {
+        setSetupWidgetState("collapsed") // Completed users get collapsed widget
+      } else if (isNewUser) {
+        // Keep expanded for new users who haven't completed
+        setSetupWidgetState("expanded")
+      }
+    }
+  }, [user, isLoading, progressData])
 
   // Show welcome overlay for new users - IMMEDIATE display
   useEffect(() => {
