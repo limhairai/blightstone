@@ -30,11 +30,24 @@ export default function AuthCallbackPage() {
           fullURL: window.location.href
         });
 
-        // Wait a moment for Supabase to process URL tokens automatically
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // For magic links, we need to wait longer and try multiple approaches
+        let data, error;
         
-        // Now get the session
-        const { data, error } = await supabase.auth.getSession()
+        // First attempt - wait for Supabase to process URL tokens automatically
+        await new Promise(resolve => setTimeout(resolve, 500));
+        ({ data, error } = await supabase.auth.getSession());
+        
+        // If still no session, try getting user which might trigger token exchange
+        if (!data.session && !error) {
+          console.log('🔐 No session found, trying getUser to trigger token exchange...');
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          
+          if (userData.user && !userError) {
+            console.log('🔐 User found via getUser, trying session again...');
+            await new Promise(resolve => setTimeout(resolve, 200));
+            ({ data, error } = await supabase.auth.getSession());
+          }
+        }
         
         console.log('🔐 Session result:', { 
           hasSession: !!data.session, 
@@ -87,16 +100,24 @@ export default function AuthCallbackPage() {
               // If user is very new AND just confirmed email, send to onboarding regardless of org
               if ((isVeryNewUser || justConfirmed) && hasOrganization) {
                 // New user who just confirmed - go to onboarding even though they have an org
-                const message = authType === 'signup' ? 
-                  "🎉 Email verified successfully! Welcome to AdHub!" : 
-                  "🎉 Email confirmed successfully! Welcome to AdHub!";
+                let message = "🎉 Welcome to AdHub!";
+                if (authType === 'signup') {
+                  message = "🎉 Email verified successfully! Welcome to AdHub!";
+                } else if (authType === 'magiclink') {
+                  message = "🎉 Magic link sign in successful! Welcome to AdHub!";
+                } else {
+                  message = "🎉 Email confirmed successfully! Welcome to AdHub!";
+                }
                 toast.success(message, {
                   description: "Let's get you set up"
                 })
                 router.push('/onboarding')
               } else if (hasOrganization) {
                 // Existing user with organization - go to dashboard
-                toast.success("Welcome back!", {
+                const message = authType === 'magiclink' ? 
+                  "🎉 Magic link sign in successful! Welcome back!" : 
+                  "Welcome back!";
+                toast.success(message, {
                   description: "Signed in successfully"
                 })
                 router.push('/dashboard')
@@ -142,11 +163,24 @@ export default function AuthCallbackPage() {
           }
         } else {
           // No session found - likely came from email link but confirmation failed
-          console.log("No session found in auth callback")
-          toast.error("Email confirmation may have failed. Please try signing in.", {
-            description: "Please enter your credentials"
-          })
-          router.push('/login')
+          console.log("No session found in auth callback - tokens may be invalid/expired")
+          
+          if (authType === 'magiclink') {
+            toast.error("Magic link has expired or is invalid.", {
+              description: "Please request a new magic link"
+            })
+            router.push('/magic-link')
+          } else if (authType === 'signup') {
+            toast.error("Email verification link has expired or is invalid.", {
+              description: "Please try registering again"
+            })
+            router.push('/register')
+          } else {
+            toast.error("Authentication failed. Please try signing in again.", {
+              description: "Link may be expired or invalid"
+            })
+            router.push('/login')
+          }
         }
       } catch (error) {
         console.error("Unexpected error in auth callback:", error)
