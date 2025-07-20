@@ -135,7 +135,7 @@ export class SWRCacheManager {
   /**
    * The main invalidation handler
    */
-  private async handleCacheInvalidation(categories: CacheCategory[], organizationId?: string): Promise<void> {
+  async handleCacheInvalidation(categories: CacheCategory[], organizationId?: string): Promise<void> {
     try {
       // Use multiple strategies for maximum effectiveness
       await Promise.all([
