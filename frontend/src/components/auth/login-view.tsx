@@ -50,9 +50,37 @@ export function LoginView() {
       }
       
       // Success toast is now handled by AuthContext
-      // Wait a moment for auth state to update, then redirect
-      setTimeout(() => {
-        router.push('/dashboard');
+      // Check if user needs onboarding before redirecting
+      setTimeout(async () => {
+        try {
+          // Check onboarding status for new users
+          const response = await fetch('/api/onboarding-progress', {
+            headers: {
+              'Authorization': `Bearer ${result.data?.session?.access_token}`
+            }
+          });
+          
+          if (response.ok) {
+            const onboardingData = await response.json();
+            const needsOnboarding = !Object.values(onboardingData.progress).every(Boolean) && 
+                                   !onboardingData.persistence?.hasExplicitlyDismissed;
+            
+            if (needsOnboarding) {
+              console.log('🔐 User needs onboarding - redirecting to /onboarding');
+              router.push('/onboarding');
+            } else {
+              console.log('🔐 User onboarding complete - redirecting to /dashboard');
+              router.push('/dashboard');
+            }
+          } else {
+            // Fallback to dashboard if we can't check onboarding
+            router.push('/dashboard');
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+          // Fallback to dashboard
+          router.push('/dashboard');
+        }
       }, 100);
     } catch (err: any) {
       console.error('🔐 Login exception:', err);
