@@ -198,6 +198,23 @@ async function handleIncomingBankTransfer(transfer: any) {
       newBalance: result.newBalance,
       reference: fullReference
     })
+    
+    // Invalidate caches after successful bank transfer
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          tags: ['organization', 'wallet', 'transactions'],
+          context: `Airwallex bank transfer for org ${bankRequest.organization_id}`
+        })
+      })
+    } catch (error) {
+      console.warn('Failed to invalidate caches after bank transfer:', error)
+    }
 
     // TODO: Send notification to user about successful deposit
 
@@ -290,6 +307,23 @@ async function handlePaymentIntentSuccess(paymentIntent: any) {
     }
 
     console.log(`✅ Payment intent processed: ${organizationId} + $${walletCredit}`)
+    
+    // Invalidate caches after successful payment intent
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cache/invalidate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+        },
+        body: JSON.stringify({
+          tags: ['organization', 'wallet', 'transactions'],
+          context: `Airwallex payment intent for org ${organizationId}`
+        })
+      })
+    } catch (error) {
+      console.warn('Failed to invalidate caches after payment intent:', error)
+    }
 
   } catch (error) {
     console.error('Error handling payment intent success:', error)

@@ -143,6 +143,23 @@ async function handleBinancePayment(paymentData: any, status: string) {
           newBalance: result.newBalance,
           transactionId
         })
+        
+        // Invalidate caches after successful crypto payment
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cache/invalidate`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+            },
+            body: JSON.stringify({
+              tags: ['organization', 'wallet', 'transactions'],
+              context: `Binance Pay success for org ${order.organization_id}`
+            })
+          })
+        } catch (error) {
+          console.warn('Failed to invalidate caches after Binance Pay:', error)
+        }
       }
     }
     

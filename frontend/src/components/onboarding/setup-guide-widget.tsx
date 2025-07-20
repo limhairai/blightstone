@@ -79,9 +79,14 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
     const paymentSuccess = urlParams.get('success')
     
     if (paymentSuccess === 'true') {
-      // Payment was successful, refresh onboarding progress with delay to ensure DB is updated
-      setTimeout(() => {
+      // Payment was successful, invalidate all relevant caches
+      setTimeout(async () => {
+        // Invalidate onboarding progress locally
         mutateOnboarding()
+        
+        // Use centralized cache invalidation
+        const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
+        await CacheInvalidationScenarios.paymentSuccess()
       }, 1000) // 1 second delay to ensure payment processing is complete
       
       // Clean up URL parameter

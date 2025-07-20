@@ -27,26 +27,25 @@ async function invalidateSubscriptionCache(organizationId: string) {
     revalidateTag('subscriptions')
     revalidateTag('organizations')
     
-    // Method 2: Call internal cache invalidation endpoint for SWR
+    // Method 2: Use centralized cache invalidation for SWR and other caches
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-      const response = await fetch(`${baseUrl}/api/cache/invalidate`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cache/invalidate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
         },
         body: JSON.stringify({
-          organizationId,
-          type: 'subscription'
+          tags: ['subscription', 'organization', 'onboarding', 'plans', 'wallet'],
+          context: `Stripe webhook for org ${organizationId}`
         })
       })
       
       if (response.ok) {
-        console.log(`✅ SWR cache invalidation triggered for org: ${organizationId}`)
+        console.log(`✅ Comprehensive cache invalidation triggered for org: ${organizationId}`)
       }
     } catch (fetchError) {
-      console.warn('Failed to trigger SWR cache invalidation:', fetchError)
+      console.warn('Failed to trigger comprehensive cache invalidation:', fetchError)
     }
     
     console.log(`✅ Cache invalidated for organization: ${organizationId}`)
@@ -111,6 +110,8 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const organizationId = session.metadata?.organization_id
+  
   // Handle subscription checkout completion
   if (session.metadata?.plan_id) {
     // Update organization plan
@@ -120,18 +121,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         plan_id: session.metadata.plan_id,
         updated_at: new Date().toISOString()
       })
-      .eq('organization_id', session.metadata.organization_id)
+      .eq('organization_id', organizationId)
 
     if (updateError) {
       console.error('Failed to update organization plan:', updateError)
       return NextResponse.json({ error: 'Failed to update organization plan' }, { status: 500 })
+    }
+    
+    // Invalidate caches after subscription plan change
+    if (organizationId) {
+      await invalidateSubscriptionCache(organizationId)
     }
   }
   
   // Handle wallet credit checkout completion
   if (session.metadata?.wallet_credit) {
     const result = await WalletService.processTopup({
-      organizationId: session.metadata.organization_id,
+      organizationId: organizationId!,
       amount: parseFloat(session.metadata.wallet_credit),
       paymentMethod: 'stripe',
       transactionId: session.id,
@@ -146,6 +152,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     if (!result.success) {
       console.error('Wallet topup failed:', result.error)
       return NextResponse.json({ error: 'Failed to process wallet topup' }, { status: 500 })
+    }
+    
+    // Invalidate caches after wallet funding
+    if (organizationId) {
+      await invalidateSubscriptionCache(organizationId)
     }
   }
 }

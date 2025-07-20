@@ -35,6 +35,10 @@ export default function PaymentSuccessPage() {
           if (response.ok) {
             const data = await response.json()
             setPaymentDetails(data)
+            
+            // Invalidate caches after successful payment
+            const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
+            await CacheInvalidationScenarios.paymentSuccess()
           }
         } catch (error) {
           console.error('Error fetching payment details:', error)

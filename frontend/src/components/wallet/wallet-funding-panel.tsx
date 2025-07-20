@@ -145,6 +145,12 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
   const handleBinancePaySuccess = () => {
     setShowBinancePayDialog(false)
     setAmount('')
+    
+    // Invalidate caches after successful crypto payment
+    import('@/lib/cache-invalidation').then(({ CacheInvalidationScenarios }) => {
+      CacheInvalidationScenarios.walletFunding()
+    })
+    
     onSuccess?.()
     toast.success('Crypto payment completed successfully')
   }

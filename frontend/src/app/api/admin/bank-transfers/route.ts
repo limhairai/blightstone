@@ -90,6 +90,23 @@ export async function POST(request: NextRequest) {
         })
         .eq('request_id', requestId)
 
+      // Invalidate caches after admin bank transfer approval
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/cache/invalidate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.CACHE_INVALIDATION_SECRET || 'internal-cache-invalidation'}`
+          },
+          body: JSON.stringify({
+            tags: ['organization', 'wallet', 'transactions'],
+            context: `Admin bank transfer approval for org ${bankRequest.organization_id}`
+          })
+        })
+      } catch (error) {
+        console.warn('Failed to invalidate caches after admin bank transfer:', error)
+      }
+
       return NextResponse.json({ 
         success: true, 
         message: 'Bank transfer processed successfully',

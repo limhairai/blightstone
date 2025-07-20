@@ -142,8 +142,14 @@ export function OrganizationSettings() {
     const paymentSuccess = urlParams.get('payment');
     
     if (subscriptionSuccess === 'success' || paymentSuccess === 'success') {
-      // User returned from successful payment - refresh data immediately
-      handleManualRefresh();
+      // User returned from successful payment - invalidate all caches and refresh
+      const invalidateAllCaches = async () => {
+        const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
+        await CacheInvalidationScenarios.paymentSuccess()
+      }
+      
+      invalidateAllCaches()
+      handleManualRefresh()
       
       // Clean up URL params
       const newUrl = window.location.pathname;
