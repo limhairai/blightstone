@@ -14,13 +14,34 @@ export default function AuthCallbackPage() {
     const handleAuthCallback = async () => {
       try {
         console.log('🔐 Auth callback started');
-        // Handle the auth callback from Supabase
+        
+        // Get URL parameters for magic links and email confirmations
+        const searchParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
+        const tokenFromSearch = searchParams.get('token');
+        const tokenFromHash = hashParams.get('access_token');
+        
+        console.log('🔐 URL params:', { 
+          searchToken: !!tokenFromSearch,
+          hashAccessToken: !!tokenFromHash, 
+          type: hashParams.get('type') || searchParams.get('type'),
+          fullURL: window.location.href
+        });
+        
+        // Handle the auth callback from Supabase (for magic links, email confirmation, OAuth, etc.)
         const { data, error } = await supabase.auth.getSession()
+        
+        console.log('🔐 Session result:', { 
+          hasSession: !!data.session, 
+          error: error?.message,
+          userEmail: data.session?.user?.email 
+        });
         
         if (error) {
           console.error("Auth callback error:", error)
-          toast.error("Email confirmation failed. Please try again.", {
-            description: "Authentication Error"
+          toast.error("Authentication failed. Please try again.", {
+            description: error.message || "Authentication Error"
           })
           router.push('/login')
           return
