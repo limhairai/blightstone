@@ -69,11 +69,15 @@ export function EmailConfirmationView() {
             <AdHubLogo size="sm" />
           </div>
 
+          {/* Success icon */}
+          <div className="flex justify-center">
+            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+          </div>
+
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
-              <Mail className="w-8 h-8 text-blue-400" />
-            </div>
             <h1 className="text-2xl font-semibold text-white">Check Your Email</h1>
             <p className="text-gray-400">
               We've sent a confirmation email to{" "}
@@ -82,26 +86,11 @@ export function EmailConfirmationView() {
           </div>
 
           {/* Instructions */}
-          <div className="bg-gray-900/50 rounded-lg p-4 space-y-3 border border-gray-700">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-white">Click the confirmation link</p>
-                <p className="text-gray-400">Check your email and click the confirmation link to activate your account.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-white">Return to sign in</p>
-                <p className="text-gray-400">Once confirmed, you can sign in with your email and password.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center text-sm text-gray-500">
-            <p>Didn't receive the email? Check your spam folder</p>
+          <div className="text-center">
+            <p className="text-sm text-gray-500">
+              Click the link in the email to confirm your account. 
+              If you don't see it, check your spam folder.
+            </p>
           </div>
 
           {/* Actions */}
