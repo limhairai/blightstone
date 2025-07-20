@@ -42,6 +42,25 @@ export function RegisterView() {
 
     try {
       console.log('📝 Starting registration for:', email);
+      
+      // First try to sign in to check if user exists
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: 'dummy-password-check'
+      });
+      
+      // If signInError is NOT "Invalid login credentials", user might exist
+      if (signInError && !signInError.message.includes('Invalid login credentials')) {
+        // User exists but different error (e.g., email not confirmed)
+        if (signInError.message.includes('Email not confirmed')) {
+          setError("An account with this email exists but hasn't been verified. Please check your email for the confirmation link.");
+          toast.error("Account exists but not verified. Please check your email.");
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Proceed with signup
       const { data, error } = await signUp(email, password);
       
       console.log('📝 Registration result:', { user: data?.user?.id, session: !!data?.session, error: error?.message });

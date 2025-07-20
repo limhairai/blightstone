@@ -224,24 +224,59 @@ export default function AuthCallbackPage() {
             }
           }
         } else {
-          // No session found - likely came from email link but confirmation failed
-          console.log("No session found in auth callback - tokens may be invalid/expired")
+          // No session found - check for error parameters in URL
+          const errorParam = searchParams.get('error');
+          const errorCode = searchParams.get('error_code');
+          const errorDescription = searchParams.get('error_description');
           
-          if (authType === 'magiclink' || isMagicLink) {
-            toast.error("Magic link has expired or is invalid.", {
-              description: "Please request a new magic link"
-            })
-            router.push('/magic-link')
-          } else if (authType === 'signup') {
-            toast.error("Email verification link has expired or is invalid.", {
-              description: "Please try registering again"
-            })
-            router.push('/register')
+          console.log("No session found in auth callback", { 
+            error: errorParam, 
+            errorCode, 
+            errorDescription,
+            authType 
+          });
+          
+          // Handle specific error cases
+          if (errorCode === 'otp_expired' || errorParam === 'access_denied') {
+            if (authType === 'magiclink' || isMagicLink) {
+              toast.error("Magic link has expired.", {
+                description: "Please request a new magic link to sign in"
+              });
+              router.push('/magic-link');
+            } else if (authType === 'signup') {
+              toast.error("Email confirmation link has expired.", {
+                description: "Please try registering again to get a new confirmation email"
+              });
+              router.push('/register');
+            } else if (authType === 'recovery') {
+              toast.error("Password reset link has expired.", {
+                description: "Please request a new password reset link"
+              });
+              router.push('/forgot-password');
+            } else {
+              toast.error("Authentication link has expired.", {
+                description: "Please try signing in again"
+              });
+              router.push('/login');
+            }
           } else {
-            toast.error("Authentication failed. Please try signing in again.", {
-              description: "Link may be expired or invalid"
-            })
-            router.push('/login')
+            // Generic expired/invalid token handling
+            if (authType === 'magiclink' || isMagicLink) {
+              toast.error("Magic link has expired or is invalid.", {
+                description: "Please request a new magic link"
+              })
+              router.push('/magic-link')
+            } else if (authType === 'signup') {
+              toast.error("Email verification link has expired or is invalid.", {
+                description: "Please try registering again"
+              })
+              router.push('/register')
+            } else {
+              toast.error("Authentication failed. Please try signing in again.", {
+                description: "Link may be expired or invalid"
+              })
+              router.push('/login')
+            }
           }
         }
       } catch (error) {

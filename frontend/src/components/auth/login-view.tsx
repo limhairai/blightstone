@@ -26,7 +26,20 @@ export function LoginView() {
     if (emailParam) {
       setEmail(emailParam);
     }
-  }, [searchParams]);
+    
+    // Check for error parameters from failed verification
+    const errorParam = searchParams?.get('error');
+    const errorCode = searchParams?.get('error_code');
+    const errorDescription = searchParams?.get('error_description');
+    
+    if (errorCode === 'otp_expired' && errorParam === 'access_denied') {
+      toast.error("Verification link has expired", {
+        description: "Please try requesting a new verification email"
+      });
+      // Clean up URL parameters
+      router.replace('/login', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
