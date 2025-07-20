@@ -171,7 +171,7 @@ export function OrganizationSettings() {
   const activeAccounts = countAccountsByClientStatus(accounts, 'active')
   const activePixels = pixelData?.pixels?.filter((p: any) => p.isActive && p.status === 'active').length || 0
   const monthlyTopupUsage = topupUsage?.currentUsage || 0
-
+  
   // Debug logging to understand the data structure
   console.log('🔍 Settings Debug:', {
     totalAccounts: accounts.length,
@@ -308,12 +308,46 @@ export function OrganizationSettings() {
   const globalLoading = isOrgLoading || isBizLoading || isAccLoading || isPixelLoading || isTopupLoading;
 
   if (globalLoading) {
-    return <div>Loading organization settings...</div>;
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+        </div>
+        
+        <div className="grid gap-6">
+          {/* Organization Info Card Skeleton */}
+          <div className="border rounded-lg p-6 space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+            </div>
+          </div>
+          
+          {/* Subscription Card Skeleton */}
+          <div className="border rounded-lg p-6 space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
   
   // Safety check - show loading if no organization ID or if still loading
   if (!currentOrganizationId) {
-    return <div>Loading organization...</div>
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center space-y-2">
+          <div className="h-6 w-6 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="text-gray-500">Loading organization...</p>
+        </div>
+      </div>
+    )
   }
   
   // If we have an organization ID but no organization data (and not loading), 
@@ -414,12 +448,12 @@ export function OrganizationSettings() {
               )}
 
               {/* Domains per BM */}
-              {currentPlan.id !== 'free' && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Domains per BM</span>
-                  <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
-                </div>
-              )}
+                {currentPlan.id !== 'free' && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Domains per BM</span>
+                    <span className="text-foreground font-medium">{getPlanPricing(currentPlan.id as 'starter' | 'growth' | 'scale')?.domainsPerBm || 0}</span>
+                  </div>
+                )}
 
             </CardContent>
           </Card>

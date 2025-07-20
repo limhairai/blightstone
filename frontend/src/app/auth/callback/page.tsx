@@ -28,10 +28,15 @@ export default function AuthCallbackPage() {
         if (data.session) {
           const user = data.session.user
           
-          // Check if this is a new user or existing user
-          const isNewUser = user.user_metadata?.iss && !user.email_confirmed_at && user.created_at === user.updated_at
+          // Check if this is a new user who just confirmed their email
+          const now = new Date()
+          const userCreated = new Date(user.created_at)
+          const isVeryNewUser = (now.getTime() - userCreated.getTime()) < (10 * 60 * 1000) // Less than 10 minutes old
           
-          // For Google OAuth, check if they have an organization
+          // Check if user was just confirmed (email_confirmed_at is very recent)
+          const justConfirmed = user.email_confirmed_at && 
+            (now.getTime() - new Date(user.email_confirmed_at).getTime()) < (5 * 60 * 1000) // Confirmed within 5 minutes
+          
           try {
             const response = await fetch('/api/organizations', {
               headers: {
@@ -43,33 +48,52 @@ export default function AuthCallbackPage() {
               const orgData = await response.json()
               const hasOrganization = orgData.organizations && orgData.organizations.length > 0
               
-              if (hasOrganization) {
+              // If user is very new AND just confirmed email, send to onboarding regardless of org
+              if ((isVeryNewUser || justConfirmed) && hasOrganization) {
+                // New user who just confirmed - go to onboarding even though they have an org
+                toast.success("Welcome to AdHub! Let's get you set up.", {
+                  description: "Account confirmed successfully"
+                })
+                router.push('/onboarding')
+              } else if (hasOrganization) {
                 // Existing user with organization - go to dashboard
                 toast.success("Welcome back!", {
                   description: "Signed in successfully"
                 })
                 router.push('/dashboard')
               } else {
-                // New user or user without organization - go to onboarding
+                // User without organization (edge case) - go to onboarding
                 toast.success("Welcome to AdHub! Let's get you set up.", {
                   description: "Account Created"
                 })
                 router.push('/onboarding')
               }
             } else {
-              // Can't check organization, assume new user
-              toast.success("Welcome to AdHub! Let's get you set up.", {
-                description: "Account Created"
-              })
-              router.push('/onboarding')
+              // Can't check organization, but if user is very new, send to onboarding
+              if (isVeryNewUser || justConfirmed) {
+                toast.success("Welcome to AdHub! Let's get you set up.", {
+                  description: "Account confirmed successfully"
+                })
+                router.push('/onboarding')
+              } else {
+                // Fallback to dashboard for existing users
+                toast.success("Welcome back!")
+                router.push('/dashboard')
+              }
             }
           } catch (orgError) {
             console.error("Error checking organization:", orgError)
-            // If we can't check organization, default to onboarding
-            toast.success("Welcome to AdHub! Let's get you set up.", {
-              description: "Account Created"
-            })
-            router.push('/onboarding')
+            // If we can't check organization but user is new, default to onboarding
+            if (isVeryNewUser || justConfirmed) {
+              toast.success("Welcome to AdHub! Let's get you set up.", {
+                description: "Account confirmed successfully"
+              })
+              router.push('/onboarding')
+            } else {
+              // Fallback to dashboard for existing users
+              toast.success("Welcome back!")
+              router.push('/dashboard')
+            }
           }
         } else {
           // No session found
