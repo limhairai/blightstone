@@ -309,6 +309,13 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!organization_id || !ad_account_id || !ad_account_name || !amount_cents) {
+      console.error('Missing required fields for topup request:', {
+        organization_id: !!organization_id,
+        ad_account_id: !!ad_account_id,
+        ad_account_name: !!ad_account_name,
+        amount_cents: !!amount_cents,
+        body: JSON.stringify(body, null, 2)
+      })
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -329,6 +336,12 @@ export async function POST(request: NextRequest) {
 
     // Validate minimum amount for topup requests
     if (request_type === 'topup' && amount_cents < 10000) { // $100 minimum for topups
+      console.error('Amount too low for topup request:', {
+        amount_cents,
+        minimum_required: 10000,
+        amount_dollars: amount_cents / 100,
+        minimum_dollars: 100
+      })
       return NextResponse.json({ error: 'Minimum top-up amount is $100' }, { status: 400 });
     }
 
@@ -360,31 +373,35 @@ export async function POST(request: NextRequest) {
         const planLimits = getPlanPricing(planId);
         
         if (planLimits) {
-          const monthlyLimitCents = planLimits.monthlyTopupLimit * 100; // Convert to cents
+          // Handle infinite limits (represented as -1)
+          const hasInfiniteLimit = planLimits.monthlyTopupLimit === -1;
           
-          // Get current month's usage
-          const currentMonthStart = new Date();
-          currentMonthStart.setDate(1);
-          currentMonthStart.setHours(0, 0, 0, 0);
-          
-          const { data: topupData, error: topupError } = await supabase
-            .from('topup_requests')
-            .select('amount_cents')
-            .eq('organization_id', organization_id)
-            .in('status', ['pending', 'processing', 'completed'])
-            .gte('created_at', currentMonthStart.toISOString());
+          if (!hasInfiniteLimit) {
+            const monthlyLimitCents = planLimits.monthlyTopupLimit * 100; // Convert to cents
+            
+            // Get current month's usage
+            const currentMonthStart = new Date();
+            currentMonthStart.setDate(1);
+            currentMonthStart.setHours(0, 0, 0, 0);
+            
+            const { data: topupData, error: topupError } = await supabase
+              .from('topup_requests')
+              .select('amount_cents')
+              .eq('organization_id', organization_id)
+              .in('status', ['pending', 'processing', 'completed'])
+              .gte('created_at', currentMonthStart.toISOString());
 
-          if (topupError) {
-            console.error('Error fetching topup usage:', topupError);
-            return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
-          }
+            if (topupError) {
+              console.error('Error fetching topup usage:', topupError);
+              return NextResponse.json({ error: 'Failed to validate request limits' }, { status: 500 });
+            }
 
-          const currentUsageCents = topupData.reduce((sum, req) => sum + req.amount_cents, 0);
-          const availableCents = monthlyLimitCents - currentUsageCents;
-          
-          // Check if request would exceed limit
-          if (currentUsageCents + amount_cents > monthlyLimitCents) {
-            const limitInDollars = `$${(monthlyLimitCents / 100).toLocaleString()}`;
+            const currentUsageCents = topupData.reduce((sum, req) => sum + req.amount_cents, 0);
+            const availableCents = monthlyLimitCents - currentUsageCents;
+            
+            // Check if request would exceed limit (only for non-infinite limits)
+            if (currentUsageCents + amount_cents > monthlyLimitCents) {
+              const limitInDollars = `$${(monthlyLimitCents / 100).toLocaleString()}`;
             const usageInDollars = `$${(currentUsageCents / 100).toLocaleString()}`;
             
             return NextResponse.json({ 
@@ -395,6 +412,7 @@ export async function POST(request: NextRequest) {
                 available: availableCents / 100
               }
             }, { status: 400 });
+            }
           }
         }
       }

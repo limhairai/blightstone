@@ -217,15 +217,8 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Pixel ID and Business Manager ID are required for pixel connection requests.' }, { status: 400 });
             }
 
-            // Check if organization can add more pixels
-            const canAddPixel = await checkPlanLimit(organization_id, 'pixels');
-
-            if (!canAddPixel) {
-                return NextResponse.json({ 
-                    error: 'Plan Limit Reached',
-                    message: 'You have reached the maximum number of pixels for your current plan. Please upgrade to add more pixels.'
-                }, { status: 403 });
-            }
+            // Skip pixel limit check since pixel limits are disabled
+            // Note: Pixel limits are disabled in pricing config (enablePixelLimits: false)
 
             // Check if the business manager exists and belongs to the user's organization
             const { data: bmBindings, error: bmError } = await supabaseService
