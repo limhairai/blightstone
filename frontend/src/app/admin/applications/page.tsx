@@ -319,20 +319,20 @@ export default function AdminApplicationsPage() {
 
   const getRequestTypeInfo = (application: ApplicationWithDetails) => {
     if (!application.requestType) {
-      return { icon: <Building2 className="h-4 w-4" />, label: "New BM Request", variant: "default" as const };
+      return { icon: <Building2 className="h-4 w-4" />, label: "New BM Request", variant: "outline" as const };
     }
 
     switch (application.requestType) {
       case 'new_business_manager':
-        return { icon: <Building2 className="h-4 w-4" />, label: "New Business Manager", variant: "default" as const };
+        return { icon: <Building2 className="h-4 w-4" />, label: "New Business Manager", variant: "outline" as const };
       case 'additional_accounts':
         if (application.targetBmDolphinId) {
-          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Specific BM)", variant: "secondary" as const };
+          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Specific BM)", variant: "outline" as const };
         } else {
-          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Choose BM)", variant: "secondary" as const };
+          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Choose BM)", variant: "outline" as const };
         }
       case 'pixel_connection':
-        return { icon: <Globe className="h-4 w-4" />, label: "Pixel Connection", variant: "destructive" as const };
+        return { icon: <Globe className="h-4 w-4" />, label: "Pixel Connection", variant: "outline" as const };
       default:
         return { icon: <Building2 className="h-4 w-4" />, label: "Unknown Request", variant: "outline" as const };
     }

@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table"
 
 import { formatDistanceToNow } from "date-fns"
-import { Search, Download, CheckCircle, X, Eye } from "lucide-react"
+import { Search, Download, CheckCircle, X, Eye, Clock, AlertTriangle } from "lucide-react"
 
 interface Transaction {
   id: string
@@ -109,20 +109,38 @@ export default function TransactionHistoryPage() {
 
 
 
-  const getStatusColor = (status: string) => {
+  const getStatusConfig = (status: string) => {
     switch (status) {
       case "completed":
-        return "default"
+        return { 
+          color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", 
+          icon: CheckCircle 
+        }
       case "pending":
-        return "secondary"
+        return { 
+          color: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800", 
+          icon: Clock 
+        }
       case "failed":
-        return "destructive"
+        return { 
+          color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", 
+          icon: X 
+        }
       case "cancelled":
-        return "outline"
+        return { 
+          color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", 
+          icon: X 
+        }
       case "unmatched":
-        return "secondary"
+        return { 
+          color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800", 
+          icon: AlertTriangle 
+        }
       default:
-        return "outline"
+        return { 
+          color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", 
+          icon: Clock 
+        }
     }
   }
 
@@ -267,9 +285,16 @@ export default function TransactionHistoryPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusColor(transaction.status)}>
-                      {transaction.status.replace('_', ' ')}
-                    </Badge>
+                    {(() => {
+                      const config = getStatusConfig(transaction.status);
+                      const Icon = config.icon;
+                      return (
+                        <Badge className={`text-xs px-1 py-0.5 ${config.color} flex items-center gap-1`}>
+                          <Icon className="h-3 w-3" />
+                          {transaction.status.replace('_', ' ')}
+                        </Badge>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <div>
