@@ -362,6 +362,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Hydration effect - runs only on client
   useEffect(() => {
     setIsHydrated(true);
+    
+    // Add a small delay to ensure auth cookies are properly loaded
+    // This helps with SSR/client hydration timing issues
+    const timer = setTimeout(() => {
+      if (!session && !user) {
+        // Try to get session again after hydration
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session && !user) {
+            setSession(session);
+            setUser(session.user);
+          }
+        }).catch(() => {
+          // Silently handle errors during hydration recovery
+        });
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Organization initialization effect - runs when profile changes

@@ -66,14 +66,20 @@ function isAdminPage(pathname: string): boolean {
 function AppRouter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   // Initialize performance optimizations
   useAggressivePreloading()
   usePredictiveLoading()
   useInstantPerformance()
 
-  // While the authentication state is loading, show a loader to prevent a flash of the wrong content.
-  if (authLoading) {
+  // Track hydration to prevent SSR/client mismatches
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
+  // While the authentication state is loading or before hydration, show a loader
+  if (authLoading || !hasHydrated) {
     return <FullScreenLoader />;
   }
   
