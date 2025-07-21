@@ -22,7 +22,6 @@
     "@sentry/nextjs": "^8.47.0",
     "@stripe/stripe-js": "^5.0.0",
     "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.49.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -42,7 +41,9 @@
     "typescript": "^5"
   },
   "devDependencies": {
-    "@playwright/test": "^1.53.1"
+    "@playwright/test": "^1.53.1",
+    "@supabase/supabase-js": "^2.52.0",
+    "node-fetch": "^3.3.2"
   },
   "scripts": {
     "test:e2e": "playwright test",

@@ -185,10 +185,8 @@ async function handleIncomingBankTransfer(transfer: any) {
       .from('bank_transfer_requests')
       .update({
         status: 'completed',
-        actual_amount: receivedAmount,
-        airwallex_transfer_id: transferId,
-
-        processed_at: new Date().toISOString()
+        processed_at: new Date().toISOString(),
+        admin_notes: `Processed via Airwallex transfer ${transferId}. Received: $${receivedAmount}, Requested: $${requestedAmount}`
       })
       .eq('request_id', bankRequest.request_id)
 
@@ -216,7 +214,7 @@ async function handleIncomingBankTransfer(transfer: any) {
       console.warn('Failed to invalidate caches after bank transfer:', error)
     }
 
-    // TODO: Send notification to user about successful deposit
+
 
   } catch (error) {
     console.error('💥 Error processing incoming bank transfer:', error)
@@ -240,8 +238,8 @@ async function handleIncomingBankTransferFailed(transfer: any) {
         .from('bank_transfer_requests')
         .update({
           status: 'failed',
-  
-          processed_at: new Date().toISOString()
+          processed_at: new Date().toISOString(),
+          admin_notes: `Transfer failed: ${transfer.failure_reason || 'Unknown reason'}`
         })
         .eq('reference_number', fullReference)
         .eq('status', 'pending')
@@ -255,17 +253,23 @@ async function handleIncomingBankTransferFailed(transfer: any) {
 // Create record for unmatched transfers (for manual processing)
 async function createUnmatchedTransfer(transfer: any, attemptedReference?: string) {
   try {
+    const referenceProvided = transfer.reference || transfer.description || transfer.memo || ''
+    
     await supabase
       .from('unmatched_transfers')
       .insert({
-        airwallex_transfer_id: transfer.id,
         amount: parseFloat(transfer.amount),
-        currency: transfer.currency,
-        reference_text: transfer.reference || transfer.description || transfer.memo || '',
-        attempted_reference: attemptedReference,
-        transfer_data: transfer,
+        sender_info: {
+          airwallex_transfer_id: transfer.id,
+          currency: transfer.currency,
+          original_data: transfer
+        },
+        reference_provided: referenceProvided,
+        bank_transaction_id: transfer.id,
         status: 'unmatched',
-        created_at: new Date().toISOString()
+        admin_notes: attemptedReference 
+          ? `Failed to match reference: ${attemptedReference}. Raw reference: ${referenceProvided}`
+          : `No valid ADHUB reference found. Raw reference: ${referenceProvided}`
       })
 
     console.log('📝 Created unmatched transfer record:', transfer.id)
