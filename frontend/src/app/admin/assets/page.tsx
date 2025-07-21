@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Loader2, RefreshCw, ExternalLink, AlertCircle, Activity, Users, Building, Search, Link as LinkIcon, ChevronDown } from 'lucide-react'
+import { TableSkeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'sonner'
@@ -453,9 +454,8 @@ export default function AssetsPage() {
   };
   
   if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <Loader2 className="h-8 w-8 animate-spin" />
-      <span className="ml-2 text-muted-foreground">Loading assets...</span>
+    <div className="space-y-6 p-6">
+      <TableSkeleton phase={loading ? 1 : 2} rows={8} />
     </div>
   );
 

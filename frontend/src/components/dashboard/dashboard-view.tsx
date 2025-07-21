@@ -31,7 +31,7 @@ import { Transaction } from "../../types/transaction"
 
 import { layoutTokens, typographyTokens } from "../../lib/design-tokens"
 
-import { Skeleton } from "../ui/skeleton"
+import { Skeleton, DashboardSkeleton } from "../ui/skeleton"
 import { formatCurrency as financialFormatCurrency } from '@/lib/config/financial'
 
 import { useAutoRefresh, REFRESH_INTERVALS } from "../../hooks/useAutoRefresh"
@@ -654,14 +654,11 @@ export function DashboardView() {
     )
   }
 
-  // Simple loading state for now until we fix performance
+  // ⚡ PROGRESSIVE LOADING: Enhanced loading with 2-phase skeleton
   if (globalLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[250px]" />
-          <Skeleton className="h-4 w-[200px]" />
-        </div>
+      <div className="min-h-screen bg-background">
+        <DashboardSkeleton phase={isDashboardLoading ? 1 : 2} />
       </div>
     )
   }

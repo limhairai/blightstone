@@ -72,12 +72,12 @@ export default function BusinessManagersPage() {
     await mutate()
   }, [mutate])
 
-  // Simple success callback
+  // ⚡ OPTIMIZED: Throttled success callback to prevent excessive revalidation
   const handleApplicationSuccess = useCallback(async () => {
-    await mutate()
-    
-    // REMOVED: Explicit onboarding-progress call that was causing excessive API calls
-    // The useAdvancedOnboarding hook will automatically update when needed
+    // Use a timeout to batch multiple rapid success events
+    setTimeout(() => {
+      mutate()
+    }, 500)
   }, [mutate])
 
   const activeManagers = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).length

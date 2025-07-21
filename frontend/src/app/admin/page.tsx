@@ -20,6 +20,7 @@ import {
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/AuthContext"
+import { AdminPanelSkeleton } from "../../components/ui/skeleton"
 
 export default function AdminDashboard() {
   const { session } = useAuth()
@@ -132,7 +133,11 @@ export default function AdminDashboard() {
   }
   
   if (loading) {
-    return <div className="flex items-center justify-center p-8">Loading admin data...</div>
+    return (
+      <div className="min-h-screen">
+        <AdminPanelSkeleton phase={loading ? 1 : 2} />
+      </div>
+    )
   }
   
   if (error) {

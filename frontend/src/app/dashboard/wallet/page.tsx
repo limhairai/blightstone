@@ -28,17 +28,12 @@ export default function WalletPage() {
     
     setIsRefreshing(true)
     try {
-      // Use cache-busting with timestamp to force fresh data
-      const timestamp = Date.now()
+      // ⚡ OPTIMIZED: Use SWR's built-in revalidation instead of cache-busting
       await Promise.all([
-        // Force fresh organization data with cache-busting
-        mutate([`/api/organizations?id=${currentOrganizationId}`, session?.access_token], 
-               () => authenticatedFetcher(`/api/organizations?id=${currentOrganizationId}&_t=${timestamp}`, session?.access_token!),
-               { revalidate: true }),
-        // Refresh related wallet data
-        mutate([`/api/transactions?organizationId=${currentOrganizationId}`, session?.access_token], 
-               () => authenticatedFetcher(`/api/transactions?organizationId=${currentOrganizationId}&_t=${timestamp}`, session?.access_token!),
-               { revalidate: true }),
+        // Revalidate organization data
+        mutate([`/api/organizations?id=${currentOrganizationId}`, session?.access_token], undefined, { revalidate: true }),
+        // Revalidate transactions data
+        mutate([`/api/transactions?organizationId=${currentOrganizationId}`, session?.access_token], undefined, { revalidate: true }),
       ])
       return true
     } catch (error) {

@@ -90,10 +90,6 @@ export default function ClientTopupRequestsPage() {
   
   // Remove tab state - no longer needed
   
-  // ⚡ INSTANT LOADING: Use prefetched data from global prefetcher
-  const { data: requestsData, error: requestsError, isLoading: requestsLoading, mutate: mutateRequests } = useTopupRequests()
-  const requests: TopupRequest[] = Array.isArray(requestsData) ? requestsData : requestsData?.requests || []
-  
   // State management for filters and pagination
   const [date, setDate] = useState<Date | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState("")
@@ -104,16 +100,23 @@ export default function ClientTopupRequestsPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10)
   const [transactionTypeFilter, setTransactionTypeFilter] = useState("all")
   
-  // ⚡ INSTANT LOADING: Always load transactions immediately using prefetched cache
+  // ⚡ OPTIMIZED: Only fetch what we need based on transaction type filter
+  const shouldLoadTopupRequests = transactionTypeFilter === 'all' || transactionTypeFilter === 'transfer'
+  const shouldLoadTransactions = transactionTypeFilter === 'all' || transactionTypeFilter !== 'transfer'
+  
+  // Conditional data fetching
+  const { data: requestsData, error: requestsError, isLoading: requestsLoading, mutate: mutateRequests } = useTopupRequests()
+  const requests: TopupRequest[] = shouldLoadTopupRequests ? (Array.isArray(requestsData) ? requestsData : requestsData?.requests || []) : []
+  
   const transactionsQuery = useTransactions({
-    type: transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
-    search: debouncedSearchQuery || undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    business_id: businessFilter !== 'all' ? businessFilter : undefined,
-    date: date ? format(date, 'yyyy-MM-dd') : undefined,
+    type: shouldLoadTransactions && transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
+    search: shouldLoadTransactions && debouncedSearchQuery ? debouncedSearchQuery : undefined,
+    status: shouldLoadTransactions && statusFilter !== 'all' ? statusFilter : undefined,
+    business_id: shouldLoadTransactions && businessFilter !== 'all' ? businessFilter : undefined,
+    date: shouldLoadTransactions && date ? format(date, 'yyyy-MM-dd') : undefined,
   })
   
-  // Use the query result directly
+  // Use the query result only if we should load transactions
   const { data: transactionsData, error: transactionsError, isLoading: transactionsLoading, mutate: mutateTransactions } = transactionsQuery
   
   // ⚡ REMOVED: No need to trigger loading - data is prefetched and always available

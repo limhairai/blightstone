@@ -3,15 +3,12 @@
 // Force dynamic rendering for authentication-protected page
 export const dynamic = 'force-dynamic';
 
-import { Building2, Search, RefreshCw } from "lucide-react"
+import { Building2, RefreshCw, ChevronRight } from "lucide-react"
+import { TableSkeleton } from "../../../components/ui/skeleton"
 import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { useState, useMemo } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
 import { Badge } from "../../../components/ui/badge"
+import { AdminDataTable } from "../../../components/admin/admin-data-table"
 import useSWR from 'swr'
-import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "../../../contexts/AuthContext"
 
@@ -41,8 +38,6 @@ const fetcher = async (url: string, token: string) => {
 
 export default function OrganizationsPage() {
   const { session } = useAuth()
-  const [selectedPlan, setSelectedPlan] = useState("all")
-  const [searchTerm, setSearchTerm] = useState("")
   
   // Use SWR for better caching and performance
   const { data, error, isLoading, mutate } = useSWR(
@@ -52,19 +47,13 @@ export default function OrganizationsPage() {
   )
 
   const organizations = data?.organizations || []
-
-  const filteredOrganizations = useMemo(() => {
-    return organizations.filter((org: Organization) => {
-      const planFilter = selectedPlan === "all" || org.plan_id === selectedPlan
-      const searchFilter = searchTerm === "" || 
-        org.name.toLowerCase().includes(searchTerm.toLowerCase())
-
-      return planFilter && searchFilter
-    })
-  }, [organizations, selectedPlan, searchTerm])
   
   if (isLoading) {
-    return <div className="flex items-center justify-center p-8">Loading organizations...</div>
+    return (
+      <div className="space-y-6 p-6">
+        <TableSkeleton phase={isLoading ? 1 : 2} rows={6} />
+      </div>
+    )
   }
   
   if (error) {
@@ -77,19 +66,6 @@ export default function OrganizationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="All Plans" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Plans</SelectItem>
-              <SelectItem value="starter">Starter</SelectItem>
-              <SelectItem value="growth">Growth</SelectItem>
-              <SelectItem value="scale">Scale</SelectItem>
-              <SelectItem value="custom">Custom</SelectItem>
-            </SelectContent>
-          </Select>
-          
           <Button 
             variant="outline" 
             size="sm"
@@ -101,94 +77,104 @@ export default function OrganizationsPage() {
           </Button>
         </div>
         
-        <div className="text-sm text-muted-foreground">{filteredOrganizations.length} organizations total</div>
+        <div className="text-sm text-muted-foreground">{organizations.length} organizations total</div>
       </div>
 
-      <div className="space-y-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search organizations..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 max-w-sm"
-          />
-        </div>
-
-        {/* Table */}
-        <div className="border border-border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-border hover:bg-muted/50">
-                <TableHead className="text-muted-foreground" style={{ width: 220 }}>Organization</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 100 }}>Plan</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 80 }}>BMs</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 80 }}>Accounts</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 80 }}>Pixels</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 120 }}>Balance</TableHead>
-                <TableHead className="text-muted-foreground" style={{ width: 50 }}></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrganizations.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    No results found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredOrganizations.map((org: Organization) => (
-                  <TableRow key={org.organization_id} className="border-border hover:bg-muted/30">
-                    <TableCell>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
-                          <Building2 className="h-4 w-4 text-foreground" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium truncate">{org.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            ID: {org.organization_id.substring(0, 8)}... • {new Date(org.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="truncate capitalize">
-                        {org.plan_id || "Free"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center font-medium">{org.business_managers_count}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center font-medium">{org.ad_accounts_count}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-center font-medium">{org.pixels_count}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-right font-medium">
-                        ${(org.balance_cents / 100).toFixed(2)}
-                        {org.reserved_balance_cents && org.reserved_balance_cents > 0 && (
-                          <div className="text-xs text-muted-foreground">
-                            Available: ${((org.available_balance_cents || 0) / 100).toFixed(2)}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/admin/organizations/${org.organization_id}`} className="inline-flex">
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <AdminDataTable
+        data={organizations}
+        columns={[
+          {
+            key: 'name',
+            label: 'Organization',
+                         render: (value, item) => (
+               <div className="flex items-center gap-2 min-w-0">
+                 <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                   <Building2 className="h-4 w-4 text-foreground" />
+                 </div>
+                 <div className="min-w-0 flex-1">
+                   <div className="font-medium truncate">{value}</div>
+                   <div className="text-xs text-muted-foreground truncate">
+                     ID: {(item as any).organization_id?.substring(0, 8) || 'N/A'}... • {(item as any).created_at ? new Date((item as any).created_at).toLocaleDateString() : 'N/A'}
+                   </div>
+                 </div>
+               </div>
+             ),
+            width: 220
+          },
+          {
+            key: 'plan_id',
+            label: 'Plan',
+            render: (value) => (
+              <Badge variant="secondary" className="truncate capitalize">
+                {value || "Free"}
+              </Badge>
+            ),
+            width: 100
+          },
+          {
+            key: 'business_managers_count',
+            label: 'BMs',
+            render: (value) => <div className="text-center font-medium">{value}</div>,
+            sortable: true,
+            width: 80
+          },
+          {
+            key: 'ad_accounts_count', 
+            label: 'Accounts',
+            render: (value) => <div className="text-center font-medium">{value}</div>,
+            sortable: true,
+            width: 80
+          },
+          {
+            key: 'pixels_count',
+            label: 'Pixels',
+            render: (value) => <div className="text-center font-medium">{value}</div>,
+            sortable: true,
+            width: 80
+          },
+          {
+            key: 'balance_cents',
+            label: 'Balance',
+                         render: (value, item) => (
+               <div className="text-right font-medium">
+                 ${(value / 100).toFixed(2)}
+                 {(item as any).reserved_balance_cents && (item as any).reserved_balance_cents > 0 && (
+                   <div className="text-xs text-muted-foreground">
+                     Available: ${(((item as any).available_balance_cents || 0) / 100).toFixed(2)}
+                   </div>
+                 )}
+               </div>
+             ),
+            sortable: true,
+            width: 120
+          }
+        ]}
+        filters={[
+          {
+            key: 'plan_id',
+            label: 'Plans',
+            options: [
+              { value: 'free', label: 'Free', count: organizations.filter((o: any) => !o.plan_id || o.plan_id === 'free').length },
+              { value: 'starter', label: 'Starter', count: organizations.filter((o: any) => o.plan_id === 'starter').length },
+              { value: 'growth', label: 'Growth', count: organizations.filter((o: any) => o.plan_id === 'growth').length },
+              { value: 'scale', label: 'Scale', count: organizations.filter((o: any) => o.plan_id === 'scale').length }
+            ]
+          }
+        ]}
+        searchPlaceholder="Search organizations by name, ID..."
+        actions={(item) => (
+          <Link href={`/admin/organizations/${(item as any).organization_id || (item as any).id}`} className="inline-flex">
+            <ChevronRight className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+          </Link>
+        )}
+        emptyState={
+          <div className="text-center py-8">
+            <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No organizations found</h3>
+            <p className="text-muted-foreground">No organizations match your search criteria.</p>
+          </div>
+        }
+      />
     </div>
   )
 } 

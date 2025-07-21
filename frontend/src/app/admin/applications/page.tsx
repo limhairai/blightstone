@@ -114,30 +114,46 @@ export default function AdminApplicationsPage() {
         : app
     );
 
-    await updateAdminDataOptimistically(
-      '/api/admin/applications?status=pending,processing',
-      { applications: optimisticData },
-      async () => {
-        const response = await fetch(`/api/admin/applications/${applicationToApprove.applicationId}/approve`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            admin_user_id: session.user.id
-          }),
-        });
+    try {
+      // FIXED: Use direct mutate with optimistic update for immediate UI feedback
+      await mutate(
+        async () => {
+          const response = await fetch(`/api/admin/applications/${applicationToApprove.applicationId}/approve`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              admin_user_id: session.user.id
+            }),
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to approve application');
+          if (!response.ok) {
+            throw new Error('Failed to approve application');
+          }
+
+          // After successful API call, return the optimistic data
+          // This ensures the cache is immediately updated
+          return { applications: optimisticData };
+        },
+        {
+          // Show optimistic update immediately
+          optimisticData: { applications: optimisticData },
+          // Revalidate after mutation to get fresh data
+          revalidate: true,
+          // Don't rollback on error - let error handling manage it
+          rollbackOnError: true,
         }
+      );
 
-        return response.json();
-      }
-    );
-
-    toast.success('Application approved successfully');
-    setApplicationToApprove(null);
+      toast.success('Application approved successfully');
+      setApplicationToApprove(null);
+    } catch (error) {
+      console.error('Failed to approve application:', error);
+      toast.error('Failed to approve application');
+      // Force refresh on error to reset the state
+      mutate();
+    }
   };
 
   const handleReject = async (application: ApplicationWithDetails) => {
@@ -146,36 +162,42 @@ export default function AdminApplicationsPage() {
       return;
     }
 
-    // Optimistic update
-    const optimisticData = applications.map((app: ApplicationWithDetails) => 
-      app.applicationId === application.applicationId 
-        ? { ...app, status: 'rejected', rejectedBy: session.user.id, rejectedAt: new Date().toISOString() }
-        : app
-    );
+    // Optimistic update - rejected items should be removed from pending/processing list
+    const optimisticData = applications.filter((app: ApplicationWithDetails) => app.applicationId !== application.applicationId);
 
-    await updateAdminDataOptimistically(
-      '/api/admin/applications?status=pending,processing',
-      { applications: optimisticData },
-      async () => {
-        const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            admin_user_id: session.user.id
-          }),
-        });
+    try {
+      await mutate(
+        async () => {
+          const response = await fetch(`/api/admin/applications/${application.applicationId}/reject`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              admin_user_id: session.user.id
+            }),
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to reject application');
+          if (!response.ok) {
+            throw new Error('Failed to reject application');
+          }
+
+          // Return filtered data since rejected apps should not appear in pending/processing
+          return { applications: optimisticData };
+        },
+        {
+          optimisticData: { applications: optimisticData },
+          revalidate: true,
+          rollbackOnError: true,
         }
+      );
 
-        return response.json();
-      }
-    );
-
-    toast.success('Application rejected successfully');
+      toast.success('Application rejected successfully');
+    } catch (error) {
+      console.error('Failed to reject application:', error);
+      toast.error('Failed to reject application');
+      mutate();
+    }
   };
 
   const handleFulfill = async (application: ApplicationWithDetails) => {
@@ -252,8 +274,12 @@ export default function AdminApplicationsPage() {
         description: `Pixel ${application.pixelId} has been connected to the business manager.`
       });
       
-      // Refresh the applications list
-      mutate();
+      // FIXED: Optimistically remove fulfilled application
+      const optimisticData = applications.filter((app: ApplicationWithDetails) => app.applicationId !== application.applicationId);
+      await mutate(
+        { applications: optimisticData },
+        { revalidate: true }
+      );
       
     } catch (error) {
       console.error('Error fulfilling pixel connection:', error);
@@ -269,8 +295,17 @@ export default function AdminApplicationsPage() {
     // Show success message
     toast.success('Application fulfilled successfully');
     
-    // Simple cache refresh - let SWR handle the rest
-    mutate();
+    // FIXED: Optimistically remove fulfilled application from pending/processing list
+    if (selectedApplication) {
+      const optimisticData = applications.filter((app: ApplicationWithDetails) => app.applicationId !== selectedApplication.applicationId);
+      
+      await mutate(
+        { applications: optimisticData },
+        {
+          revalidate: true,
+        }
+      );
+    }
     
     setSelectedApplication(null);
     setDialogOpen(false);

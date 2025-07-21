@@ -655,16 +655,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   if (!isHydrated) {
       return (
           <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-              <Loader />
+              <Loader 
+                phase={1}
+                progressiveMessages={["Initializing application..."]}
+              />
           </div>
       )
   }
 
-  // Show loading only for a brief moment, then always show content
+  // Show progressive loading for auth verification
   if (loading) {
       return (
           <div className="fixed inset-0 flex items-center justify-center bg-background z-50">
-              <Loader />
+              <Loader 
+                phase={2}
+                showProgress={true}
+                progressiveMessages={[
+                  "Verifying your session...",
+                  "Loading your account...",
+                  "Preparing your workspace...",
+                  "Almost ready..."
+                ]}
+              />
           </div>
       )
   }
