@@ -352,6 +352,32 @@ export default function AdminApplicationsPage() {
     });
   };
 
+  const getApplicationTypeLabel = (requestType?: string) => {
+    switch (requestType) {
+      case 'new_business_manager':
+        return 'business manager application';
+      case 'additional_accounts':
+        return 'additional ad accounts request';
+      case 'pixel_connection':
+        return 'pixel connection request';
+      default:
+        return 'application';
+    }
+  };
+
+  const getApprovalDescription = (requestType?: string) => {
+    switch (requestType) {
+      case 'new_business_manager':
+        return 'This action will move the application to "Processing" status. Your team will need to manually apply to BlueFocus on behalf of the client to begin provisioning the business manager.';
+      case 'additional_accounts':
+        return 'This action will move the request to "Processing" status. Your team will need to create additional ad accounts for the specified business manager.';
+      case 'pixel_connection':
+        return 'This action will approve the pixel connection request. The pixel will be connected to the specified business manager.';
+      default:
+        return 'This action will move the application to "Processing" status.';
+    }
+  };
+
 
 
   if (isLoading) {
@@ -608,11 +634,11 @@ export default function AdminApplicationsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Approve Application</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to approve this business manager application for{' '}
+              Are you sure you want to approve this {getApplicationTypeLabel(applicationToApprove?.requestType)} for{' '}
               <strong>{applicationToApprove?.organizationName}</strong>?
               <br />
               <br />
-              This action will move the application to &quot;Processing&quot; status. Your team will need to manually apply to BlueFocus on behalf of the client to begin provisioning the business manager.
+              {getApprovalDescription(applicationToApprove?.requestType)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
