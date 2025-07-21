@@ -10,18 +10,25 @@ import { Button } from "../../../../components/ui/button"
 import { Input } from "../../../../components/ui/input"
 import { Badge } from "../../../../components/ui/badge"
 import { formatDistanceToNow } from "date-fns"
-import { Search, ArrowLeft } from "lucide-react"
+import { Search, ArrowLeft, Building2, Plus, Globe } from "lucide-react"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../../components/ui/table"
 
 interface ApplicationHistory {
   id: string
   organizationName: string
   businessName: string
-  applicationType: "new_business" | "additional_business"
+  applicationType: "new_business_manager" | "additional_accounts" | "pixel_connection"
+  requestType: string
   accountsRequested: number
   status: "fulfilled" | "rejected"
   teamName: string
   processedAt: string
   completedAt?: string
+  websiteUrl?: string
+  domains?: string[]
+  pixelId?: string
+  pixelName?: string
+  targetBmDolphinId?: string
 }
 
 export default function ApplicationHistoryPage() {
@@ -63,12 +70,18 @@ export default function ApplicationHistoryPage() {
           id: app.applicationId || app.application_id,
           organizationName: app.organizationName || app.organization_name,
           businessName: app.businessName || app.organizationName || app.organization_name,
-          applicationType: (app.requestType === "new_business_manager" ? "new_business" : "additional_business") as "new_business" | "additional_business",
+          applicationType: app.requestType as "new_business_manager" | "additional_accounts" | "pixel_connection",
+          requestType: app.requestType,
           accountsRequested: 1, // Default for now
           status: app.status as "fulfilled" | "rejected",
           teamName: "Team Alpha", // Default for now
           processedAt: app.createdAt || app.created_at,
-          completedAt: app.fulfilledAt || app.rejectedAt || app.approved_at || app.rejected_at || app.fulfilled_at
+          completedAt: app.fulfilledAt || app.rejectedAt || app.approved_at || app.rejected_at || app.fulfilled_at,
+          websiteUrl: app.websiteUrl,
+          domains: app.domains,
+          pixelId: app.pixelId,
+          pixelName: app.pixelName,
+          targetBmDolphinId: app.targetBmDolphinId
         }))
         setApplications(historyData)
       } catch (err) {
@@ -111,6 +124,23 @@ export default function ApplicationHistoryPage() {
     }
   }
 
+  const getRequestTypeInfo = (app: ApplicationHistory) => {
+    switch (app.applicationType) {
+      case 'new_business_manager':
+        return { icon: <Building2 className="h-4 w-4" />, label: "New Business Manager", variant: "outline" as const };
+      case 'additional_accounts':
+        if (app.targetBmDolphinId) {
+          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Specific BM)", variant: "outline" as const };
+        } else {
+          return { icon: <Plus className="h-4 w-4" />, label: "Additional Accounts (Choose BM)", variant: "outline" as const };
+        }
+      case 'pixel_connection':
+        return { icon: <Globe className="h-4 w-4" />, label: "Pixel Connection", variant: "outline" as const };
+      default:
+        return { icon: <Building2 className="h-4 w-4" />, label: "Unknown Request", variant: "outline" as const };
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 mb-4">
@@ -148,60 +178,107 @@ export default function ApplicationHistoryPage() {
       </div>
       
       <div className="border border-border rounded-lg overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="text-left p-4 font-medium text-muted-foreground">Organization</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Type</th>
-              <th className="text-center p-4 font-medium text-muted-foreground">Accounts</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Team</th>
-              <th className="text-left p-4 font-medium text-muted-foreground">Processed</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground">Organization</TableHead>
+              <TableHead className="text-muted-foreground">Request Type</TableHead>
+              <TableHead className="text-muted-foreground">Details</TableHead>
+              <TableHead className="text-muted-foreground">Applied</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Processed By</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {filteredApplications.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-muted-foreground">
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No applications found.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
-              filteredApplications.map((app) => (
-                <tr key={app.id} className="border-t border-border hover:bg-muted/30">
-                  <td className="p-4">
-                    <div>
-                      <div className="font-medium">{app.organizationName}</div>
-                      <div className="text-sm text-muted-foreground">{app.businessName}</div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <Badge
-                      variant={app.applicationType === "new_business" ? "default" : "secondary"}
-                      className="capitalize"
-                    >
-                      {app.applicationType === "new_business" ? "New" : "Additional"}
-                    </Badge>
-                  </td>
-                  <td className="p-4 text-center">{app.accountsRequested}</td>
-                  <td className="p-4">
-                    <Badge className={`capitalize ${getStatusColor(app.status)}`}>
-                      {app.status}
-                    </Badge>
-                  </td>
-                  <td className="p-4">
-                    <Badge variant="outline">
-                      {app.teamName}
-                    </Badge>
-                  </td>
-                  <td className="p-4">
-                    {formatDistanceToNow(new Date(app.processedAt), { addSuffix: true })}
-                  </td>
-                </tr>
-              ))
+              filteredApplications.map((app) => {
+                const requestTypeInfo = getRequestTypeInfo(app);
+                return (
+                  <TableRow key={app.id} className="border-border hover:bg-muted/50">
+                    <TableCell>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                          {requestTypeInfo.icon}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{app.organizationName}</div>
+                          <div className="text-sm text-muted-foreground truncate">{app.businessName}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <Badge variant={requestTypeInfo.variant} className="flex items-center gap-1">
+                        {requestTypeInfo.icon}
+                        {requestTypeInfo.label}
+                      </Badge>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="space-y-1 max-w-xs">
+                        {app.requestType === 'pixel_connection' ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1 text-xs text-foreground">
+                              <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium truncate">
+                                {app.pixelName || `Pixel ${app.pixelId}`}
+                              </span>
+                            </div>
+                            {app.targetBmDolphinId && (
+                              <div className="text-xs text-muted-foreground">
+                                → BM: {app.targetBmDolphinId}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <>
+                            {app.domains && app.domains.length > 0 ? (
+                              <>
+                                {app.domains.map((domain, index) => (
+                                  <div key={index} className="flex items-center gap-1 text-xs text-foreground">
+                                    <Globe className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="truncate">{domain}</span>
+                                  </div>
+                                ))}
+                              </>
+                            ) : (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Globe className="h-3 w-3" />
+                                <span className="truncate">{app.websiteUrl || 'No website specified'}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <div className="text-sm">{formatDistanceToNow(new Date(app.processedAt), { addSuffix: true })}</div>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <Badge className={`capitalize ${getStatusColor(app.status)}`}>
+                        {app.status}
+                      </Badge>
+                    </TableCell>
+                    
+                    <TableCell>
+                      <Badge variant="outline">
+                        {app.teamName}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   )
