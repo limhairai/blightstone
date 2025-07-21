@@ -291,7 +291,16 @@ export function SetupGuideWidget({ widgetState, onStateChange }: SetupGuideWidge
                 >
                   <ChevronUp className={`h-3 w-3 transition-transform duration-300 ease-out ${isExpanded ? 'rotate-180' : 'rotate-0'}`} />
                 </Button>
-                {/* UNSKIPPABLE: Removed dismiss button - users must complete setup */}
+                {/* Close button - minimizes to topbar */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 w-6 p-0 transition-all duration-200 hover:scale-110 text-muted-foreground hover:text-foreground" 
+                  onClick={() => onStateChange("closed")}
+                  title="Close setup guide (will appear in top bar)"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
             </div>
             

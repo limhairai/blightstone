@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { useAuth } from "../../../contexts/AuthContext";
-import { formatCurrency } from "../../../utils/format";
+import { formatCurrency } from "@/utils/format";
 
 interface TopupRequest {
   id: string;
