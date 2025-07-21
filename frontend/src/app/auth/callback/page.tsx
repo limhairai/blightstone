@@ -184,16 +184,16 @@ export default function AuthCallbackPage() {
             created_at: user.created_at
           });
           
-          // Check if this is a new user who just confirmed their email
-          const now = new Date()
-          const userCreated = new Date(user.created_at)
-          const isVeryNewUser = (now.getTime() - userCreated.getTime()) < (10 * 60 * 1000) // Less than 10 minutes old
+          // For Google OAuth users, check if they have an organization instead of time-based logic
+          // Google OAuth users are confirmed immediately and don't go through email verification
+          const isGoogleOAuth = !user.email_confirmed_at || user.app_metadata?.provider === 'google'
           
-          // Check if user was just confirmed (email_confirmed_at is very recent)
-          const justConfirmed = user.email_confirmed_at && 
-            (now.getTime() - new Date(user.email_confirmed_at).getTime()) < (5 * 60 * 1000) // Confirmed within 5 minutes
-          
-          console.log('🔐 User analysis:', { isVeryNewUser, justConfirmed });
+          console.log('🔐 User analysis:', { 
+            provider: user.app_metadata?.provider,
+            isGoogleOAuth,
+            userCreated: user.created_at,
+            emailConfirmed: user.email_confirmed_at
+          });
           
           // Update loading message
           setProcessingMessage("Almost done...");
@@ -209,65 +209,51 @@ export default function AuthCallbackPage() {
               const orgData = await response.json()
               const hasOrganization = orgData.organizations && orgData.organizations.length > 0
               
-              // If user is very new AND just confirmed email, send to onboarding regardless of org
-              if ((isVeryNewUser || justConfirmed) && hasOrganization) {
-                // New user who just confirmed - go to onboarding even though they have an org
-                let message = "🎉 Welcome to AdHub!";
-                if (authType === 'signup' || isMagicLink) {
+              if (hasOrganization) {
+                // Existing user with organization - go to dashboard
+                const message = isGoogleOAuth ? 
+                  "🎉 Google sign in successful! Welcome back!" : 
+                  (authType === 'magiclink' || isMagicLink) ? 
+                    "🎉 Magic link sign in successful! Welcome back!" : 
+                    "Welcome back!";
+                toast.success(message, {
+                  description: "Signed in successfully"
+                })
+                router.push('/dashboard')
+              } else {
+                // User without organization - go to onboarding (truly new user)
+                let message = "🎉 Welcome to AdHub! Let's get you set up.";
+                if (isGoogleOAuth) {
+                  message = "🎉 Welcome to AdHub! Account created successfully.";
+                } else if (authType === 'signup' || isMagicLink) {
                   message = "🎉 Welcome to AdHub! Let's get you set up.";
                 } else if (authType === 'magiclink') {
                   message = "🎉 Magic link sign in successful! Welcome to AdHub!";
                 } else {
                   message = "🎉 Email confirmed successfully! Welcome to AdHub!";
                 }
-                toast.success(message)
-                router.push('/onboarding')
-              } else if (hasOrganization) {
-                // Existing user with organization - go to dashboard
-                const message = (authType === 'magiclink' || isMagicLink) ? 
-                  "🎉 Magic link sign in successful! Welcome back!" : 
-                  "Welcome back!";
                 toast.success(message, {
-                  description: "Signed in successfully"
-                })
-                router.push('/dashboard')
-              } else {
-                // User without organization (edge case) - go to onboarding
-                toast.success("Welcome to AdHub! Let's get you set up.", {
-                  description: "Account Created"
+                  description: "Let's get your account set up"
                 })
                 router.push('/onboarding')
               }
-            } else {
-              // Can't check organization, but if user is very new, send to onboarding
-              if (isVeryNewUser || justConfirmed) {
-                const message = authType === 'signup' ? 
-                  "🎉 Email verified successfully! Welcome to AdHub!" : 
-                  "🎉 Email confirmed successfully! Welcome to AdHub!";
-                toast.success(message, {
-                  description: "Let's get you set up"
-          })
-          router.push('/onboarding')
-              } else {
-                // Fallback to dashboard for existing users
-                toast.success("Welcome back!")
-                router.push('/dashboard')
-              }
-            }
+                      } else {
+            // Can't check organization - default to dashboard for safety
+            const message = isGoogleOAuth ? 
+              "🎉 Google sign in successful!" : 
+              "Welcome back!";
+            toast.success(message)
+            router.push('/dashboard')
+          }
           } catch (orgError) {
             console.error("Error checking organization:", orgError)
-            // If we can't check organization but user is new, default to onboarding
-            if (isVeryNewUser || justConfirmed) {
-              const message = (authType === 'signup' || isMagicLink) ? 
-                "🎉 Welcome to AdHub! Let's get you set up." : 
-                "🎉 Email confirmed successfully! Welcome to AdHub!";
-              toast.success(message)
-              router.push('/onboarding')
-            } else {
-              // Fallback to dashboard for existing users
-              toast.success("Welcome back!")
-              router.push('/dashboard')
-            }
+            // Fallback logic - if we can't check organization, default to dashboard for safety
+            // (better to show empty dashboard than force existing user through onboarding)
+            const message = isGoogleOAuth ? 
+              "🎉 Google sign in successful!" : 
+              "Welcome back!";
+            toast.success(message)
+            router.push('/dashboard')
           }
         } else {
           // No session found - check for error parameters in URL

@@ -16,7 +16,10 @@ export async function POST(request: NextRequest) {
   try {
     const { planId, organizationId } = await request.json();
 
+    console.log('🔄 Starting checkout process:', { planId, organizationId });
+
     if (!planId || !organizationId) {
+      console.error('❌ Missing required parameters:', { planId, organizationId });
       return NextResponse.json(
         { error: 'Plan ID and Organization ID are required' },
         { status: 400 }
@@ -31,6 +34,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (planError || !plan) {
+      console.error('❌ Plan not found:', { planId, planError });
       return NextResponse.json(
         { error: 'Plan not found' },
         { status: 404 }
@@ -38,11 +42,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!plan.stripe_price_id) {
+      console.error('❌ Plan missing Stripe price ID:', { planId, plan });
       return NextResponse.json(
         { error: 'Plan does not have a Stripe price ID' },
         { status: 400 }
       );
     }
+
+    console.log('✅ Plan found:', { planId, stripePriceId: plan.stripe_price_id });
 
     // Get organization details
     const { data: organization, error: orgError } = await supabase
@@ -52,11 +59,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (orgError || !organization) {
+      console.error('❌ Organization not found:', { organizationId, orgError });
       return NextResponse.json(
         { error: 'Organization not found' },
         { status: 404 }
       );
     }
+
+    console.log('✅ Organization found:', { organizationId, ownerId: organization.owner_id });
 
     // Get user profile for customer info
     const { data: profile, error: profileError } = await supabase
@@ -66,11 +76,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (profileError || !profile) {
+      console.error('❌ User profile not found:', { ownerId: organization.owner_id, profileError });
       return NextResponse.json(
         { error: 'User profile not found' },
         { status: 404 }
       );
     }
+
+    console.log('✅ User profile found:', { email: profile.email, name: profile.name });
 
     // Create or get Stripe customer
     let customerId = organization.stripe_customer_id;
@@ -100,6 +113,8 @@ export async function POST(request: NextRequest) {
     const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
     const origin = `${protocol}://${host}`;
 
+    console.log('🔄 Creating Stripe checkout session...', { customerId, origin });
+    
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -127,13 +142,33 @@ export async function POST(request: NextRequest) {
       billing_address_collection: 'required',
     });
 
+    console.log('✅ Checkout session created successfully:', { sessionId: session.id, url: session.url });
+
     return NextResponse.json({
       sessionId: session.id,
       url: session.url,
     });
 
   } catch (error) {
-    console.error('Checkout session creation error:', error);
+    console.error('💥 Checkout session creation error:', error);
+    
+    // More specific error handling
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
+      
+      return NextResponse.json(
+        { 
+          error: 'Failed to create checkout session',
+          details: error.message
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Failed to create checkout session' },
       { status: 500 }
