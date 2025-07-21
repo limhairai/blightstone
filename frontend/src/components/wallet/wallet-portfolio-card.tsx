@@ -205,19 +205,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
       });
     }
     
-    // Debug logging for wallet chart
-    if (timeFilter === "Lifetime") {
-      console.log('🔍 Wallet Chart Debug:', {
-        timeFilter,
-        transactionsCount: transactions.length,
-        dataPointsGenerated: timePoints.length,
-        firstPoint: timePoints[0],
-        lastPoint: timePoints[timePoints.length - 1],
-        allValues: timePoints.map(p => p.value),
-        totalBalance,
-        organization: organization?.balance_cents
-      })
-    }
+    // Wallet chart data processed
     
     return timePoints
   }, [totalBalance, timeFilter, transactions, organization])

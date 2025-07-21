@@ -41,12 +41,12 @@ export function RegisterView() {
     setLoading(true);
 
     try {
-      console.log('📝 Starting registration for:', email);
+      // Starting registration
       
       // Just try to register - let Supabase handle duplicate detection naturally
       const { data, error } = await signUp(email, password);
       
-      console.log('📝 Registration result:', { user: data?.user?.id, session: !!data?.session, error: error?.message });
+      // Registration processed
       
       if (error) {
         console.error('📝 Registration error:', error);

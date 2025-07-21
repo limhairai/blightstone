@@ -98,7 +98,7 @@ export function DashboardView() {
 
     // Start prefetching immediately in background
     prefetcher.prefetchAllDashboardData().then(() => {
-      console.log('🎯 All dashboard data prefetched - navigation will be instant!')
+              // Dashboard data prefetched
     }).catch((error) => {
       console.warn('Some prefetch tasks failed:', error)
     })
@@ -122,7 +122,7 @@ export function DashboardView() {
         //   headers: { 'Authorization': `Bearer ${session.access_token}` }
         // }).catch(() => {}) // Silent fail for preload
 
-        console.log('🚀 Preloaded critical data for instant navigation')
+        // Critical data preloaded
       } catch (error) {
         // Silent fail for preloading
       }
@@ -319,16 +319,7 @@ export function DashboardView() {
       })
     }
     
-    // Debug logging for All Time filter
-    if (timeFilter === "Lifetime") {
-      console.log('🔍 Balance Chart Final Data:', {
-        timeFilter,
-        dataPointsGenerated: timePoints.length,
-        firstPoint: timePoints[0],
-        lastPoint: timePoints[timePoints.length - 1],
-        allValues: timePoints.map(p => p.value)
-      })
-    }
+    // Balance chart data processed
     
     return timePoints
   }, [realBalance, timeFilter, transactionsData])
@@ -494,16 +485,7 @@ export function DashboardView() {
       })
     }
     
-    // Debug logging for All Time filter
-    if (timeFilter === "Lifetime") {
-      console.log('🔍 Spend Chart Final Data:', {
-        timeFilter,
-        dataPointsGenerated: timePoints.length,
-        firstPoint: timePoints[0],
-        lastPoint: timePoints[timePoints.length - 1],
-        allValues: timePoints.map(p => p.value)
-      })
-    }
+    // Spend chart data processed
     
     return timePoints
   }, [timeFilter, transactionsData, topupRequestsData])

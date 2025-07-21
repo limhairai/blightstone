@@ -52,7 +52,7 @@ class APICallOptimizer {
     // Check if we have a cached response
     const cached = this.cache.get(cacheKey)
     if (cached && (now - cached.timestamp) < this.CACHE_DURATION) {
-      console.log(`📦 Cache hit for ${url}`)
+      // Cache hit
       return Promise.resolve(new Response(JSON.stringify(cached.data), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
@@ -62,12 +62,12 @@ class APICallOptimizer {
     // Check if there's already a pending request for this exact call
     const pendingRequest = this.pendingRequests.get(cacheKey)
     if (pendingRequest) {
-      console.log(`⏳ Deduplicating request for ${url}`)
+      // Deduplicating request
       return pendingRequest
     }
 
     // Make the actual request
-    console.log(`🌐 Making fresh request to ${url}`)
+          // Making fresh request
     const request = fetch(url, options)
       .then(async (response) => {
         // Only cache successful responses

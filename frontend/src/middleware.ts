@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   // Check if environment variables are available
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    console.warn('Supabase environment variables not available in middleware, skipping auth check')
+    // Supabase not available in middleware
     return response
   }
 
@@ -108,16 +108,9 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getSession()
     session = userSession
     
-    // Debug logging for registration flow
-    if (pathname === '/register' || pathname === '/confirm-email') {
-      console.log(`🔒 Middleware: ${pathname}, session:`, session ? {
-        user_id: session.user.id,
-        email: session.user.email,
-        email_confirmed_at: session.user.email_confirmed_at
-      } : 'null')
-    }
+    // Debug logging removed for production
   } catch (error) {
-    console.warn('Error getting session in middleware:', error)
+    // Session error - continue without auth
     // Continue without session - will be treated as unauthenticated
   }
 

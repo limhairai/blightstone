@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "../../../lib/stores/supabase-client"
 import { Skeleton } from "../../../components/ui/skeleton"
 import { toast } from "sonner"
+import { log } from "../../../lib/logger"
 
 export default function AuthCallbackPage() {
   const router = useRouter()
@@ -14,7 +15,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleAuthCallback = async () => {
       try {
-        console.log('🔐 Auth callback started');
+        log.auth('Auth callback started');
         
         // Get URL parameters for magic links and email confirmations
         const searchParams = new URLSearchParams(window.location.search);
@@ -32,17 +33,15 @@ export default function AuthCallbackPage() {
         const verificationType = searchParams.get('type') || hashParams.get('type');
         
         if (verificationToken && verificationType) {
-          console.log('🔐 Processing Supabase verification token:', { 
+          log.auth('Processing Supabase verification token', { 
             type: verificationType, 
             hasToken: !!verificationToken,
-            source: tokenFromSearch ? 'search' : 'hash',
-            searchParams: Object.fromEntries(searchParams.entries()),
-            hashParams: Object.fromEntries(hashParams.entries())
+            source: tokenFromSearch ? 'search' : 'hash'
           });
           
           // CRITICAL: Check if this is a recovery token BEFORE processing
           if (verificationType === 'recovery') {
-            console.log('🔐 RECOVERY TOKEN DETECTED - Redirecting to password reset');
+            log.auth('Recovery token detected - redirecting to password reset');
             setProcessingMessage("Verifying password reset link...");
             toast.success("Password reset link verified!", {
               description: "Redirecting to password reset form..."
@@ -59,7 +58,7 @@ export default function AuthCallbackPage() {
             const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
             
             if (sessionData?.session && !sessionError) {
-              console.log('🔐 Session already established from verification');
+              log.auth('Session already established from verification');
             } else {
               // Try to exchange the token for a session
               const { data, error } = await supabase.auth.verifyOtp({
@@ -84,7 +83,7 @@ export default function AuthCallbackPage() {
                 }
               }
               
-              console.log('🔐 Token verification successful:', data);
+                              log.auth('Token verification successful');
             }
             
             // For recovery type, redirect to password reset page
@@ -98,20 +97,19 @@ export default function AuthCallbackPage() {
             
             // For other types, continue with normal flow below
             
-          } catch (verifyError) {
-            console.error('🔐 Token verification exception:', verifyError);
+                      } catch (verifyError) {
+              log.error('Token verification exception', verifyError);
             toast.error("Verification failed");
             router.push('/login');
             return;
           }
         }
         
-        console.log('🔐 URL params:', { 
+        log.auth('Processing URL params', { 
           searchToken: !!tokenFromSearch,
           hashAccessToken: !!tokenFromHash, 
           type: authType,
-          isMagicLink,
-          fullURL: window.location.href
+          isMagicLink
         });
 
         // Update loading message for better UX
@@ -126,21 +124,21 @@ export default function AuthCallbackPage() {
         
         // If still no session, try multiple approaches
         if (!data.session && !error) {
-          console.log('🔐 No session found, trying alternative methods...');
+          log.auth('No session found, trying alternative methods');
           setProcessingMessage("Establishing your session...");
           
           // Try getUser first
           const { data: userData, error: userError } = await supabase.auth.getUser();
           
           if (userData.user && !userError) {
-            console.log('🔐 User found via getUser, trying session again...');
+            log.auth('User found via getUser, trying session again');
             await new Promise(resolve => setTimeout(resolve, 500));
             ({ data, error } = await supabase.auth.getSession());
           }
           
           // If still no session but we have verification tokens, try manual verification
           if (!data.session && verificationToken && verificationType) {
-            console.log('🔐 Trying manual token verification...');
+            log.auth('Trying manual token verification');
             try {
               const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
                 token_hash: verificationToken,
@@ -148,26 +146,23 @@ export default function AuthCallbackPage() {
               });
               
               if (!verifyError && verifyData.session) {
-                console.log('🔐 Manual verification successful');
+                log.auth('Manual verification successful');
                 data = { session: verifyData.session };
                 error = null;
               }
             } catch (verifyErr) {
-              console.error('🔐 Manual verification failed:', verifyErr);
+              log.error('Manual verification failed', verifyErr);
             }
           }
         }
         
-        console.log('🔐 Session result:', { 
+        log.auth('Session result', { 
           hasSession: !!data.session, 
-          error: error?.message,
-          userEmail: data.session?.user?.email,
-          userCreated: data.session?.user?.created_at,
-          emailConfirmed: data.session?.user?.email_confirmed_at
+          error: error?.message
         });
         
         if (error) {
-          console.error("Auth callback error:", error)
+          log.error("Auth callback error", error)
           toast.error("Authentication failed. Please try again.", {
             description: error.message || "Authentication Error"
           })
@@ -177,22 +172,18 @@ export default function AuthCallbackPage() {
 
         if (data.session) {
           const user = data.session.user
-          console.log('🔐 Auth callback - user session found:', {
+          log.auth('User session found', {
             user_id: user.id,
-            email: user.email,
-            email_confirmed_at: user.email_confirmed_at,
-            created_at: user.created_at
+            provider: user.app_metadata?.provider
           });
           
           // For Google OAuth users, check if they have an organization instead of time-based logic
           // Google OAuth users are confirmed immediately and don't go through email verification
           const isGoogleOAuth = !user.email_confirmed_at || user.app_metadata?.provider === 'google'
           
-          console.log('🔐 User analysis:', { 
+          log.auth('User analysis', { 
             provider: user.app_metadata?.provider,
-            isGoogleOAuth,
-            userCreated: user.created_at,
-            emailConfirmed: user.email_confirmed_at
+            isGoogleOAuth
           });
           
           // Update loading message

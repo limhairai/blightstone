@@ -19,7 +19,7 @@ export class GlobalDataPrefetcher {
   async prefetchAllDashboardData() {
     if (!this.session?.access_token || !this.organizationId) return
 
-    console.log('🚀 Starting aggressive data prefetch...')
+    // Starting data prefetch
     const startTime = Date.now()
 
     // Define all the data endpoints we need to prefetch
@@ -53,12 +53,11 @@ export class GlobalDataPrefetcher {
     await Promise.allSettled(prefetchTasks)
 
     const endTime = Date.now()
-    console.log(`✅ Global prefetch completed in ${endTime - startTime}ms`)
-    console.log(`📊 Prefetched ${this.prefetchComplete.size} datasets`)
+    // Global prefetch completed
     
     // Mark global prefetch as complete for instant page wrapper
     localStorage.setItem('adhub_global_prefetch_complete', Date.now().toString())
-    console.log('🎯 Global prefetch marked complete - all future navigation will be instant!')
+    // Future navigation optimized
   }
 
   private async prefetchOrganizationData() {
