@@ -7,6 +7,9 @@ import { AlertTriangle, Building2, Check } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
 import { getActiveBmLimit, shouldEnableBmApplicationFees, getBmApplicationFee } from "@/lib/config/pricing-config"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/AuthContext"
+import { useOrganizationStore } from "@/lib/stores/organization-store"
+import { useWalletBalance } from "@/hooks/useWalletBalance"
 
 interface BmApplicationFeeDialogProps {
   open: boolean
@@ -25,6 +28,9 @@ export function BmApplicationFeeDialog({
 }: BmApplicationFeeDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const { currentPlan } = useSubscription()
+  const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  const { balance: walletBalance, refreshBalance } = useWalletBalance()
 
   if (!currentPlan) return null
 
@@ -35,6 +41,7 @@ export function BmApplicationFeeDialog({
   // Determine if this BM application should be free (first BM is always free)
   const isFirstBm = existingBmCount === 0
   const actualFee = isFirstBm ? 0 : bmApplicationFee
+  const hasInsufficientBalance = actualFee > 0 && walletBalance !== null && walletBalance < actualFee
 
   if (!maxActiveBms) {
     // No limits, proceed directly
@@ -54,9 +61,41 @@ export function BmApplicationFeeDialog({
     setIsProcessing(true)
     try {
       if (actualFee > 0) {
-        // TODO: Integrate with payment processing for BM application fee
-        // For now, just show a message about the fee
-        toast.info(`This application will incur a $${actualFee} fee. Payment processing will be added soon.`)
+        // Process BM application fee via wallet deduction
+        const response = await fetch('/api/business-managers/apply-fee', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token}`
+          },
+          body: JSON.stringify({
+            organizationId: currentOrganizationId,
+            existingBmCount: existingBmCount
+          })
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+          if (result.error === 'Insufficient wallet balance') {
+            toast.error(
+              `Insufficient wallet balance. You need $${result.required} but only have $${result.available}. Please add $${result.shortfall} to your wallet.`,
+              { duration: 6000 }
+            )
+          } else {
+            toast.error(result.error || 'Failed to process BM application fee')
+          }
+          return
+        }
+
+        // Show success message for fee deduction
+        if (result.fee > 0) {
+          toast.success(`Successfully charged $${result.fee} BM application fee. New wallet balance: $${result.newBalance}`)
+          // Refresh wallet balance to show updated amount
+          refreshBalance()
+        } else {
+          toast.success(result.message)
+        }
       }
       
       onConfirm()

@@ -238,9 +238,6 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center pb-6">
           <DialogTitle className="text-2xl font-bold">Choose Your Plan</DialogTitle>
-          <p className="text-muted-foreground mt-2">
-            Scale your Facebook advertising with transparent pricing and no hidden fees
-          </p>
         </DialogHeader>
 
         {/* Plans in 3-column grid */}
