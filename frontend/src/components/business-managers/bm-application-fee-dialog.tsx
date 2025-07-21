@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Building2, Check } from "lucide-react"
 import { useSubscription } from "@/hooks/useSubscription"
-import { getActiveBmLimit, shouldEnableBmApplicationFees } from "@/lib/config/pricing-config"
+import { getActiveBmLimit, shouldEnableBmApplicationFees, getBmApplicationFee } from "@/lib/config/pricing-config"
 import { toast } from "sonner"
 
 interface BmApplicationFeeDialogProps {
@@ -13,22 +13,28 @@ interface BmApplicationFeeDialogProps {
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
   currentBmApplications: number
+  existingBmCount?: number // How many BMs they already have (for fee calculation)
 }
 
 export function BmApplicationFeeDialog({ 
   open, 
   onOpenChange, 
   onConfirm,
-  currentBmApplications 
+  currentBmApplications,
+  existingBmCount = 0
 }: BmApplicationFeeDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const { currentPlan } = useSubscription()
 
   if (!currentPlan) return null
 
-  // Check if BM application fees are enabled (they're disabled in new pricing)
-  const feesEnabled = shouldEnableBmApplicationFees()
+  // Get BM application fee for current plan
+  const bmApplicationFee = getBmApplicationFee(currentPlan.id as 'starter' | 'growth' | 'scale')
   const maxActiveBms = getActiveBmLimit(currentPlan.id as 'starter' | 'growth' | 'scale')
+
+  // Determine if this BM application should be free (first BM is always free)
+  const isFirstBm = existingBmCount === 0
+  const actualFee = isFirstBm ? 0 : bmApplicationFee
 
   if (!maxActiveBms) {
     // No limits, proceed directly
@@ -47,7 +53,12 @@ export function BmApplicationFeeDialog({
 
     setIsProcessing(true)
     try {
-      // In new pricing model, applications are free but limited by active BM count
+      if (actualFee > 0) {
+        // TODO: Integrate with payment processing for BM application fee
+        // For now, just show a message about the fee
+        toast.info(`This application will incur a $${actualFee} fee. Payment processing will be added soon.`)
+      }
+      
       onConfirm()
     } catch (error) {
       console.error('Error processing BM application:', error)
@@ -82,7 +93,9 @@ export function BmApplicationFeeDialog({
               </div>
               <div className="flex justify-between">
                 <span>Application cost:</span>
-                <span className="text-green-600 font-medium">Free</span>
+                <span className={actualFee === 0 ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
+                  {actualFee === 0 ? 'Free' : `$${actualFee}`}
+                </span>
               </div>
             </div>
           </div>
@@ -92,9 +105,19 @@ export function BmApplicationFeeDialog({
             <h4 className="font-semibold mb-3">Application Details</h4>
             
             {!isAtLimit ? (
-              <div className="flex items-center gap-2 text-green-600">
-                <Check className="h-4 w-4" />
-                <span className="font-medium">Free Business Manager Application</span>
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-green-600" />
+                <span className="font-medium">
+                  {actualFee === 0 ? (
+                    <span className="text-green-600">
+                      {isFirstBm ? 'First BM - Free!' : 'Free Business Manager Application'}
+                    </span>
+                  ) : (
+                    <span className="text-amber-600">
+                      Additional BM - ${actualFee} fee
+                    </span>
+                  )}
+                </span>
               </div>
             ) : (
               <div className="text-muted-foreground text-sm">
@@ -105,7 +128,13 @@ export function BmApplicationFeeDialog({
             <div className="mt-3 text-sm text-muted-foreground">
               <p>
                 Your {currentPlan.name} plan includes {maxActiveBms} active Business Manager{maxActiveBms > 1 ? 's' : ''}.
-                Each BM can host up to 5 ad accounts due to provider limitations.
+                {actualFee > 0 && (
+                  <>
+                    <br />
+                    <strong>Note:</strong> Your first Business Manager is always free. 
+                    Additional BMs cost ${bmApplicationFee} each on the {currentPlan.name} plan.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -140,7 +169,9 @@ export function BmApplicationFeeDialog({
               disabled={isProcessing || isAtLimit}
               className="flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
             >
-              {isProcessing ? 'Processing...' : 'Apply for Free'}
+              {isProcessing ? 'Processing...' : (
+                actualFee === 0 ? 'Apply for Free' : `Apply ($${actualFee})`
+              )}
             </Button>
           </div>
         </div>

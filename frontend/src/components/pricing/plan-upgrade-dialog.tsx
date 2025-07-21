@@ -2,13 +2,14 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Check, Loader2, AlertTriangle } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Check, Loader2, AlertTriangle, Info } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { toast } from "sonner"
-import { getPlanPricing } from "@/lib/config/pricing-config"
+import { getPlanPricing, getBmApplicationFee } from "@/lib/config/pricing-config"
 
 interface PlanUpgradeDialogProps {
   open: boolean
@@ -187,21 +188,31 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
     }
   }).filter(Boolean)
 
-  function getFeatures(plan: any): string[] {
+  function getFeatures(plan: any): Array<{ text: string; hasTooltip?: boolean; tooltipText?: string }> {
+    const bmFee = getBmApplicationFee(plan.id as 'starter' | 'growth' | 'scale')
+    
     const features = [
-      plan.monthlyTopupLimit === -1 
+      { text: plan.monthlyTopupLimit === -1 
         ? 'Unlimited ad spend' 
-        : `Up to $${plan.monthlyTopupLimit.toLocaleString()}/month in ad spend`,
-      `${plan.businessManagers} Active Business Manager${plan.businessManagers > 1 ? 's' : ''}`,
-      `${plan.adAccounts} Active Ad Accounts`,
-      `${plan.domainsPerBm} Promotion URLs per BM`,
-      'Unlimited Replacements',
-      ...getAdditionalFeatures(plan.id)
+        : `Up to $${plan.monthlyTopupLimit.toLocaleString()}/month in ad spend` },
+      { text: `${plan.businessManagers} Active Business Manager${plan.businessManagers > 1 ? 's' : ''}` },
+      { text: `${plan.adAccounts} Active Ad Accounts` },
+      { text: `${plan.domainsPerBm} Promotion URLs per BM` },
+      { text: 'Unlimited Replacements' },
+      // BM Application Fee with tooltip
+      bmFee === 0 
+        ? { text: 'Free additional Business Managers' }
+        : { 
+            text: `Additional BMs: $${bmFee} each (1st free)`,
+            hasTooltip: true,
+            tooltipText: "Your first Business Manager is always free. Additional Business Managers require a one-time application fee."
+          },
+      ...getAdditionalFeatures(plan.id).map(text => ({ text }))
     ]
     
     // Only add pixel feature if plan has pixels (remove 0 pixel mentions)
     if (plan.pixels > 0) {
-      features.splice(3, 0, `${plan.pixels} Facebook Pixels`)
+      features.splice(4, 0, { text: `${plan.pixels} Facebook Pixels` })
     }
     
     return features
@@ -222,6 +233,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
 
   return (
     <>
+    <TooltipProvider>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="text-center pb-6">
@@ -295,7 +307,19 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                       {getFeatures(plan).map((feature, index) => (
                         <li key={index} className="flex items-start">
                           <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm text-muted-foreground">{feature}</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm text-muted-foreground">{feature.text}</span>
+                            {feature.hasTooltip && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="h-3 w-3 text-muted-foreground/60 hover:text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="text-xs">{feature.tooltipText}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -321,6 +345,8 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
             )
           })}
         </div>
+
+
 
         {/* Plus plan - horizontal layout */}
         <div className="border-t pt-8">
@@ -446,6 +472,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </TooltipProvider>
     </>
   )
 } 

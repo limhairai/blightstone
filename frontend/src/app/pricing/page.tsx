@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { toast } from "sonner"
-import { PRICING_CONFIG } from "@/lib/config/pricing-config"
+import { PRICING_CONFIG, getBmApplicationFee } from "@/lib/config/pricing-config"
 import Link from "next/link"
 
 interface Plan {
@@ -116,7 +116,18 @@ export default function PricingPage() {
 
   const formatFeatures = (plan: Plan): string[] => {
     if (PRICING_CONFIG.newPricingModel.enabled && plan.features) {
-      return plan.features
+      // For new pricing model, enhance features with BM fee info
+      const enhancedFeatures = [...plan.features]
+      
+      // Add BM application fee information
+      const bmFee = getBmApplicationFee(plan.id as 'starter' | 'growth' | 'scale')
+             if (bmFee === 0) {
+         enhancedFeatures.push('Free additional Business Managers')
+       } else {
+         enhancedFeatures.push(`Additional BMs: $${bmFee} each (1st free)`)
+       }
+      
+      return enhancedFeatures
     }
 
     const features = []
@@ -141,6 +152,14 @@ export default function PricingPage() {
     
     // Add unlimited replacements for all plans
     features.push('Unlimited Replacements')
+    
+    // Add BM application fee information for legacy plans too
+    const bmFee = getBmApplicationFee(plan.id as 'starter' | 'growth' | 'scale')
+         if (bmFee === 0) {
+       features.push('Free additional Business Managers')
+     } else {
+       features.push(`Additional BMs: $${bmFee} each (1st free)`)
+     }
     
     if (plan.features && Array.isArray(plan.features)) {
       features.push(...plan.features)
