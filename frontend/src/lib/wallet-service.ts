@@ -116,7 +116,7 @@ export class WalletService {
     }
   }
 
-  /**
+    /**
    * Get existing wallet or create new one
    */
   private static async getOrCreateWallet(organizationId: string): Promise<{
@@ -125,6 +125,24 @@ export class WalletService {
     balanceCents?: number
     error?: string
   }> {
+    // First validate that the organization exists
+    const { data: orgExists, error: orgError } = await supabase
+      .from('organizations')
+      .select('organization_id')
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (orgError || !orgExists) {
+      console.error('Organization not found for wallet creation:', {
+        organizationId,
+        error: orgError
+      })
+      return { 
+        success: false, 
+        error: `Organization ${organizationId} not found` 
+      }
+    }
+
     // Try to get existing wallet
     const { data: walletData, error: walletError } = await supabase
       .from('wallets')
@@ -140,8 +158,7 @@ export class WalletService {
       }
     }
 
-    // Create wallet if it doesn't exist
-  
+    // Create wallet if it doesn't exist (organization is validated above)
     const { data: newWallet, error: createError } = await supabase
       .from('wallets')
       .insert({

@@ -136,8 +136,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   
   // Handle wallet credit checkout completion
   if (session.metadata?.wallet_credit) {
+    console.log('Processing wallet credit checkout:', {
+      organizationId,
+      amount: session.metadata.wallet_credit,
+      sessionId: session.id
+    })
+
+    if (!organizationId) {
+      console.error('Missing organization_id in Stripe session metadata:', {
+        sessionId: session.id,
+        metadata: session.metadata
+      })
+      return NextResponse.json({ error: 'Missing organization ID' }, { status: 400 })
+    }
+
     const result = await WalletService.processTopup({
-      organizationId: organizationId!,
+      organizationId: organizationId,
       amount: parseFloat(session.metadata.wallet_credit),
       paymentMethod: 'stripe',
       transactionId: session.id,
@@ -151,6 +165,14 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
     if (!result.success) {
       console.error('Wallet topup failed:', result.error)
+      
+      // Don't return 500 if it's just an organization not found error
+      // This could be a stale webhook or test data
+      if (result.error?.includes('not found')) {
+        console.warn('Skipping webhook for non-existent organization:', organizationId)
+        return NextResponse.json({ received: true, skipped: true })
+      }
+      
       return NextResponse.json({ error: 'Failed to process wallet topup' }, { status: 500 })
     }
     
