@@ -76,7 +76,7 @@ export const PRICING_CONFIG: PricingConfig = {
         domainsPerBm: 1,
         adSpendFee: 5.0,
         spendFeeCap: 0, // No cap - topup limit naturally caps this
-        monthlyTopupLimit: 1000,
+        monthlyTopupLimit: 2000,
         unlimitedReplacements: true,
         bmApplicationFee: 50, // $50 per BM application
       },
@@ -88,7 +88,7 @@ export const PRICING_CONFIG: PricingConfig = {
         domainsPerBm: 3,
         adSpendFee: 0, // No ad spend fee
         spendFeeCap: 0,
-        monthlyTopupLimit: 3000,
+        monthlyTopupLimit: 6000,
         unlimitedReplacements: true,
         bmApplicationFee: 30, // $30 per BM application
       },
