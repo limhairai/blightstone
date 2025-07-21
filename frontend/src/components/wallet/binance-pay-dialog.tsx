@@ -96,7 +96,7 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
         } catch (error) {
           console.error('Error polling payment status:', error)
         }
-      }, 3000) // Poll every 3 seconds
+      }, 10000) // Poll every 10 seconds (reduced frequency)
 
       return () => clearInterval(pollInterval)
     }
@@ -188,8 +188,8 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className={!order ? "sm:max-w-md" : "sm:max-w-4xl bg-card border-border max-h-[90vh] p-0"}>
+        <DialogHeader className={!order ? "" : "p-6 pb-4"}>
           <DialogTitle className="flex items-center gap-2">
             <Wallet className="h-5 w-5" />
             Crypto Payment
@@ -199,22 +199,20 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Amount Display */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">${formatCurrency(amount)}</div>
-                <div className="text-sm text-muted-foreground">Amount to add to wallet</div>
-              </div>
-            </CardContent>
-          </Card>
+        {!order ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">${formatCurrency(amount)}</div>
+                  <div className="text-sm text-muted-foreground">Amount to add to wallet</div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {!order ? (
-            /* Create Order */
             <div className="space-y-4">
               <div className="text-sm text-muted-foreground">
-                Click below to create a crypto payment order. You'll be able to pay with any supported cryptocurrency.
+                Click below to create a crypto payment order. Payment will be processed in USDT via Binance Pay.
               </div>
               
               <Button
@@ -235,117 +233,159 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
                 )}
               </Button>
             </div>
-          ) : (
-            /* Show Order Details */
-            <div className="space-y-4">
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <Badge className={getStatusColor(order.status)}>
-                  {getStatusIcon(order.status)}
-                  <span className="ml-1 capitalize">{order.status}</span>
-                </Badge>
-                
-                {order.status === 'pending' && timeLeft > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    Expires in {formatTime(timeLeft)}
-                  </div>
+          </div>
+        ) : (
+          <div className="flex-1 px-6 pb-6 overflow-y-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Payment Details & Status */}
+              <div className="space-y-4">
+                {/* Amount Display */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">${formatCurrency(amount)}</div>
+                      <div className="text-sm text-muted-foreground">Amount to add to wallet</div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Status & Timer */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <Badge className={getStatusColor(order.status)}>
+                        {getStatusIcon(order.status)}
+                        <span className="ml-1 capitalize">{order.status}</span>
+                      </Badge>
+                      
+                      {order.status === 'pending' && timeLeft > 0 && (
+                        <div className="text-sm text-muted-foreground">
+                          Expires in {formatTime(timeLeft)}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Payment URL */}
+                {order.status === 'pending' && (
+                  <Card>
+                    <CardContent className="p-4 space-y-3">
+                      <div className="text-sm font-medium">Payment URL</div>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 p-2 bg-muted rounded text-xs break-all">
+                          {order.paymentUrl}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(order.paymentUrl)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => window.open(order.paymentUrl, '_blank')}
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open Payment Page
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Instructions */}
+                {order.status === 'pending' && (
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="text-sm font-medium mb-2">How to pay:</div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <div>1. Click "Open Payment Page" or scan the QR code</div>
+                        <div>2. Pay with USDT or convert from other cryptocurrencies</div>
+                        <div>3. Complete the payment using your Binance account</div>
+                        <div>4. Your wallet will be credited automatically</div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
 
-              {order.status === 'pending' && (
-                <>
-                  {/* QR Code */}
-                  {order.qrCode && (
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="flex justify-center mb-2">
-                          <QrCode className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <div className="text-sm text-muted-foreground mb-2">
-                          Scan QR code with Binance app
-                        </div>
+              {/* Right Column - QR Code & Status Messages */}
+              <div className="space-y-4">
+                {order.status === 'pending' && order.qrCode && (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <div className="flex justify-center mb-3">
+                        <QrCode className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div className="text-sm text-muted-foreground mb-4">
+                        Scan QR code with Binance app
+                      </div>
+                      <div className="mx-auto max-w-64 max-h-64">
                         <img 
                           src={order.qrCode} 
                           alt="Binance Pay QR Code" 
-                          className="mx-auto max-w-48 max-h-48"
+                          className="mx-auto rounded-lg"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            const textDiv = e.currentTarget.nextElementSibling as HTMLElement
+                            if (textDiv) textDiv.style.display = 'block'
+                          }}
                         />
-                      </CardContent>
-                    </Card>
-                  )}
+                        <div 
+                          className="hidden p-2 bg-muted rounded text-xs font-mono break-all"
+                          style={{ display: 'none' }}
+                        >
+                          {order.qrCode}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                  {/* Payment URL */}
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium">Payment URL</div>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 p-2 bg-muted rounded text-xs break-all">
-                        {order.paymentUrl}
-                      </code>
+                {order.status === 'completed' && (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
+                      <div className="text-lg font-medium text-green-600 mb-2">Payment Completed!</div>
+                      <div className="text-sm text-muted-foreground">
+                        Your wallet has been credited with ${formatCurrency(amount)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {(order.status === 'failed' || order.status === 'expired') && (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <XCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
+                      <div className="text-lg font-medium text-red-600 mb-2">
+                        Payment {order.status === 'expired' ? 'Expired' : 'Failed'}
+                      </div>
+                      <div className="text-sm text-muted-foreground mb-4">
+                        {order.status === 'expired' 
+                          ? 'The payment window has expired. Please create a new order.'
+                          : 'The payment could not be processed. Please try again.'
+                        }
+                      </div>
                       <Button
                         variant="outline"
-                        size="sm"
-                        onClick={() => copyToClipboard(order.paymentUrl)}
+                        onClick={() => setOrder(null)}
                       >
-                        <Copy className="h-4 w-4" />
+                        Create New Order
                       </Button>
-                    </div>
-                  </div>
-
-                  {/* Open Payment Button */}
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => window.open(order.paymentUrl, '_blank')}
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Open Payment Page
-                  </Button>
-
-                  {/* Instructions */}
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    <div className="font-medium">How to pay:</div>
-                    <div>1. Click "Open Payment Page" or scan the QR code</div>
-                    <div>2. Choose your preferred cryptocurrency</div>
-                    <div>3. Complete the payment using your crypto wallet</div>
-                    <div>4. Your wallet will be credited automatically</div>
-                  </div>
-                </>
-              )}
-
-              {order.status === 'completed' && (
-                <div className="text-center text-green-600">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-2" />
-                  <div className="font-medium">Payment Completed!</div>
-                  <div className="text-sm text-muted-foreground">
-                    Your wallet has been credited with ${formatCurrency(amount)}
-                  </div>
-                </div>
-              )}
-
-              {(order.status === 'failed' || order.status === 'expired') && (
-                <div className="text-center text-red-600">
-                  <XCircle className="h-12 w-12 mx-auto mb-2" />
-                  <div className="font-medium">
-                    Payment {order.status === 'expired' ? 'Expired' : 'Failed'}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {order.status === 'expired' 
-                      ? 'The payment window has expired. Please create a new order.'
-                      : 'The payment could not be processed. Please try again.'
-                    }
-                  </div>
-                  <Button
-                    variant="outline"
-                    className="mt-2"
-                    onClick={() => setOrder(null)}
-                  >
-                    Create New Order
-                  </Button>
-                </div>
-              )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Close Button */}
+        <div className={!order ? "mt-4" : "mt-4 px-6 pb-6"}>
           <Button variant="outline" onClick={onClose} className="w-full">
             {order?.status === 'completed' ? 'Done' : 'Cancel'}
           </Button>

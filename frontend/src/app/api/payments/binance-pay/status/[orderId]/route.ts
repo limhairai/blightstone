@@ -61,8 +61,8 @@ export async function GET(
       })
     }
 
-    // Query Binance Pay API for current status
-    const binanceStatus = await checkBinancePayOrderStatus(order.binance_order_id)
+    // Query Binance Pay API for current status using our merchantTradeNo
+    const binanceStatus = await checkBinancePayOrderStatus(order.order_id)
     
     // Update local database if status changed
     if (binanceStatus !== order.status) {
@@ -90,20 +90,20 @@ export async function GET(
   }
 }
 
-async function checkBinancePayOrderStatus(binanceOrderId: string): Promise<string> {
+async function checkBinancePayOrderStatus(merchantTradeNo: string): Promise<string> {
   try {
     const requestBody = {
-      merchantTradeNo: binanceOrderId
+      merchantTradeNo: merchantTradeNo
     }
 
     // Generate signature
     const timestamp = Date.now().toString()
-    const nonce = Math.random().toString(36).substr(2, 32)
+    const nonce = generateNonce(32)
     const payload = JSON.stringify(requestBody)
     const signature = generateBinancePaySignature(timestamp, nonce, payload)
 
     // Make API request to Binance Pay
-    const response = await fetch(`${BINANCE_PAY_API_URL}/binancepay/openapi/v2/order/query`, {
+    const response = await fetch(`${BINANCE_PAY_API_URL}/binancepay/openapi/v3/order/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -148,6 +148,15 @@ async function checkBinancePayOrderStatus(binanceOrderId: string): Promise<strin
     console.error('Error querying Binance Pay order:', error)
     return 'pending' // Default to pending if we can't check
   }
+}
+
+function generateNonce(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 function generateBinancePaySignature(timestamp: string, nonce: string, body: string): string {

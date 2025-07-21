@@ -45,8 +45,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Generate unique order ID
-    const orderId = `adhub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    // Generate unique order ID (letters/digits only, max 32 chars)
+    const timestamp = Date.now().toString()
+    const random = Math.random().toString(36).substr(2, 8).toUpperCase()
+    const orderId = `ADHUB${timestamp}${random}`.substr(0, 32) // Ensure max 32 chars
     
     // Create Binance Pay order
     const binancePayOrder = await createBinancePayOrder({
@@ -108,49 +110,32 @@ async function createBinancePayOrder(params: {
 }) {
   const { orderId, amount, currency, organizationId, organizationName } = params
   
-  // Binance Pay API request payload
+  // Binance Pay API request payload (V3 format)
   const requestBody = {
     env: {
       terminalType: 'WEB'
     },
     merchantTradeNo: orderId,
     orderAmount: amount,
-    currency: currency,
-    goods: {
+    currency: 'USDT', // Binance Pay typically uses USDT
+    description: `AdHub Wallet Top-up - $${amount}`,
+    goodsDetails: [{
       goodsType: '02', // Virtual goods
       goodsCategory: 'Z000', // Others
       referenceGoodsId: 'wallet_topup',
-      goodsName: `AdHub Wallet Top-up - ${organizationName}`,
+      goodsName: 'AdHub Wallet Credit',
       goodsDetail: `Add $${amount} to AdHub wallet for ${organizationName}`
-    },
-    shipping: {
-      shippingName: organizationName,
-      shippingAddress: {
-        region: 'US',
-        state: 'CA',
-        city: 'San Francisco',
-        address: '123 Main St'
-      }
-    },
-    buyer: {
-      referenceBuyerId: organizationId,
-      buyerName: {
-        firstName: organizationName.split(' ')[0] || 'AdHub',
-        lastName: organizationName.split(' ').slice(1).join(' ') || 'User'
-      }
-    },
-    returnUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/wallet?payment=success`,
-    cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard/wallet?payment=cancelled`
+    }]
   }
 
   // Generate signature
   const timestamp = Date.now().toString()
-  const nonce = Math.random().toString(36).substr(2, 32)
+  const nonce = generateNonce(32) // Must be exactly 32 characters
   const payload = JSON.stringify(requestBody)
   const signature = generateBinancePaySignature(timestamp, nonce, payload)
 
   // Make API request to Binance Pay
-  const response = await fetch(`${BINANCE_PAY_API_URL}/binancepay/openapi/v2/order`, {
+  const response = await fetch(`${BINANCE_PAY_API_URL}/binancepay/openapi/v3/order`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -176,9 +161,18 @@ async function createBinancePayOrder(params: {
 
   return {
     binanceOrderId: data.data.prepayId,
-    paymentUrl: data.data.universalUrl,
-    qrCode: data.data.qrContent
+    paymentUrl: data.data.checkoutUrl || data.data.universalUrl,
+    qrCode: data.data.qrcodeLink || data.data.qrContent
   }
+}
+
+function generateNonce(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
 }
 
 function generateBinancePaySignature(timestamp: string, nonce: string, body: string): string {

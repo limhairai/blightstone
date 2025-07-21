@@ -320,7 +320,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
       <BinancePayDialog
         isOpen={showBinancePayDialog}
         onClose={() => setShowBinancePayDialog(false)}
-        amount={parseFloat(amount) || 0}
+        amount={totalAmount} // Include 1% crypto processing fee
         onSuccess={handleBinancePaySuccess}
       />
     </Card>
