@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
+import { useOrganizationStore } from '@/lib/stores/organization-store';
 
 interface UseAssetDeactivationProps {
   onSuccess?: () => void;
@@ -11,6 +12,7 @@ export function useAssetDeactivation({ onSuccess }: UseAssetDeactivationProps = 
   const [isLoading, setIsLoading] = useState(false);
   const { session } = useAuth();
   const { mutate } = useSWRConfig();
+  const { currentOrganizationId } = useOrganizationStore();
 
   const toggleAssetActivation = async (assetId: string, isActive: boolean) => {
     if (!session?.access_token) {
@@ -80,6 +82,11 @@ export function useAssetDeactivation({ onSuccess }: UseAssetDeactivationProps = 
       // Revalidate to ensure consistency
       mutate((key) => typeof key === 'string' && key.includes('/api/ad-accounts'));
       mutate((key) => typeof key === 'string' && key.includes('/api/business-managers'));
+      
+      // Refresh subscription data to update BM limits for application dialog
+      if (currentOrganizationId) {
+        mutate(`/api/subscriptions/current?organizationId=${currentOrganizationId}`);
+      }
       
       onSuccess?.();
     } catch (error) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Building2, Check } from "lucide-react"
@@ -27,10 +27,35 @@ export function BmApplicationFeeDialog({
   existingBmCount = 0
 }: BmApplicationFeeDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false)
+  const [realTimeBmCount, setRealTimeBmCount] = useState<number | null>(null)
   const { currentPlan } = useSubscription()
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const { balance: walletBalance, refreshBalance } = useWalletBalance()
+
+  // Fetch real-time BM count when dialog opens
+  useEffect(() => {
+    if (open && currentOrganizationId && session?.access_token) {
+      const fetchRealTimeBmCount = async () => {
+        try {
+          const response = await fetch(`/api/organizations/${currentOrganizationId}/active-bm-count`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setRealTimeBmCount(data.totalBMs)
+          }
+        } catch (error) {
+          console.error('Failed to fetch real-time BM count:', error)
+        }
+      }
+      
+      fetchRealTimeBmCount()
+    }
+  }, [open, currentOrganizationId, session?.access_token])
 
   if (!currentPlan) return null
 
@@ -49,8 +74,21 @@ export function BmApplicationFeeDialog({
     return null
   }
 
-  const isAtLimit = currentBmApplications >= maxActiveBms
-  const remainingSlots = maxActiveBms - currentBmApplications
+  // Use real-time count if available, otherwise fall back to props
+  const effectiveBmCount = realTimeBmCount !== null ? realTimeBmCount : currentBmApplications
+  const isAtLimit = effectiveBmCount >= maxActiveBms
+  const remainingSlots = maxActiveBms - effectiveBmCount
+
+  // Debug logging for BM limits
+  console.log('🔍 BM Application Dialog Debug:', {
+    currentBmApplications,
+    realTimeBmCount,
+    effectiveBmCount,
+    maxActiveBms,
+    isAtLimit,
+    remainingSlots,
+    planName: currentPlan.name
+  })
 
   const handleConfirm = async () => {
     if (isAtLimit) {
@@ -124,7 +162,7 @@ export function BmApplicationFeeDialog({
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex justify-between">
                 <span>Active BMs:</span>
-                <span>{currentBmApplications} / {maxActiveBms}</span>
+                <span>{effectiveBmCount} / {maxActiveBms}</span>
               </div>
               <div className="flex justify-between">
                 <span>Remaining slots:</span>
