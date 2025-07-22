@@ -265,20 +265,10 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                   </div>
                 )}
 
-                {/* Current plan badge */}
-                {isCurrent && (
-                  <div className="absolute -top-3 right-4 z-10">
-                    <div className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black px-3 py-1 rounded-full text-sm font-medium shadow-lg">
-                      Current
-                    </div>
-                  </div>
-                )}
-
                 <div className="p-6">
                   {/* Plan name */}
                   <div className="mb-6">
                     <h3 className="text-xl font-bold mb-2 capitalize">{plan.name}</h3>
-                    {/* Removed description */}
                   </div>
 
                   {/* Price */}
@@ -328,12 +318,12 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     disabled={isCurrent || isUpgrading}
                     className={`w-full h-11 font-medium ${
                       isCurrent
-                        ? 'bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0'
+                        ? 'bg-background hover:bg-accent text-foreground border border-border'
                         : isPopular
                         ? 'bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0'
                         : 'bg-background hover:bg-accent text-foreground border border-border'
                     }`}
-                    variant={isCurrent ? 'default' : isPopular ? 'default' : 'outline'}
+                    variant={isCurrent ? 'outline' : isPopular ? 'default' : 'outline'}
                   >
                     {getButtonText(plan.id)}
                   </Button>

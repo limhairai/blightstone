@@ -12,13 +12,9 @@ CREATE TABLE public.support_tickets (
     subject TEXT NOT NULL,
     category TEXT NOT NULL CHECK (category IN (
         'ad_account_issue',
-        'business_manager_issue', 
-        'pixel_access_request',
         'billing_question',
-        'technical_support',
         'feature_request',
-        'account_replacement',
-        'spending_limit_issue',
+        'bug_report',
         'general_inquiry'
     )),
     priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),

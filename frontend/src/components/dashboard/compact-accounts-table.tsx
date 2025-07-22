@@ -273,7 +273,7 @@ export function CompactAccountsTable({
         {/* Table Header */}
         <div
           className="grid gap-4 px-6 py-4 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "40px 180px 20px 160px 130px 130px 80px 80px 100px 160px" }}
+          style={{ gridTemplateColumns: "40px 180px 20px 160px 130px 130px 80px 140px 100px 160px" }}
         >
           <div className="flex items-center">
             <Checkbox
@@ -289,7 +289,7 @@ export function CompactAccountsTable({
           <div className="flex items-center">BM ID</div>
           <div className="flex items-center">TIMEZONE</div>
           <div className="flex items-center">STATUS</div>
-          <div className="flex items-center">AVAILABLE SPEND</div>
+          <div className="flex items-center whitespace-nowrap">AVAILABLE SPEND</div>
           <div></div>
         </div>
 
@@ -303,7 +303,7 @@ export function CompactAccountsTable({
                 selectedAccounts.includes(account.id) && "bg-muted/30",
                 account.is_active === false && "opacity-50 grayscale"
               )}
-              style={{ gridTemplateColumns: "40px 180px 20px 160px 130px 130px 80px 80px 100px 160px" }}
+                              style={{ gridTemplateColumns: "40px 180px 20px 160px 130px 130px 80px 140px 100px 160px" }}
               onClick={(e) => handleRowClick(account, e)}
             >
               {/* Checkbox */}

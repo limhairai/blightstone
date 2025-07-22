@@ -609,9 +609,8 @@ export default function ClientTopupRequestsPage() {
         </div>
 
         {/* Transaction Filters */}
-        <Card className="bg-card/50 dark:bg-card/50 border-border mb-4">
-          <CardHeader className="pb-0 pt-3">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="mb-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex flex-1 flex-col md:flex-row md:items-center gap-2">
                 <div className="relative flex-1 max-w-sm">
                   <SearchIcon className="absolute left-2.5 top-2.5 h-3 w-3 text-muted-foreground" />
@@ -673,8 +672,7 @@ export default function ClientTopupRequestsPage() {
                 <SlidersHorizontal className="h-3 w-3" />
               </Button>
             </div>
-          </CardHeader>
-        </Card>
+          </div>
 
         {/* Transactions Table */}
         {transactionsLoading ? (
@@ -688,7 +686,7 @@ export default function ClientTopupRequestsPage() {
         ) : (
           <>
             {paginatedTransactions.length > 0 ? (
-              <div className="rounded-md border border-border overflow-hidden">
+              <div className="overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>

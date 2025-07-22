@@ -118,29 +118,11 @@ export const TICKET_CATEGORIES = {
     color: 'bg-muted text-muted-foreground border-muted',
     icon: CreditCard
   },
-  business_manager_issue: {
-    label: 'Business Manager Issue', 
-    description: 'Problems with business manager access or functionality',
-    color: 'bg-muted text-muted-foreground border-muted',
-    icon: Building2
-  },
-  pixel_access_request: {
-    label: 'Pixel Access Request',
-    description: 'Request access to Facebook pixels',
-    color: 'bg-muted text-muted-foreground border-muted',
-    icon: Shield
-  },
   billing_question: {
     label: 'Billing Question',
     description: 'Questions about billing, payments, or subscriptions',
     color: 'bg-muted text-muted-foreground border-muted',
     icon: CreditCard
-  },
-  account_access_issue: {
-    label: 'Account Access Issue',
-    description: 'Problems with account login or access',
-    color: 'bg-muted text-muted-foreground border-muted',
-    icon: User
   },
   feature_request: {
     label: 'Feature Request',

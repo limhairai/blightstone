@@ -47,7 +47,11 @@ export async function GET(request: NextRequest) {
 
     // Use the optimized function to get tickets with metadata
     const isAdmin = profile.is_superuser === true
-    const orgId = isAdmin ? null : profile.organization_id // Admins see all tickets
+    
+    // SECURITY FIX: Always filter by user's organization on client dashboard
+    // Admin status should only affect admin panel, not client dashboard access
+    // Users (including admin users) should only see their own organization's tickets
+    const orgId = profile.organization_id // Always use user's org, never null
 
     const { data: tickets, error: ticketsError } = await supabase
       .rpc('get_tickets_with_metadata', { org_id: orgId })
@@ -170,13 +174,9 @@ export async function POST(request: NextRequest) {
     // Validate category
     const validCategories = [
       'ad_account_issue',
-      'business_manager_issue', 
-      'pixel_access_request',
       'billing_question',
-      'technical_support',
       'feature_request',
-      'account_replacement',
-      'spending_limit_issue',
+      'bug_report',
       'general_inquiry'
     ]
     

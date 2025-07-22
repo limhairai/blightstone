@@ -143,7 +143,7 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
 
   const updateTicketStatus = async (status: string) => {
     try {
-      const response = await fetch(`/api/support/tickets/${ticket.id}/status`, {
+      const response = await fetch(`/api/support/tickets/${ticket.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
