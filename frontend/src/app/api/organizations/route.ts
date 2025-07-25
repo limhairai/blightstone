@@ -32,16 +32,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    // Check if user is admin - admins can see all organizations
+    const { data: isAdminResult, error: adminCheckError } = await supabase
+      .rpc('is_admin', { user_id: user.id });
+    
+    const isAdmin = !adminCheckError && isAdminResult === true;
+
     // Removed cache checking for immediate updates
 
     // **OPTIMIZED**: Use basic queries with correct semantic IDs
     let organizations;
 
     if (orgId) {
-      // Get specific organization - check both ownership and membership
-      const [ownedOrgResult, memberOrgResult] = await Promise.all([
-        // Check if user owns this organization
-        supabase
+      // Get specific organization
+      if (isAdmin) {
+        // Admins can access any organization
+        const { data: specificOrg, error: orgError } = await supabase
           .from('organizations')
           .select(`
             organization_id,
@@ -51,41 +57,63 @@ export async function GET(request: NextRequest) {
             wallets(wallet_id, balance_cents, reserved_balance_cents)
           `)
           .eq('organization_id', orgId)
-          .eq('owner_id', user.id)
-          .maybeSingle(),
+          .maybeSingle();
         
-        // Check if user is a member of this organization
-        supabase
-          .from('organizations')
-          .select(`
-            organization_id,
-            name,
-            created_at,
-            owner_id,
-            organization_members!inner(user_id),
-            wallets(wallet_id, balance_cents, reserved_balance_cents)
-          `)
-          .eq('organization_id', orgId)
-          .eq('organization_members.user_id', user.id)
-          .maybeSingle()
-      ]);
-      
-      const ownedOrg = ownedOrgResult.data;
-      const memberOrg = memberOrgResult.data;
-      
-      // Use owned org if available, otherwise use member org
-      const specificOrg = ownedOrg || memberOrg;
-      organizations = specificOrg ? [specificOrg] : [];
-      
-      if (ownedOrgResult.error && memberOrgResult.error) {
-        console.error("Error fetching specific organization:", ownedOrgResult.error, memberOrgResult.error);
-        return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
+        organizations = specificOrg ? [specificOrg] : [];
+        
+        if (orgError) {
+          console.error("Error fetching organization for admin:", orgError);
+          return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
+        }
+      } else {
+        // Non-admins: check both ownership and membership
+        const [ownedOrgResult, memberOrgResult] = await Promise.all([
+          // Check if user owns this organization
+          supabase
+            .from('organizations')
+            .select(`
+              organization_id,
+              name,
+              created_at,
+              owner_id,
+              wallets(wallet_id, balance_cents, reserved_balance_cents)
+            `)
+            .eq('organization_id', orgId)
+            .eq('owner_id', user.id)
+            .maybeSingle(),
+          
+          // Check if user is a member of this organization
+          supabase
+            .from('organizations')
+            .select(`
+              organization_id,
+              name,
+              created_at,
+              owner_id,
+              organization_members!inner(user_id),
+              wallets(wallet_id, balance_cents, reserved_balance_cents)
+            `)
+            .eq('organization_id', orgId)
+            .eq('organization_members.user_id', user.id)
+            .maybeSingle()
+        ]);
+        
+        const ownedOrg = ownedOrgResult.data;
+        const memberOrg = memberOrgResult.data;
+        
+        // Use owned org if available, otherwise use member org
+        const specificOrg = ownedOrg || memberOrg;
+        organizations = specificOrg ? [specificOrg] : [];
+        
+        if (ownedOrgResult.error && memberOrgResult.error) {
+          console.error("Error fetching specific organization:", ownedOrgResult.error, memberOrgResult.error);
+          return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
+        }
       }
     } else {
-      // **FIXED**: Get organizations using separate queries to avoid OR syntax issues
-      const [ownedResult, memberResult] = await Promise.all([
-        // Organizations the user owns
-        supabase
+      if (isAdmin) {
+        // Admins can see ALL organizations
+        const { data: allOrgs, error: allOrgsError } = await supabase
           .from('organizations')
           .select(`
             organization_id,
@@ -94,37 +122,59 @@ export async function GET(request: NextRequest) {
             owner_id,
             wallets(wallet_id, balance_cents, reserved_balance_cents)
           `)
-          .eq('owner_id', user.id),
+          .order('created_at', { ascending: false });
         
-        // Organizations the user is a member of
-        supabase
-          .from('organizations')
-          .select(`
-            organization_id,
-            name,
-            created_at,
-            owner_id,
-            organization_members!inner(user_id),
-            wallets(wallet_id, balance_cents, reserved_balance_cents)
-          `)
-          .eq('organization_members.user_id', user.id)
-          .neq('owner_id', user.id) // Exclude owned orgs to avoid duplicates
-      ]);
-      
-      if (ownedResult.error) {
-        console.error("Error fetching owned organizations:", ownedResult.error);
-        return NextResponse.json({ error: 'Failed to fetch owned organizations', details: ownedResult.error.message }, { status: 500 });
+        if (allOrgsError) {
+          console.error("Error fetching all organizations for admin:", allOrgsError);
+          return NextResponse.json({ error: 'Failed to fetch organizations', details: allOrgsError.message }, { status: 500 });
+        }
+        
+        organizations = allOrgs || [];
+      } else {
+        // **FIXED**: Get organizations using separate queries to avoid OR syntax issues
+        const [ownedResult, memberResult] = await Promise.all([
+          // Organizations the user owns
+          supabase
+            .from('organizations')
+            .select(`
+              organization_id,
+              name,
+              created_at,
+              owner_id,
+              wallets(wallet_id, balance_cents, reserved_balance_cents)
+            `)
+            .eq('owner_id', user.id),
+          
+          // Organizations the user is a member of
+          supabase
+            .from('organizations')
+            .select(`
+              organization_id,
+              name,
+              created_at,
+              owner_id,
+              organization_members!inner(user_id),
+              wallets(wallet_id, balance_cents, reserved_balance_cents)
+            `)
+            .eq('organization_members.user_id', user.id)
+            .neq('owner_id', user.id) // Exclude owned orgs to avoid duplicates
+        ]);
+        
+        if (ownedResult.error) {
+          console.error("Error fetching owned organizations:", ownedResult.error);
+          return NextResponse.json({ error: 'Failed to fetch owned organizations', details: ownedResult.error.message }, { status: 500 });
+        }
+        
+        if (memberResult.error) {
+          console.error("Error fetching member organizations:", memberResult.error);
+          return NextResponse.json({ error: 'Failed to fetch member organizations', details: memberResult.error.message }, { status: 500 });
+        }
+        
+        // Combine results
+        const ownedOrgs = ownedResult.data || [];
+        const memberOrgs = memberResult.data || [];
+        organizations = [...ownedOrgs, ...memberOrgs];
       }
-      
-      if (memberResult.error) {
-        console.error("Error fetching member organizations:", memberResult.error);
-        return NextResponse.json({ error: 'Failed to fetch member organizations', details: memberResult.error.message }, { status: 500 });
-      }
-      
-      // Combine results
-      const ownedOrgs = ownedResult.data || [];
-      const memberOrgs = memberResult.data || [];
-      organizations = [...ownedOrgs, ...memberOrgs];
     }
 
     // If no organizations found, return empty array
