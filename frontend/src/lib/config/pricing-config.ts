@@ -64,45 +64,45 @@ export const PRICING_CONFIG: PricingConfig = {
   enableBmApplicationFees: true, // Enabled - BM application fees now active
   enableAdAccountStatusDisplay: false, // Disabled - Dolphin status detection is unreliable
   
-  // New pricing model - updated to match actual pricing structure
+  // New pricing model - updated to final pricing structure
   newPricingModel: {
     enabled: true,
     plans: {
       starter: {
-        price: 29,
+        price: 79, // Platform fee $79/month
         businessManagers: 1,
-        adAccounts: 1,
-        pixels: 0, // No pixel limits
-        domainsPerBm: 1,
-        adSpendFee: 5.0,
-        spendFeeCap: 0, // No cap - topup limit naturally caps this
-        monthlyTopupLimit: 2000,
-        unlimitedReplacements: true,
-        bmApplicationFee: 50, // $50 per BM application
-      },
-      growth: {
-        price: 299,
-        businessManagers: 2,
         adAccounts: 3,
         pixels: 0, // No pixel limits
-        domainsPerBm: 3,
-        adSpendFee: 0, // No ad spend fee
-        spendFeeCap: 0,
-        monthlyTopupLimit: 6000,
+        domainsPerBm: 2, // 2 promotion URLs (domains) per BM
+        adSpendFee: 1.25, // 1.25% of top-ups
+        spendFeeCap: 149, // Fee line caps at $149
+        monthlyTopupLimit: 15000, // Monthly spend allowance $15,000
         unlimitedReplacements: true,
-        bmApplicationFee: 30, // $30 per BM application
+        bmApplicationFee: 0, // No BM application fees in new model
+      },
+      growth: {
+        price: 299, // Platform fee $299/month
+        businessManagers: 3,
+        adAccounts: 10,
+        pixels: 0, // No pixel limits
+        domainsPerBm: 3, // 3 domains per BM
+        adSpendFee: 1.0, // 1.00% spend fee
+        spendFeeCap: 449, // Caps at $449
+        monthlyTopupLimit: 60000, // Monthly spend allowance $60,000
+        unlimitedReplacements: true,
+        bmApplicationFee: 0, // No BM application fees in new model
       },
       scale: {
-        price: 699,
-        businessManagers: 3,
-        adAccounts: 5,
+        price: 699, // Platform fee $699/month
+        businessManagers: 5,
+        adAccounts: 20,
         pixels: 0, // No pixel limits
-        domainsPerBm: 5,
-        adSpendFee: 0, // No ad spend fee
-        spendFeeCap: 0,
-        monthlyTopupLimit: -1, // No spend limit
+        domainsPerBm: 5, // 5 domains per BM
+        adSpendFee: 0.5, // 0.50% spend fee
+        spendFeeCap: 1499, // Caps at $1,499
+        monthlyTopupLimit: 300000, // Monthly spend allowance $300,000
         unlimitedReplacements: true,
-        bmApplicationFee: 0, // No BM application fee
+        bmApplicationFee: 0, // No BM application fees in new model
       },
     },
   },
