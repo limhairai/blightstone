@@ -31,13 +31,14 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
   const { session } = useAuth()
 
   // Static bank details - shown immediately
+  // These are fallback values only - actual values come from environment variables via API
   const staticBankDetails: BankDetails = {
-    accountName: "AdHub Inc.",
-    bankName: "Community Federal Savings Bank",
-    accountNumber: "8480425778",
-    routingNumber: "026073150",
-    fedwireRoutingNumber: "026073150",
-    swiftCode: "CMFGUS33"
+    accountName: "Loading...",
+    bankName: "Loading...",
+    accountNumber: "****",
+    routingNumber: "****",
+    fedwireRoutingNumber: "****",
+    swiftCode: "****"
   }
 
   // Reset state when dialog opens/closes

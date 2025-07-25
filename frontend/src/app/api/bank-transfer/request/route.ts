@@ -89,9 +89,9 @@ export async function POST(request: NextRequest) {
       },
       bankDetails: {
         // Your company's Airwallex bank account details
-        accountName: process.env.AIRWALLEX_ACCOUNT_NAME || 'AdHub Inc.',
+        accountName: process.env.AIRWALLEX_ACCOUNT_NAME || 'BLIGHTSTONE PTE. LTD.',
         bankName: process.env.AIRWALLEX_BANK_NAME || 'Community Federal Savings Bank',
-        accountNumber: process.env.AIRWALLEX_ACCOUNT_NUMBER || '8480425778',
+        accountNumber: process.env.AIRWALLEX_ACCOUNT_NUMBER || '8489875843',
         routingNumber: process.env.AIRWALLEX_ROUTING_NUMBER || '026073150', // ACH routing
         fedwireRoutingNumber: process.env.AIRWALLEX_FEDWIRE_ROUTING || '026073008',
         swiftCode: process.env.AIRWALLEX_SWIFT_CODE || 'CMFGUS33',
