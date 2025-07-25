@@ -41,19 +41,19 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
     swiftCode: "****"
   }
 
-  // Reset state when dialog opens/closes
+  // Load bank details when dialog opens and reset when it closes
   useEffect(() => {
     if (!isOpen) {
       setBankDetails(null)
       setLoading(false)
+    } else if (isOpen && !bankDetails && session?.access_token) {
+      // Auto-load bank details when dialog opens
+      loadBankDetails()
     }
-  }, [isOpen])
+  }, [isOpen, session?.access_token])
 
-  const generateReferenceNumber = async () => {
-    if (!session?.access_token) {
-      toast.error("Please log in to generate transfer reference")
-      return
-    }
+  const loadBankDetails = async () => {
+    if (!session?.access_token) return
 
     setLoading(true)
     try {
@@ -70,7 +70,7 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || 'Failed to generate transfer reference')
+        throw new Error(error.error || 'Failed to load bank details')
       }
 
       const data = await response.json()
@@ -78,16 +78,22 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
         ...data.bankDetails,
         referenceNumber: data.request.referenceNumber
       })
-      toast.success("Transfer reference generated successfully!")
-      
-      // Don't call onSuccess here - we want to keep dialog open to show the reference
-      // onSuccess?.()
     } catch (error) {
-      console.error('Error generating reference:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to generate transfer reference')
+      console.error('Error loading bank details:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to load bank details')
     } finally {
       setLoading(false)
     }
+  }
+
+  const generateReferenceNumber = async () => {
+    if (!session?.access_token) {
+      toast.error("Please log in to generate transfer reference")
+      return
+    }
+
+    await loadBankDetails()
+    toast.success("Transfer reference generated successfully!")
   }
 
   const copyToClipboard = (text: string, label: string) => {
