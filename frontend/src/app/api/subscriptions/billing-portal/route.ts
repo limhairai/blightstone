@@ -66,8 +66,23 @@ export async function POST(request: NextRequest) {
 
     let stripeCustomerId = subscription?.stripe_customer_id || organization?.stripe_customer_id
 
+    // Check if existing customer ID is valid in Stripe
+    if (stripeCustomerId) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+        console.log('✅ Existing Stripe customer found for billing portal:', { stripeCustomerId });
+      } catch (error) {
+        console.log('⚠️ Existing customer ID is invalid for billing portal, creating new customer:', { 
+          invalidCustomerId: stripeCustomerId, 
+          error: error.message 
+        });
+        stripeCustomerId = null; // Reset to create new customer
+      }
+    }
+
     if (!stripeCustomerId) {
       // Create Stripe customer if doesn't exist
+      console.log('🔄 Creating new Stripe customer for billing portal...');
       const customer = await stripe.customers.create({
         email: user.email,
         name: organization.name,
@@ -77,6 +92,7 @@ export async function POST(request: NextRequest) {
         }
       })
       stripeCustomerId = customer.id
+      console.log('✅ New Stripe customer created for billing portal:', { stripeCustomerId });
       
       // Save customer ID to organizations table
       await supabase

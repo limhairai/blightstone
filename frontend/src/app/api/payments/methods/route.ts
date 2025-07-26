@@ -66,7 +66,21 @@ export async function GET(request: NextRequest) {
       .eq('organization_id', organizationId)
       .single();
 
-    const stripeCustomerId = subscription?.stripe_customer_id || organization?.stripe_customer_id;
+    let stripeCustomerId = subscription?.stripe_customer_id || organization?.stripe_customer_id;
+
+    // Check if existing customer ID is valid in Stripe
+    if (stripeCustomerId && stripe) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+        console.log('✅ Existing Stripe customer found for payment methods:', { stripeCustomerId });
+      } catch (error) {
+        console.log('⚠️ Existing customer ID is invalid for payment methods, clearing customer ID:', { 
+          invalidCustomerId: stripeCustomerId, 
+          error: error.message 
+        });
+        stripeCustomerId = null; // Reset invalid customer ID
+      }
+    }
 
     if (!stripeCustomerId) {
       // No Stripe customer yet - return empty array

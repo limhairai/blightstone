@@ -88,7 +88,22 @@ export async function POST(request: NextRequest) {
     // Create or get Stripe customer
     let customerId = organization.stripe_customer_id;
 
+    // Check if existing customer ID is valid in Stripe
+    if (customerId) {
+      try {
+        await stripe.customers.retrieve(customerId);
+        console.log('✅ Existing Stripe customer found:', { customerId });
+      } catch (error) {
+        console.log('⚠️ Existing customer ID is invalid, creating new customer:', { 
+          invalidCustomerId: customerId, 
+          error: error.message 
+        });
+        customerId = null; // Reset to create new customer
+      }
+    }
+
     if (!customerId) {
+      console.log('🔄 Creating new Stripe customer...');
       const customer = await stripe.customers.create({
         email: profile.email,
         name: profile.name || profile.email,
@@ -99,8 +114,9 @@ export async function POST(request: NextRequest) {
       });
 
       customerId = customer.id;
+      console.log('✅ New Stripe customer created:', { customerId });
 
-      // Update organization with customer ID
+      // Update organization with new customer ID
       await supabase
         .from('organizations')
         .update({ stripe_customer_id: customerId })
