@@ -15,6 +15,49 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { formatDistanceToNow } from "date-fns"
 import { Search, Download, CheckCircle, X, Eye, Clock, AlertTriangle } from "lucide-react"
 
+// Add fee calculation utility function
+const calculatePaymentGatewayFee = (amount: number, paymentMethod: string): number => {
+  switch (paymentMethod?.toLowerCase()) {
+    case 'credit card':
+    case 'stripe':
+      return amount * 0.03 // 3% for Stripe credit card processing
+    case 'bank transfer':
+      return amount * 0.005 // 0.5% for bank transfer processing
+    case 'crypto':
+      return amount * 0.01 // 1% for crypto processing
+    case 'airwallex':
+    case 'airwallex pay':
+      return amount * 0.005 + 0.10 // 0.5% + $0.10 for Airwallex processing
+    default:
+      return 0 // No fee for internal transfers or unknown payment methods
+  }
+}
+
+// Get fee percentage display for tooltips
+const getFeePercentageDisplay = (paymentMethod: string): string => {
+  switch (paymentMethod?.toLowerCase()) {
+    case 'credit card':
+    case 'stripe':
+      return '3%'
+    case 'bank transfer':
+      return '0.5%'
+    case 'crypto':
+      return '1%'
+    case 'airwallex':
+    case 'airwallex pay':
+      return '0.5% + $0.10'
+    default:
+      return '0%'
+  }
+}
+
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount)
+}
+
 interface Transaction {
   id: string
   display_id?: string
@@ -81,6 +124,34 @@ export default function TransactionHistoryPage() {
       return matchesType && matchesStatus && matchesSearch
     })
   }, [transactions, typeFilter, statusFilter, searchTerm])
+
+  // Calculate fee statistics for deposits
+  const feeStats = useMemo(() => {
+    const depositTransactions = filteredTransactions.filter(
+      t => t.type === 'wallet_deposit' || t.type === 'bank_transfer'
+    )
+    
+    let totalOriginalAmount = 0
+    let totalFees = 0
+    let totalNetAmount = 0
+    
+    depositTransactions.forEach(transaction => {
+      const amount = Math.abs(transaction.amount)
+      const fee = calculatePaymentGatewayFee(amount, transaction.paymentMethod || '')
+      const netAmount = amount - fee
+      
+      totalOriginalAmount += amount
+      totalFees += fee
+      totalNetAmount += netAmount
+    })
+    
+    return {
+      totalOriginalAmount,
+      totalFees,
+      totalNetAmount,
+      transactionCount: depositTransactions.length
+    }
+  }, [filteredTransactions])
 
   const stats = useMemo(() => ({
     total: transactions.length,
@@ -237,6 +308,8 @@ export default function TransactionHistoryPage() {
               <TableHead className="text-muted-foreground" style={{ width: 120 }}>Transaction ID</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 80 }}>Type</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 100 }}>Amount</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 80 }}>Gateway Fee</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 90 }}>Net Amount</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 80 }}>Status</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 120 }}>Payment Method</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 140 }}>Organization</TableHead>
@@ -283,6 +356,54 @@ export default function TransactionHistoryPage() {
                         {transaction.currency}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      // Only show fees for deposits (when money comes in from payment gateways)
+                      const shouldShowFee = transaction.type === 'wallet_deposit' || transaction.type === 'bank_transfer';
+                      if (!shouldShowFee) {
+                        return <div className="text-center text-muted-foreground text-xs">N/A</div>;
+                      }
+                      
+                      const fee = calculatePaymentGatewayFee(Math.abs(transaction.amount), transaction.paymentMethod || '');
+                      const feePercentage = fee > 0 ? ((fee / Math.abs(transaction.amount)) * 100).toFixed(1) : '0';
+                      
+                      return (
+                        <div className="text-right text-xs">
+                          {fee > 0 ? (
+                            <div>
+                              <div className="text-muted-foreground">{formatCurrency(fee)}</div>
+                              <div className="text-xs text-muted-foreground">({feePercentage}%)</div>
+                            </div>
+                          ) : (
+                            <div className="text-muted-foreground">No fee</div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </TableCell>
+                  <TableCell>
+                    {(() => {
+                      // Calculate net amount after gateway fees
+                      const shouldShowFee = transaction.type === 'wallet_deposit' || transaction.type === 'bank_transfer';
+                      if (!shouldShowFee) {
+                        return <div className="text-center text-muted-foreground text-xs">N/A</div>;
+                      }
+                      
+                      const fee = calculatePaymentGatewayFee(Math.abs(transaction.amount), transaction.paymentMethod || '');
+                      const netAmount = Math.abs(transaction.amount) - fee;
+                      
+                      return (
+                        <div className="text-right font-medium">
+                          <div className="text-[#34D197]">
+                            +{formatCurrency(netAmount)}
+                          </div>
+                          <div className="text-xs text-muted-foreground uppercase">
+                            {transaction.currency}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     {(() => {

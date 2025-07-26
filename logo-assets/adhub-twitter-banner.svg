@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1500" height="500" viewBox="0 0 1500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- AdHub brand gradient -->
+    <linearGradient id="brandGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" style="stop-color:#b4a0ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffb4a0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Full gradient background -->
+  <rect width="1500" height="500" fill="url(#brandGradient)"/>
+</svg> 

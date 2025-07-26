@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hubGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" style="stop-color:#b4a0ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffb4a0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- AdHub text with Ad in white and Hub with gradient -->
+  <text x="10" y="45" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" fill="white">Ad</text><text x="85" y="45" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" fill="url(#hubGradient)">Hub</text>
+</svg> 

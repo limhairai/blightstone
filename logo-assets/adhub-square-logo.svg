@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="hGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" style="stop-color:#b4a0ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffb4a0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Dark background for better contrast -->
+  <rect width="1000" height="1000" rx="120" fill="#0a0a0a"/>
+  
+  <!-- A from "AdHub" in white -->
+  <text x="200" y="650" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="500" font-weight="700" fill="white">A</text>
+  
+  <!-- H from "AdHub" with gradient -->
+  <text x="500" y="650" font-family="Inter, system-ui, -apple-system, sans-serif" font-size="500" font-weight="700" fill="url(#hGradient)">H</text>
+</svg> 

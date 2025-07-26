@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1000" height="1000" viewBox="0 0 1000 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main radial gradient for the glow effect -->
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" style="stop-color:#b4a0ff;stop-opacity:0.15" />
+      <stop offset="30%" style="stop-color:#b4a0ff;stop-opacity:0.08" />
+      <stop offset="60%" style="stop-color:#1a1a2e;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#0f0f1e;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Secondary subtle glow for depth -->
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="35%">
+      <stop offset="0%" style="stop-color:#b4a0ff;stop-opacity:0.12" />
+      <stop offset="50%" style="stop-color:#b4a0ff;stop-opacity:0.04" />
+      <stop offset="100%" style="stop-color:#b4a0ff;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- Filter for additional glow effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Base dark background -->
+  <rect width="1000" height="1000" fill="#0a0a1a"/>
+  
+  <!-- Main glow effect -->
+  <rect width="1000" height="1000" fill="url(#glowGradient)"/>
+  
+  <!-- Inner subtle glow -->
+  <rect width="1000" height="1000" fill="url(#innerGlow)"/>
+  
+  <!-- Additional glow elements for more depth -->
+  <circle cx="500" cy="500" r="300" fill="#b4a0ff" opacity="0.03" filter="url(#glow)"/>
+  <circle cx="500" cy="500" r="200" fill="#b4a0ff" opacity="0.05" filter="url(#glow)"/>
+</svg> 
