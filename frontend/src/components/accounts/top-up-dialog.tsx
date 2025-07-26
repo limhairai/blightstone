@@ -23,6 +23,7 @@ import { useSubscription } from "@/hooks/useSubscription"
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { useCurrentOrganization } from "@/lib/swr-config"
 import { useSWRConfig } from 'swr'
+import { invalidateFinancialCache } from '@/lib/cache-invalidation'
 
 import { shouldEnableTopupLimits, shouldEnableAdSpendFees } from '@/lib/config/pricing-config'
 
@@ -325,6 +326,11 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
         
         // 2. Server will handle the actual topup request
         // 3. UI will sync with server response automatically
+      }
+
+      // Comprehensive cache invalidation after topup success
+      if (currentOrganizationId) {
+        invalidateFinancialCache(currentOrganizationId)
       }
 
       // Close dialog after success

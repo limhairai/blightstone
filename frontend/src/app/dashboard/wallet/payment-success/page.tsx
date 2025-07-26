@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSWRConfig } from 'swr'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
+import { invalidateFinancialCache } from '@/lib/cache-invalidation'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card'
 import { Button } from '../../../../components/ui/button'
 import { CheckCircle, ArrowLeft } from 'lucide-react'
@@ -18,12 +19,11 @@ export default function PaymentSuccessPage() {
   const amount = searchParams?.get('amount')
 
   useEffect(() => {
-    // Refresh data when payment succeeds to update wallet balance using optimized SWR keys
+    // COMPREHENSIVE cache invalidation when payment succeeds
     if (currentOrganizationId) {
-      mutate(`org-${currentOrganizationId}`) // useCurrentOrganization key
-      mutate('transactions') // useTransactions key
+      invalidateFinancialCache(currentOrganizationId)
     }
-  }, [currentOrganizationId, mutate])
+  }, [currentOrganizationId])
 
   return (
     <div className="container max-w-md mx-auto py-16">

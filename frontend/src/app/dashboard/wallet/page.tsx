@@ -90,8 +90,8 @@ export default function WalletPage() {
         
         // Background sync after optimistic update (user already sees the change)
         setTimeout(async () => {
-          const { CacheInvalidationScenarios } = await import('@/lib/cache-invalidation')
-          await CacheInvalidationScenarios.walletFunding()
+          const { invalidateFinancialCache } = await import('@/lib/cache-invalidation')
+          invalidateFinancialCache(currentOrganizationId)
           
           refreshAllData()
         }, 1000)

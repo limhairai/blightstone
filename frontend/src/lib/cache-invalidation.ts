@@ -192,6 +192,66 @@ export function invalidateSubscriptionCache(organizationId: string) {
 }
 
 /**
+ * Invalidate financial data after wallet/payment operations
+ * Critical for keeping wallet balance, transactions, and limits in sync
+ */
+export function invalidateFinancialCache(organizationId: string) {
+  if (!organizationId) return
+
+  const financialKeys = [
+    // Wallet & balance data
+    `/api/organizations/${organizationId}/wallet`,
+    `/api/wallet/transactions`,
+    `/api/wallet/transactions?organizationId=${organizationId}`,
+    
+    // Transaction history  
+    `/api/transactions`,
+    `/api/transactions?organizationId=${organizationId}`,
+    
+    // Topup requests
+    `/api/topup-requests`,
+    `/api/topup-requests?organizationId=${organizationId}`,
+    
+    // Organization data (contains wallet info)
+    `/api/organizations`,
+    `/api/organizations?id=${organizationId}`,
+    
+    // Subscription usage (affected by spending)
+    `/api/subscriptions/current`,
+    `/api/subscriptions/current?organizationId=${organizationId}`,
+  ]
+
+  // Invalidate exact matches
+  financialKeys.forEach(key => {
+    mutate(key, undefined, { revalidate: true })
+  })
+
+  // Pattern-based invalidation  
+  mutate((key) => {
+    if (typeof key === 'string') {
+      return key.includes(organizationId) ||
+             key.includes('/api/transactions') ||
+             key.includes('/api/wallet') ||
+             key.includes('/api/topup') ||
+             key.includes('/api/organizations')
+    }
+    return false
+  }, undefined, { revalidate: true })
+}
+
+/**
+ * Complete cache invalidation after major operations
+ * Use for operations that affect multiple data domains
+ */
+export function invalidateAllUserCache(organizationId: string) {
+  if (!organizationId) return
+  
+  invalidateAssetCache(organizationId)
+  invalidateFinancialCache(organizationId)
+  invalidateSubscriptionCache(organizationId)
+}
+
+/**
  * Force refresh of all asset data after significant changes
  * Use sparingly as it triggers many requests
  */
