@@ -81,7 +81,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
           Manage
         </Button>
       </DialogTrigger>
-      <DialogContent className="dark">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isBusinessManager ? <Building className="h-5 w-5" /> : <Users className="h-5 w-5" />}
@@ -95,14 +95,14 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
           </DialogDescription>
         </DialogHeader>
         
-        <div className="my-4 p-4 bg-gray-800 border border-red-500/50 rounded-lg">
+        <div className="my-4 p-4 bg-muted/30 border border-border rounded-lg">
           <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+            <AlertCircle className="h-5 w-5 text-muted-foreground mr-3 flex-shrink-0" />
             <div className="flex-1">
-              <h4 className="font-semibold text-red-400">
+              <h4 className="font-semibold text-foreground">
                 Unbind {isBusinessManager ? 'Business Manager' : 'Ad Account'}
               </h4>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {isBusinessManager ? (
                   <>
                     <strong>Cascade Effect:</strong> Unbinding this business manager will also unbind all associated ad accounts. 
@@ -126,7 +126,7 @@ export function ManageAssetDialog({ asset, onSuccess }: ManageAssetDialogProps) 
           <Button variant="outline" onClick={() => setOpen(false)} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleUnbind} disabled={isSubmitting}>
+          <Button variant="secondary" onClick={handleUnbind} disabled={isSubmitting} className="bg-muted hover:bg-muted/80 text-foreground">
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
