@@ -50,11 +50,11 @@ export async function POST(request: NextRequest) {
     const requestId = crypto.randomUUID()
 
     // Generate unique reference number that Airwallex can match
-    // Format: ADHUB-{ORG_ID_SHORT}-{REQUEST_ID_SHORT}-{CHECKSUM}
-    const orgIdShort = org.organization_id.slice(0, 8).toUpperCase()
-    const requestIdShort = requestId.slice(0, 8).toUpperCase()
-    const checksum = Math.abs(hashCode(`${org.organization_id}-${requestId}`)).toString().slice(0, 4)
-    const referenceNumber = `ADHUB-${orgIdShort}-${requestIdShort}-${checksum}`
+    // Format: AH{ORG_2CHARS}{REQ_3CHARS}{CHECKSUM_3CHARS} = 10 chars max
+    const orgIdShort = org.organization_id.slice(0, 2).toUpperCase()
+    const requestIdShort = requestId.slice(0, 3).toUpperCase()
+    const checksum = Math.abs(hashCode(`${org.organization_id}-${requestId}`)).toString().slice(0, 3)
+    const referenceNumber = `AH${orgIdShort}${requestIdShort}${checksum}`
 
     // Create bank transfer request with reference number
     const { data: bankRequest, error: createError } = await supabase
@@ -96,6 +96,16 @@ export async function POST(request: NextRequest) {
         fedwireRoutingNumber: process.env.AIRWALLEX_FEDWIRE_ROUTING || '026073008',
         swiftCode: process.env.AIRWALLEX_SWIFT_CODE || 'CMFGUS33',
         accountLocation: 'United States of America',
+        accountType: 'Checking',
+        
+        // Complete bank address information
+        bankAddress: {
+          street: '89-16 Jamaica Ave',
+          city: 'Woodhaven',
+          state: 'NY',
+          zipCode: '11421',
+          country: 'United States of America'
+        },
         
         // Critical: Reference number for matching
         referenceNumber: referenceNumber,

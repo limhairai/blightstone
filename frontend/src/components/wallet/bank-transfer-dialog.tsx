@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Copy, Loader2 } from 'lucide-react'
+import { Copy, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatCurrency } from '@/utils/format'
@@ -22,13 +22,28 @@ interface BankDetails {
   routingNumber: string
   fedwireRoutingNumber: string
   swiftCode: string
+  accountLocation: string
+  accountType: string
+  bankAddress?: {
+    street: string
+    city: string
+    state: string
+    zipCode: string
+    country: string
+  }
   referenceNumber?: string
 }
 
 export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankTransferDialogProps) {
   const [loading, setLoading] = useState(false)
   const [bankDetails, setBankDetails] = useState<BankDetails | null>(null)
+  const [showAdditionalDetails, setShowAdditionalDetails] = useState(false)
   const { session } = useAuth()
+
+  // Calculate bank transfer fee (0.5%)
+  const feePercentage = 0.5
+  const feeAmount = Math.round(amount * (feePercentage / 100) * 100) / 100 // Round to 2 decimal places
+  const totalAmount = amount + feeAmount
 
   // Static bank details - shown immediately
   // These are fallback values only - actual values come from environment variables via API
@@ -64,7 +79,7 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          amount: amount
+          amount: totalAmount
         })
       })
 
@@ -103,13 +118,16 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
 
   const copyAllDetails = () => {
     const details = bankDetails || staticBankDetails
-    const allDetails = `Bank Transfer Details - ${formatCurrency(amount)}
+    const allDetails = `Bank Transfer Details - ${formatCurrency(totalAmount)}
 
 Account Name: ${details.accountName}
 Bank Name: ${details.bankName}
 Account Number: ${details.accountNumber}
 Routing Number: ${details.routingNumber}
 SWIFT Code: ${details.swiftCode}
+Account Type: ${details.accountType || 'Checking'}
+${details.bankAddress ? `Bank Address: ${details.bankAddress.street}
+City, State ZIP: ${details.bankAddress.city}, ${details.bankAddress.state} ${details.bankAddress.zipCode}` : ''}
 ${details.referenceNumber ? `Reference Number: ${details.referenceNumber}` : ''}
 
 Important: Include the reference number in your transfer memo.
@@ -127,7 +145,7 @@ Processing time: 1-3 business days`
         <DialogHeader>
           <DialogTitle>Bank Transfer Instructions</DialogTitle>
           <DialogDescription>
-            Transfer {formatCurrency(amount)} to add funds to your wallet
+            Transfer {formatCurrency(totalAmount)} to add funds to your wallet
           </DialogDescription>
         </DialogHeader>
 
@@ -159,6 +177,50 @@ Processing time: 1-3 business days`
               value={currentDetails.swiftCode}
               onCopy={() => copyToClipboard(currentDetails.swiftCode, "SWIFT Code")}
             />
+            
+            {/* Additional Bank Details Collapsible Section */}
+            <div className="border-t border-border pt-3 mt-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
+                className="w-full justify-between h-8 px-2 text-sm"
+              >
+                Additional Bank Details
+                {showAdditionalDetails ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+              
+              {showAdditionalDetails && (
+                <div className="mt-3 space-y-2">
+                  {/* Account Type */}
+                  <BankDetailRow 
+                    label="Account Type" 
+                    value={currentDetails.accountType || "Checking"}
+                    onCopy={() => copyToClipboard(currentDetails.accountType || "Checking", "Account Type")}
+                  />
+                  
+                  {/* Bank Address */}
+                  {currentDetails.bankAddress && (
+                    <>
+                      <BankDetailRow 
+                        label="Bank Address" 
+                        value={currentDetails.bankAddress.street}
+                        onCopy={() => copyToClipboard(currentDetails.bankAddress!.street, "Bank Address")}
+                      />
+                      <BankDetailRow 
+                        label="City, State ZIP" 
+                        value={`${currentDetails.bankAddress.city}, ${currentDetails.bankAddress.state} ${currentDetails.bankAddress.zipCode}`}
+                        onCopy={() => copyToClipboard(`${currentDetails.bankAddress!.city}, ${currentDetails.bankAddress!.state} ${currentDetails.bankAddress!.zipCode}`, "City, State ZIP")}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
             
             {/* Reference Number */}
             <div className="flex items-center justify-between p-2 bg-muted/30 rounded border border-border">
