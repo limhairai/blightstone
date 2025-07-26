@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,6 +23,7 @@ import { normalizeDomain, isValidDomain, hasDuplicateDomains, removeDuplicateDom
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { mutate } from 'swr'
 import { getPlanPricing } from '@/lib/config/pricing-config'
+import { invalidateAssetCache } from '@/lib/cache-invalidation'
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -43,7 +44,34 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const subscriptionMessage = subscriptionData?.message
   
   // Check if user has reached business manager limit
-  const canAddMoreBMs = checkLimit('businessManagers', usage?.businessManagers || 0)
+  // Use real-time data fetch to ensure accuracy
+  const [realTimeBMCount, setRealTimeBMCount] = useState<number | null>(null)
+  
+  useEffect(() => {
+    if (open && currentOrganizationId && session?.access_token) {
+      const fetchRealTimeBMCount = async () => {
+        try {
+          const response = await fetch(`/api/organizations/${currentOrganizationId}/active-bm-count`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            setRealTimeBMCount(data.totalBMs)
+          }
+        } catch (error) {
+          console.error('Failed to fetch real-time BM count:', error)
+        }
+      }
+      
+      fetchRealTimeBMCount()
+    }
+  }, [open, currentOrganizationId, session?.access_token])
+
+  const currentBMCount = realTimeBMCount ?? (usage?.businessManagers || 0)
+  const canAddMoreBMs = checkLimit('businessManagers', currentBMCount)
   const hasReachedBMLimit = !canAddMoreBMs && !isOnFreePlan
 
   // Get domain limits from pricing config
@@ -209,6 +237,10 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
       })
       
       // Refresh the data
+      if (currentOrganizationId) {
+        invalidateAssetCache(currentOrganizationId)
+      }
+      
       if (onSuccess) {
         onSuccess()
       }

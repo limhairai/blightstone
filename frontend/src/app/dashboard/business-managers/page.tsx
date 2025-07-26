@@ -11,6 +11,7 @@ import { useSubscription } from '@/hooks/useSubscription'
 import { useMemo, useCallback, useState } from 'react'
 import { mutate as globalMutate } from 'swr'
 import { getPlanPricing } from '@/lib/config/pricing-config'
+import { invalidateAssetCache } from '@/lib/cache-invalidation'
 
 export default function BusinessManagersPage() {
   const { session } = useAuth()
@@ -72,13 +73,18 @@ export default function BusinessManagersPage() {
     await mutate()
   }, [mutate])
 
-  // ⚡ OPTIMIZED: Throttled success callback to prevent excessive revalidation
+  // ⚡ OPTIMIZED: Comprehensive cache invalidation after application success
   const handleApplicationSuccess = useCallback(async () => {
-    // Use a timeout to batch multiple rapid success events
+    // Invalidate all asset-related cache immediately
+    if (currentOrganizationId) {
+      invalidateAssetCache(currentOrganizationId)
+    }
+    
+    // Also refresh local data
     setTimeout(() => {
       mutate()
     }, 500)
-  }, [mutate])
+  }, [mutate, currentOrganizationId])
 
   const activeManagers = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).length
   const activeAccounts = businessManagers.filter((bm) => bm.status === "active" && bm.is_active).reduce((total, bm) => total + (bm.ad_account_count || 0), 0)

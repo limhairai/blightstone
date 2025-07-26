@@ -2,6 +2,8 @@
  * Centralized cache invalidation utilities for payment success and other critical events
  */
 
+import { mutate } from 'swr'
+
 export type CacheCategory = 
   | 'subscription' 
   | 'organization' 
@@ -116,4 +118,88 @@ export async function safeInvalidateCaches(
     console.warn(`Cache invalidation failed for ${context}, but continuing...`, error)
     return false
   }
+} 
+
+/**
+ * Comprehensive cache invalidation for asset-related data
+ * This ensures all data sources see updated asset states immediately
+ */
+export function invalidateAssetCache(organizationId: string) {
+  if (!organizationId) return
+
+  // Invalidate all asset-related cache keys
+  const keysToInvalidate = [
+    // Business managers data
+    `/api/business-managers`,
+    `/api/business-managers?organization_id=${organizationId}`,
+    
+    // Ad accounts data  
+    `/api/ad-accounts`,
+    `/api/ad-accounts?organization_id=${organizationId}`,
+    
+    // Organization-specific asset data
+    `/api/organizations/${organizationId}/assets`,
+    `/api/organizations/${organizationId}/business-managers`,
+    `/api/organizations/${organizationId}/pixels`,
+    
+    // Real-time count APIs (critical for limit checking)
+    `/api/organizations/${organizationId}/active-bm-count`,
+    
+    // Subscription data (contains usage counts)
+    `/api/subscriptions/current`,
+    `/api/subscriptions/current?organizationId=${organizationId}`,
+    
+    // Admin APIs (if user is admin)
+    `/api/admin/assets`,
+    `/api/admin/organizations`,
+    `/api/admin/dashboard-summary`,
+  ]
+
+  // Invalidate exact matches
+  keysToInvalidate.forEach(key => {
+    mutate(key, undefined, { revalidate: true })
+  })
+
+  // Pattern-based invalidation for dynamic keys
+  mutate((key) => {
+    if (typeof key === 'string') {
+      return key.includes(organizationId) || 
+             key.includes('/api/business-managers') ||
+             key.includes('/api/ad-accounts') ||
+             key.includes('/api/subscriptions') ||
+             key.includes('/api/organizations')
+    }
+    return false
+  }, undefined, { revalidate: true })
+}
+
+/**
+ * Invalidate subscription-related cache specifically
+ * Used when subscription status or usage counts change
+ */
+export function invalidateSubscriptionCache(organizationId: string) {
+  if (!organizationId) return
+
+  const subscriptionKeys = [
+    `/api/subscriptions/current`,
+    `/api/subscriptions/current?organizationId=${organizationId}`,
+    `/api/organizations/${organizationId}/active-bm-count`,
+  ]
+
+  subscriptionKeys.forEach(key => {
+    mutate(key, undefined, { revalidate: true })
+  })
+}
+
+/**
+ * Force refresh of all asset data after significant changes
+ * Use sparingly as it triggers many requests
+ */
+export function forceRefreshAssetData(organizationId: string) {
+  invalidateAssetCache(organizationId)
+  
+  // Additional delay to ensure database consistency
+  setTimeout(() => {
+    invalidateAssetCache(organizationId)
+  }, 1000)
 } 
