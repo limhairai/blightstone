@@ -305,17 +305,17 @@ export default function TransactionHistoryPage() {
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-muted/50">
-              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Transaction ID</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 80 }}>Type</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 100 }}>Amount</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 80 }}>Gateway Fee</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 90 }}>Net Amount</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 80 }}>Status</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Payment Method</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 140 }}>Organization</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 100 }}>Transaction ID</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 90 }}>Type</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 110 }}>Amount</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 90 }}>Gateway Fee</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 110 }}>Net Amount</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 90 }}>Status</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 140 }}>Payment Method</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 160 }}>Organization</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 120 }}>Description</TableHead>
               <TableHead className="text-muted-foreground" style={{ width: 100 }}>Date</TableHead>
-              <TableHead className="text-muted-foreground" style={{ width: 120 }}>Actions</TableHead>
+              <TableHead className="text-muted-foreground" style={{ width: 100 }}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -58,16 +58,14 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
     accountType: "Loading..."
   }
 
-  // Load bank details when dialog opens and reset when it closes
+  // Reset bank details when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setBankDetails(null)
       setLoading(false)
-    } else if (isOpen && !bankDetails && session?.access_token) {
-      // Auto-load bank details when dialog opens
-      loadBankDetails()
     }
-  }, [isOpen, session?.access_token])
+    // Removed auto-loading to prevent creating unwanted bank transfer requests
+  }, [isOpen])
 
   const loadBankDetails = async () => {
     if (!session?.access_token) return
