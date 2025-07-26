@@ -53,7 +53,9 @@ export function BankTransferDialog({ isOpen, onClose, amount, onSuccess }: BankT
     accountNumber: "****",
     routingNumber: "****",
     fedwireRoutingNumber: "****",
-    swiftCode: "****"
+    swiftCode: "****",
+    accountLocation: "Loading...",
+    accountType: "Loading..."
   }
 
   // Load bank details when dialog opens and reset when it closes
