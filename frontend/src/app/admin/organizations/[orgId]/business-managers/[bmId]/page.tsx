@@ -77,17 +77,42 @@ export default function BusinessManagerDetailPage() {
         }
       }
       
-      // Fetch ad accounts for this business manager
-      const accountsResponse = await fetch(`/api/ad-accounts?bm_id=${bmId}`, {
+      // Fetch business manager details and associated ad accounts using admin endpoint
+      const bmResponse = await fetch(`/api/admin/business-managers/${bmId}`, {
         headers: {
           'Authorization': `Bearer ${session?.access_token}`
         }
       })
-      if (accountsResponse.ok) {
-        const accountsData = await accountsResponse.json()
-        setAdAccounts(accountsData.accounts || [])
+      if (bmResponse.ok) {
+        const bmData = await bmResponse.json()
+        // Update business manager details if not already set
+        if (bmData.business_manager && !businessManager) {
+          setBusinessManager({
+            id: bmData.business_manager.id,
+            name: bmData.business_manager.name,
+            dolphin_business_manager_id: bmData.business_manager.dolphin_id,
+            status: bmData.business_manager.status,
+            adAccountsCount: bmData.ad_account_count || 0
+          })
+        }
+        // Set ad accounts from admin endpoint
+        const adAccountsFromAdmin = (bmData.ad_accounts || []).map((account: any) => ({
+          id: account.id,
+          name: account.name,
+          ad_account_id: account.dolphin_id,
+          status: account.status,
+          balance: 0, // Will be calculated from metadata if available
+          totalSpend: 0,
+          timezone: account.metadata?.timezone || 'UTC',
+          metadata: account.metadata,
+          spend_cap_cents: account.metadata?.spend_cap_cents,
+          spend_cents: account.metadata?.spend_cents,
+          pixel_id: account.metadata?.pixel_id,
+          type: 'ad_account'
+        }))
+        setAdAccounts(adAccountsFromAdmin)
       } else {
-        console.error('Failed to fetch ad accounts:', await accountsResponse.text())
+        console.error('Failed to fetch business manager details:', await bmResponse.text())
       }
       
     } catch (err) {
