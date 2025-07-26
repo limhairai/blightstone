@@ -48,16 +48,18 @@ export default function PixelsPage() {
     asset: any | null;
   }>({ open: false, asset: null })
 
-  // Optimized SWR data fetching with caching
+  // ✅ FIXED: Optimized SWR data fetching with proper cache revalidation
   const { data: pixelsData, error: pixelsError, isLoading: pixelsLoading, mutate: mutatePixels } = useSWR(
     session?.access_token && currentOrganizationId 
       ? [`/api/organizations/${currentOrganizationId}/pixels`, session.access_token] 
       : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      revalidateOnFocus: true, // ✅ FIXED: Enable focus revalidation for data freshness
+      revalidateOnReconnect: true, // ✅ FIXED: Enable reconnect revalidation  
+      revalidateIfStale: true, // ✅ FIXED: Update stale data automatically
       dedupingInterval: 60000, // 60 seconds - pixels don't change frequently
+      keepPreviousData: true, // ✅ Smooth transitions
     }
   )
 
@@ -85,13 +87,15 @@ export default function PixelsPage() {
       )
     : []
 
-  // Debug logging to understand the data structure
-  console.log('🔍 Business Managers Debug:', {
-    businessManagersData,
-    filteredBusinessManagers: businessManagers,
-    bmError,
-    bmLoading
-  })
+  // ✅ FIXED: Conditional debug logging for development only
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Business Managers Debug:', {
+      businessManagersData,
+      filteredBusinessManagers: businessManagers,
+      bmError,
+      bmLoading
+    })
+  }
   const loading = pixelsLoading || bmLoading
   const error = pixelsError || bmError
 

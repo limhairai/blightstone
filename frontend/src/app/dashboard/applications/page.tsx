@@ -59,8 +59,10 @@ export default function ApplicationsPage() {
     () => authenticatedFetcher('/api/applications', session!.access_token),
     {
       dedupingInterval: 2 * 60 * 1000, // 2 minutes
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      revalidateOnFocus: true, // ✅ FIXED: Enable focus revalidation
+      revalidateOnReconnect: true, // ✅ FIXED: Enable reconnect revalidation
+      revalidateIfStale: true, // ✅ FIXED: Update stale data automatically
+      keepPreviousData: true, // ✅ Smooth transitions
     }
   );
 

@@ -20,29 +20,30 @@ export const authenticatedFetcher = async (url: string, token: string) => {
   return response.json()
 }
 
-// 🚀 PERFORMANCE: Aggressive SWR configuration to minimize API calls
+// 🎯 BALANCED: Smart SWR configuration balancing performance with data freshness
 export const swrConfig = {
-  // Increase deduplication window to prevent rapid duplicate calls
-  dedupingInterval: 60000, // 60 seconds (increased from 30s)
+  // Balanced deduplication to prevent duplicate calls but allow updates
+  dedupingInterval: 30000, // 30 seconds (reduced from 60s for better freshness)
   
-  // Increase focus throttle to prevent excessive revalidation
-  focusThrottleInterval: 120000, // 2 minutes (increased from 60s)
+  // Reasonable focus throttle to prevent spam but allow navigation updates
+  focusThrottleInterval: 60000, // 1 minute (reduced from 2 minutes)
   
-  // Disable automatic revalidation features that cause excessive calls
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false, // Disable reconnect revalidation
-  revalidateOnMount: true, // FIXED: Allow initial mount revalidation
-  revalidateIfStale: false, // Don't automatically revalidate stale data
+  // CRITICAL: Enable smart revalidation for better user experience
+  revalidateOnFocus: true, // ✅ Refresh when returning to page (navigation UX)
+  revalidateOnReconnect: true, // ✅ Refresh on network reconnect
+  revalidateOnMount: true, // ✅ Always fresh on initial mount
+  revalidateIfStale: true, // ✅ CRITICAL: Update stale data automatically
   
-  // Increase error retry interval
-  errorRetryInterval: 10000, // 10 seconds
-  errorRetryCount: 2, // Reduce retry attempts
+  // Reasonable error handling
+  errorRetryInterval: 5000, // 5 seconds (faster recovery)
+  errorRetryCount: 2, // Keep retry attempts low
   
-  // Longer refresh intervals
-  refreshInterval: 0, // Disable automatic refresh by default
+  // No automatic refresh (still controlled)
+  refreshInterval: 0, // Manual/event-driven refreshes only
   
-  // Keep data longer in cache
-  shouldRetryOnError: false, // Don't retry on error by default
+  // Performance optimizations
+  shouldRetryOnError: false, // Don't auto-retry errors
+  keepPreviousData: true, // ✅ Smooth transitions, show previous data while loading
   
   // Use compare function to prevent unnecessary re-renders
   compare: (a: any, b: any) => {

@@ -70,12 +70,13 @@ export default function SupportPage() {
     session?.access_token ? [`/api/support/tickets?${queryParams}`, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
-      dedupingInterval: 300000, // 5 minutes - much longer since we prefetch
-      revalidateIfStale: false, // Use cached data immediately
-      revalidateOnMount: false, // Don't fetch on mount, use cache
+      revalidateOnFocus: true, // ✅ Refresh when returning to support page
+      revalidateOnReconnect: true, // ✅ Refresh on reconnect
+      dedupingInterval: 60000, // 1 minute - reasonable for support tickets
+      revalidateIfStale: true, // ✅ Update stale support data
+      revalidateOnMount: true, // ✅ Fresh data on mount
       fallbackData: [], // Provide empty fallback to prevent loading states
+      keepPreviousData: true, // Smooth transitions
     }
   )
 

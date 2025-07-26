@@ -49,19 +49,26 @@ export function DashboardLoadingScreen({ isLoading, onComplete }: DashboardLoadi
     return () => clearInterval(tipInterval)
   }, [isLoading, tips.length])
 
+  // ✅ FIXED: Loading sequence with proper cleanup and cancellation
   useEffect(() => {
     if (!isLoading) return
 
     let stepIndex = 0
     let totalProgress = 0
     const totalSteps = steps.length
+    let isActive = true // ✅ Flag to prevent operations after cleanup
+    let activeTimeouts = new Set<NodeJS.Timeout>() // ✅ Track all timeouts for cleanup
+    let activeIntervals = new Set<NodeJS.Timeout>() // ✅ Track all intervals for cleanup
 
     const runStep = () => {
+      if (!isActive) return // ✅ Exit early if component unmounted
+      
       if (stepIndex >= totalSteps) {
         setProgress(100)
-        setTimeout(() => {
-          onComplete?.()
+        const completionTimeout = setTimeout(() => {
+          if (isActive) onComplete?.() // ✅ Only call if still active
         }, 300)
+        activeTimeouts.add(completionTimeout)
         return
       }
 
@@ -73,12 +80,17 @@ export function DashboardLoadingScreen({ isLoading, onComplete }: DashboardLoadi
       const progressIncrement = (100 / totalSteps) / (stepDuration / 50)
       
       const progressInterval = setInterval(() => {
+        if (!isActive) return // ✅ Exit early if component unmounted
+        
         totalProgress += progressIncrement
         const targetProgress = Math.min(totalProgress, stepProgress + (100 / totalSteps))
         setProgress(targetProgress)
         
         if (totalProgress >= stepProgress + (100 / totalSteps)) {
           clearInterval(progressInterval)
+          activeIntervals.delete(progressInterval)
+          
+          if (!isActive) return // ✅ Exit early if component unmounted
           
           // Mark step as completed
           setSteps(prev => prev.map((s, i) => 
@@ -88,17 +100,31 @@ export function DashboardLoadingScreen({ isLoading, onComplete }: DashboardLoadi
           stepIndex++
           setCurrentStep(stepIndex)
           
-          // Small delay before next step
-          setTimeout(runStep, 100)
+          // ✅ FIXED: Controlled recursive call with cancellation
+          const nextStepTimeout = setTimeout(() => {
+            if (isActive) runStep() // ✅ Only continue if still active
+          }, 100)
+          activeTimeouts.add(nextStepTimeout)
         }
       }, 50)
+      activeIntervals.add(progressInterval)
     }
 
     // Start the loading sequence
     const startDelay = setTimeout(runStep, 200)
+    activeTimeouts.add(startDelay)
     
+    // ✅ FIXED: Comprehensive cleanup that stops all operations
     return () => {
-      clearTimeout(startDelay)
+      isActive = false // ✅ Prevent any future operations
+      
+      // Clear all timeouts
+      activeTimeouts.forEach(timeoutId => clearTimeout(timeoutId))
+      activeTimeouts.clear()
+      
+      // Clear all intervals
+      activeIntervals.forEach(intervalId => clearInterval(intervalId))
+      activeIntervals.clear()
     }
   }, [isLoading, onComplete])
 

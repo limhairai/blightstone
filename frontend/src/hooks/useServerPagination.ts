@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import useSWR from 'swr';
 
 interface PaginationOptions {
@@ -76,7 +76,7 @@ export function useServerPagination<T = any>({
   };
 }
 
-// Specialized hook for infinite scrolling
+// ✅ FIXED: Infinite scrolling hook with stable functions and proper cleanup
 export function useInfiniteServerPagination<T = any>({
   endpoint,
   limit,
@@ -88,13 +88,25 @@ export function useInfiniteServerPagination<T = any>({
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+  // ✅ FIXED: Use refs to avoid stale closures and infinite loops
+  const currentPageRef = useRef(1);
+  const hasMoreRef = useRef(true);
+  const loadingRef = useRef(false);
+  
+  // Keep refs in sync with state
+  currentPageRef.current = currentPage;
+  hasMoreRef.current = hasMore;
+  loadingRef.current = loading;
+
+  // ✅ FIXED: Stable loadMore function using refs
+  const loadMoreRef = useRef<() => Promise<void>>();
+  loadMoreRef.current = async () => {
+    if (loadingRef.current || !hasMoreRef.current) return;
     
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set('page', currentPage.toString());
+      params.set('page', currentPageRef.current.toString());
       params.set('limit', limit.toString());
       
       Object.entries(filters).forEach(([key, value]) => {
@@ -116,22 +128,33 @@ export function useInfiniteServerPagination<T = any>({
       } else {
         setPages(prev => [...prev, data.items]);
         setCurrentPage(prev => prev + 1);
-        setHasMore((currentPage * limit) < data.total);
+        setHasMore((currentPageRef.current * limit) < data.total);
       }
     } catch (error) {
       console.error('Failed to load more data:', error);
     } finally {
       setLoading(false);
     }
-  }, [endpoint, currentPage, limit, filters, sort, loading, hasMore]);
+  };
 
-  // Reset when filters change
-  useEffect(() => {
+  // ✅ FIXED: Stable loadMore function that doesn't change
+  const loadMore = useCallback(() => {
+    return loadMoreRef.current?.();
+  }, []);
+
+  // ✅ FIXED: Reset and initial load with proper dependency management
+  const resetAndLoad = useCallback(() => {
     setPages([]);
     setCurrentPage(1);
     setHasMore(true);
-    loadMore();
-  }, [endpoint, filters, sort]);
+    // Small delay to ensure state is updated before loading
+    setTimeout(() => loadMoreRef.current?.(), 0);
+  }, []);
+
+  // Reset when filters change
+  useEffect(() => {
+    resetAndLoad();
+  }, [endpoint, JSON.stringify(filters), JSON.stringify(sort), resetAndLoad]);
 
   const allData = pages.flat();
 
@@ -140,10 +163,6 @@ export function useInfiniteServerPagination<T = any>({
     loading,
     hasMore,
     loadMore,
-    reset: () => {
-      setPages([]);
-      setCurrentPage(1);
-      setHasMore(true);
-    }
+    reset: resetAndLoad
   };
 } 

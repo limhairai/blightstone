@@ -25,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from "sonner"
 import { authMessages } from '../lib/toast-messages'
 import { clearStaleOrganizationData } from '../lib/localStorage-cleanup'
+import { invalidateAuthCache, clearAllCaches } from '@/lib/cache-invalidation'
 import { Loader } from "../components/core/Loader";
 
 interface UserProfile {
@@ -95,12 +96,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Error signing out:", error);
       toast.error(`Sign out error: ${error.message}`);
     }
+    
+    // Clear all application state
     setUser(null);
     setProfile(null);
     setSession(null);
     orgInitialized.current = false; // Reset organization initialization flag
     localStorage.removeItem("adhub_current_org");
-    router.push('/login'); // Redirect after signing out
+    
+    // Navigate immediately for better UX
+    router.push('/login');
+    
+    // COMPREHENSIVE CACHE CLEARING in background (non-blocking)
+    setTimeout(() => clearAllCaches(), 0);
     
     return { error };
   }, [router]);
@@ -581,6 +589,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       
       if (session?.user && event === 'SIGNED_IN') {
+        // Clear any stale auth cache before loading new user data
+        invalidateAuthCache();
+        
         // Try to get user profile on sign in with retry logic
         try {
           const response = await fetch('/api/auth/user', {
@@ -601,6 +612,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);
+        // Clear all caches on sign out
+        clearAllCaches();
         orgInitialized.current = false; // Reset organization initialization flag
       }
     });

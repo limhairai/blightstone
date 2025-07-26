@@ -25,13 +25,13 @@ export function useAdvancedOnboarding() {
       return response.json()
     },
     {
-      // ⚡ OPTIMIZED for instant loading with prefetched data
+      // 🎯 BALANCED: Fast loading with proper data freshness for onboarding
       refreshInterval: 0, // Never auto-refresh
-      revalidateOnFocus: false, // Don't revalidate on focus
-      revalidateOnReconnect: false, // Don't revalidate on reconnect
-      revalidateOnMount: false, // 🔥 Don't revalidate on mount - use cache first!
-      dedupingInterval: 30000, // 30 seconds - longer deduplication
-      revalidateIfStale: false, // 🔥 Don't revalidate stale data - prioritize speed
+      revalidateOnFocus: true, // ✅ Update when returning to check progress
+      revalidateOnReconnect: true, // ✅ Update on reconnect
+      revalidateOnMount: true, // ✅ Always fresh on mount (critical for onboarding)
+      dedupingInterval: 15000, // 15 seconds - shorter for onboarding updates
+      revalidateIfStale: true, // ✅ CRITICAL: Update stale onboarding progress
       fallbackData: undefined, // No fallback to avoid loading states
       keepPreviousData: true, // Keep previous data during updates
       errorRetryCount: 1, // Fewer retries for speed

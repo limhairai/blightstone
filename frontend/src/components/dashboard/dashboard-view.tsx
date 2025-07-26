@@ -86,74 +86,92 @@ export function DashboardView() {
   // 🚀 PERFORMANCE: Fetch pending topup requests for complete topup tracking
   const { data: topupRequestsData, isLoading: isLoadingTopupRequests } = useTopupRequests()
 
-  // 🚀 AGGRESSIVE GLOBAL PREFETCHING: Load ALL dashboard data immediately for instant navigation
+  // 🚀 OPTIMIZED GLOBAL PREFETCHING: Load dashboard data when ready (stable dependencies)
+  const isReadyForPrefetch = useMemo(() => 
+    Boolean(user && session && currentOrganizationId && !authLoading),
+    [user, session, currentOrganizationId, authLoading]
+  )
+  
   useEffect(() => {
-    if (!user || !session || !currentOrganizationId || authLoading || showLoadingScreen) return
+    if (!isReadyForPrefetch) return
+
+    // ✅ FIXED: Create AbortController for cancellation
+    const abortController = new AbortController()
 
     // Aggressive prefetching for 0ms page loads
     const prefetcher = new GlobalDataPrefetcher({
-      session,
-      organizationId: currentOrganizationId
+      session: session!,
+      organizationId: currentOrganizationId!
     })
 
     // Start prefetching immediately in background
     prefetcher.prefetchAllDashboardData().then(() => {
               // Dashboard data prefetched
     }).catch((error) => {
-      console.warn('Some prefetch tasks failed:', error)
+      if (error.name !== 'AbortError') {
+        console.warn('Some prefetch tasks failed:', error)
+      }
     })
 
-    // Legacy preloading (keeping for compatibility)
-    const preloadCriticalData = async () => {
+    // ✅ FIXED: Legacy preloading with AbortController for cancellation
+    const preloadCriticalData = async (signal: AbortSignal) => {
       try {
         // Preload pixels data (for pixels page)
         fetch(`/api/organizations/${currentOrganizationId}/pixels`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        }).catch(() => {}) // Silent fail for preload
+          headers: { 'Authorization': `Bearer ${session!.access_token}` },
+          signal // ✅ Add abort signal
+        }).catch((error) => {
+          if (error.name !== 'AbortError') {
+            console.warn('Pixels preload failed:', error)
+          }
+        })
 
         // Preload business managers details (for business managers page)
         fetch(`/api/organizations/${currentOrganizationId}/business-managers`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        }).catch(() => {}) // Silent fail for preload
-
-        // REMOVED: Topup usage preloading - this endpoint is extremely slow (17+ seconds)
-        // Only load when user actually visits settings page
-        // fetch(`/api/topup-usage?organization_id=${currentOrganizationId}`, {
-        //   headers: { 'Authorization': `Bearer ${session.access_token}` }
-        // }).catch(() => {}) // Silent fail for preload
+          headers: { 'Authorization': `Bearer ${session!.access_token}` },
+          signal // ✅ Add abort signal
+        }).catch((error) => {
+          if (error.name !== 'AbortError') {
+            console.warn('Business managers preload failed:', error)
+          }
+        })
 
         // Critical data preloaded
       } catch (error) {
-        // Silent fail for preloading
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.warn('Preloading failed:', error)
+        }
       }
     }
 
-    // Preload after loading screen is complete
-    const preloadTimer = setTimeout(preloadCriticalData, 1000)
+    // ✅ FIXED: Preload with cancellation support
+    const preloadTimer = setTimeout(() => {
+      if (!abortController.signal.aborted) {
+        preloadCriticalData(abortController.signal)
+      }
+    }, 1000)
     
-    return () => clearTimeout(preloadTimer)
-  }, [user, session, currentOrganizationId, authLoading, showLoadingScreen])
+    // ✅ FIXED: Comprehensive cleanup
+    return () => {
+      clearTimeout(preloadTimer)
+      abortController.abort() // Cancel all fetch operations
+    }
+  }, [isReadyForPrefetch, session, currentOrganizationId])
 
   // Setup widget is now handled by AppShell - no local state needed
   
   const balanceChartRef = useRef<HTMLDivElement>(null)
 
-  // Auto-refresh hook (MUST be called before any conditional logic)
-  const SWR_KEYS_TO_REFRESH = [
-    `/api/organizations?id=${currentOrganizationId}`,
-    `/api/business-managers`,
-    `/api/ad-accounts`,
-    '/api/transactions',
-  ]
-
+  // Auto-refresh hook using centralized cache invalidation (FIXED: Proper cache keys)
   const { manualRefresh, isRefreshing } = useAutoRefresh({
     enabled: !!user && !authLoading && !isDashboardLoading, // Re-enabled for testing
     interval: REFRESH_INTERVALS.VERY_SLOW, // Use very slow interval (30 minutes) to minimize API calls
     onRefresh: async () => {
-      // Refresh app data (demo state is reactive and doesn't need manual refresh)
-      if (user && !authLoading) {
+      // ✅ FIXED: Use centralized cache invalidation instead of manual mutate
+      if (user && !authLoading && currentOrganizationId) {
         try {
-          await Promise.all(SWR_KEYS_TO_REFRESH.map(key => mutate(key)));
+          const { invalidateAllUserCache } = await import('@/lib/cache-invalidation')
+          invalidateAllUserCache(currentOrganizationId)
         } catch (error) {
           console.warn('Dashboard auto-refresh failed:', error)
           // Don't crash the app, just log the warning
@@ -594,7 +612,19 @@ export function DashboardView() {
         body: JSON.stringify({ name: `${userName}'s Organization`, user_id: user.id })
       })
       if (!response.ok) throw new Error("Failed to create organization")
-      mutate(`/api/organizations?id=${currentOrganizationId}`);
+      
+      const newOrg = await response.json()
+      
+      // COMPREHENSIVE CACHE INVALIDATION for organization creation
+      const { invalidateAuthCache } = await import('@/lib/cache-invalidation')
+      invalidateAuthCache() // Invalidate all user-related data including organizations
+      
+      // Switch to the new organization if we got the ID
+      if (newOrg?.organization?.organization_id) {
+        setCurrentOrganizationId(newOrg.organization.organization_id)
+      }
+      
+      toast.success("Organization created successfully!")
     } catch(err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create organization';
       toast.error(errorMessage)

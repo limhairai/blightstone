@@ -1,16 +1,17 @@
 import useSWR from 'swr'
 import { authenticatedFetcher } from './swr-config'
 
-// Optimized SWR configuration for instant loading
+// 🎯 BALANCED: Fast loading with proper data freshness
 const INSTANT_LOADING_CONFIG = {
-  revalidateOnFocus: false,
-  revalidateOnReconnect: false,
-  revalidateOnMount: false, // Don't fetch on mount - use cache
-  revalidateIfStale: false, // Use cached data immediately 
-  dedupingInterval: 300000, // 5 minutes - very long since we prefetch
+  revalidateOnFocus: true, // ✅ Refresh when returning to page
+  revalidateOnReconnect: true, // ✅ Refresh on reconnect
+  revalidateOnMount: true, // ✅ Fetch fresh data on mount
+  revalidateIfStale: true, // ✅ Update stale data automatically
+  dedupingInterval: 60000, // 1 minute - balanced approach
   errorRetryCount: 1, // Minimal retries for speed
   shouldRetryOnError: false, // Don't retry for speed
   loadingTimeout: 1000, // Fast timeout
+  keepPreviousData: true, // ✅ Smooth transitions
   fallbackData: undefined, // Let components handle empty states
 }
 

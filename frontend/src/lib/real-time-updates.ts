@@ -9,30 +9,42 @@ interface RealTimeConfig {
   sessionToken: string
 }
 
+// ✅ FIXED: Reference-counted connection management to prevent memory leaks
 class RealTimeUpdates {
-  private eventSource: EventSource | null = null
-  private reconnectAttempts = 0
+  private connections = new Map<string, { 
+    source: EventSource, 
+    refCount: number, 
+    config: RealTimeConfig 
+  }>()
+  private reconnectAttempts = new Map<string, number>()
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
-  private config: RealTimeConfig | null = null
 
-  connect(config: RealTimeConfig) {
-    this.config = config
-    this.disconnect() // Close existing connection
+  connect(config: RealTimeConfig): EventSource | null {
+    const connectionKey = `${config.organizationId}-${config.userId}`
+    const existing = this.connections.get(connectionKey)
     
+    if (existing) {
+      // ✅ FIXED: Increment reference count for existing connection
+      existing.refCount++
+      console.log(`🔄 Reusing existing real-time connection (refs: ${existing.refCount})`)
+      return existing.source
+    }
+    
+    // ✅ FIXED: Create new connection with reference counting
     const url = new URL('/api/real-time/events', window.location.origin)
     url.searchParams.set('org_id', config.organizationId)
     url.searchParams.set('user_id', config.userId)
     url.searchParams.set('token', config.sessionToken)
 
-    this.eventSource = new EventSource(url.toString())
+    const eventSource = new EventSource(url.toString())
     
-    this.eventSource.onopen = () => {
+    eventSource.onopen = () => {
       console.log('🔄 Real-time connection established')
-      this.reconnectAttempts = 0
+      this.reconnectAttempts.set(connectionKey, 0)
     }
     
-    this.eventSource.onmessage = (event) => {
+    eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data)
         this.handleUpdate(data)
@@ -41,44 +53,51 @@ class RealTimeUpdates {
       }
     }
     
-    this.eventSource.onerror = (error) => {
+    eventSource.onerror = (error) => {
       console.error('Real-time connection error:', error)
-      this.handleReconnect()
+      this.handleReconnect(connectionKey)
     }
     
+    // Store connection with initial reference count of 1
+    this.connections.set(connectionKey, {
+      source: eventSource,
+      refCount: 1,
+      config
+    })
+    
     // Set up event listeners for specific update types
-    this.setupEventListeners()
+    this.setupEventListeners(eventSource)
+    
+    return eventSource
   }
   
-  private setupEventListeners() {
-    if (!this.eventSource) return
-    
+  private setupEventListeners(eventSource: EventSource) {
     // Balance updates
-    this.eventSource.addEventListener('balance_update', (event) => {
+    eventSource.addEventListener('balance_update', (event) => {
       const data = JSON.parse(event.data)
       this.updateBalance(data)
     })
     
     // Account status updates
-    this.eventSource.addEventListener('account_status', (event) => {
+    eventSource.addEventListener('account_status', (event) => {
       const data = JSON.parse(event.data)
       this.updateAccountStatus(data)
     })
     
     // Application updates
-    this.eventSource.addEventListener('application_update', (event) => {
+    eventSource.addEventListener('application_update', (event) => {
       const data = JSON.parse(event.data)
       this.updateApplications(data)
     })
     
     // Transaction updates
-    this.eventSource.addEventListener('transaction_update', (event) => {
+    eventSource.addEventListener('transaction_update', (event) => {
       const data = JSON.parse(event.data)
       this.updateTransactions(data)
     })
     
     // Support ticket updates
-    this.eventSource.addEventListener('ticket_update', (event) => {
+    eventSource.addEventListener('ticket_update', (event) => {
       const data = JSON.parse(event.data)
       this.updateSupportTickets(data)
     })
@@ -232,52 +251,76 @@ class RealTimeUpdates {
     )
   }
   
-  private handleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached')
+  private handleReconnect(connectionKey: string) {
+    const attempts = this.reconnectAttempts.get(connectionKey) || 0
+    
+    if (attempts >= this.maxReconnectAttempts) {
+      console.error('Max reconnection attempts reached for', connectionKey)
       return
     }
     
-    this.reconnectAttempts++
-    const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1)
+    this.reconnectAttempts.set(connectionKey, attempts + 1)
+    const delay = this.reconnectDelay * Math.pow(2, attempts)
     
-    console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`)
+    console.log(`Reconnecting in ${delay}ms (attempt ${attempts + 1})`)
     
     setTimeout(() => {
-      if (this.config) {
-        this.connect(this.config)
+      const connection = this.connections.get(connectionKey)
+      if (connection) {
+        this.connect(connection.config)
       }
     }, delay)
   }
   
-  disconnect() {
-    if (this.eventSource) {
-      this.eventSource.close()
-      this.eventSource = null
+  // ✅ FIXED: Reference-counted disconnect that only closes when no more references
+  disconnect(config: RealTimeConfig): boolean {
+    const connectionKey = `${config.organizationId}-${config.userId}`
+    const existing = this.connections.get(connectionKey)
+    
+    if (!existing) {
+      console.warn('Attempting to disconnect non-existent connection:', connectionKey)
+      return false
     }
+    
+    existing.refCount--
+    console.log(`🔄 Decremented real-time connection refs: ${existing.refCount}`)
+    
+    if (existing.refCount <= 0) {
+      // ✅ Last reference - actually close the connection
+      existing.source.close()
+      this.connections.delete(connectionKey)
+      this.reconnectAttempts.delete(connectionKey)
+      console.log('🔄 Real-time connection closed (no more references)')
+      return true
+    }
+    
+    return false // Connection still has references
   }
   
-  isConnected() {
-    return this.eventSource?.readyState === EventSource.OPEN
+  // ✅ FIXED: Updated to work with new connection management
+  isConnected(config: RealTimeConfig): boolean {
+    const connectionKey = `${config.organizationId}-${config.userId}`
+    const connection = this.connections.get(connectionKey)
+    return connection?.source?.readyState === EventSource.OPEN
   }
 }
 
 // Export singleton instance
 export const realTimeUpdates = new RealTimeUpdates()
 
-// Hook for using real-time updates in components
+// ✅ FIXED: Hook for using real-time updates with proper cleanup
 export function useRealTimeUpdates(config: RealTimeConfig) {
   React.useEffect(() => {
-    realTimeUpdates.connect(config)
+    const eventSource = realTimeUpdates.connect(config)
     
     return () => {
-      realTimeUpdates.disconnect()
+      realTimeUpdates.disconnect(config) // ✅ Pass config for reference counting
     }
   }, [config.organizationId, config.userId, config.sessionToken])
   
   return {
-    isConnected: realTimeUpdates.isConnected(),
-    disconnect: () => realTimeUpdates.disconnect(),
+    isConnected: realTimeUpdates.isConnected(config), // ✅ Pass config
+    disconnect: () => realTimeUpdates.disconnect(config), // ✅ Pass config
   }
 }
 

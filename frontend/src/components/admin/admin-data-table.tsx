@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,7 @@ interface AdminDataTableProps<T> {
   className?: string
 }
 
-export function AdminDataTable<T extends Record<string, any>>({
+export const AdminDataTable = React.memo(function AdminDataTable<T extends Record<string, any>>({
   data,
   columns,
   searchPlaceholder = "Search...",
@@ -352,4 +352,4 @@ export function AdminDataTable<T extends Record<string, any>>({
       )}
     </div>
   )
-} 
+}) 

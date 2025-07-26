@@ -24,6 +24,10 @@ export function useAutoRefresh({
   const [isVisible, setIsVisible] = useState(true)
   const [isOnline, setIsOnline] = useState(true)
 
+  // ✅ FIXED: Use ref for onRefresh to avoid stale closures
+  const onRefreshRef = useRef(onRefresh)
+  onRefreshRef.current = onRefresh
+
   const startAutoRefresh = useCallback(() => {
     if (!enabled || intervalRef.current) return
     
@@ -42,14 +46,14 @@ export function useAutoRefresh({
       
       try {
         isRefreshingRef.current = true
-        await onRefresh()
+        await onRefreshRef.current() // ✅ FIXED: Use ref to avoid stale closure
       } catch (error) {
         console.warn('Auto-refresh failed:', error)
       } finally {
         isRefreshingRef.current = false
       }
     }, interval)
-  }, [enabled, interval, onRefresh, pauseOnHidden, pauseOnOffline, isVisible, isOnline])
+  }, [enabled, interval, pauseOnHidden, pauseOnOffline, isVisible, isOnline]) // ✅ FIXED: Removed onRefresh from deps
 
   const stopAutoRefresh = useCallback(() => {
     if (intervalRef.current) {
@@ -63,13 +67,13 @@ export function useAutoRefresh({
     
     try {
       isRefreshingRef.current = true
-      await onRefresh()
+      await onRefreshRef.current() // ✅ FIXED: Use ref to avoid stale closure
     } catch (error) {
       console.warn('Manual refresh failed:', error)
     } finally {
       isRefreshingRef.current = false
     }
-  }, [onRefresh])
+  }, []) // ✅ FIXED: Empty deps since we use ref
 
   // Track page visibility to pause refresh when tab is hidden (saves costs)
   useEffect(() => {
@@ -126,13 +130,21 @@ export function useAutoRefresh({
     return stopAutoRefresh
   }, [enabled, startAutoRefresh, stopAutoRefresh])
 
-  // Restart auto-refresh when dependencies change
+  // Restart auto-refresh when dependencies change (with stable comparison)
+  const stableDependencies = useRef(dependencies)
+  const dependenciesString = JSON.stringify(dependencies)
+  
   useEffect(() => {
-    if (enabled) {
-      stopAutoRefresh()
-      startAutoRefresh()
+    // Only restart if dependencies actually changed (deep comparison)
+    const currentDepsString = JSON.stringify(stableDependencies.current)
+    if (currentDepsString !== dependenciesString) {
+      stableDependencies.current = dependencies
+      if (enabled) {
+        stopAutoRefresh()
+        startAutoRefresh()
+      }
     }
-  }, dependencies)
+  }, [enabled, dependenciesString, stopAutoRefresh, startAutoRefresh])
 
   // Cleanup on unmount
   useEffect(() => {

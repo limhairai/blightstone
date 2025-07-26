@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -60,24 +60,25 @@ export function AdminPerformanceMonitor({ className }: AdminPerformanceMonitorPr
     }
   }, [])
 
-  // Monitor errors and warnings
+  // ✅ FIXED: Use refs at component level to avoid stale closures
+  const errorsRef = useRef(0)
+  const warningsRef = useRef(0)
+
+  // ✅ FIXED: Monitor errors and warnings without memory leaks
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      let errors = 0
-      let warnings = 0
-      
       const originalError = console.error
       const originalWarn = console.warn
       
       console.error = (...args) => {
-        errors++
-        setMetrics(prev => ({ ...prev, errors }))
+        errorsRef.current++
+        setMetrics(prev => ({ ...prev, errors: errorsRef.current }))
         originalError.apply(console, args)
       }
       
       console.warn = (...args) => {
-        warnings++
-        setMetrics(prev => ({ ...prev, warnings }))
+        warningsRef.current++
+        setMetrics(prev => ({ ...prev, warnings: warningsRef.current }))
         originalWarn.apply(console, args)
       }
       
@@ -86,7 +87,7 @@ export function AdminPerformanceMonitor({ className }: AdminPerformanceMonitorPr
         console.warn = originalWarn
       }
     }
-  }, [])
+  }, []) // ✅ Empty deps is correct here since we use refs
 
   // Measure interaction delay
   const measureInteraction = useCallback(() => {

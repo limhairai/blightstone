@@ -361,7 +361,7 @@ export function useRenderingPerformance() {
   }
 }
 
-// Optimized data fetching with concurrent features
+// Optimized data fetching with concurrent features (FIXED: No infinite loops)
 export function useOptimizedFetch<T>(
   fetchFn: () => Promise<T>,
   deps: React.DependencyList = []
@@ -371,12 +371,16 @@ export function useOptimizedFetch<T>(
   const [isLoading, setIsLoading] = useState(false)
   const [isPending, startTransition] = useTransition()
 
+  // ✅ FIXED: Use ref to avoid stale closure and infinite loops
+  const fetchFnRef = useRef(fetchFn)
+  fetchFnRef.current = fetchFn
+
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     
     try {
-      const result = await fetchFn()
+      const result = await fetchFnRef.current()
       
       startTransition(() => {
         setData(result)
@@ -386,11 +390,12 @@ export function useOptimizedFetch<T>(
     } finally {
       setIsLoading(false)
     }
-  }, deps)
+  }, []) // ✅ FIXED: Empty deps array - function is stable
 
+  // ✅ FIXED: Handle deps changes separately
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+  }, deps)
 
   const refetch = useCallback(() => {
     fetchData()

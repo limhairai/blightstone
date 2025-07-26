@@ -3,7 +3,7 @@ import { useSWRConfig } from 'swr';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOrganizationStore } from '@/lib/stores/organization-store';
-import { invalidateAssetCache } from '@/lib/cache-invalidation';
+import { invalidateAssetCache, invalidateSubscriptionCache } from '@/lib/cache-invalidation';
 
 interface UseAssetDeactivationProps {
   onSuccess?: () => void;
@@ -93,6 +93,7 @@ export function useAssetDeactivation({ onSuccess }: UseAssetDeactivationProps = 
       // This ensures all data sources see the updated asset state immediately
       if (currentOrganizationId) {
         invalidateAssetCache(currentOrganizationId);
+        invalidateSubscriptionCache(currentOrganizationId); // Critical for plan limit updates
       }
       
       onSuccess?.();
@@ -103,6 +104,7 @@ export function useAssetDeactivation({ onSuccess }: UseAssetDeactivationProps = 
       // Revert optimistic update on error
       if (currentOrganizationId) {
         invalidateAssetCache(currentOrganizationId);
+        invalidateSubscriptionCache(currentOrganizationId);
       }
     } finally {
       setIsLoading(false);

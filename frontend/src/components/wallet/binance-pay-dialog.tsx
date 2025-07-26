@@ -61,9 +61,11 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
     }
   }, [order, timeLeft])
 
-  // Poll for payment status
+  // ✅ FIXED: Poll for payment status with proper timeout cleanup
   useEffect(() => {
     if (order && order.status === 'pending' && isPolling) {
+      let closeTimeout: NodeJS.Timeout // ✅ Track timeout for cleanup
+      
       const pollInterval = setInterval(async () => {
         try {
           const response = await fetch(`/api/payments/binance-pay/status/${order.orderId}`, {
@@ -87,7 +89,8 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
                 })
                 
                 onSuccess?.()
-                setTimeout(() => onClose(), 2000)
+                // ✅ FIXED: Track timeout for cleanup
+                closeTimeout = setTimeout(() => onClose(), 2000)
               } else if (data.status === 'failed') {
                 toast.error('Payment failed. Please try again.')
               }
@@ -98,7 +101,11 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
         }
       }, 10000) // Poll every 10 seconds (reduced frequency)
 
-      return () => clearInterval(pollInterval)
+      // ✅ FIXED: Cleanup both interval and timeout
+      return () => {
+        clearInterval(pollInterval)
+        if (closeTimeout) clearTimeout(closeTimeout)
+      }
     }
   }, [order, isPolling, session?.access_token, onSuccess, onClose])
 

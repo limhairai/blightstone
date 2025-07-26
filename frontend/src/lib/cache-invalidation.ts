@@ -3,6 +3,7 @@
  */
 
 import { mutate } from 'swr'
+import { CacheCategories, AuthKeys, validateCacheKey, logCacheKeyUsage } from './cache-keys'
 
 export type CacheCategory = 
   | 'subscription' 
@@ -127,40 +128,23 @@ export async function safeInvalidateCaches(
 export function invalidateAssetCache(organizationId: string) {
   if (!organizationId) return
 
-  // Invalidate all asset-related cache keys
+  // Use standardized cache keys
   const keysToInvalidate = [
-    // Business managers data
-    `/api/business-managers`,
-    `/api/business-managers?organization_id=${organizationId}`,
-    
-    // Ad accounts data  
-    `/api/ad-accounts`,
-    `/api/ad-accounts?organization_id=${organizationId}`,
-    
-    // Organization-specific asset data
-    `/api/organizations/${organizationId}/assets`,
-    `/api/organizations/${organizationId}/business-managers`,
-    `/api/organizations/${organizationId}/pixels`,
-    
-    // Real-time count APIs (critical for limit checking)
-    `/api/organizations/${organizationId}/active-bm-count`,
-    
-    // Subscription data (contains usage counts)
-    `/api/subscriptions/current`,
-    `/api/subscriptions/current?organizationId=${organizationId}`,
-    
-    // Admin APIs (if user is admin)
-    `/api/admin/assets`,
-    `/api/admin/organizations`,
-    `/api/admin/dashboard-summary`,
+    ...CacheCategories.assets(organizationId),
+    ...CacheCategories.organization(organizationId),
+    ...CacheCategories.subscription(organizationId), // Asset changes affect usage counts
   ]
+
+  logCacheKeyUsage('Asset Invalidation', keysToInvalidate)
 
   // Invalidate exact matches
   keysToInvalidate.forEach(key => {
-    mutate(key, undefined, { revalidate: true })
+    if (validateCacheKey(key)) {
+      mutate(key, undefined, { revalidate: true })
+    }
   })
 
-  // Pattern-based invalidation for dynamic keys
+  // Pattern-based invalidation for dynamic keys (authenticated endpoints)
   mutate((key) => {
     if (typeof key === 'string') {
       return key.includes(organizationId) || 
@@ -168,6 +152,15 @@ export function invalidateAssetCache(organizationId: string) {
              key.includes('/api/ad-accounts') ||
              key.includes('/api/subscriptions') ||
              key.includes('/api/organizations')
+    }
+    if (Array.isArray(key) && key.length === 2) {
+      const url = key[0]
+      return typeof url === 'string' && (
+        url.includes(organizationId) ||
+        url.includes('/api/business-managers') ||
+        url.includes('/api/ad-accounts') ||
+        url.includes('/api/organizations')
+      )
     }
     return false
   }, undefined, { revalidate: true })
@@ -181,14 +174,55 @@ export function invalidateSubscriptionCache(organizationId: string) {
   if (!organizationId) return
 
   const subscriptionKeys = [
+    // Core subscription endpoints
     `/api/subscriptions/current`,
     `/api/subscriptions/current?organizationId=${organizationId}`,
+    
+    // Usage counting endpoints  
+    `/api/topup-usage`,
+    `/api/topup-usage?organizationId=${organizationId}`,
+    
+    // Real-time count APIs (critical for limit checking)
     `/api/organizations/${organizationId}/active-bm-count`,
+    `/api/organizations/${organizationId}/active-account-count`,
+    
+    // Organization data (contains usage info)
+    `/api/organizations`,
+    `/api/organizations?id=${organizationId}`,
+    `/api/organizations/${organizationId}`,
+    
+    // SWR hook keys used by useSubscription
+    'subscription',
+    `subscription-${organizationId}`,
+    'subscriptionData',
+    `subscriptionData-${organizationId}`,
   ]
 
+  // Invalidate exact matches
   subscriptionKeys.forEach(key => {
     mutate(key, undefined, { revalidate: true })
   })
+
+  // Pattern-based invalidation for dynamic keys
+  mutate((key) => {
+    if (typeof key === 'string') {
+      return key.includes(organizationId) ||
+             key.includes('/api/subscriptions') ||
+             key.includes('/api/topup-usage') ||
+             key.includes('/api/organizations') ||
+             key.includes('subscription') ||
+             key.includes('usage')
+    }
+    if (Array.isArray(key) && key.length > 0) {
+      const url = key[0]
+      return typeof url === 'string' && (
+        url.includes(organizationId) ||
+        url.includes('/api/subscriptions') ||
+        url.includes('/api/organizations')
+      )
+    }
+    return false
+  }, undefined, { revalidate: true })
 }
 
 /**
@@ -198,35 +232,23 @@ export function invalidateSubscriptionCache(organizationId: string) {
 export function invalidateFinancialCache(organizationId: string) {
   if (!organizationId) return
 
+  // Use standardized cache keys
   const financialKeys = [
-    // Wallet & balance data
-    `/api/organizations/${organizationId}/wallet`,
-    `/api/wallet/transactions`,
-    `/api/wallet/transactions?organizationId=${organizationId}`,
-    
-    // Transaction history  
-    `/api/transactions`,
-    `/api/transactions?organizationId=${organizationId}`,
-    
-    // Topup requests
-    `/api/topup-requests`,
-    `/api/topup-requests?organizationId=${organizationId}`,
-    
-    // Organization data (contains wallet info)
-    `/api/organizations`,
-    `/api/organizations?id=${organizationId}`,
-    
-    // Subscription usage (affected by spending)
-    `/api/subscriptions/current`,
-    `/api/subscriptions/current?organizationId=${organizationId}`,
+    ...CacheCategories.financial(organizationId),
+    ...CacheCategories.organization(organizationId), // Organization contains wallet info
+    ...CacheCategories.subscription(organizationId), // Financial changes affect usage
   ]
+
+  logCacheKeyUsage('Financial Invalidation', financialKeys)
 
   // Invalidate exact matches
   financialKeys.forEach(key => {
-    mutate(key, undefined, { revalidate: true })
+    if (validateCacheKey(key)) {
+      mutate(key, undefined, { revalidate: true })
+    }
   })
 
-  // Pattern-based invalidation  
+  // Pattern-based invalidation for authenticated endpoints
   mutate((key) => {
     if (typeof key === 'string') {
       return key.includes(organizationId) ||
@@ -234,6 +256,57 @@ export function invalidateFinancialCache(organizationId: string) {
              key.includes('/api/wallet') ||
              key.includes('/api/topup') ||
              key.includes('/api/organizations')
+    }
+    if (Array.isArray(key) && key.length === 2) {
+      const url = key[0]
+      return typeof url === 'string' && (
+        url.includes(organizationId) ||
+        url.includes('/api/transactions') ||
+        url.includes('/api/wallet') ||
+        url.includes('/api/organizations')
+      )
+    }
+    return false
+  }, undefined, { revalidate: true })
+}
+
+/**
+ * Invalidate authentication and user-specific data
+ * Critical for login/logout flows to clear stale user data
+ */
+export function invalidateAuthCache() {
+  // Use standardized cache keys
+  const authKeys = [
+    ...CacheCategories.auth,
+    '/api/organizations', // User orgs change on login/logout
+  ]
+
+  logCacheKeyUsage('Auth Invalidation', authKeys)
+
+  // Invalidate exact matches
+  authKeys.forEach(key => {
+    if (validateCacheKey(key)) {
+      mutate(key, undefined, { revalidate: true })
+    }
+  })
+
+  // Pattern-based invalidation for user-specific data
+  mutate((key) => {
+    if (typeof key === 'string') {
+      return key.includes('/api/auth') ||
+             key.includes('/api/profile') ||
+             key.includes('/api/organizations') ||
+             key.includes('user') ||
+             key.includes('auth') ||
+             key.includes('profile')
+    }
+    if (Array.isArray(key) && key.length > 0) {
+      const url = key[0]
+      return typeof url === 'string' && (
+        url.includes('/api/auth') ||
+        url.includes('/api/profile') ||
+        url.includes('/api/organizations')
+      )
     }
     return false
   }, undefined, { revalidate: true })
@@ -249,6 +322,27 @@ export function invalidateAllUserCache(organizationId: string) {
   invalidateAssetCache(organizationId)
   invalidateFinancialCache(organizationId)
   invalidateSubscriptionCache(organizationId)
+}
+
+/**
+ * Nuclear option: Clear ALL cached data
+ * Use for logout, account switches, or critical data inconsistencies
+ */
+export function clearAllCaches() {
+  // Clear all SWR caches
+  mutate(() => true, undefined, { revalidate: false })
+  
+  // Clear localStorage cache remnants
+  if (typeof window !== 'undefined') {
+    const keys = Object.keys(localStorage)
+    keys.forEach(key => {
+      if (key.includes('swr-') || 
+          key.includes('cache-') ||
+          key.includes('adhub-cache')) {
+        localStorage.removeItem(key)
+      }
+    })
+  }
 }
 
 /**

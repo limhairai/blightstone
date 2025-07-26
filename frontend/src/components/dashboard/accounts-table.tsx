@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useState, useMemo, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import useSWR, { useSWRConfig } from 'swr'
@@ -35,7 +35,7 @@ const fetcher = (url: string, token: string) =>
 // TODO: Define a proper type for the ad account object
 type AdAccount = any;
 
-export function AccountsTable() {
+export const AccountsTable = React.memo(function AccountsTable() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { session } = useAuth()
@@ -441,4 +441,4 @@ export function AccountsTable() {
         )}
     </div>
   )
-}
+})

@@ -69,7 +69,7 @@ export const useOptimisticUI = () => {
   return { applyOptimisticUpdate, getOptimisticValue }
 }
 
-// Instant form submissions
+// ✅ FIXED: Instant form submissions with proper cleanup
 export const useInstantForms = () => {
   const formRefs = useRef(new Map())
 
@@ -84,6 +84,13 @@ export const useInstantForms = () => {
       form.classList.add('submitting')
       // Submit in background
       setTimeout(() => form.submit(), 0)
+    }
+  }, [])
+
+  // ✅ FIXED: Cleanup form refs on unmount
+  useEffect(() => {
+    return () => {
+      formRefs.current.clear()
     }
   }, [])
 

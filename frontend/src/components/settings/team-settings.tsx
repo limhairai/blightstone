@@ -53,10 +53,12 @@ function useTeamMembers() {
     () => authenticatedFetcher('/api/teams/members', session!.access_token),
     {
       dedupingInterval: 5 * 60 * 1000, // 5 minutes caching
-      revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      revalidateOnFocus: true, // ✅ FIXED: Enable focus revalidation
+      revalidateOnReconnect: true, // ✅ FIXED: Enable reconnect revalidation
+      revalidateIfStale: true, // ✅ FIXED: Update stale data automatically
       errorRetryCount: 2,
       errorRetryInterval: 5000,
+      keepPreviousData: true, // ✅ Smooth transitions
     }
   )
 }
