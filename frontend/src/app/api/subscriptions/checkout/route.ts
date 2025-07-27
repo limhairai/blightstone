@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.log('⚠️ Existing customer ID is invalid, creating new customer:', { 
           invalidCustomerId: customerId, 
-          error: error.message 
+          error: error instanceof Error ? error.message : String(error)
         });
         customerId = null; // Reset to create new customer
       }

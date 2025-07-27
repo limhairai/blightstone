@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.log('⚠️ Existing customer ID is invalid for billing portal, creating new customer:', { 
           invalidCustomerId: stripeCustomerId, 
-          error: error.message 
+          error: error instanceof Error ? error.message : String(error)
         });
         stripeCustomerId = null; // Reset to create new customer
       }

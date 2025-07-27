@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       } catch (error) {
         console.log('⚠️ Existing customer ID is invalid for payment methods, clearing customer ID:', { 
           invalidCustomerId: stripeCustomerId, 
-          error: error.message 
+          error: error instanceof Error ? error.message : String(error)
         });
         stripeCustomerId = null; // Reset invalid customer ID
       }
