@@ -62,8 +62,7 @@ export default function PagesPage() {
   const [newPageForm, setNewPageForm] = useState({
     facebook_page_id: '',
     page_name: '',
-    page_url: '',
-    category: ''
+    page_url: ''
   })
 
   // Fetch pages data
@@ -113,7 +112,7 @@ export default function PagesPage() {
       }
 
       toast.success('Facebook page added successfully')
-      setNewPageForm({ facebook_page_id: '', page_name: '', page_url: '', category: '' })
+      setNewPageForm({ facebook_page_id: '', page_name: '', page_url: '' })
       setIsAddingPage(false)
       mutate() // Refresh the data
     } catch (error) {
@@ -219,32 +218,15 @@ export default function PagesPage() {
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="page_url">Page URL</Label>
-                  <Input
-                    id="page_url"
-                    value={newPageForm.page_url}
-                    onChange={(e) => setNewPageForm(prev => ({ ...prev, page_url: e.target.value }))}
-                    placeholder="https://facebook.com/yourpage"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={newPageForm.category} onValueChange={(value) => setNewPageForm(prev => ({ ...prev, category: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="business">Business</SelectItem>
-                      <SelectItem value="brand">Brand</SelectItem>
-                      <SelectItem value="community">Community</SelectItem>
-                      <SelectItem value="entertainment">Entertainment</SelectItem>
-                      <SelectItem value="media">Media</SelectItem>
-                      <SelectItem value="nonprofit">Non-profit</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                              <div>
+                <Label htmlFor="page_url">Page URL</Label>
+                <Input
+                  id="page_url"
+                  value={newPageForm.page_url}
+                  onChange={(e) => setNewPageForm(prev => ({ ...prev, page_url: e.target.value }))}
+                  placeholder="https://facebook.com/yourpage"
+                />
+              </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddingPage(false)}>
                     Cancel
@@ -288,104 +270,118 @@ export default function PagesPage() {
         </Alert>
       )}
 
-      {/* Pages Table */}
-      {pages.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12">
-          <FileText className="h-8 w-8 text-muted-foreground mb-3" />
-          <h3 className="text-lg font-medium text-foreground mb-2">No Facebook pages found</h3>
-          <p className="text-sm text-muted-foreground">
-            Add your first Facebook page to get started
-          </p>
+      {/* Pages Table - matching ad accounts design */}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        {/* Table Header */}
+        <div
+          className="grid gap-4 px-6 py-4 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide"
+          style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+        >
+          <div className="flex items-center">PAGE</div>
+          <div className="flex items-center">PAGE ID</div>
+          <div className="flex items-center">BM NAME</div>
+          <div className="flex items-center">BM ID</div>
+          <div className="flex items-center">STATUS</div>
+          <div className="flex items-center">ACTIONS</div>
         </div>
-      ) : (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[300px]">Page</TableHead>
-                <TableHead className="w-[150px]">Page ID</TableHead>
-                <TableHead className="w-[200px]">BM Name</TableHead>
-                <TableHead className="w-[150px]">BM ID</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
-                <TableHead className="w-[80px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pages.map((page) => (
-                <TableRow key={page.page_id} className="hover:bg-muted/50">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20 flex items-center justify-center">
-                        <FileText className="h-4 w-4 text-[#8b5cf6]" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-foreground flex items-center gap-2">
-                          {page.page_name}
-                          {page.verification_status === 'verified' && (
-                            <Verified className="h-3 w-3 text-blue-500" />
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          {page.category && <span>{page.category}</span>}
-                          {page.category && (page.followers_count > 0 || page.likes_count > 0) && <span>•</span>}
-                          {page.followers_count > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              <span>{page.followers_count.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {page.likes_count > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Heart className="h-3 w-3" />
-                              <span>{page.likes_count.toLocaleString()}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+
+        {/* Table Body */}
+        <div className="divide-y divide-border">
+          {pages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <FileText className="h-8 w-8 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No Facebook pages found</h3>
+              <p className="text-sm text-muted-foreground">
+                Add your first Facebook page to get started
+              </p>
+            </div>
+          ) : (
+            pages.map((page) => (
+              <div
+                key={page.page_id}
+                className="grid gap-4 px-6 py-5 hover:bg-muted/50 transition-colors group cursor-pointer border-b border-border"
+                style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+              >
+                {/* Page */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-[#8b5cf6]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-medium text-foreground flex items-center gap-2 truncate">
+                      {page.page_name}
+                      {page.verification_status === 'verified' && (
+                        <Verified className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                      )}
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <code className="bg-muted px-2 py-1 rounded text-xs">
-                      {page.facebook_page_id}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    {page.bm_name ? (
-                      <span className="text-foreground">{page.bm_name}</span>
-                    ) : (
-                      <span className="text-muted-foreground italic">Not assigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {page.bm_id ? (
-                      <code className="bg-muted px-2 py-1 rounded text-xs">
-                        {page.bm_id}
-                      </code>
-                    ) : (
-                      <span className="text-muted-foreground italic">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge 
-                      status={page.status as any} 
-                      size="sm" 
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {page.page_url && (
-                      <Button variant="ghost" size="sm" asChild>
-                        <a href={page.page_url} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      {page.followers_count > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>{page.followers_count.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {page.followers_count > 0 && page.likes_count > 0 && <span>•</span>}
+                      {page.likes_count > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-3 w-3" />
+                          <span>{page.likes_count.toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Page ID */}
+                <div className="flex items-center">
+                  <div className="text-xs font-mono text-foreground bg-muted px-2 py-1 rounded border">
+                    {page.facebook_page_id}
+                  </div>
+                </div>
+
+                {/* BM Name */}
+                <div className="flex items-center">
+                  {page.bm_name ? (
+                    <span className="text-sm text-foreground truncate">{page.bm_name}</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">Not assigned</span>
+                  )}
+                </div>
+
+                {/* BM ID */}
+                <div className="flex items-center">
+                  {page.bm_id ? (
+                    <div className="text-xs font-mono text-foreground bg-muted px-2 py-1 rounded border">
+                      {page.bm_id}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">-</span>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div className="flex items-center">
+                  <StatusBadge 
+                    status={page.status as any} 
+                    size="sm" 
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center">
+                  {page.page_url && (
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={page.page_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      )}
+      </div>
 
       {/* Upgrade prompt if at limit */}
       {!pagination.canAddMore && pages.length > 0 && (

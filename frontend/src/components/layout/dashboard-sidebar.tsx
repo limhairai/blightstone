@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { AdHubLogo } from "../core/AdHubLogo"
 import { cn } from "../../lib/utils"
-import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare } from "lucide-react"
+import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useAuth } from '@/contexts/AuthContext'
@@ -90,6 +90,7 @@ export function DashboardSidebar() {
       subItems: [
         { name: "Business Managers", href: "/dashboard/business-managers", icon: Building2 },
         { name: "Ad Accounts", href: "/dashboard/accounts", icon: CreditCard },
+        { name: "Pages", href: "/dashboard/pages", icon: FileText },
         { name: "Pixels", href: "/dashboard/pixels", icon: Target },
       ],
     },
