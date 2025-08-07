@@ -246,7 +246,7 @@ export default function PagesPage() {
                 Add
               </Button>
             </DialogTrigger>
-          <DialogContent>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Facebook Page</DialogTitle>
               <DialogDescription>
