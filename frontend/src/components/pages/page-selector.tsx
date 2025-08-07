@@ -64,7 +64,7 @@ export function PageSelector({
   const pages = pagesData?.pages || []
   const canAddMore = pagesData?.pagination?.canAddMore ?? false
 
-  const selectedPages = pages.filter(page => selectedPageIds.includes(page.page_id))
+  const selectedPages = pages.filter((page: FacebookPage) => selectedPageIds.includes(page.page_id))
 
   const handlePageToggle = (pageId: string, checked: boolean) => {
     if (checked) {
@@ -158,7 +158,7 @@ export function PageSelector({
       {/* Selected Pages */}
       {selectedPages.length > 0 && (
         <div className="space-y-2 mb-4">
-          {selectedPages.map((page) => (
+          {selectedPages.map((page: FacebookPage) => (
             <div key={page.page_id} className="flex items-center justify-between p-3 border rounded-lg bg-blue-50/50">
               <div className="flex items-center space-x-3">
                 <Facebook className="h-4 w-4 text-blue-600" />
@@ -192,7 +192,7 @@ export function PageSelector({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {pages.map((page) => (
+            {pages.map((page: FacebookPage) => (
               <div key={page.page_id} className="flex items-center space-x-3 p-2 hover:bg-muted/50 rounded">
                 <Checkbox
                   checked={selectedPageIds.includes(page.page_id)}

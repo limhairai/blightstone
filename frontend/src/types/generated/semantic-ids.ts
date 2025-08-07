@@ -21,7 +21,7 @@ export interface Application {
 
 export interface Asset {
   assetId: string;
-  type: 'business_manager' | 'ad_account' | 'profile';
+  type: 'business_manager' | 'ad_account' | 'profile' | 'pixel' | 'facebook_page';
   dolphinId: string;
   name: string;
   status: 'active' | 'inactive' | 'suspended';

@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     const transformedPages = (pages || []).map(page => ({
       ...page,
       organization: {
-        name: page.organizations?.name || 'Unknown Organization'
+        name: (page.organizations as any)?.name || 'Unknown Organization'
       }
     }))
 

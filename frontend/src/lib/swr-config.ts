@@ -325,7 +325,7 @@ export function usePages(organizationId?: string | null) {
   const url = shouldFetch ? `/api/pages?organization_id=${orgId}` : null
   
   return useSWR(
-    url ? [url, session.access_token] : null,
+    url && session?.access_token ? [url, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: true,
@@ -345,7 +345,7 @@ export function usePageRequests(organizationId?: string | null) {
   const url = shouldFetch ? `/api/page-requests?organization_id=${orgId}` : null
   
   return useSWR(
-    url ? [url, session.access_token] : null,
+    url && session?.access_token ? [url, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: true,

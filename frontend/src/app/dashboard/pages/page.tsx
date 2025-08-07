@@ -102,7 +102,7 @@ export default function PagesPage() {
     session?.access_token && currentOrganizationId 
       ? [`/api/pages?organization_id=${currentOrganizationId}`, session.access_token]
       : null,
-    ([url, token]) => authenticatedFetcher(url, token),
+    ([url, token]: [string, string]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: true,
       revalidateOnReconnect: true,

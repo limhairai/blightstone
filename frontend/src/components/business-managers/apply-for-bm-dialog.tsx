@@ -77,7 +77,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
 
   // Get domain and page limits from pricing config
   const planId = currentPlan?.id as 'starter' | 'growth' | 'scale' | undefined
-  const planLimits = getPlanPricing(planId)
+  const planLimits = planId ? getPlanPricing(planId) : null
   const maxDomainsPerBm = planLimits?.domainsPerBm || 2
   const maxPagesPerBm = getPageLimit(planId)
 

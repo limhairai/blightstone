@@ -480,7 +480,7 @@ export const OnboardingService = {
 
 export interface DolphinAsset {
   id: string
-  type: 'profile' | 'business_manager' | 'ad_account'
+  type: 'profile' | 'business_manager' | 'ad_account' | 'pixel' | 'facebook_page'
   dolphin_id: string
   name: string
   status: string

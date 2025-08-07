@@ -123,8 +123,8 @@ export async function GET(request: NextRequest) {
 
         return {
           ...page,
-          bm_name: bmData?.asset?.name || null,
-          bm_id: bmData?.asset?.dolphin_business_manager_id || null,
+          bm_name: (bmData?.asset as any)?.name || null,
+          bm_id: (bmData?.asset as any)?.dolphin_business_manager_id || null,
           business_manager_id: bmData?.business_manager_id || null
         }
       })
