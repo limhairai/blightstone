@@ -43,14 +43,8 @@ export function OrganizationSelector() {
   
   const [componentIsLoading, setComponentIsLoading] = useState(false)
 
-  // 🔒 SECURITY: Redirect admin users to admin panel
-  useEffect(() => {
-    if (!separationLoading && isAdmin === true) {
-      console.warn('🔒 SECURITY: Admin user redirected from client organization selector to admin panel')
-      router.replace('/admin')
-      return
-    }
-  }, [isAdmin, separationLoading, router])
+  // 🔒 SECURITY: Admins can access their own client dashboard
+  // No redirect needed - data isolation ensures admins only see their own organizations
 
   // 🚀 PERFORMANCE: Consolidated data fetching with better caching
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations() // For dropdown list
@@ -65,14 +59,12 @@ export function OrganizationSelector() {
   const hasAuthError = orgError && (orgError.message.includes('401') || orgError.message.includes('403'))
   const hasCurrentOrgAuthError = currentOrgError && (currentOrgError.message.includes('401') || currentOrgError.message.includes('403'))
   
-  // 🔒 SECURITY: Show loading while checking admin status or redirecting
-  if (separationLoading || isAdmin === true) {
+  // 🔒 SECURITY: Show loading while checking admin status
+  if (separationLoading) {
     return (
       <div className="flex items-center space-x-2">
         <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-sm text-muted-foreground">
-          {isAdmin === true ? 'Redirecting to admin panel...' : 'Loading...'}
-        </span>
+        <span className="text-sm text-muted-foreground">Loading...</span>
       </div>
     )
   }

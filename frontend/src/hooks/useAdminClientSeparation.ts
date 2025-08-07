@@ -41,20 +41,9 @@ export function useAdminClientSeparation() {
           const adminStatus = data.isAdmin === true
           setIsAdmin(adminStatus)
 
-          // 🔒 ENFORCE STRICT SEPARATION
+          // 🔒 SECURITY: Admins can access their own client dashboard
+          // Only prevent non-admins from accessing admin panel
           const isOnAdminRoute = pathname?.startsWith('/admin')
-          const isOnClientRoute = pathname?.startsWith('/dashboard') || 
-                                  pathname?.startsWith('/wallet') ||
-                                  pathname?.startsWith('/pricing') ||
-                                  pathname?.startsWith('/settings') ||
-                                  pathname?.startsWith('/support')
-
-          if (adminStatus && isOnClientRoute) {
-            // ❌ SECURITY VIOLATION: Admin trying to access client dashboard
-            console.warn('🔒 SECURITY: Admin redirected from client dashboard to admin panel')
-            router.replace('/admin')
-            return
-          }
 
           if (!adminStatus && isOnAdminRoute) {
             // ❌ SECURITY VIOLATION: Client trying to access admin panel
@@ -62,6 +51,9 @@ export function useAdminClientSeparation() {
             router.replace('/dashboard')
             return
           }
+
+          // ✅ ALLOWED: Admins can access both client dashboard (their own) and admin panel
+          // Data isolation ensures admins only see their own organizations in client dashboard
         } else {
           // API failed, assume not admin for security
           setIsAdmin(false)
