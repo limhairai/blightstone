@@ -38,7 +38,7 @@ export function OrganizationSelector() {
   const { theme } = useTheme()
   const router = useRouter()
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore()
-  const { session } = useAuth()
+  const { session, user } = useAuth()
   const { isAdmin, loading: separationLoading } = useAdminClientSeparation()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
