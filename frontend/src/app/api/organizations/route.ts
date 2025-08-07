@@ -32,15 +32,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // 🔒 SECURITY: Check if user is admin - but RESTRICT admin access to client data
-    const { data: isAdminResult, error: adminCheckError } = await supabase
-      .rpc('is_admin', { user_id: user.id });
-    
-    const isAdmin = !adminCheckError && isAdminResult === true;
-    
-    // 🔒 SECURITY: Admins should NOT access client organizations via this endpoint
-    // This endpoint is for client dashboard use only
-    // Admins should use /api/admin/organizations for admin panel access
+    // 🔒 SECURITY: All users (including admins) only see organizations they own or are members of
+    // Admin panel uses separate /api/admin/organizations endpoint for admin operations
 
     // Removed cache checking for immediate updates
 
