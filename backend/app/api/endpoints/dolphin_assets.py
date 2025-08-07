@@ -287,11 +287,76 @@ async def discover_dolphin_assets(
                 errors.append(error_msg)
                 logger.error(error_msg)
 
+        # ========================================================================
+        # 3. Get Facebook Pages - NEW ADDITION
+        # ========================================================================
+        pages_data = await dolphin_api.get_fb_pages()
+        logger.info(f"🔍 Retrieved {len(pages_data)} Facebook Pages")
+        
+        for i, page in enumerate(pages_data):
+            try:
+                # Extract key information
+                page_id = page["id"]
+                page_name = page["name"]
+                page_status = page.get("status", "active")
+                
+                # Get page metadata
+                page_url = page.get("link", "")
+                category = page.get("category", "")
+                followers_count = page.get("fan_count", 0)
+                likes_count = page.get("likes", 0)
+                verification_status = "verified" if page.get("is_verified", False) else "unverified"
+                
+                # Get managing profile info
+                managing_profiles = page.get("accounts", [])
+                managing_profile_name = managing_profiles[0]["name"] if managing_profiles else "Unknown"
+                
+                # Get business manager info
+                business_managers = page.get("bm", [])
+                parent_bm_id = None
+                parent_bm_name = "No BM"
+                
+                if business_managers:
+                    parent_bm_id = business_managers[0].get("id") or business_managers[0].get("business_id")
+                    parent_bm_name = business_managers[0].get("name", "No BM")
+                
+                # Create page asset data
+                page_asset_data = {
+                    "type": "facebook_page",
+                    "dolphin_id": page_id,
+                    "name": page_name,
+                    "status": "active" if page_status.upper() == "ACTIVE" else "inactive",
+                    "metadata": {
+                        "page_url": page_url,
+                        "category": category,
+                        "followers_count": followers_count,
+                        "likes_count": likes_count,
+                        "verification_status": verification_status,
+                        "managing_profile": managing_profile_name,
+                        "parent_bm_id": parent_bm_id,
+                        "parent_bm_name": parent_bm_name,
+                        "facebook_page_id": page_id,
+                        "raw_data": page
+                    },
+                    "last_synced_at": datetime.now(timezone.utc).isoformat()
+                }
+                
+                # Upsert page
+                supabase.table("asset").upsert(page_asset_data, on_conflict="type,dolphin_id").execute()
+                discovered_count += 1
+                logger.info(f"📄 Processed Page: {page_name} ({page_id}) - BM: {parent_bm_name}")
+                
+            except Exception as e:
+                error_msg = f"Error processing Page {page.get('id', 'unknown')}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(error_msg)
+
         return {
             "success": True,
             "profiles_found": len(profiles_data),
             "business_managers_found": sum(len(p.get("bms", [])) for p in profiles_data),
             "ad_accounts_found": len(cabs_data),
+            "pages_found": len(pages_data),
             "assets_discovered": discovered_count,
             "assets_updated": updated_count,
             "errors": errors

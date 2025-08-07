@@ -171,6 +171,34 @@ class DolphinCloudAPI:
             logger.error(f"Error fetching FB CABs (Ad Accounts): {e}")
             return []
     
+    async def get_fb_pages(self, business_manager_id: Optional[str] = None, 
+                          per_page: int = 100, page: int = 1) -> List[Dict[str, Any]]:
+        """
+        Get Facebook Pages from Dolphin Cloud
+        
+        Facebook Pages are managed through Business Managers and can be used
+        for advertising campaigns and content management.
+        """
+        try:
+            params = {
+                "perPage": per_page,
+                "page": page
+            }
+            
+            # Add business manager filter if specified
+            if business_manager_id:
+                params["businessManagerId"] = business_manager_id
+            
+            response = await self._request("GET", "/api/v1/fb-pages", params=params)
+            pages = response.get("data", [])
+            
+            logger.info(f"Retrieved {len(pages)} Facebook Pages from Dolphin Cloud")
+            return pages
+            
+        except Exception as e:
+            logger.error(f"Error fetching FB Pages: {e}")
+            return []
+    
     async def get_account_spend_data(self, account_id: str) -> Dict[str, Any]:
         """
         Get account spending data and limits from Dolphin Cloud
