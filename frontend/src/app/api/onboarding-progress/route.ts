@@ -83,10 +83,11 @@ export async function GET(request: NextRequest) {
     
     const hasFundedWallet = wallet ? wallet.balance_cents > 0 : false;
     
-    // Check if organization has been properly set up (has custom name, not default)
+    // Check if organization has been properly set up
+    // More lenient check - just needs to have an organization with a name
     const hasSetupOrganization = profile.organization_id && 
       organization?.name && 
-      !organization.name.includes("'s Organization");
+      organization.name.trim().length > 0;
 
     // Check if user has selected a plan (not on free plan)
     const { data: subscription } = await supabaseAdmin

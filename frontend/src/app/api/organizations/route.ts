@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
               name,
               created_at,
               owner_id,
-              organization_members!inner(user_id),
+              organization_members!inner(user_id, role),
               wallets(wallet_id, balance_cents, reserved_balance_cents)
             `)
             .eq('organization_members.user_id', user.id)
@@ -126,9 +126,17 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'Failed to fetch member organizations', details: memberResult.error.message }, { status: 500 });
         }
         
-        // Combine results
-        const ownedOrgs = ownedResult.data || [];
-        const memberOrgs = memberResult.data || [];
+        // Combine results and add role information
+        const ownedOrgs = (ownedResult.data || []).map(org => ({
+          ...org,
+          user_role: 'Owner' // User owns this organization
+        }));
+        
+        const memberOrgs = (memberResult.data || []).map(org => ({
+          ...org,
+          user_role: org.organization_members?.[0]?.role || 'Member' // Get role from membership
+        }));
+        
         organizations = [...ownedOrgs, ...memberOrgs];
     }
 
@@ -213,22 +221,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const { name } = await request.json();
+    const requestBody = await request.json();
+    console.log('📝 Received onboarding data:', requestBody);
+    const { name, industry, ad_spend_monthly, timezone, how_heard_about_us } = requestBody;
 
     if (!name) {
+      console.error('❌ Organization name is required');
       return NextResponse.json({ error: 'Organization name is required' }, { status: 400 });
     }
     
-    // Create the organization
+    // Create the organization with proper field names
+    const orgInsert: any = {
+      name: name, 
+      owner_id: user.id
+    };
+    
+    // Add optional fields if they exist
+    if (industry) orgInsert.industry = industry;
+    if (ad_spend_monthly) orgInsert.ad_spend_monthly = ad_spend_monthly;
+    if (timezone) orgInsert.timezone = timezone;
+    if (how_heard_about_us) orgInsert.how_heard_about_us = how_heard_about_us;
+
+    console.log('🏢 Creating organization with data:', orgInsert);
     const { data: newOrg, error: orgError } = await supabase
       .from('organizations')
-      .insert({ name: name, owner_id: user.id })
+      .insert(orgInsert)
       .select()
       .single();
 
-    if (orgError) throw orgError;
+    if (orgError) {
+      console.error('❌ Error creating organization:', orgError);
+      throw new Error(`Failed to create organization: ${orgError.message}`);
+    }
+    
+    console.log('✅ Organization created successfully:', newOrg);
 
     // Add the creator as an 'owner' in the members table
+    console.log('👥 Creating organization membership for user:', user.id, 'in org:', newOrg.organization_id);
     const { error: memberError } = await supabase
       .from('organization_members')
       .insert({
@@ -237,7 +266,70 @@ export async function POST(request: NextRequest) {
         role: 'owner',
       });
 
-    if (memberError) throw memberError;
+    if (memberError) {
+      console.error('❌ Error creating organization membership:', memberError);
+      throw new Error(`Failed to create organization membership: ${memberError.message}`);
+    }
+    
+    console.log('✅ Organization membership created successfully');
+
+    // Create profile for the user if it doesn't exist
+    console.log('👤 Checking for existing profile for user:', user.id);
+    const { data: existingProfile, error: profileCheckError } = await supabase
+      .from('profiles')
+      .select('profile_id')
+      .eq('profile_id', user.id)
+      .single();
+
+    if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+      // Error other than "no rows returned"
+      console.error('❌ Error checking existing profile:', profileCheckError);
+    }
+
+    if (!existingProfile) {
+      // Create new profile
+      console.log('👤 Creating new profile for user:', user.id);
+      const profileData = {
+        profile_id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+        organization_id: newOrg.organization_id
+      };
+      console.log('👤 Profile data:', profileData);
+      
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert(profileData);
+
+      if (profileError) {
+        console.error('❌ Error creating profile:', profileError);
+        // Don't fail the organization creation, but log the error
+      } else {
+        console.log('✅ Profile created successfully');
+      }
+    } else {
+      console.log('✅ Profile already exists');
+    }
+
+    // Create wallet for the organization
+    console.log('💰 Creating wallet for organization:', newOrg.organization_id);
+    const walletData = {
+      organization_id: newOrg.organization_id,
+      balance_cents: 0,
+      reserved_balance_cents: 0
+    };
+    console.log('💰 Wallet data:', walletData);
+    
+    const { error: walletError } = await supabase
+      .from('wallets')
+      .insert(walletData);
+
+    if (walletError) {
+      console.error('❌ Error creating wallet:', walletError);
+      // Don't fail the organization creation, but log the error
+    } else {
+      console.log('✅ Wallet created successfully');
+    }
 
     return NextResponse.json(newOrg);
   } catch (error) {

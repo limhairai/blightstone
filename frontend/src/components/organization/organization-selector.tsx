@@ -151,18 +151,32 @@ export function OrganizationSelector() {
   }, [currentOrganization, allBusinessManagers, currentOrganizationId, isBizLoading, bizData, allOrganizations]);
 
   const organizations: Organization[] = useMemo(() => {
-    return allOrganizations.map((org: any) => ({
-      id: org.id,
-      name: org.name,
-      avatar: org.avatar,
-      role: org.id === currentOrganizationId ? "Owner" : "Member",
-      // Use stored business count for non-current organizations
-      // Use live count only for current organization if we have the data
-      businessCount: org.id === currentOrganizationId && !isBizLoading && bizData
-        ? allBusinessManagers.length 
-        : org.business_count || 0
-    }))
-  }, [allOrganizations, currentOrganizationId, allBusinessManagers, isBizLoading, bizData])
+    return allOrganizations.map((org: any) => {
+      // Determine role based on actual ownership and membership data
+      let role = "Member"; // Default to member
+      
+      // Check if user is the owner
+      if (org.owner_id === user?.id) {
+        role = "Owner";
+      } else {
+        // Check organization membership for admin/member role
+        // This data should come from the API response
+        role = org.user_role || "Member";
+      }
+      
+      return {
+        id: org.id,
+        name: org.name,
+        avatar: org.avatar,
+        role: role,
+        // Use stored business count for non-current organizations
+        // Use live count only for current organization if we have the data
+        businessCount: org.id === currentOrganizationId && !isBizLoading && bizData
+          ? allBusinessManagers.length 
+          : org.business_count || 0
+      };
+    })
+  }, [allOrganizations, currentOrganizationId, allBusinessManagers, isBizLoading, bizData, user?.id])
 
   // Convert business managers to the format expected by the component
   const businessManagers: BusinessManager[] = useMemo(() => {
