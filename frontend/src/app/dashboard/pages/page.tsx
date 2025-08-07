@@ -207,62 +207,61 @@ export default function PagesPage() {
             </Button>
           </DialogTrigger>
           <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Facebook Page</DialogTitle>
-                <DialogDescription>
-                  Add a Facebook page that will be available for your ad account applications.
-                  {!pagination.canAddMore && (
-                    <span className="text-red-600 block mt-2">
-                      You've reached your plan limit. Upgrade to add more pages.
-                    </span>
-                  )}
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleAddPage} className="space-y-4">
-                <div>
-                  <Label htmlFor="facebook_page_id">Facebook Page ID *</Label>
-                  <Input
-                    id="facebook_page_id"
-                    value={newPageForm.facebook_page_id}
-                    onChange={(e) => setNewPageForm(prev => ({ ...prev, facebook_page_id: e.target.value }))}
-                    placeholder="123456789012345"
-                    required
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Find this in your Facebook page settings under "Page Info"
-                  </p>
-                </div>
-                <div>
-                  <Label htmlFor="page_name">Page Name *</Label>
-                  <Input
-                    id="page_name"
-                    value={newPageForm.page_name}
-                    onChange={(e) => setNewPageForm(prev => ({ ...prev, page_name: e.target.value }))}
-                    placeholder="Your Page Name"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="page_url">Page URL</Label>
-                  <Input
-                    id="page_url"
-                    value={newPageForm.page_url}
-                    onChange={(e) => setNewPageForm(prev => ({ ...prev, page_url: e.target.value }))}
-                    placeholder="https://facebook.com/yourpage"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddingPage(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    Add Page
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+            <DialogHeader>
+              <DialogTitle>Add Facebook Page</DialogTitle>
+              <DialogDescription>
+                Add a Facebook page that will be available for your ad account applications.
+                {!pagination.canAddMore && (
+                  <span className="text-red-600 block mt-2">
+                    You've reached your plan limit. Upgrade to add more pages.
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAddPage} className="space-y-4">
+              <div>
+                <Label htmlFor="facebook_page_id">Facebook Page ID *</Label>
+                <Input
+                  id="facebook_page_id"
+                  value={newPageForm.facebook_page_id}
+                  onChange={(e) => setNewPageForm(prev => ({ ...prev, facebook_page_id: e.target.value }))}
+                  placeholder="123456789012345"
+                  required
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Find this in your Facebook page settings under "Page Info"
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="page_name">Page Name *</Label>
+                <Input
+                  id="page_name"
+                  value={newPageForm.page_name}
+                  onChange={(e) => setNewPageForm(prev => ({ ...prev, page_name: e.target.value }))}
+                  placeholder="Your Page Name"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="page_url">Page URL</Label>
+                <Input
+                  id="page_url"
+                  value={newPageForm.page_url}
+                  onChange={(e) => setNewPageForm(prev => ({ ...prev, page_url: e.target.value }))}
+                  placeholder="https://facebook.com/yourpage"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button type="button" variant="outline" onClick={() => setIsAddingPage(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Add Page
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filters - matching ad accounts design */}
