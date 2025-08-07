@@ -67,6 +67,19 @@ export function OrganizationSelector() {
   // Get current organization directly from the dedicated hook instead of filtering all orgs
   const currentOrganization = currentOrgData?.organizations?.[0] || null;
 
+  // FIXED: Improved loading logic to prevent infinite loading states
+  const shouldShowLoading = componentIsLoading || (
+    // Show loading only if we're actively loading and don't have data yet
+    (isOrgLoading && !orgData) || 
+    // For current org, only show loading if we're loading AND we have a valid org ID
+    (isCurrentOrgLoading && !currentOrgData && currentOrganizationId) ||
+    // Business managers loading only if we have an org ID and are loading
+    (isBizLoading && !bizData && currentOrganizationId) ||
+    // Auth errors
+    hasAuthError || 
+    hasCurrentOrgAuthError
+  )
+
   // FIXED: Better fallback logic to prevent infinite loading
   const selectedOrg = useMemo<Organization>(() => {
     // If we have current organization data, use it
