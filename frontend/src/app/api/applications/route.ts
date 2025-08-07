@@ -104,6 +104,88 @@ async function checkPlanLimit(organizationId: string, limitType: 'businessManage
     return false;
 }
 
+// GET /api/applications
+// Fetch user's applications
+export async function GET(request: NextRequest) {
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                get(name: string) {
+                    return cookieStore.get(name)?.value;
+                },
+            },
+        }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get user's organization
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('profile_id', user.id)
+        .single();
+
+    if (!profile?.organization_id) {
+        return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
+    }
+
+    try {
+        // Fetch applications for user's organization
+        const { data: applications, error } = await supabase
+            .from('applications')
+            .select(`
+                application_id,
+                account_name,
+                website_url,
+                spend_limit,
+                status,
+                created_at,
+                updated_at,
+                rejection_reason,
+                businesses (
+                    business_id,
+                    name
+                )
+            `)
+            .eq('organization_id', profile.organization_id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching applications:', error);
+            return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 500 });
+        }
+
+        // Transform data to match frontend interface
+        const transformedApplications = (applications || []).map((app: any) => ({
+            id: app.application_id,
+            account_name: app.account_name,
+            website_url: app.website_url,
+            spend_limit: app.spend_limit,
+            status: app.status,
+            submitted_at: app.created_at,
+            reviewed_at: app.updated_at,
+            rejection_reason: app.rejection_reason,
+            businesses: app.businesses ? {
+                id: app.businesses.business_id,
+                name: app.businesses.name
+            } : null
+        }));
+
+        return NextResponse.json({ applications: transformedApplications });
+    } catch (error) {
+        console.error('Error in applications GET:', error);
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    }
+}
+
 // POST /api/applications
 // Creates a new application (business manager or ad account)
 export async function POST(request: NextRequest) {

@@ -131,9 +131,9 @@ export class GlobalDataPrefetcher {
   private async prefetchSettingsData() {
     try {
       // Subscription data
-      const subscriptionCacheKey = [`/api/subscriptions`, this.session.access_token]
+      const subscriptionCacheKey = [`/api/subscriptions/current`, this.session.access_token]
       await mutate(subscriptionCacheKey, () =>
-        authenticatedFetcher('/api/subscriptions', this.session.access_token),
+        authenticatedFetcher('/api/subscriptions/current', this.session.access_token),
         { revalidate: false }
       )
 
