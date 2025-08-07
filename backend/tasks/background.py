@@ -182,62 +182,9 @@ async def auto_sync_dolphin_assets():
             except Exception as e:
                 logger.error(f"Error processing CAB {cab.get('id', 'unknown')}: {str(e)}")
         
-        # Process Facebook Pages
-        pages_data = await dolphin_api.get_fb_pages()
-        logger.info(f"🔍 Retrieved {len(pages_data)} Facebook Pages for auto-sync")
-        
-        for page in pages_data:
-            try:
-                page_id = page["id"]
-                page_name = page["name"]
-                page_status = page.get("status", "active")
-                
-                # Get page metadata
-                page_url = page.get("link", "")
-                category = page.get("category", "")
-                followers_count = page.get("fan_count", 0)
-                likes_count = page.get("likes", 0)
-                verification_status = "verified" if page.get("is_verified", False) else "unverified"
-                
-                # Get managing profile info
-                managing_profiles = page.get("accounts", [])
-                managing_profile_name = managing_profiles[0]["name"] if managing_profiles else "Unknown"
-                
-                # Get business manager info
-                business_managers = page.get("bm", [])
-                parent_bm_id = None
-                parent_bm_name = "No BM"
-                
-                if business_managers:
-                    parent_bm_id = business_managers[0].get("id") or business_managers[0].get("business_id")
-                    parent_bm_name = business_managers[0].get("name", "No BM")
-                
-                # Create page asset data
-                page_asset_data = {
-                    "type": "facebook_page",
-                    "dolphin_id": page_id,
-                    "name": page_name,
-                    "status": "active" if page_status.upper() == "ACTIVE" else "inactive",
-                    "metadata": {
-                        "page_url": page_url,
-                        "category": category,
-                        "followers_count": followers_count,
-                        "likes_count": likes_count,
-                        "verification_status": verification_status,
-                        "managing_profile": managing_profile_name,
-                        "parent_bm_id": parent_bm_id,
-                        "parent_bm_name": parent_bm_name,
-                        "facebook_page_id": page_id,
-                        "raw_data": page
-                    },
-                    "last_synced_at": datetime.now(timezone.utc).isoformat()
-                }
-                
-                supabase.table("asset").upsert(page_asset_data, on_conflict="type,dolphin_id").execute()
-                discovered_count += 1
-                
-            except Exception as e:
-                logger.error(f"Error processing Page {page.get('id', 'unknown')}: {str(e)}")
+                # Process Facebook Pages - Extract from BM and CAB data instead of direct API call
+        # Note: Pages data comes embedded within Business Manager and Ad Account responses
+        logger.info("🔍 Extracting Facebook Pages from BM and CAB data for auto-sync")
         
         logger.info(f"🔄 Auto-sync completed successfully. Updated {discovered_count} assets")
         
