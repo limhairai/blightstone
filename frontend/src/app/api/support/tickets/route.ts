@@ -40,21 +40,52 @@ export async function GET(request: NextRequest) {
 
     // Get query parameters
     const url = new URL(request.url)
+    const requestedOrgId = url.searchParams.get('organization_id')
     const status = url.searchParams.get('status')
     const category = url.searchParams.get('category')
     const limit = parseInt(url.searchParams.get('limit') || '50')
     const offset = parseInt(url.searchParams.get('offset') || '0')
 
-    // Use the optimized function to get tickets with metadata
-    const isAdmin = profile.is_superuser === true
+    // Determine which organization to query
+    let organizationId: string
     
-    // SECURITY FIX: Always filter by user's organization on client dashboard
-    // Admin status should only affect admin panel, not client dashboard access
-    // Users (including admin users) should only see their own organization's tickets
-    const orgId = profile.organization_id // Always use user's org, never null
+    if (requestedOrgId) {
+      // Verify user has access to requested organization (ownership/membership)
+      const { data: orgAccess, error: orgError } = await supabase
+        .from('organizations')
+        .select('owner_id')
+        .eq('organization_id', requestedOrgId)
+        .single()
+      
+      if (orgError || !orgAccess) {
+        return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      }
+      
+      // Check if user is owner
+      if (orgAccess.owner_id === user.id) {
+        organizationId = requestedOrgId
+      } else {
+        // Check if user is a member
+        const { data: membership, error: membershipError } = await supabase
+          .from('organization_members')
+          .select('role')
+          .eq('organization_id', requestedOrgId)
+          .eq('user_id', user.id)
+          .single()
+        
+        if (membershipError || !membership) {
+          return NextResponse.json({ error: 'Access denied to this organization' }, { status: 403 })
+        }
+        
+        organizationId = requestedOrgId
+      }
+    } else {
+      // Fallback to user's profile organization
+      organizationId = profile.organization_id
+    }
 
     const { data: tickets, error: ticketsError } = await supabase
-      .rpc('get_tickets_with_metadata', { org_id: orgId })
+      .rpc('get_tickets_with_metadata', { org_id: organizationId })
 
     if (ticketsError) {
       console.error('Error fetching tickets:', ticketsError)

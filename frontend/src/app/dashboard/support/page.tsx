@@ -59,15 +59,16 @@ export default function SupportPage() {
   // Build query parameters
   const queryParams = useMemo(() => {
       const params = new URLSearchParams()
+      if (currentOrganizationId) params.append('organization_id', currentOrganizationId)
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter)
       if (categoryFilter && categoryFilter !== 'all') params.append('category', categoryFilter)
     if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
     return params.toString()
-  }, [statusFilter, categoryFilter, debouncedSearchQuery])
+  }, [currentOrganizationId, statusFilter, categoryFilter, debouncedSearchQuery])
 
   // ⚡ INSTANT LOADING: Use prefetched data for 0ms page load
   const { data: ticketsData, error, isLoading, mutate } = useSWR(
-    session?.access_token ? [`/api/support/tickets?${queryParams}`, session.access_token] : null,
+    session?.access_token && currentOrganizationId ? [`/api/support/tickets?${queryParams}`, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: true, // ✅ Refresh when returning to support page
