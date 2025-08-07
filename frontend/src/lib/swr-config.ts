@@ -333,4 +333,24 @@ export function usePages(organizationId?: string | null) {
       dedupingInterval: 60000, // 1 minute
     }
   )
+}
+
+export function usePageRequests(organizationId?: string | null) {
+  const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  
+  const orgId = organizationId || currentOrganizationId
+  const shouldFetch = !!session?.access_token && !!orgId
+  
+  const url = shouldFetch ? `/api/page-requests?organization_id=${orgId}` : null
+  
+  return useSWR(
+    url ? [url, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      refreshInterval: 30000, // 30 seconds for requests
+    }
+  )
 } 

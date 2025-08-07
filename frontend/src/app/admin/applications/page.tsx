@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus, History, Globe } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, RefreshCw, Building2, Plus, History, Globe, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { ApplicationAssetBindingDialog } from "@/components/admin/application-asset-binding-dialog";
@@ -37,6 +37,7 @@ interface ApplicationWithDetails extends Application {
   targetBmDolphinId?: string;
   websiteUrl: string;
   domains?: string[]; // Add domains array
+  pagesToCreate?: Array<{ name: string }>; // Add pages to create array
   pixelId?: string;
   pixelName?: string;
   approvedBy?: string;
@@ -559,6 +560,17 @@ export default function AdminApplicationsPage() {
                                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                       <Globe className="h-3 w-3" />
                                       <span className="truncate">{application.websiteUrl}</span>
+                                    </div>
+                                  )}
+                                  {application.pagesToCreate && application.pagesToCreate.length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-muted">
+                                      <div className="text-xs text-muted-foreground mb-1">Pages to create:</div>
+                                      {application.pagesToCreate.map((page: any, index: number) => (
+                                        <div key={index} className="flex items-center gap-1 text-xs text-blue-600">
+                                          <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                          <span className="truncate">{page.name}</span>
+                                        </div>
+                                      ))}
                                     </div>
                                   )}
                                 </>

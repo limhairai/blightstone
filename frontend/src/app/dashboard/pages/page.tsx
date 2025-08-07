@@ -28,6 +28,7 @@ import {
   Search,
   HelpCircle
 } from 'lucide-react'
+import { RequestPageDialog } from '@/components/pages/request-page-dialog'
 import { toast } from 'sonner'
 
 interface FacebookPage {
@@ -200,6 +201,8 @@ export default function PagesPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <RequestPageDialog />
+          
           <Dialog open={showHowToDialog} onOpenChange={setShowHowToDialog}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
