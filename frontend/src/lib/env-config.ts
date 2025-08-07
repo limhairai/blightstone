@@ -17,7 +17,7 @@ function getBaseUrl(): string {
   
   // 2. Production URL
   if (IS_PRODUCTION) {
-    return 'https://adhub.com'
+    return 'https://adhub.tech'
   }
   
   // 3. Staging URL
@@ -37,7 +37,7 @@ function getApiUrl(): string {
   
   // 2. Production API URL
   if (IS_PRODUCTION) {
-    return 'https://api.adhub.com'
+    return 'https://api.adhub.tech'
   }
   
   // 3. Staging API URL
@@ -69,7 +69,7 @@ export const ENV_CONFIG = {
   WS_URL: getApiUrl().replace('http', 'ws'),
   
   // Domain for cookies
-  DOMAIN: IS_PRODUCTION ? 'adhub.com' : (IS_STAGING ? 'staging.adhub.tech' : 'localhost'),
+  DOMAIN: IS_PRODUCTION ? 'adhub.tech' : (IS_STAGING ? 'staging.adhub.tech' : 'localhost'),
   
   // Feature flags
   ENABLE_DEBUG: process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true' || IS_DEVELOPMENT,
