@@ -25,7 +25,8 @@ import {
   Loader2,
   RefreshCw,
   Info,
-  Search
+  Search,
+  HelpCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -56,12 +57,39 @@ interface PagesResponse {
   }
 }
 
+// Helper functions
+const getVerificationIcon = (status: string) => {
+  switch (status) {
+    case 'verified':
+      return <Verified className="h-4 w-4 text-blue-500" />
+    case 'pending':
+      return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
+    default:
+      return <AlertCircle className="h-4 w-4 text-gray-400" />
+  }
+}
+
+const getStatusBadge = (status: string) => {
+  const variants = {
+    active: 'bg-green-100 text-green-800',
+    inactive: 'bg-gray-100 text-gray-800',
+    suspended: 'bg-red-100 text-red-800'
+  }
+  
+  return (
+    <Badge className={variants[status as keyof typeof variants] || variants.inactive}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </Badge>
+  )
+}
+
 export default function PagesPage() {
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [isAddingPage, setIsAddingPage] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [showHowToDialog, setShowHowToDialog] = useState(false)
   const [newPageForm, setNewPageForm] = useState({
     facebook_page_id: '',
     page_name: '',
@@ -123,31 +151,6 @@ export default function PagesPage() {
     }
   }
 
-  const getVerificationIcon = (status: string) => {
-    switch (status) {
-      case 'verified':
-        return <Verified className="h-4 w-4 text-blue-500" />
-      case 'pending':
-        return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-gray-400" />
-    }
-  }
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      active: 'bg-green-100 text-green-800',
-      inactive: 'bg-gray-100 text-gray-800',
-      suspended: 'bg-red-100 text-red-800'
-    }
-    
-    return (
-      <Badge className={variants[status as keyof typeof variants] || variants.inactive}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Badge>
-    )
-  }
-
   // Filter pages based on search and status
   const filteredPages = useMemo(() => {
     let filtered = pages
@@ -196,16 +199,53 @@ export default function PagesPage() {
           </div>
         </div>
 
-        <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
-          <DialogTrigger asChild>
-            <Button 
-              disabled={!pagination.canAddMore}
-              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2">
+          <Dialog open={showHowToDialog} onOpenChange={setShowHowToDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                How to
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>How to Add Facebook Pages</DialogTitle>
+                <DialogDescription>
+                  Two ways to add pages to your Business Manager
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-sm mb-2">New BM Applications</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Specify pages during BM application - we'll create them for you automatically.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm mb-2">Existing Business Managers</h4>
+                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                    <li>Go to Facebook Business Settings</li>
+                    <li>Find "Pages" in the left menu</li>
+                    <li>Click "Add" → "Request access to a Page"</li>
+                    <li>Enter your BM ID (from Business Managers list)</li>
+                    <li>Select "Partial access (business tools only)"</li>
+                    <li>Choose needed permissions (Content, Ads, etc.)</li>
+                  </ol>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
+            <DialogTrigger asChild>
+              <Button 
+                disabled={!pagination.canAddMore}
+                className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Facebook Page</DialogTitle>

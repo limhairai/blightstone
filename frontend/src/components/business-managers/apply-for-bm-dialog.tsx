@@ -22,8 +22,9 @@ import { normalizeDomain, isValidDomain, hasDuplicateDomains, removeDuplicateDom
 // import { refreshAfterBusinessManagerChange } from "@/lib/subscription-utils" // File not found
 import { useOrganizationStore } from "@/lib/stores/organization-store"
 import { mutate } from 'swr'
-import { getPlanPricing } from '@/lib/config/pricing-config'
+import { getPlanPricing, getPageLimit } from '@/lib/config/pricing-config'
 import { invalidateAssetCache } from '@/lib/cache-invalidation'
+// import { PageSelector } from '@/components/pages/page-selector' // Removed - using new page creation flow
 
 interface ApplyForBmDialogProps {
   children: React.ReactNode
@@ -74,10 +75,11 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const canAddMoreBMs = checkLimit('businessManagers', currentBMCount)
   const hasReachedBMLimit = !canAddMoreBMs && !isOnFreePlan
 
-  // Get domain limits from pricing config
+  // Get domain and page limits from pricing config
   const planId = currentPlan?.id as 'starter' | 'growth' | 'scale'
   const planLimits = getPlanPricing(planId)
   const maxDomainsPerBm = planLimits?.domainsPerBm || 2
+  const maxPagesPerBm = getPageLimit(planId) || 3
 
   // Domain management functions
   const addDomainField = () => {
@@ -105,6 +107,32 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
     }))
   }
 
+  // Page management functions
+  const addPageField = () => {
+    if (formData.pages.length < maxPagesPerBm) {
+      setFormData(prev => ({
+        ...prev,
+        pages: [...prev.pages, { name: "" }]
+      }))
+    }
+  }
+
+  const removePageField = (index: number) => {
+    if (formData.pages.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        pages: prev.pages.filter((_, i) => i !== index)
+      }))
+    }
+  }
+
+  const updatePageName = (index: number, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      pages: prev.pages.map((page, i) => i === index ? { name: value } : page)
+    }))
+  }
+
   // Domain validation with normalization
   const validateDomainInput = (input: string) => {
     if (!input.trim()) return { isValid: false, error: 'Domain cannot be empty' }
@@ -119,11 +147,13 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
 
   const [formData, setFormData] = useState({
     domains: [""] as string[], // Array of domains based on plan limits
+    pages: [{ name: "" }] as { name: string }[], // Array of pages to create
   })
 
   const resetForm = () => {
     setFormData({
       domains: [""],
+      pages: [{ name: "" }],
     })
   }
 
@@ -152,6 +182,13 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
     const validDomains = formData.domains.filter(domain => domain.trim())
     if (validDomains.length === 0) {
       toast.error('At least one domain is required');
+      return;
+    }
+
+    // Validate pages
+    const validPages = formData.pages.filter(page => page.name.trim())
+    if (validPages.length === 0) {
+      toast.error('At least one Facebook page name is required');
       return;
     }
 
@@ -221,6 +258,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
           type: 'business_manager',
           website_url: processedDomains[0], // Use first normalized domain as primary website
           domains: processedDomains, // Include the normalized domains
+          pages_to_create: validPages.map(page => ({ name: page.name.trim() })), // Pages to create
         }),
       })
 
@@ -354,6 +392,59 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
             </p>
           </div>
 
+          {/* Facebook Pages to Create */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground">
+                Pages for this Business Manager ({formData.pages.filter(p => p.name.trim()).length}/{maxPagesPerBm})
+              </Label>
+              {formData.pages.length < maxPagesPerBm && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addPageField}
+                  className="h-8 px-2 text-xs"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Page
+                </Button>
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              {formData.pages.map((page, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Input
+                      type="text"
+                      value={page.name}
+                      onChange={(e) => updatePageName(index, e.target.value)}
+                      placeholder={`Facebook Page ${index + 1} name`}
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground"
+                      required={index === 0} // First page is required
+                    />
+                  </div>
+                  {formData.pages.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePageField(index)}
+                      className="h-10 px-2 text-red-500 hover:text-red-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+            
+            <p className="text-xs text-muted-foreground">
+              We'll create these Facebook pages for you once your Business Manager is approved. Your {planId || 'current'} plan allows up to {maxPagesPerBm} pages per BM.
+            </p>
+          </div>
+
           {(isOnFreePlan || !canRequestAssets || hasReachedBMLimit) ? (
             <div className="bg-muted/50 p-4 rounded-lg border border-border">
               <h4 className="text-sm font-medium text-foreground mb-2">
@@ -371,8 +462,9 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
               <h4 className="text-sm font-medium text-foreground mb-2">What happens next?</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
                 <li>• Your application will be reviewed within 1-3 business days</li>
-                <li>• Once approved, you&apos;ll receive your Business Manager ID</li>
-                <li>• You can manage up to {maxDomainsPerBm} domains per Business Manager</li>
+                <li>• Once approved, we&apos;ll create your Business Manager and Facebook pages</li>
+                <li>• You&apos;ll receive your Business Manager ID for manual sharing</li>
+                <li>• Your new Facebook pages will be automatically linked to your BM</li>
                 <li>• You can then start creating ad accounts and campaigns</li>
               </ul>
             </div>

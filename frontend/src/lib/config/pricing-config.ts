@@ -19,6 +19,7 @@ export interface PricingConfig {
         adAccounts: number;
         pixels: number;
         domainsPerBm: number;
+        pagesPerBm: number;
         adSpendFee: number;
         spendFeeCap: number;
         monthlyTopupLimit: number;
@@ -31,6 +32,7 @@ export interface PricingConfig {
         adAccounts: number;
         pixels: number;
         domainsPerBm: number;
+        pagesPerBm: number;
         adSpendFee: number;
         spendFeeCap: number;
         monthlyTopupLimit: number;
@@ -43,6 +45,7 @@ export interface PricingConfig {
         adAccounts: number;
         pixels: number;
         domainsPerBm: number;
+        pagesPerBm: number;
         adSpendFee: number;
         spendFeeCap: number;
         monthlyTopupLimit: number;
@@ -74,6 +77,7 @@ export const PRICING_CONFIG: PricingConfig = {
         adAccounts: 3,
         pixels: 0, // No pixel limits
         domainsPerBm: 2, // 2 promotion URLs (domains) per BM
+        pagesPerBm: 3, // 3 Facebook pages per BM
         adSpendFee: 1.25, // 1.25% of top-ups
         spendFeeCap: 149, // Fee line caps at $149
         monthlyTopupLimit: 15000, // Monthly spend allowance $15,000
@@ -86,6 +90,7 @@ export const PRICING_CONFIG: PricingConfig = {
         adAccounts: 10,
         pixels: 0, // No pixel limits
         domainsPerBm: 3, // 3 domains per BM
+        pagesPerBm: 5, // 5 Facebook pages per BM
         adSpendFee: 1.0, // 1.00% spend fee
         spendFeeCap: 449, // Caps at $449
         monthlyTopupLimit: 60000, // Monthly spend allowance $60,000
@@ -98,6 +103,7 @@ export const PRICING_CONFIG: PricingConfig = {
         adAccounts: 20,
         pixels: 0, // No pixel limits
         domainsPerBm: 5, // 5 domains per BM
+        pagesPerBm: 10, // 10 Facebook pages per BM
         adSpendFee: 0.5, // 0.50% spend fee
         spendFeeCap: 1499, // Caps at $1,499
         monthlyTopupLimit: 300000, // Monthly spend allowance $300,000
@@ -157,6 +163,14 @@ export const getActiveAdAccountLimit = (planId: 'starter' | 'growth' | 'scale') 
 export const getDomainLimit = (planId: 'starter' | 'growth' | 'scale') => {
   if (shouldEnableDomainLimits() && isNewPricingEnabled()) {
     return PRICING_CONFIG.newPricingModel.plans[planId].domainsPerBm;
+  }
+  return null;
+};
+
+// Get page limit per BM for a plan
+export const getPageLimit = (planId: 'starter' | 'growth' | 'scale') => {
+  if (isNewPricingEnabled()) {
+    return PRICING_CONFIG.newPricingModel.plans[planId].pagesPerBm;
   }
   return null;
 };
