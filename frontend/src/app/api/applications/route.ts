@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
     try {
         // Fetch applications for user's organization
         const { data: applications, error } = await supabase
-            .from('applications')
+            .from('application')
             .select(`
                 application_id,
                 account_name,

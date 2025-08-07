@@ -34,6 +34,7 @@ interface BusinessManager {
 }
 
 export function OrganizationSelector() {
+  // ⚡ ALL HOOKS MUST BE CALLED FIRST - BEFORE ANY CONDITIONAL LOGIC OR EARLY RETURNS
   const { theme } = useTheme()
   const router = useRouter()
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore()
@@ -42,9 +43,13 @@ export function OrganizationSelector() {
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
   const [componentIsLoading, setComponentIsLoading] = useState(false)
-
-  // 🔒 SECURITY: Admins can access their own client dashboard
-  // No redirect needed - data isolation ensures admins only see their own organizations
+  const [searchQuery, setSearchQuery] = useState("")
+  const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  
+  // Use refs to manage hover delays
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // 🚀 PERFORMANCE: Consolidated data fetching with better caching
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations() // For dropdown list
@@ -59,29 +64,6 @@ export function OrganizationSelector() {
   const hasAuthError = orgError && (orgError.message.includes('401') || orgError.message.includes('403'))
   const hasCurrentOrgAuthError = currentOrgError && (currentOrgError.message.includes('401') || currentOrgError.message.includes('403'))
   
-  // 🔒 SECURITY: Show loading while checking admin status
-  if (separationLoading) {
-    return (
-      <div className="flex items-center space-x-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-sm text-muted-foreground">Loading...</span>
-      </div>
-    )
-  }
-
-  // FIXED: Improved loading logic to prevent infinite loading states
-  const shouldShowLoading = componentIsLoading || (
-    // Show loading only if we're actively loading and don't have data yet
-    (isOrgLoading && !orgData) || 
-    // For current org, only show loading if we're loading AND we have a valid org ID
-    (isCurrentOrgLoading && !currentOrgData && currentOrganizationId) ||
-    // Business managers loading only if we have an org ID and are loading
-    (isBizLoading && !bizData && currentOrganizationId) ||
-    // Auth errors
-    hasAuthError || 
-    hasCurrentOrgAuthError
-  )
-
   // Get current organization directly from the dedicated hook instead of filtering all orgs
   const currentOrganization = currentOrgData?.organizations?.[0] || null;
 
@@ -153,15 +135,7 @@ export function OrganizationSelector() {
       role: "None",
       businessCount: 0,
     };
-  }, [currentOrganization, allBusinessManagers, currentOrganizationId, shouldShowLoading, isBizLoading, bizData, allOrganizations]);
-
-  const [searchQuery, setSearchQuery] = useState("")
-  const [hoveredOrgId, setHoveredOrgId] = useState<string | null>(null)
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  
-  // Use refs to manage hover delays
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  }, [currentOrganization, allBusinessManagers, currentOrganizationId, isBizLoading, bizData, allOrganizations]);
 
   const organizations: Organization[] = useMemo(() => {
     return allOrganizations.map((org: any) => ({
