@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { authenticatedFetcher } from '@/lib/swr-config'
@@ -24,7 +24,8 @@ import {
   FileText,
   Loader2,
   RefreshCw,
-  Info
+  Info,
+  Search
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -59,6 +60,8 @@ export default function PagesPage() {
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
   const [isAddingPage, setIsAddingPage] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
   const [newPageForm, setNewPageForm] = useState({
     facebook_page_id: '',
     page_name: '',
@@ -145,15 +148,35 @@ export default function PagesPage() {
     )
   }
 
+  // Filter pages based on search and status
+  const filteredPages = useMemo(() => {
+    let filtered = pages
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (page) =>
+          page.page_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          page.facebook_page_id.includes(searchQuery) ||
+          (page.bm_name && page.bm_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (page.bm_id && page.bm_id.includes(searchQuery))
+      )
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(page => page.status === statusFilter)
+    }
+
+    return filtered
+  }, [pages, searchQuery, statusFilter])
+
   // Calculate metrics
   const activePages = pages.filter(page => page.status === 'active').length
   const verifiedPages = pages.filter(page => page.verification_status === 'verified').length
 
   return (
     <div className="space-y-6">
-      {/* Header with Metrics */}
+      {/* Header - matching ad accounts design */}
       <div className="flex items-center justify-between">
-        {/* Left: Metrics */}
         <div className="flex items-start gap-12 text-sm">
           <div className="flex flex-col">
             <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
@@ -173,15 +196,16 @@ export default function PagesPage() {
           </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2">
-          <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
-            <DialogTrigger asChild>
-              <Button disabled={!pagination.canAddMore}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Page
-              </Button>
-            </DialogTrigger>
+        <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
+          <DialogTrigger asChild>
+            <Button 
+              disabled={!pagination.canAddMore}
+              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add
+            </Button>
+          </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Facebook Page</DialogTitle>
@@ -238,16 +262,54 @@ export default function PagesPage() {
               </form>
             </DialogContent>
           </Dialog>
-          <Button
-            onClick={handleRefresh}
-            disabled={isLoading}
-            variant="outline"
-            size="sm"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
         </div>
+      </div>
+
+      {/* Search and Filters - matching ad accounts design */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search pages, page IDs, or business managers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-9 bg-background border-border text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[140px] h-9 bg-background border-border text-foreground">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+              All Status
+            </SelectItem>
+            <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+              Active
+            </SelectItem>
+            <SelectItem value="inactive" className="text-popover-foreground hover:bg-accent">
+              Inactive
+            </SelectItem>
+            <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
+              Suspended
+            </SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Refresh Button */}
+        <Button
+          onClick={handleRefresh}
+          disabled={isLoading}
+          variant="outline"
+          size="sm"
+          className="h-9"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Page limit warnings */}
@@ -287,16 +349,21 @@ export default function PagesPage() {
 
         {/* Table Body */}
         <div className="divide-y divide-border">
-          {pages.length === 0 ? (
+          {filteredPages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16">
               <FileText className="h-8 w-8 text-muted-foreground mb-3" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No Facebook pages found</h3>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                {searchQuery || statusFilter !== "all" ? "No pages match your filters" : "No Facebook pages found"}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                Add your first Facebook page to get started
+                {searchQuery || statusFilter !== "all" 
+                  ? "Try adjusting your search or filter criteria" 
+                  : "Add your first Facebook page to get started"
+                }
               </p>
             </div>
           ) : (
-            pages.map((page) => (
+            filteredPages.map((page) => (
               <div
                 key={page.page_id}
                 className="grid gap-4 px-6 py-5 hover:bg-muted/50 transition-colors group cursor-pointer border-b border-border"
@@ -381,6 +448,11 @@ export default function PagesPage() {
             ))
           )}
         </div>
+      </div>
+
+      {/* Results count - matching ad accounts */}
+      <div className="text-xs text-muted-foreground">
+        Showing {filteredPages.length} of {pages.length} pages
       </div>
 
       {/* Upgrade prompt if at limit */}
