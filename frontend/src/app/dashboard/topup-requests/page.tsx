@@ -108,7 +108,7 @@ export default function ClientTopupRequestsPage() {
   const { data: requestsData, error: requestsError, isLoading: requestsLoading, mutate: mutateRequests } = useTopupRequests()
   const requests: TopupRequest[] = shouldLoadTopupRequests ? (Array.isArray(requestsData) ? requestsData : requestsData?.requests || []) : []
   
-  const transactionsQuery = useTransactions({
+  const transactionsQuery = useTransactions(currentOrganizationId, {
     type: shouldLoadTransactions && transactionTypeFilter !== 'all' ? transactionTypeFilter : undefined,
     search: shouldLoadTransactions && debouncedSearchQuery ? debouncedSearchQuery : undefined,
     status: shouldLoadTransactions && statusFilter !== 'all' ? statusFilter : undefined,

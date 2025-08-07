@@ -22,7 +22,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
 
   // Use optimized hooks instead of direct SWR calls
   const { data, error, isLoading } = useCurrentOrganization(currentOrganizationId);
-  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions({});
+  const { data: transactionsData, isLoading: transactionsLoading } = useTransactions(currentOrganizationId, {});
 
   const organization = data?.organizations?.[0];
   const totalBalance = (organization?.balance_cents ?? 0) / 100;
