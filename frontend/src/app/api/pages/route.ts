@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       organizationId = profile.organization_id
     }
 
-    // Fetch pages for the organization with BM information
+    // First, fetch pages for the organization
     const { data: pages, error: pagesError } = await supabaseAdmin
       .from('pages')
       .select(`
@@ -93,14 +93,7 @@ export async function GET(request: NextRequest) {
         followers_count,
         likes_count,
         created_at,
-        updated_at,
-        bm_pages!left (
-          business_manager_id,
-          asset!inner (
-            name,
-            dolphin_business_manager_id
-          )
-        )
+        updated_at
       `)
       .eq('organization_id', organizationId)
       .order('created_at', { ascending: false })
@@ -109,6 +102,33 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching pages:', pagesError)
       return NextResponse.json({ error: 'Failed to fetch pages' }, { status: 500 })
     }
+
+    // Then fetch BM information for each page separately
+    const pagesWithBMInfo = await Promise.all(
+      (pages || []).map(async (page: any) => {
+        // Get BM info from bm_pages and asset tables
+        const { data: bmData } = await supabaseAdmin
+          .from('bm_pages')
+          .select(`
+            business_manager_id,
+            asset!inner (
+              name,
+              dolphin_business_manager_id
+            )
+          `)
+          .eq('page_id', page.page_id)
+          .eq('asset.organization_id', organizationId)
+          .eq('asset.type', 'business_manager')
+          .single()
+
+        return {
+          ...page,
+          bm_name: bmData?.asset?.name || null,
+          bm_id: bmData?.asset?.dolphin_business_manager_id || null,
+          business_manager_id: bmData?.business_manager_id || null
+        }
+      })
+    )
 
     // Get plan limits for the organization
     const { data: orgData, error: orgError } = await supabaseAdmin
@@ -126,23 +146,10 @@ export async function GET(request: NextRequest) {
     }
 
     const pageLimit = planLimits[planId as keyof typeof planLimits] || 1
-    const currentCount = pages?.length || 0
-
-    // Process pages to include BM information
-    const processedPages = pages?.map((page: any) => {
-      const bmInfo = page.bm_pages?.[0]
-      return {
-        ...page,
-        bm_name: bmInfo?.asset?.name || null,
-        bm_id: bmInfo?.asset?.dolphin_business_manager_id || null,
-        business_manager_id: bmInfo?.business_manager_id || null,
-        // Remove the nested bm_pages object
-        bm_pages: undefined
-      }
-    }) || []
+    const currentCount = pagesWithBMInfo?.length || 0
 
     return NextResponse.json({
-      pages: processedPages,
+      pages: pagesWithBMInfo || [],
       pagination: {
         total: currentCount,
         limit: pageLimit,

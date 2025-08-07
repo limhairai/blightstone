@@ -21,7 +21,7 @@ import {
   Heart, 
   Verified, 
   AlertCircle,
-  Facebook,
+  FileText,
   Loader2,
   RefreshCw,
   Info
@@ -291,7 +291,7 @@ export default function PagesPage() {
       {/* Pages Table */}
       {pages.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12">
-          <Facebook className="h-8 w-8 text-muted-foreground mb-3" />
+          <FileText className="h-8 w-8 text-muted-foreground mb-3" />
           <h3 className="text-lg font-medium text-foreground mb-2">No Facebook pages found</h3>
           <p className="text-sm text-muted-foreground">
             Add your first Facebook page to get started
@@ -315,8 +315,8 @@ export default function PagesPage() {
                 <TableRow key={page.page_id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#1877f2]/20 to-[#42a5f5]/20 flex items-center justify-center">
-                        <Facebook className="h-4 w-4 text-[#1877f2]" />
+                      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20 flex items-center justify-center">
+                        <FileText className="h-4 w-4 text-[#8b5cf6]" />
                       </div>
                       <div>
                         <div className="font-medium text-foreground flex items-center gap-2">
