@@ -159,31 +159,8 @@ CREATE POLICY "Admins can manage topup requests via admin endpoints only" ON pub
 -- ============================================================================
 -- SUPPORT_TICKETS TABLE POLICIES - Remove Admin Bypass
 -- ============================================================================
-
--- Drop existing policies  
-DROP POLICY IF EXISTS "Users can view their organization's support tickets" ON public.support_tickets;
-DROP POLICY IF EXISTS "Admins can manage all support tickets" ON public.support_tickets;
-
--- Create user-only support tickets policy
-CREATE POLICY "Users can view their organization's support tickets" ON public.support_tickets
-    FOR SELECT USING (
-        organization_id IN (
-            SELECT organization_id FROM public.organizations 
-            WHERE owner_id = auth.uid()
-            UNION
-            SELECT organization_id FROM public.organization_members 
-            WHERE user_id = auth.uid()
-        )
-    );
-
--- Admin policy for support tickets (admin endpoints only)
-CREATE POLICY "Admins can manage support tickets via admin endpoints only" ON public.support_tickets
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE profile_id = auth.uid() AND is_superuser = true
-        )
-    );
+-- NOTE: Support tickets table is created in a later migration (20250120000034_create_support_system.sql)
+-- The policies for support_tickets will be handled in that migration file.
 
 -- ============================================================================
 -- COMMENT: Security Audit Trail

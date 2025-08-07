@@ -217,9 +217,9 @@ export default function OnboardingPage() {
         throw new Error('Authentication required')
       }
 
-      // Update organization with collected information
+      // Create organization with collected information
       const response = await fetch('/api/organizations', {
-        method: 'PATCH',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

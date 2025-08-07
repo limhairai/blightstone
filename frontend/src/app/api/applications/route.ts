@@ -4,6 +4,57 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { getPlanPricing } from '@/lib/config/pricing-config';
 
+// Helper function to associate pages with an application
+async function associatePagesWithApplication(
+    supabaseService: any,
+    applicationId: string,
+    pageIds: string[],
+    organizationId: string
+): Promise<boolean> {
+    if (!pageIds || pageIds.length === 0) {
+        return true; // No pages to associate
+    }
+
+    try {
+        // First, verify that all page IDs belong to the organization
+        const { data: pages, error: pagesError } = await supabaseService
+            .from('pages')
+            .select('page_id')
+            .eq('organization_id', organizationId)
+            .in('page_id', pageIds);
+
+        if (pagesError) {
+            console.error('Error verifying pages:', pagesError);
+            return false;
+        }
+
+        if (!pages || pages.length !== pageIds.length) {
+            console.error('Some pages do not belong to the organization');
+            return false;
+        }
+
+        // Create application_pages associations
+        const applicationPages = pageIds.map(pageId => ({
+            application_id: applicationId,
+            page_id: pageId
+        }));
+
+        const { error: associationError } = await supabaseService
+            .from('application_pages')
+            .insert(applicationPages);
+
+        if (associationError) {
+            console.error('Error creating page associations:', associationError);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error in associatePagesWithApplication:', error);
+        return false;
+    }
+}
+
 // Helper function to check plan limits using pricing config
 async function checkPlanLimit(organizationId: string, limitType: 'businessManagers' | 'adAccounts' | 'pixels'): Promise<boolean> {
     const supabaseService = createClient(
@@ -211,7 +262,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { type, business_manager_id, timezone, website_url, pixel_id, pixel_name, target_bm_dolphin_id, domains } = await request.json();
+        const { type, business_manager_id, timezone, website_url, pixel_id, pixel_name, target_bm_dolphin_id, domains, page_ids, pages_to_create } = await request.json();
 
         if (!type) {
             return NextResponse.json({ error: 'Application type is required.' }, { status: 400 });
@@ -463,6 +514,21 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ error: 'Failed to create ad account application.' }, { status: 500 });
             }
 
+            // Associate pages with the application
+            if (page_ids && page_ids.length > 0) {
+                const pagesAssociated = await associatePagesWithApplication(
+                    supabaseService,
+                    data.application_id,
+                    page_ids,
+                    organization_id
+                );
+
+                if (!pagesAssociated) {
+                    console.warn('Failed to associate pages with ad account application');
+                    // Don't fail the application creation, but log the warning
+                }
+            }
+
             return NextResponse.json({ success: true, application: data });
 
         } else if (type === 'business_manager') {
@@ -534,7 +600,8 @@ export async function POST(request: NextRequest) {
                     organization_id,
                     request_type: 'new_business_manager',
                     status: 'pending',
-                    domains: domains || [] // Store domains array for later processing
+                    domains: domains || [], // Store domains array for later processing
+                    pages_to_create: pages_to_create || [] // Store pages to create for later processing
                 })
                 .select()
                 .single();
@@ -558,6 +625,9 @@ export async function POST(request: NextRequest) {
                 // Don't fail the application creation, but log the error
                 console.warn('Business manager application created but promotion URL tracking failed');
             }
+
+            // Note: Pages will be created by admin when processing the application
+            // The pages_to_create data is stored in the application record
 
             return NextResponse.json({ success: true, application: data });
 

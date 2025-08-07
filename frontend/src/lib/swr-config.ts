@@ -312,4 +312,25 @@ export function useDashboardData(organizationId: string | null) {
     adAccountsError: adAccounts.error,
     transactionsError: transactions.error,
   }
+}
+
+// Pages hook
+export function usePages(organizationId?: string | null) {
+  const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  
+  const orgId = organizationId || currentOrganizationId
+  const shouldFetch = !!session?.access_token && !!orgId
+  
+  const url = shouldFetch ? `/api/pages?organization_id=${orgId}` : null
+  
+  return useSWR(
+    url ? [url, session.access_token] : null,
+    ([url, token]) => authenticatedFetcher(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000, // 1 minute
+    }
+  )
 } 

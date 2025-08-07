@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Loader2, RefreshCw, ExternalLink, AlertCircle, Activity, Users, Building, Search, Link as LinkIcon, ChevronDown } from 'lucide-react'
+import { Loader2, RefreshCw, ExternalLink, AlertCircle, Activity, Users, Building, Search, Link as LinkIcon, ChevronDown, FileText, Verified } from 'lucide-react'
 import { TableSkeleton } from '@/components/ui/skeleton'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/contexts/AuthContext'
@@ -32,6 +32,7 @@ interface AssetStats {
   business_managers: number
   ad_accounts: number
   pixels: number
+  facebook_pages: number
 }
 
 
@@ -197,7 +198,8 @@ export default function AssetsPage() {
     profiles: assets.filter(a => a.type === 'profile').length,
     business_managers: assets.filter(a => a.type === 'business_manager').length,
     ad_accounts: assets.filter(a => a.type === 'ad_account').length,
-    pixels: pixels.length
+    pixels: pixels.length,
+    facebook_pages: assets.filter(a => a.type === 'facebook_page').length
   }), [assets, pixels])
 
   const getStatusBadge = useCallback((status: string) => {
@@ -417,6 +419,7 @@ export default function AssetsPage() {
       profile: ['Team Profile', 'Status', 'Team & Role', 'Last Sync'],
       business_manager: ['Business Manager', 'Status', 'Team', 'Accounts', 'Bound To', 'Last Sync', 'Actions'],
       ad_account: ['Ad Account', 'Status', 'Team', 'Parent BM', 'Bound To', 'Last Sync', 'Actions'],
+      facebook_page: ['Facebook Page', 'Status', 'Team', 'Parent BM', 'Followers', 'Bound To', 'Last Sync', 'Actions'],
     };
 
     return (
@@ -429,13 +432,30 @@ export default function AssetsPage() {
             assetList.map((asset) => (
               <TableRow key={asset.id}>
                 <TableCell>
-                  <div className="font-medium">{asset.name}</div>
-                  <div className="text-sm text-muted-foreground">{asset.dolphin_id}</div>
+                  <div className="flex items-center gap-2">
+                    {type === 'facebook_page' && <FileText className="h-4 w-4 text-[#4267B2]" />}
+                    <div>
+                      <div className="font-medium flex items-center gap-2">
+                        {asset.name}
+                        {type === 'facebook_page' && (asset.metadata as any)?.verification_status === 'verified' && (
+                          <Verified className="h-3 w-3 text-blue-500" />
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {asset.dolphin_id}
+                        {type === 'facebook_page' && (asset.metadata as any)?.category && (
+                          <span> • {(asset.metadata as any).category}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell>{getStatusBadge(asset.status)}</TableCell>
                 <TableCell>{getTeamBadge(asset)}</TableCell>
                 {type === 'business_manager' && <TableCell>{getAdAccountCount(asset)}</TableCell>}
                 {type === 'ad_account' && <TableCell>{(asset.metadata as any)?.business_manager || 'N/A'}</TableCell>}
+                {type === 'facebook_page' && <TableCell>{(asset.metadata as any)?.parent_bm_name || 'No BM'}</TableCell>}
+                {type === 'facebook_page' && <TableCell>{((asset.metadata as any)?.followers_count || 0).toLocaleString()}</TableCell>}
                 {type !== 'profile' && <TableCell><span className={asset.organization_id ? 'text-foreground font-medium' : 'text-muted-foreground'}>{getBoundTo(asset)}</span></TableCell>}
                 <TableCell className="text-muted-foreground">{getLastSync(asset.last_sync_at)}</TableCell>
                 {type !== 'profile' && (
@@ -471,6 +491,7 @@ export default function AssetsPage() {
             <TabsTrigger value="business_manager">Business Managers</TabsTrigger>
             <TabsTrigger value="ad_account">Ad Accounts</TabsTrigger>
             <TabsTrigger value="profile">Teams</TabsTrigger>
+            <TabsTrigger value="facebook_page">Pages</TabsTrigger>
             <TabsTrigger value="pixels">Pixels</TabsTrigger>
           </TabsList>
           <div className="flex items-center gap-4">
@@ -544,10 +565,11 @@ export default function AssetsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <TabsContent value="business_manager">{renderAssetsTable(filteredAssets('business_manager'), 'business_manager')}</TabsContent>
-            <TabsContent value="ad_account">{renderAssetsTable(filteredAssets('ad_account'), 'ad_account')}</TabsContent>
-            <TabsContent value="profile">{renderAssetsTable(filteredAssets('profile'), 'profile')}</TabsContent>
-            <TabsContent value="pixels">{renderPixelsTable()}</TabsContent>
+                      <TabsContent value="business_manager">{renderAssetsTable(filteredAssets('business_manager'), 'business_manager')}</TabsContent>
+          <TabsContent value="ad_account">{renderAssetsTable(filteredAssets('ad_account'), 'ad_account')}</TabsContent>
+          <TabsContent value="profile">{renderAssetsTable(filteredAssets('profile'), 'profile')}</TabsContent>
+          <TabsContent value="facebook_page">{renderAssetsTable(filteredAssets('facebook_page'), 'facebook_page')}</TabsContent>
+          <TabsContent value="pixels">{renderPixelsTable()}</TabsContent>
           </CardContent>
         </Card>
       </Tabs>

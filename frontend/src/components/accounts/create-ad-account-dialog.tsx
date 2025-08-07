@@ -23,6 +23,7 @@ import { useBusinessManagers } from "@/lib/swr-config"
 import { useSWRConfig } from "swr"
 import { useAuth } from "@/contexts/AuthContext"
 import { useSubscription } from "@/hooks/useSubscription"
+import { PageSelector } from '@/components/pages/page-selector'
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
@@ -57,6 +58,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
   const [formData, setFormData] = useState({
     business_manager_id: bmId || "",
     timezone: "UTC",
+    selectedPageIds: [] as string[],
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +67,12 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
     if (!formData.business_manager_id) {
         toast.error("Please select a business manager.");
         return;
+    }
+
+    // Validate pages
+    if (formData.selectedPageIds.length === 0) {
+      toast.error('At least one Facebook page is required');
+      return;
     }
 
     // Check ad account limit
@@ -88,6 +96,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
           business_manager_id: formData.business_manager_id,
           timezone: formData.timezone,
           type: 'ad_account', // Specify the application type
+          page_ids: formData.selectedPageIds, // Include selected Facebook pages
         }),
       });
 
@@ -108,7 +117,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
       }
 
       setTimeout(() => {
-        setFormData({ business_manager_id: bmId || "", timezone: "UTC" })
+        setFormData({ business_manager_id: bmId || "", timezone: "UTC", selectedPageIds: [] })
         setShowSuccess(false)
         setOpen(false)
         onAccountCreated?.()
@@ -220,6 +229,14 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
                     </SelectContent>
                     </Select>
                 </div>
+
+                {/* Facebook Pages Selection */}
+                <PageSelector
+                  selectedPageIds={formData.selectedPageIds}
+                  onPageSelection={(pageIds) => setFormData(prev => ({ ...prev, selectedPageIds: pageIds }))}
+                  maxPages={3} // Default for ad accounts
+                  required={true}
+                />
 
                 {hasReachedAccountLimit && (
                   <div className="bg-muted/50 p-4 rounded-lg border border-border">
