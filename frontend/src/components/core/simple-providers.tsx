@@ -6,8 +6,9 @@ import { AppShell } from '../layout/app-shell'
 import { Loader } from "./Loader"
 import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
+import { useAdminClientSeparation } from '../../hooks/useAdminClientSeparation'
 import { TooltipProvider } from "@radix-ui/react-tooltip"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+
 
 import { SWRConfig } from 'swr'
 import { swrConfig } from '@/lib/swr-config'
@@ -66,6 +67,7 @@ function isAdminPage(pathname: string): boolean {
 function AppRouter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: separationLoading } = useAdminClientSeparation();
   const [hasHydrated, setHasHydrated] = useState(false);
 
   // Initialize performance optimizations
@@ -79,7 +81,7 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   }, []);
 
   // While the authentication state is loading or before hydration, show a loader
-  if (authLoading || !hasHydrated) {
+  if (authLoading || separationLoading || !hasHydrated) {
     return <FullScreenLoader />;
   }
   
@@ -118,19 +120,17 @@ export function SimpleProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <TooltipProvider>
-        <QueryClientProvider client={new QueryClient()}>
-          <SWRConfig value={swrConfig}>
-            <MicroInteractionsProvider>
-              <AuthProvider>
-                <PageTitleProvider>
-                  <ResourceHints />
-                  <CriticalCSS />
-                  <AppRouter>{children}</AppRouter>
-                </PageTitleProvider>
-              </AuthProvider>
-            </MicroInteractionsProvider>
-          </SWRConfig>
-        </QueryClientProvider>
+        <SWRConfig value={swrConfig}>
+          <MicroInteractionsProvider>
+            <AuthProvider>
+              <PageTitleProvider>
+                <ResourceHints />
+                <CriticalCSS />
+                <AppRouter>{children}</AppRouter>
+              </PageTitleProvider>
+            </AuthProvider>
+          </MicroInteractionsProvider>
+        </SWRConfig>
       </TooltipProvider>
     </ThemeProvider>
   );

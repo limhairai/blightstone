@@ -32,11 +32,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Check if user is admin - admins can see all organizations
+    // 🔒 SECURITY: Check if user is admin - but RESTRICT admin access to client data
     const { data: isAdminResult, error: adminCheckError } = await supabase
       .rpc('is_admin', { user_id: user.id });
     
     const isAdmin = !adminCheckError && isAdminResult === true;
+    
+    // 🔒 SECURITY: Admins should NOT access client organizations via this endpoint
+    // This endpoint is for client dashboard use only
+    // Admins should use /api/admin/organizations for admin panel access
 
     // Removed cache checking for immediate updates
 
@@ -44,30 +48,9 @@ export async function GET(request: NextRequest) {
     let organizations;
 
     if (orgId) {
-      // Get specific organization
-      if (isAdmin) {
-        // Admins can access any organization
-        const { data: specificOrg, error: orgError } = await supabase
-          .from('organizations')
-          .select(`
-            organization_id,
-            name,
-            created_at,
-            owner_id,
-            wallets(wallet_id, balance_cents, reserved_balance_cents)
-          `)
-          .eq('organization_id', orgId)
-          .maybeSingle();
-        
-        organizations = specificOrg ? [specificOrg] : [];
-        
-        if (orgError) {
-          console.error("Error fetching organization for admin:", orgError);
-          return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
-        }
-      } else {
-        // Non-admins: check both ownership and membership
-        const [ownedOrgResult, memberOrgResult] = await Promise.all([
+      // 🔒 SECURITY: REMOVED ADMIN BYPASS - All users must have legitimate access
+      // Get specific organization - check both ownership and membership
+      const [ownedOrgResult, memberOrgResult] = await Promise.all([
           // Check if user owns this organization
           supabase
             .from('organizations')
@@ -109,30 +92,10 @@ export async function GET(request: NextRequest) {
           console.error("Error fetching specific organization:", ownedOrgResult.error, memberOrgResult.error);
           return NextResponse.json({ error: 'Failed to fetch organization' }, { status: 500 });
         }
-      }
     } else {
-      if (isAdmin) {
-        // Admins can see ALL organizations
-        const { data: allOrgs, error: allOrgsError } = await supabase
-          .from('organizations')
-          .select(`
-            organization_id,
-            name,
-            created_at,
-            owner_id,
-            wallets(wallet_id, balance_cents, reserved_balance_cents)
-          `)
-          .order('created_at', { ascending: false });
-        
-        if (allOrgsError) {
-          console.error("Error fetching all organizations for admin:", allOrgsError);
-          return NextResponse.json({ error: 'Failed to fetch organizations', details: allOrgsError.message }, { status: 500 });
-        }
-        
-        organizations = allOrgs || [];
-      } else {
-        // **FIXED**: Get organizations using separate queries to avoid OR syntax issues
-        const [ownedResult, memberResult] = await Promise.all([
+      // 🔒 SECURITY: REMOVED ADMIN BYPASS - All users get only their organizations
+      // **FIXED**: Get organizations using separate queries to avoid OR syntax issues
+      const [ownedResult, memberResult] = await Promise.all([
           // Organizations the user owns
           supabase
             .from('organizations')
@@ -174,7 +137,6 @@ export async function GET(request: NextRequest) {
         const ownedOrgs = ownedResult.data || [];
         const memberOrgs = memberResult.data || [];
         organizations = [...ownedOrgs, ...memberOrgs];
-      }
     }
 
     // If no organizations found, return empty array

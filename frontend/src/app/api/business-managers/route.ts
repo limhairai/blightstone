@@ -23,19 +23,50 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get organization from authenticated user's profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('organization_id')
-              .eq('profile_id', user.id)
-      .single();
+    // Get query parameters for organization selection
+    const { searchParams } = new URL(request.url);
+    const requestedOrgId = searchParams.get('organization_id');
 
-    if (profileError || !profile || !profile.organization_id) {
-      console.log('🔍 User profile missing organization_id:', { profileError, profile });
-      return NextResponse.json([]);  // Return empty array instead of error
+    let organizationId: string;
+
+    if (requestedOrgId) {
+      // If organization_id is provided, verify the user has access to it
+      const { data: membership, error: membershipError } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .eq('organization_id', requestedOrgId)
+        .single();
+
+      const { data: ownership, error: ownershipError } = await supabase
+        .from('organizations')
+        .select('organization_id')
+        .eq('owner_id', user.id)
+        .eq('organization_id', requestedOrgId)
+        .single();
+
+      if ((membershipError && ownershipError) || (!membership && !ownership)) {
+        return NextResponse.json({ 
+          error: 'Access denied to requested organization' 
+        }, { status: 403 });
+      }
+
+      organizationId = requestedOrgId;
+    } else {
+      // Fallback to user's profile organization
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('profile_id', user.id)
+        .single();
+
+      if (profileError || !profile || !profile.organization_id) {
+        console.log('🔍 User profile missing organization_id:', { profileError, profile });
+        return NextResponse.json([]);  // Return empty array instead of error
+      }
+      
+      organizationId = profile.organization_id;
     }
-    
-    const organizationId = profile.organization_id;
 
     // Query business managers bound to this organization
     const { data: boundAssets, error: assetsError } = await supabase

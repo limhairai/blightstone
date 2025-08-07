@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback, useMemo } from "react"
+import { useState, useRef, useCallback, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { Button } from "../ui/button"
@@ -14,6 +14,7 @@ import { cn } from "../../lib/utils"
 import { useOrganizationStore } from "../../lib/stores/organization-store"
 import { useAuth } from "../../contexts/AuthContext"
 import { useOrganizations, useCurrentOrganization, useBusinessManagers } from "../../lib/swr-config"
+import { useAdminClientSeparation } from "../../hooks/useAdminClientSeparation"
 
 
 interface Organization {
@@ -37,9 +38,19 @@ export function OrganizationSelector() {
   const router = useRouter()
   const { currentOrganizationId, setCurrentOrganizationId } = useOrganizationStore()
   const { session } = useAuth()
+  const { isAdmin, loading: separationLoading } = useAdminClientSeparation()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
   const [componentIsLoading, setComponentIsLoading] = useState(false)
+
+  // 🔒 SECURITY: Redirect admin users to admin panel
+  useEffect(() => {
+    if (!separationLoading && isAdmin === true) {
+      console.warn('🔒 SECURITY: Admin user redirected from client organization selector to admin panel')
+      router.replace('/admin')
+      return
+    }
+  }, [isAdmin, separationLoading, router])
 
   // 🚀 PERFORMANCE: Consolidated data fetching with better caching
   const { data: orgData, isLoading: isOrgLoading, error: orgError } = useOrganizations() // For dropdown list
@@ -54,6 +65,18 @@ export function OrganizationSelector() {
   const hasAuthError = orgError && (orgError.message.includes('401') || orgError.message.includes('403'))
   const hasCurrentOrgAuthError = currentOrgError && (currentOrgError.message.includes('401') || currentOrgError.message.includes('403'))
   
+  // 🔒 SECURITY: Show loading while checking admin status or redirecting
+  if (separationLoading || isAdmin === true) {
+    return (
+      <div className="flex items-center space-x-2">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm text-muted-foreground">
+          {isAdmin === true ? 'Redirecting to admin panel...' : 'Loading...'}
+        </span>
+      </div>
+    )
+  }
+
   // FIXED: Improved loading logic to prevent infinite loading states
   const shouldShowLoading = componentIsLoading || (
     // Show loading only if we're actively loading and don't have data yet

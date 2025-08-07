@@ -1,5 +1,6 @@
 import useSWR, { useSWRConfig } from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
+import { useOrganizationStore } from './stores/organization-store'
 import { useMemo } from 'react'
 
 // Optimized fetcher with better error handling
@@ -80,11 +81,17 @@ export function useCurrentOrganization(organizationId: string | null) {
   )
 }
 
-export function useBusinessManagers() {
+export function useBusinessManagers(organizationId?: string | null) {
   const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  
+  // Use provided organizationId or fall back to current organization
+  const orgId = organizationId || currentOrganizationId
+  
+  const url = orgId ? `/api/business-managers?organization_id=${orgId}` : '/api/business-managers'
   
   return useSWR(
-    session?.access_token ? ['/api/business-managers', session.access_token] : null,
+    session?.access_token && orgId ? [url, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
@@ -94,11 +101,17 @@ export function useBusinessManagers() {
   )
 }
 
-export function useAdAccounts() {
+export function useAdAccounts(organizationId?: string | null) {
   const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  
+  // Use provided organizationId or fall back to current organization
+  const orgId = organizationId || currentOrganizationId
+  
+  const url = orgId ? `/api/ad-accounts?organization_id=${orgId}` : '/api/ad-accounts'
   
   return useSWR(
-    session?.access_token ? ['/api/ad-accounts', session.access_token] : null,
+    session?.access_token && orgId ? [url, session.access_token] : null,
     ([url, token]) => authenticatedFetcher(url, token),
     {
       ...swrConfig,
@@ -267,8 +280,8 @@ export function useBillingHistory(organizationId: string | null) {
 export function useDashboardData(organizationId: string | null) {
   const orgs = useOrganizations()
   const currentOrg = useCurrentOrganization(organizationId)
-  const businessManagers = useBusinessManagers()
-  const adAccounts = useAdAccounts()
+  const businessManagers = useBusinessManagers(organizationId)
+  const adAccounts = useAdAccounts(organizationId)
   const transactions = useTransactions({})
 
   const isLoading = orgs.isLoading || currentOrg.isLoading || businessManagers.isLoading || adAccounts.isLoading || transactions.isLoading
