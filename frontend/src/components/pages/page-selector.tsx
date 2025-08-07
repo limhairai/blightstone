@@ -32,6 +32,7 @@ interface FacebookPage {
   status: 'active' | 'inactive' | 'suspended'
   followers_count: number
   likes_count: number
+  business_manager_id?: string // BM this page belongs to
 }
 
 interface PageSelectorProps {
@@ -40,6 +41,8 @@ interface PageSelectorProps {
   maxPages?: number
   required?: boolean
   className?: string
+  businessManagerId?: string // Filter pages by BM
+  showCreateOption?: boolean // Show/hide create new page option
 }
 
 export function PageSelector({ 
@@ -47,7 +50,9 @@ export function PageSelector({
   onPageSelection, 
   maxPages = 3, 
   required = true,
-  className 
+  className,
+  businessManagerId,
+  showCreateOption = true
 }: PageSelectorProps) {
   const { session } = useAuth()
   const { currentOrganizationId } = useOrganizationStore()
@@ -61,8 +66,13 @@ export function PageSelector({
 
   // Fetch pages data
   const { data: pagesData, error, isLoading, mutate } = usePages(currentOrganizationId)
-  const pages = pagesData?.pages || []
+  const allPages = pagesData?.pages || []
   const canAddMore = pagesData?.pagination?.canAddMore ?? false
+
+  // Filter pages by business manager if specified
+  const pages = businessManagerId 
+    ? allPages.filter((page: FacebookPage) => page.business_manager_id === businessManagerId)
+    : allPages
 
   const selectedPages = pages.filter((page: FacebookPage) => selectedPageIds.includes(page.page_id))
 
@@ -225,24 +235,28 @@ export function PageSelector({
           <CardContent className="p-6 text-center">
             <Facebook className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground mb-3">
-              No Facebook pages found. Add your first page to continue.
+              {businessManagerId 
+                ? "No Facebook pages found for this Business Manager. Pages need to be created during the BM application process."
+                : "No Facebook pages found. Add your first page to continue."
+              }
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Add Page Button */}
-      <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
-        <DialogTrigger asChild>
-          <Button 
-            variant="outline" 
-            className="w-full mt-3" 
-            disabled={!canAddMore}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add New Page
-          </Button>
-        </DialogTrigger>
+      {/* Add Page Button - Only show if showCreateOption is true */}
+      {showCreateOption && (
+        <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
+          <DialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="w-full mt-3" 
+              disabled={!canAddMore}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add New Page
+            </Button>
+          </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Facebook Page</DialogTitle>
@@ -316,6 +330,7 @@ export function PageSelector({
           </form>
         </DialogContent>
       </Dialog>
+      )}
 
       {required && selectedPageIds.length === 0 && (
         <p className="text-sm text-red-600 mt-2">

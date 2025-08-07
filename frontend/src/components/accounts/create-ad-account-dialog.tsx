@@ -230,13 +230,23 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
                     </Select>
                 </div>
 
-                {/* Facebook Pages Selection */}
-                <PageSelector
-                  selectedPageIds={formData.selectedPageIds}
-                  onPageSelection={(pageIds) => setFormData(prev => ({ ...prev, selectedPageIds: pageIds }))}
-                  maxPages={3} // Default for ad accounts
-                  required={true}
-                />
+                {/* Facebook Pages Selection - Only from this BM */}
+                <div className="space-y-2">
+                  <Label className="text-foreground">
+                    Select Facebook Pages from this Business Manager
+                  </Label>
+                  <PageSelector
+                    selectedPageIds={formData.selectedPageIds}
+                    onPageSelection={(pageIds) => setFormData(prev => ({ ...prev, selectedPageIds: pageIds }))}
+                    maxPages={10} // Allow selecting multiple pages (up to BM's total limit)
+                    required={true}
+                    businessManagerId={formData.business_manager_id} // Filter pages by BM
+                    showCreateOption={false} // Don't allow creating new pages
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Select from pages already created for this Business Manager. To add more pages to this BM, contact support.
+                  </p>
+                </div>
 
                 {hasReachedAccountLimit && (
                   <div className="bg-muted/50 p-4 rounded-lg border border-border">
