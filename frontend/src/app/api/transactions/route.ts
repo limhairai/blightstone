@@ -32,28 +32,65 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Get organization from authenticated user's profile
-  const { data: profile, error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .select('organization_id')
-          .eq('profile_id', user.id)
-    .single();
-
-  if (profileError || !profile || !profile.organization_id) {
-    console.error('User profile missing organization_id:', { profileError, profile });
-    return NextResponse.json({ 
-      transactions: [], 
-      totalCount: 0,
-      totalPages: 0,
-      currentPage: 1,
-      message: 'No organization assigned to user.' 
-    });
-  }
-  
-  const organizationId = profile.organization_id;
-
-  // Get query parameters for filtering
+    // Get query parameters
   const { searchParams } = new URL(request.url);
+  const requestedOrgId = searchParams.get('organization_id');
+  
+  let organizationId: string;
+
+  if (requestedOrgId) {
+    // Verify user has access to requested organization (membership/ownership)
+    const [ownedOrgResult, memberOrgResult] = await Promise.all([
+      // Check if user owns this organization
+      supabaseAdmin
+        .from('organizations')
+        .select('organization_id')
+        .eq('organization_id', requestedOrgId)
+        .eq('owner_id', user.id)
+        .maybeSingle(),
+      
+      // Check if user is a member of this organization
+      supabaseAdmin
+        .from('organization_members')
+        .select('organization_id')
+        .eq('organization_id', requestedOrgId)
+        .eq('user_id', user.id)
+        .maybeSingle()
+    ]);
+
+    const hasOwnership = ownedOrgResult.data;
+    const hasMembership = memberOrgResult.data;
+
+    if (!hasOwnership && !hasMembership) {
+      return NextResponse.json({ 
+        error: 'Access denied to this organization' 
+      }, { status: 403 });
+    }
+
+    organizationId = requestedOrgId;
+  } else {
+    // Fallback to user's profile organization
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('organization_id')
+      .eq('profile_id', user.id)
+      .single();
+
+    if (profileError || !profile || !profile.organization_id) {
+      console.error('User profile missing organization_id:', { profileError, profile });
+      return NextResponse.json({ 
+        transactions: [], 
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: 1,
+        message: 'No organization assigned to user.' 
+      });
+    }
+    
+    organizationId = profile.organization_id;
+  }
+
+  // Get additional query parameters for filtering
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(searchParams.get('limit') || '10', 10);
   const status = searchParams.get('status');

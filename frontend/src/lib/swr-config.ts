@@ -121,7 +121,7 @@ export function useAdAccounts(organizationId?: string | null) {
   )
 }
 
-export function useTransactions(filters?: {
+export function useTransactions(organizationId?: string | null, filters?: {
   type?: string
   search?: string
   status?: string
@@ -129,12 +129,16 @@ export function useTransactions(filters?: {
   date?: string
 }) {
   const { session } = useAuth()
+  const { currentOrganizationId } = useOrganizationStore()
+  
+  const orgId = organizationId || currentOrganizationId
   
   // If filters is undefined, disable the hook (for conditional loading)
-  const shouldFetch = filters !== undefined
+  const shouldFetch = filters !== undefined && orgId
   
   // Build query string from filters
   const queryParams = new URLSearchParams()
+  if (orgId) queryParams.append('organization_id', orgId)
   if (filters?.type) queryParams.append('type', filters.type)
   if (filters?.search) queryParams.append('search', filters.search)
   if (filters?.status) queryParams.append('status', filters.status)
@@ -282,7 +286,7 @@ export function useDashboardData(organizationId: string | null) {
   const currentOrg = useCurrentOrganization(organizationId)
   const businessManagers = useBusinessManagers(organizationId)
   const adAccounts = useAdAccounts(organizationId)
-  const transactions = useTransactions({})
+  const transactions = useTransactions(organizationId, {})
 
   const isLoading = orgs.isLoading || currentOrg.isLoading || businessManagers.isLoading || adAccounts.isLoading || transactions.isLoading
   const error = orgs.error || currentOrg.error || businessManagers.error || adAccounts.error || transactions.error

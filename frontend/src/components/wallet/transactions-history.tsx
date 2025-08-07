@@ -27,6 +27,7 @@ export function TransactionsHistory({ limit, showFilters = true }: TransactionHi
 
   // Use optimized hooks with server-side pagination and filtering
   const { data: transactionsData, isLoading } = useTransactions(
+    currentOrganizationId,
     !limit ? {
       status: statusFilter !== "all" ? statusFilter : undefined,
       type: typeFilter !== "all" ? typeFilter : undefined,
