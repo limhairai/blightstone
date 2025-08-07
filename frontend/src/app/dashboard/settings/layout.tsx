@@ -87,7 +87,9 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to update organization name");
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Organization update failed:', response.status, errorData);
+        throw new Error(errorData.error || `Failed to update organization name (${response.status})`);
       }
       
       // Refresh the organization data
@@ -197,19 +199,20 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                   </Button>
                 </div>
               ) : (
-                <>
+                <div className="flex items-center gap-2 group">
                   <h1 className="text-2xl font-bold text-foreground">
                     {currentOrganization?.name || 'Organization Settings'}
                   </h1>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 hover:bg-accent"
+                    className="h-7 px-2 py-1 text-xs opacity-60 group-hover:opacity-100 hover:bg-accent transition-opacity"
                     onClick={handleStartEditing}
                   >
-                    <Edit className="h-3 w-3 text-muted-foreground" />
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
                   </Button>
-                </>
+                </div>
               )}
             </div>
             <p className="text-sm text-muted-foreground">

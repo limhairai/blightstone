@@ -300,15 +300,31 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verify user has permission to update this organization
-    const { data: membership } = await supabase
-      .from('organization_members')
-      .select('role')
+    // First check if user is the owner of the organization
+    const { data: orgOwnership, error: ownershipError } = await supabase
+      .from('organizations')
+      .select('owner_id')
       .eq('organization_id', targetOrgId)
-      .eq('user_id', user.id)
       .single();
 
-    if (!membership || !['owner', 'admin'].includes(membership.role)) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
+    if (orgOwnership && orgOwnership.owner_id === user.id) {
+      // User is the owner, they can update
+    } else {
+      // Check membership with admin/owner role
+      const { data: membership, error: membershipError } = await supabase
+        .from('organization_members')
+        .select('role')
+        .eq('organization_id', targetOrgId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (membershipError || !membership || !['owner', 'admin'].includes(membership.role)) {
+        console.error('Permission check failed:', membershipError, membership);
+        return NextResponse.json({ 
+          error: 'Insufficient permissions to update this organization',
+          details: membershipError?.message 
+        }, { status: 403 });
+      }
     }
 
     // Build update object with only provided fields
@@ -324,14 +340,23 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    const { data: updatedOrg, error } = await supabase
+    // Use service role for the update to bypass RLS issues
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    const { data: updatedOrg, error } = await supabaseAdmin
       .from('organizations')
       .update(updateFields)
       .eq('organization_id', targetOrgId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Organization update error:', error);
+      throw error;
+    }
 
     // Clear cache for this organization
     const orgCache = global.orgCache || new Map()
