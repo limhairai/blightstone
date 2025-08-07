@@ -65,7 +65,8 @@ export const PRODUCTION_CSP: CSPConfig = {
   'frame-src': [
     "'self'",
     "https://js.stripe.com",
-    "https://hooks.stripe.com"
+    "https://hooks.stripe.com",
+    "https://vercel.live"
   ],
   'object-src': ["'none'"],
   'base-uri': ["'self'"],
