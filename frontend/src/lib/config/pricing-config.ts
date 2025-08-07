@@ -168,11 +168,11 @@ export const getDomainLimit = (planId: 'starter' | 'growth' | 'scale') => {
 };
 
 // Get page limit per BM for a plan
-export const getPageLimit = (planId: 'starter' | 'growth' | 'scale') => {
-  if (isNewPricingEnabled()) {
+export const getPageLimit = (planId: 'starter' | 'growth' | 'scale' | undefined | null) => {
+  if (isNewPricingEnabled() && planId && planId in PRICING_CONFIG.newPricingModel.plans) {
     return PRICING_CONFIG.newPricingModel.plans[planId].pagesPerBm;
   }
-  return null;
+  return 3; // Default to 3 pages if plan is undefined or not found
 };
 
 // Get monthly top-up limit for a plan

@@ -76,10 +76,10 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
   const hasReachedBMLimit = !canAddMoreBMs && !isOnFreePlan
 
   // Get domain and page limits from pricing config
-  const planId = currentPlan?.id as 'starter' | 'growth' | 'scale'
+  const planId = currentPlan?.id as 'starter' | 'growth' | 'scale' | undefined
   const planLimits = getPlanPricing(planId)
   const maxDomainsPerBm = planLimits?.domainsPerBm || 2
-  const maxPagesPerBm = getPageLimit(planId) || 3
+  const maxPagesPerBm = getPageLimit(planId)
 
   // Domain management functions
   const addDomainField = () => {
