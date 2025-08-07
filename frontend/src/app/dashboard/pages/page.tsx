@@ -206,7 +206,7 @@ export default function PagesPage() {
               Add
             </Button>
           </DialogTrigger>
-            <DialogContent>
+          <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Facebook Page</DialogTitle>
                 <DialogDescription>
@@ -242,15 +242,15 @@ export default function PagesPage() {
                     required
                   />
                 </div>
-                              <div>
-                <Label htmlFor="page_url">Page URL</Label>
-                <Input
-                  id="page_url"
-                  value={newPageForm.page_url}
-                  onChange={(e) => setNewPageForm(prev => ({ ...prev, page_url: e.target.value }))}
-                  placeholder="https://facebook.com/yourpage"
-                />
-              </div>
+                <div>
+                  <Label htmlFor="page_url">Page URL</Label>
+                  <Input
+                    id="page_url"
+                    value={newPageForm.page_url}
+                    onChange={(e) => setNewPageForm(prev => ({ ...prev, page_url: e.target.value }))}
+                    placeholder="https://facebook.com/yourpage"
+                  />
+                </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddingPage(false)}>
                     Cancel
