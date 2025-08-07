@@ -143,17 +143,14 @@ export async function GET(request: NextRequest) {
             .from('application')
             .select(`
                 application_id,
-                account_name,
+                name,
                 website_url,
-                spend_limit,
                 status,
                 created_at,
                 updated_at,
-                rejection_reason,
-                businesses (
-                    business_id,
-                    name
-                )
+                request_type,
+                client_notes,
+                admin_notes
             `)
             .eq('organization_id', profile.organization_id)
             .order('created_at', { ascending: false });
@@ -166,17 +163,17 @@ export async function GET(request: NextRequest) {
         // Transform data to match frontend interface
         const transformedApplications = (applications || []).map((app: any) => ({
             id: app.application_id,
-            account_name: app.account_name,
+            account_name: app.name || 'Application',
             website_url: app.website_url,
-            spend_limit: app.spend_limit,
+            spend_limit: 0, // Not stored in current schema
             status: app.status,
             submitted_at: app.created_at,
             reviewed_at: app.updated_at,
-            rejection_reason: app.rejection_reason,
-            businesses: app.businesses ? {
-                id: app.businesses.business_id,
-                name: app.businesses.name
-            } : null
+            rejection_reason: app.admin_notes,
+            businesses: {
+                id: app.application_id, // Use application ID as fallback
+                name: app.request_type === 'new_business_manager' ? 'New Business Manager' : 'Additional Accounts'
+            }
         }));
 
         return NextResponse.json({ applications: transformedApplications });
