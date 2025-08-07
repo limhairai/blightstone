@@ -302,6 +302,7 @@ export default function PagesPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Search and Filters - matching ad accounts design */}
