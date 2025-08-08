@@ -19,7 +19,6 @@ import {
   ExternalLink, 
   Users, 
   Heart, 
-  Verified, 
   AlertCircle,
   FileText,
   Loader2,
@@ -256,7 +255,6 @@ export default function PagesPage() {
 
   // Calculate metrics
   const activePages = pages.filter(page => !page.is_request && page.status === 'active').length
-  const verifiedPages = pages.filter(page => !page.is_request && page.verification_status === 'verified').length
   const pendingRequests = pages.filter(page => page.is_request).length
 
   return (
@@ -272,14 +270,7 @@ export default function PagesPage() {
               {pagination.limit === -1 ? activePages : `${activePages} / ${pagination.limit}`}
             </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
-              Verified Pages
-            </span>
-            <div className="text-foreground font-semibold text-lg">
-              {verifiedPages}
-            </div>
-          </div>
+
           {pendingRequests > 0 && (
             <div className="flex flex-col">
               <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
@@ -529,9 +520,7 @@ export default function PagesPage() {
                           Connection Pending
                         </span>
                       )}
-                      {page.verification_status === 'verified' && !page.is_request && (
-                        <Verified className="h-3 w-3 text-blue-500 flex-shrink-0" />
-                      )}
+
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
                       {!page.is_request && page.followers_count > 0 && (
