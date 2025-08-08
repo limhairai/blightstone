@@ -60,6 +60,7 @@ function getStatusBadge(status: string) {
 export default function AdminPixelRequestsPage() {
   const { session } = useAuth()
   const { navigateToAdmin } = useAdminPerformance()
+  const adminTableHook = useInstantAdminTable()
   const [selectedRequest, setSelectedRequest] = useState<PixelRequest | null>(null)
   const [processing, setProcessing] = useState(false)
   const [adminNotes, setAdminNotes] = useState('')
@@ -96,7 +97,6 @@ export default function AdminPixelRequestsPage() {
   };
 
   const renderRequestsTable = (requests: PixelRequest[]) => {
-    const adminTableHook = useInstantAdminTable();
 
     if (requests.length === 0) {
       return (

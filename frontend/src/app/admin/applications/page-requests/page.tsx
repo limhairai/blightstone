@@ -67,6 +67,7 @@ function getStatusBadge(status: string) {
 export default function AdminPageRequestsPage() {
   const { session } = useAuth()
   const { navigateToAdmin } = useAdminPerformance()
+  const adminTableHook = useInstantAdminTable()
   const [selectedRequest, setSelectedRequest] = useState<PageRequest | null>(null)
   const [processing, setProcessing] = useState(false)
   const [adminNotes, setAdminNotes] = useState('')
@@ -148,7 +149,6 @@ export default function AdminPageRequestsPage() {
   };
 
   const renderRequestsTable = (requests: PageRequest[]) => {
-    const adminTableHook = useInstantAdminTable();
 
     if (requests.length === 0) {
       return (
