@@ -134,6 +134,7 @@ export async function GET(request: NextRequest) {
       pages: pagesWithBMInfo || [],
       pagination: {
         total: pagesWithBMInfo?.length || 0,
+        limit: -1, // ⚡ UNLIMITED: No page limit for any plan
         canAddMore: true // ⚡ UNLIMITED: Clients can bind as many pages as they want
       }
     })
