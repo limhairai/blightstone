@@ -269,16 +269,20 @@ export async function POST(request: NextRequest) {
         }
 
         // Get user's organization using service role to bypass RLS
-        const { data: orgMembership, error: orgError } = await supabaseService
+        // Get the primary organization (where user is owner) or the first organization they're a member of
+        const { data: orgMemberships, error: orgError } = await supabaseService
             .from('organization_members')
-            .select('organization_id')
+            .select('organization_id, role')
             .eq('user_id', user.id)
-            .single();
+            .order('role', { ascending: false }); // Order by role to prioritize owners
 
-        if (orgError || !orgMembership) {
+        if (orgError || !orgMemberships || orgMemberships.length === 0) {
             console.error('Organization membership error:', orgError);
             return NextResponse.json({ error: 'User is not a member of any organization.' }, { status: 403 });
         }
+
+        // Use the first organization (prioritize owner role)
+        const orgMembership = orgMemberships[0];
 
         const organization_id = orgMembership.organization_id;
 
