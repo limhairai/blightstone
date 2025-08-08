@@ -9,10 +9,7 @@ import useSWR, { mutate } from 'swr'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AdminInstantButton } from '@/components/ui/admin-instant-button'
@@ -68,10 +65,7 @@ export default function AdminPageRequestsPage() {
   const { session } = useAuth()
   const { navigateToAdmin } = useAdminPerformance()
   const adminTableHook = useInstantAdminTable()
-  const [selectedRequest, setSelectedRequest] = useState<PageRequest | null>(null)
   const [processing, setProcessing] = useState(false)
-  const [adminNotes, setAdminNotes] = useState('')
-  const [newStatus, setNewStatus] = useState<string>('')
 
   const fetcher = async (url: string) => {
     const response = await fetch(url, {
@@ -139,11 +133,7 @@ export default function AdminPageRequestsPage() {
     }
   }
 
-  const openRequestDialog = (request: PageRequest) => {
-    setSelectedRequest(request)
-    setAdminNotes(request.admin_notes || '')
-    setNewStatus(request.status)
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -156,33 +146,32 @@ export default function AdminPageRequestsPage() {
   };
 
   const renderRequestsTable = (requests: PageRequest[]) => {
-
     if (requests.length === 0) {
       return (
-        <div className="border rounded-lg p-8 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Page Requests</h3>
-          <p className="text-muted-foreground">No page requests found for this status.</p>
+        <div className="text-center py-8 text-muted-foreground">
+          No {requests === filterRequests('pending') ? 'pending' : 
+               requests === filterRequests('processing') ? 'processing' : 
+               requests === filterRequests('completed') ? 'completed' : 'rejected'} page requests found.
         </div>
       );
     }
 
     return (
-      <div className="border rounded-lg">
+      <div className="border border-border rounded-lg overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Organization & Page</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Business Manager</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
+            <TableRow className="border-border hover:bg-muted/50">
+              <TableHead className="text-muted-foreground">Organization</TableHead>
+              <TableHead className="text-muted-foreground">Request Type</TableHead>
+              <TableHead className="text-muted-foreground">Details</TableHead>
+              <TableHead className="text-muted-foreground">Applied</TableHead>
+              <TableHead className="text-muted-foreground">Status</TableHead>
+              <TableHead className="text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {requests.map((request) => (
-              <TableRow key={request.request_id}>
+              <TableRow key={request.request_id} className="admin-table-row border-border hover:bg-muted/50">
                 <TableCell>
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
@@ -190,25 +179,42 @@ export default function AdminPageRequestsPage() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="font-medium truncate">{request.organizations.name}</div>
-                      <div className="text-sm text-muted-foreground truncate">{request.page_name}</div>
+                      <div className="text-sm text-muted-foreground truncate">N/A</div>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {request.page_category ? (
-                    <Badge variant="outline">{request.page_category}</Badge>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                  <div className="space-y-1">
+                    <Badge variant="secondary">
+                      <div className="flex items-center gap-1">
+                        <FileText className="h-3 w-3" />
+                        Page Request
+                      </div>
+                    </Badge>
+                    {request.business_manager_id && (
+                      <div className="text-xs text-muted-foreground font-mono">
+                        BM: {request.business_manager_id}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
-                  {request.business_manager_id ? (
-                    <div className="text-xs text-muted-foreground font-mono">
-                      {request.business_manager_id}
+                  <div className="space-y-1 max-w-xs">
+                    <div className="flex items-center gap-1 text-xs text-foreground">
+                      <FileText className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="font-medium truncate">{request.page_name}</span>
                     </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
+                    {request.page_category && (
+                      <div className="text-xs text-muted-foreground">
+                        Category: {request.page_category}
+                      </div>
+                    )}
+                    {request.page_description && (
+                      <div className="text-xs text-muted-foreground truncate">
+                        {request.page_description}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="text-sm">{formatDate(request.created_at)}</div>
@@ -218,7 +224,7 @@ export default function AdminPageRequestsPage() {
                     <div className="flex items-center gap-1">
                       <div className={`h-2 w-2 rounded-full ${
                         request.status === 'pending' ? 'bg-yellow-500' :
-                        request.status === 'approved' ? 'bg-blue-500' :
+                        request.status === 'processing' ? 'bg-blue-500' :
                         request.status === 'completed' ? 'bg-green-500' :
                         'bg-red-500'
                       }`} />
@@ -227,14 +233,40 @@ export default function AdminPageRequestsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <AdminInstantButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openRequestDialog(request)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </AdminInstantButton>
+                  <div className="flex gap-2">
+                    {request.status === 'pending' && (
+                      <>
+                        <AdminInstantButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleProcessRequest(request.request_id, 'rejected', '')}
+                        >
+                          Reject
+                        </AdminInstantButton>
+                        <AdminInstantButton
+                          size="sm"
+                          onClick={() => handleProcessRequest(request.request_id, 'processing', '')}
+                          style={{
+                            background: 'linear-gradient(90deg, #b4a0ff 0%, #ffb4a0 100%)',
+                            color: 'black',
+                            border: 'none'
+                          }}
+                          className="hover:opacity-90"
+                        >
+                          Approve
+                        </AdminInstantButton>
+                      </>
+                    )}
+                    {request.status === 'processing' && (
+                      <AdminInstantButton
+                        size="sm"
+                        onClick={() => handleProcessRequest(request.request_id, 'completed', '')}
+                        className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                      >
+                        Mark as Completed
+                      </AdminInstantButton>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -270,8 +302,8 @@ export default function AdminPageRequestsPage() {
             <TabsTrigger value="pending">
               Pending ({filterRequests('pending').length})
             </TabsTrigger>
-            <TabsTrigger value="approved">
-              Approved ({filterRequests('approved').length})
+            <TabsTrigger value="processing">
+              Processing ({filterRequests('processing').length})
             </TabsTrigger>
             <TabsTrigger value="completed">
               Completed ({filterRequests('completed').length})
@@ -291,8 +323,8 @@ export default function AdminPageRequestsPage() {
           {renderRequestsTable(filterRequests('pending'))}
         </TabsContent>
 
-        <TabsContent value="approved" className="space-y-4">
-          {renderRequestsTable(filterRequests('approved'))}
+        <TabsContent value="processing" className="space-y-4">
+          {renderRequestsTable(filterRequests('processing'))}
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
@@ -303,121 +335,6 @@ export default function AdminPageRequestsPage() {
           {renderRequestsTable(filterRequests('rejected'))}
         </TabsContent>
       </Tabs>
-
-      {/* Request Details Dialog */}
-      <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Page Request Details</DialogTitle>
-            <DialogDescription>
-              Review and process this page request
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="space-y-6">
-              {/* Request Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">Page Name</Label>
-                  <p className="text-sm">{selectedRequest.page_name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Organization</Label>
-                  <p className="text-sm">{selectedRequest.organizations.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Category</Label>
-                  <p className="text-sm">{selectedRequest.page_category || 'Not specified'}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Current Status</Label>
-                  <div className="mt-1">{getStatusBadge(selectedRequest.status)}</div>
-                </div>
-              </div>
-
-              {selectedRequest.page_description && (
-                <div>
-                  <Label className="text-sm font-medium">Description</Label>
-                  <p className="text-sm bg-muted p-3 rounded-md">{selectedRequest.page_description}</p>
-                </div>
-              )}
-
-              {selectedRequest.business_manager_id && (
-                <div>
-                  <Label className="text-sm font-medium">Business Manager ID</Label>
-                  <p className="text-sm font-mono">{selectedRequest.business_manager_id}</p>
-                </div>
-              )}
-
-              {/* Admin Actions */}
-              <div className="space-y-4 border-t pt-4">
-                <div>
-                  <Label htmlFor="status" className="text-sm font-medium">Update Status</Label>
-                  <Select value={newStatus} onValueChange={setNewStatus}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="notes" className="text-sm font-medium">Admin Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={adminNotes}
-                    onChange={(e) => setAdminNotes(e.target.value)}
-                    placeholder="Add notes about this request..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedRequest(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={() => handleProcessRequest(selectedRequest.request_id, newStatus, adminNotes)}
-                    disabled={processing || newStatus === selectedRequest.status}
-                  >
-                    {processing ? 'Updating...' : 'Update Request'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Request Timeline */}
-              <div className="border-t pt-4">
-                <Label className="text-sm font-medium">Timeline</Label>
-                <div className="space-y-2 mt-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Created:</span>
-                    <span>{new Date(selectedRequest.created_at).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Last Updated:</span>
-                    <span>{new Date(selectedRequest.updated_at).toLocaleString()}</span>
-                  </div>
-                  {selectedRequest.completed_at && (
-                    <div className="flex justify-between text-sm">
-                      <span>Completed:</span>
-                      <span>{new Date(selectedRequest.completed_at).toLocaleString()}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
