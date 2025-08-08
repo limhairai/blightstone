@@ -201,3 +201,76 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
+    const { searchParams } = new URL(request.url)
+    const requestId = searchParams.get('request_id')
+
+    // Get current user from Authorization header
+    const authHeader = request.headers.get('Authorization')
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Create anon client for user authentication
+    const anonSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    
+    const { data: { user }, error: authError } = await anonSupabase.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (!requestId) {
+      return NextResponse.json({ 
+        error: 'Request ID is required' 
+      }, { status: 400 })
+    }
+
+    // First check if the request exists and belongs to user's organization
+    const { data: existingRequest, error: fetchError } = await supabase
+      .from('page_requests')
+      .select('request_id, organization_id, status')
+      .eq('request_id', requestId)
+      .single()
+
+    if (fetchError || !existingRequest) {
+      return NextResponse.json({ error: 'Page request not found' }, { status: 404 })
+    }
+
+    // Only allow canceling pending requests
+    if (existingRequest.status !== 'pending') {
+      return NextResponse.json({ 
+        error: 'Only pending requests can be cancelled' 
+      }, { status: 400 })
+    }
+
+    // Delete the request
+    const { error: deleteError } = await supabase
+      .from('page_requests')
+      .delete()
+      .eq('request_id', requestId)
+
+    if (deleteError) {
+      console.error('Error deleting page request:', deleteError)
+      return NextResponse.json({ error: 'Failed to cancel page request' }, { status: 500 })
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Page request cancelled successfully' 
+    })
+  } catch (error) {
+    console.error('Error in page requests DELETE API:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

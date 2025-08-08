@@ -201,6 +201,29 @@ export default function PagesPage() {
     }
   }
 
+  const handleCancelPageRequest = async (requestId: string) => {
+    try {
+      const response = await fetch(`/api/page-requests?request_id=${requestId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to cancel page request')
+      }
+
+      toast.success('Page request cancelled successfully')
+      mutate() // Refresh active pages
+      mutateRequests() // Refresh page requests
+    } catch (error) {
+      console.error('Error cancelling page request:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel page request')
+    }
+  }
+
   // Filter pages based on search and status
   const filteredPages = useMemo(() => {
     let filtered = pages
@@ -452,7 +475,7 @@ export default function PagesPage() {
         {/* Table Header */}
         <div
           className="grid gap-4 px-6 py-4 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+          style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
         >
           <div className="flex items-center">PAGE</div>
           <div className="flex items-center">PAGE ID</div>
@@ -486,7 +509,7 @@ export default function PagesPage() {
                     ? 'cursor-default' 
                     : 'hover:bg-muted/50 cursor-pointer'
                 }`}
-                style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+                style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
               >
                 {/* Page */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -575,6 +598,16 @@ export default function PagesPage() {
                       <a href={page.page_url} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
+                    </Button>
+                  )}
+                  {page.is_request && page.request_status === 'pending' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCancelPageRequest(page.facebook_page_id)}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      Cancel
                     </Button>
                   )}
                 </div>

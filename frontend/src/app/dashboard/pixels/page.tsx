@@ -322,7 +322,7 @@ export default function PixelsPage() {
         {/* Table Headers */}
         <div 
           className="grid gap-4 px-6 py-4 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+          style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
         >
           <div className="flex items-center">PIXEL</div>
           <div className="flex items-center">PIXEL ID</div>
@@ -359,7 +359,7 @@ export default function PixelsPage() {
                       ? 'cursor-default' 
                       : 'hover:bg-muted/50 cursor-pointer'
                   }`}
-                  style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+                  style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
                 >
                   {/* Pixel */}
                   <div className="flex items-center gap-3 min-w-0">
