@@ -343,9 +343,6 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
               <div className="lg:min-w-[200px]">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-foreground mb-2">PLUS</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Enterprise-grade solution with premium features
-                  </p>
                 </div>
                 
                 <Button
@@ -363,7 +360,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
               {/* Right side - Features */}
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-medium text-foreground mb-3">Enterprise Features</h4>
+                  <h4 className="text-sm font-medium text-foreground mb-3">Enhanced Features</h4>
                   <ul className="space-y-2">
                     <li className="flex items-start">
                       <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
@@ -400,7 +397,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     </li>
                     <li className="flex items-start">
                       <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">Volume-based cashback</span>
+                      <span className="text-sm text-muted-foreground">Attach your own assets, such as BMs and ad accounts</span>
                     </li>
                   </ul>
                 </div>
