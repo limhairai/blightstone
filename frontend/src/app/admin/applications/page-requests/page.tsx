@@ -74,15 +74,19 @@ export default function AdminPageRequestsPage() {
   const [newStatus, setNewStatus] = useState<string>('')
 
   const fetcher = async (url: string) => {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`
+      }
+    })
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error('Failed to fetch page requests')
     }
-    return response.json();
-  };
+    return response.json()
+  }
 
   const { data: pageRequestsData, error, isLoading, mutate: mutateRequests } = useSWR(
-    '/api/admin/page-requests',
+    session?.access_token ? '/api/admin/page-requests' : null,
     fetcher,
     { 
       refreshInterval: 30000,
@@ -103,30 +107,33 @@ export default function AdminPageRequestsPage() {
       const response = await fetch('/api/admin/page-requests', {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           request_id: requestId,
           status,
-          admin_notes: notes,
-          processed_by: session?.user?.id
+          admin_notes: notes
         })
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to update request')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update page request')
       }
 
-      toast.success('Request updated successfully')
+      const result = await response.json()
+      toast.success(result.message || 'Page request updated successfully')
+      
+      // Refresh the data
       mutateRequests()
+      
+      // Close the dialog
       setSelectedRequest(null)
-      setAdminNotes('')
-      setNewStatus('')
+      
     } catch (error) {
-      console.error('Error updating request:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to update request')
+      console.error('Error processing page request:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update page request')
     } finally {
       setProcessing(false)
     }

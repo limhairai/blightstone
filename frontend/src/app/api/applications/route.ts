@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Fetch applications for user's organization
+        // Fetch applications for user's organization (exclude pixel requests as they have their own page)
         const { data: applications, error } = await supabase
             .from('application')
             .select(`
@@ -204,6 +204,7 @@ export async function GET(request: NextRequest) {
                 admin_notes
             `)
             .eq('organization_id', profile.organization_id)
+            .neq('request_type', 'pixel_connection')
             .order('created_at', { ascending: false });
 
         if (error) {
