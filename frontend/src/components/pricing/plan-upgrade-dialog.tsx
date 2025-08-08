@@ -397,7 +397,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     </li>
                     <li className="flex items-start">
                       <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">Attach your own assets, such as BMs and ad accounts</span>
+                      <span className="text-sm text-muted-foreground">Attach your BMs and ad accounts</span>
                     </li>
                   </ul>
                 </div>
