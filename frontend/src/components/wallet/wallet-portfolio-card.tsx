@@ -346,10 +346,9 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                     )
                     .join(" L ")}`}
                   fill="none"
-                  stroke="url(#balanceGradient)"
-                  strokeWidth={balanceData.length > 0 && Math.max(...balanceData.map((p) => p.value)) === Math.min(...balanceData.map((p) => p.value)) ? "3" : "2"}
+                  stroke="#b4a0ff"
+                  strokeWidth="3"
                   vectorEffect="non-scaling-stroke"
-                  strokeOpacity="1"
                 />
 
                 {/* Gradient fill */}
