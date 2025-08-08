@@ -311,8 +311,8 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                   <path d="M 10 0 L 0 0 0 10" fill="none" stroke="hsl(var(--border))" strokeWidth="0.5" opacity="0.3" />
                 </pattern>
                 <linearGradient id="balanceGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
                 </linearGradient>
                 <linearGradient id="balanceFill" x1="0%" y1="0%" x2="0%" y2="100%">
                   <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
@@ -347,8 +347,9 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
                     .join(" L ")}`}
                   fill="none"
                   stroke="url(#balanceGradient)"
-                  strokeWidth="2"
+                  strokeWidth={balanceData.length > 0 && Math.max(...balanceData.map((p) => p.value)) === Math.min(...balanceData.map((p) => p.value)) ? "3" : "2"}
                   vectorEffect="non-scaling-stroke"
+                  strokeOpacity="1"
                 />
 
                 {/* Gradient fill */}

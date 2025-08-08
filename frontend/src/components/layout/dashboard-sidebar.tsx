@@ -156,6 +156,15 @@ export function DashboardSidebar() {
           .catch(() => {}) // Silent fail
         break
       
+      case '/dashboard/pages':
+        // ⚡ PREDICTIVE: Preload pages data for instant loading
+        fetch(`/api/pages?organization_id=${currentOrganizationId}`, { headers })
+          .catch(() => {}) // Silent fail
+        // Also preload page requests
+        fetch(`/api/page-requests?organization_id=${currentOrganizationId}`, { headers })
+          .catch(() => {}) // Silent fail
+        break
+      
       case '/dashboard/settings':
         // REMOVED: Topup usage preloading - this endpoint is extremely slow (17+ seconds)
         // Only load when user actually visits settings page

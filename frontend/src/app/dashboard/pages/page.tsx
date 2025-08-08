@@ -99,29 +99,37 @@ export default function PagesPage() {
     page_url: ''
   })
 
-  // Fetch pages data
+  // ⚡ INSTANT LOADING: Optimized SWR data fetching with aggressive caching
   const { data: pagesData, error, isLoading, mutate } = useSWR<PagesResponse>(
     session?.access_token && currentOrganizationId 
       ? [`/api/pages?organization_id=${currentOrganizationId}`, session.access_token]
       : null,
     ([url, token]: [string, string]) => authenticatedFetcher(url, token),
     {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 60000,
+      revalidateOnFocus: true, // ✅ Refresh when returning to pages
+      revalidateOnReconnect: true, // ✅ Refresh on reconnect
+      revalidateIfStale: true, // ✅ Update stale data automatically
+      revalidateOnMount: true, // ✅ Fresh data on mount
+      dedupingInterval: 60000, // 60 seconds - pages don't change frequently
+      keepPreviousData: true, // ✅ Smooth transitions
+      fallbackData: { pages: [], pagination: { total: 0, canAddMore: true } }, // ⚡ Prevent loading states
     }
   )
 
-  // Fetch page requests data
+  // ⚡ INSTANT LOADING: Optimized page requests fetching
   const { data: pageRequestsData, error: requestsError, mutate: mutateRequests } = useSWR<any>(
     session?.access_token && currentOrganizationId 
       ? [`/api/page-requests?organization_id=${currentOrganizationId}`, session.access_token]
       : null,
     ([url, token]: [string, string]) => authenticatedFetcher(url, token),
     {
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 60000,
+      revalidateOnFocus: true, // ✅ Refresh when returning to pages
+      revalidateOnReconnect: true, // ✅ Refresh on reconnect
+      revalidateIfStale: true, // ✅ Update stale data automatically
+      revalidateOnMount: true, // ✅ Fresh data on mount
+      dedupingInterval: 60000, // 60 seconds - requests don't change frequently
+      keepPreviousData: true, // ✅ Smooth transitions
+      fallbackData: { pageRequests: [] }, // ⚡ Prevent loading states
     }
   )
 
