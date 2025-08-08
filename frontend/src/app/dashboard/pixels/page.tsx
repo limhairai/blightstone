@@ -322,7 +322,7 @@ export default function PixelsPage() {
         {/* Table Headers */}
         <div 
           className="grid gap-4 px-6 py-4 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
+          style={{ gridTemplateColumns: "2fr 180px 1fr 180px 120px 150px" }}
         >
           <div className="flex items-center">PIXEL</div>
           <div className="flex items-center">PIXEL ID</div>
@@ -359,7 +359,7 @@ export default function PixelsPage() {
                       ? 'cursor-default' 
                       : 'hover:bg-muted/50 cursor-pointer'
                   }`}
-                  style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
+                  style={{ gridTemplateColumns: "2fr 180px 1fr 180px 120px 150px" }}
                 >
                   {/* Pixel */}
                   <div className="flex items-center gap-3 min-w-0">
@@ -367,12 +367,14 @@ export default function PixelsPage() {
                       <Building2 className="h-4 w-4 text-[#b4a0ff]" />
                     </div>
                     <div className="min-w-0">
-                      <div className={`font-medium flex items-center gap-2 truncate ${
+                      <div className={`font-medium flex items-center gap-2 ${
                         isPendingApplication ? 'text-muted-foreground' : 'text-foreground'
                       }`}>
-                        {(pixel as any).pixel_name || pixel.pixel_name || `Pixel ${pixel.pixel_id}`}
+                        <span className="truncate">
+                          {(pixel as any).pixel_name || pixel.pixel_name || `Pixel ${pixel.pixel_id}`}
+                        </span>
                         {isPendingApplication && (
-                          <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                          <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
                             <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5 animate-pulse"></div>
                             Connection Pending
                           </span>

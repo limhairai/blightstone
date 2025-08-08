@@ -475,7 +475,7 @@ export default function PagesPage() {
         {/* Table Header */}
         <div
           className="grid gap-4 px-6 py-4 border-b border-border bg-muted/30 text-xs font-medium text-muted-foreground uppercase tracking-wide"
-          style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
+          style={{ gridTemplateColumns: "2fr 180px 1fr 180px 120px 150px" }}
         >
           <div className="flex items-center">PAGE</div>
           <div className="flex items-center">PAGE ID</div>
@@ -509,7 +509,7 @@ export default function PagesPage() {
                     ? 'cursor-default' 
                     : 'hover:bg-muted/50 cursor-pointer'
                 }`}
-                style={{ gridTemplateColumns: "1fr 180px 1fr 180px 120px 150px" }}
+                style={{ gridTemplateColumns: "2fr 180px 1fr 180px 120px 150px" }}
               >
                 {/* Page */}
                 <div className="flex items-center gap-3 min-w-0">
@@ -517,14 +517,16 @@ export default function PagesPage() {
                     <FileText className="h-4 w-4 text-[#8b5cf6]" />
                   </div>
                   <div className="min-w-0">
-                    <div className={`font-medium flex items-center gap-2 truncate ${
+                    <div className={`font-medium flex items-center gap-2 ${
                       page.is_request ? 'text-muted-foreground' : 'text-foreground'
                     }`}>
-                      {page.page_name}
+                      <span className="truncate">
+                        {page.page_name}
+                      </span>
                       {page.is_request && (
-                        <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                        <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
                           <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5 animate-pulse"></div>
-                          Creation Pending
+                          Connection Pending
                         </span>
                       )}
                       {page.verification_status === 'verified' && !page.is_request && (
@@ -546,7 +548,7 @@ export default function PagesPage() {
                         </div>
                       )}
                       {page.is_request && (
-                        <span>Awaiting creation</span>
+                        <span>Awaiting connection</span>
                       )}
                     </div>
                   </div>
