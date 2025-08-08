@@ -12,6 +12,10 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AdminInstantButton } from '@/components/ui/admin-instant-button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 import { useAdminPerformance, useInstantAdminTable } from '@/lib/admin-performance'
 import { 
   Target, 
@@ -26,16 +30,16 @@ import { toast } from 'sonner'
 import { cn } from "@/lib/utils"
 
 interface PixelRequest {
-  request_id: string
+  application_id: string
   organization_id: string
   pixel_name: string
-  pixel_description: string | null
-  business_manager_id: string | null
-  status: 'pending' | 'approved' | 'rejected' | 'completed'
+  pixel_id: string
+  target_bm_dolphin_id: string | null
+  status: 'pending' | 'processing' | 'completed' | 'rejected'
   admin_notes: string | null
+  client_notes: string | null
   created_at: string
   updated_at: string
-  completed_at: string | null
   processed_by: string | null
   organizations: {
     name: string
@@ -46,8 +50,8 @@ function getStatusBadge(status: string) {
   switch (status) {
     case 'pending':
       return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
-    case 'approved':
-      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>
+    case 'processing':
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200"><RefreshCw className="w-3 h-3 mr-1" />Processing</Badge>
     case 'rejected':
       return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>
     case 'completed':
@@ -66,18 +70,73 @@ export default function AdminPixelRequestsPage() {
   const [adminNotes, setAdminNotes] = useState('')
   const [newStatus, setNewStatus] = useState<string>('')
 
-  // For now, return empty data since pixel requests system isn't implemented yet
-  const pixelRequests: PixelRequest[] = []
-  const isLoading = false
-  const error = null
+  // Fetch pixel requests from applications table
+  const fetcher = async (url: string) => {
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${session?.access_token}`
+      }
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch pixel requests')
+    }
+    return response.json()
+  }
+
+  const { data: pixelRequestsData, error, isLoading, mutate: refreshData } = useSWR(
+    session?.access_token ? '/api/admin/pixel-requests' : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30000,
+    }
+  )
+
+  const pixelRequests: PixelRequest[] = pixelRequestsData?.pixelRequests || []
 
   const filterRequests = (status: string) => {
     return pixelRequests.filter((request: PixelRequest) => request.status === status);
   };
 
   const handleProcessRequest = async (requestId: string, status: string, notes: string) => {
-    // TODO: Implement pixel request processing
-    toast.info('Pixel request processing not yet implemented')
+    setProcessing(true)
+    
+    try {
+      const response = await fetch('/api/admin/pixel-requests', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
+        body: JSON.stringify({
+          application_id: requestId,
+          status,
+          admin_notes: notes,
+          processed_by: session?.user?.id
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update pixel request')
+      }
+
+      const result = await response.json()
+      toast.success(result.message || 'Pixel request updated successfully')
+      
+      // Refresh the data
+      refreshData()
+      
+      // Close the dialog
+      setSelectedRequest(null)
+      
+    } catch (error) {
+      console.error('Error processing pixel request:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to update pixel request')
+    } finally {
+      setProcessing(false)
+    }
   }
 
   const openRequestDialog = (request: PixelRequest) => {
@@ -128,7 +187,7 @@ export default function AdminPixelRequestsPage() {
           </TableHeader>
           <TableBody>
             {requests.map((request) => (
-              <TableRow key={request.request_id}>
+              <TableRow key={request.application_id}>
                 <TableCell>
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
@@ -137,22 +196,23 @@ export default function AdminPixelRequestsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="font-medium truncate">{request.organizations.name}</div>
                       <div className="text-sm text-muted-foreground truncate">{request.pixel_name}</div>
+                      <div className="text-xs text-muted-foreground font-mono">ID: {request.pixel_id}</div>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  {request.business_manager_id ? (
+                  {request.target_bm_dolphin_id ? (
                     <div className="text-xs text-muted-foreground font-mono">
-                      {request.business_manager_id}
+                      {request.target_bm_dolphin_id}
                     </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
                 </TableCell>
                 <TableCell>
-                  {request.pixel_description ? (
+                  {request.client_notes ? (
                     <div className="text-sm text-muted-foreground truncate max-w-xs">
-                      {request.pixel_description}
+                      {request.client_notes}
                     </div>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -166,7 +226,7 @@ export default function AdminPixelRequestsPage() {
                     <div className="flex items-center gap-1">
                       <div className={`h-2 w-2 rounded-full ${
                         request.status === 'pending' ? 'bg-yellow-500' :
-                        request.status === 'approved' ? 'bg-blue-500' :
+                        request.status === 'processing' ? 'bg-blue-500' :
                         request.status === 'completed' ? 'bg-green-500' :
                         'bg-red-500'
                       }`} />
@@ -218,8 +278,8 @@ export default function AdminPixelRequestsPage() {
             <TabsTrigger value="pending">
               Pending ({filterRequests('pending').length})
             </TabsTrigger>
-            <TabsTrigger value="approved">
-              Approved ({filterRequests('approved').length})
+            <TabsTrigger value="processing">
+              Processing ({filterRequests('processing').length})
             </TabsTrigger>
             <TabsTrigger value="completed">
               Completed ({filterRequests('completed').length})
@@ -229,7 +289,7 @@ export default function AdminPixelRequestsPage() {
             </TabsTrigger>
           </TabsList>
           
-          <AdminInstantButton onClick={() => {}} variant="outline">
+          <AdminInstantButton onClick={() => refreshData()} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </AdminInstantButton>
@@ -239,8 +299,8 @@ export default function AdminPixelRequestsPage() {
           {renderRequestsTable(filterRequests('pending'))}
         </TabsContent>
 
-        <TabsContent value="approved" className="space-y-4">
-          {renderRequestsTable(filterRequests('approved'))}
+        <TabsContent value="processing" className="space-y-4">
+          {renderRequestsTable(filterRequests('processing'))}
         </TabsContent>
 
         <TabsContent value="completed" className="space-y-4">
@@ -251,6 +311,98 @@ export default function AdminPixelRequestsPage() {
           {renderRequestsTable(filterRequests('rejected'))}
         </TabsContent>
       </Tabs>
+
+      {/* Process Request Dialog */}
+      <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Process Pixel Request</DialogTitle>
+            <DialogDescription>
+              Update the status and add notes for this pixel connection request.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <Label className="font-medium">Organization</Label>
+                  <p className="text-muted-foreground">{selectedRequest.organizations.name}</p>
+                </div>
+                <div>
+                  <Label className="font-medium">Pixel Name</Label>
+                  <p className="text-muted-foreground">{selectedRequest.pixel_name}</p>
+                </div>
+                <div>
+                  <Label className="font-medium">Pixel ID</Label>
+                  <p className="text-muted-foreground font-mono">{selectedRequest.pixel_id}</p>
+                </div>
+                <div>
+                  <Label className="font-medium">Business Manager</Label>
+                  <p className="text-muted-foreground font-mono">
+                    {selectedRequest.target_bm_dolphin_id || '—'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="processing">Processing</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="admin-notes">Admin Notes</Label>
+                <Textarea
+                  id="admin-notes"
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add notes about this request..."
+                  rows={3}
+                />
+              </div>
+              
+              {selectedRequest.client_notes && (
+                <div className="space-y-2">
+                  <Label>Client Notes</Label>
+                  <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
+                    {selectedRequest.client_notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedRequest(null)}
+              disabled={processing}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => selectedRequest && handleProcessRequest(
+                selectedRequest.application_id,
+                newStatus,
+                adminNotes
+              )}
+              disabled={processing || !newStatus}
+            >
+              {processing ? 'Processing...' : 'Update Request'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -125,29 +125,33 @@ export default function PagesPage() {
     }
 
     try {
-      const response = await fetch('/api/pages', {
+      const response = await fetch('/api/page-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
-          ...newPageForm,
-          organization_id: currentOrganizationId
+          organization_id: currentOrganizationId,
+          page_name: newPageForm.page_name,
+          page_category: 'General', // Default category
+          page_description: newPageForm.page_url ? `URL: ${newPageForm.page_url}` : undefined
         })
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to add page')
+        throw new Error(errorData.error || 'Failed to submit page request')
       }
 
-      toast.success('Facebook page added successfully')
+      toast.success('Page request submitted successfully!', {
+        description: 'Your page request is now under review and will be processed within 1-3 business days.'
+      })
       setNewPageForm({ facebook_page_id: '', page_name: '', page_url: '' })
       setIsAddingPage(false)
       mutate() // Refresh the data
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to add page')
+      toast.error(error instanceof Error ? error.message : 'Failed to submit page request')
     }
   }
 
