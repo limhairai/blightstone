@@ -483,45 +483,47 @@ export default function PagesPage() {
                 key={page.page_id}
                 className={`grid gap-4 px-6 py-5 transition-colors group border-b border-border ${
                   page.is_request 
-                    ? 'opacity-60 bg-muted/20 cursor-default' 
+                    ? 'cursor-default' 
                     : 'hover:bg-muted/50 cursor-pointer'
                 }`}
                 style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
               >
                 {/* Page */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
-                    page.is_request 
-                      ? 'bg-gradient-to-br from-yellow-100/50 to-orange-100/50' 
-                      : 'bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20'
-                  }`}>
-                    <FileText className={`h-4 w-4 ${
-                      page.is_request ? 'text-yellow-600' : 'text-[#8b5cf6]'
-                    }`} />
+                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20 flex items-center justify-center">
+                    <FileText className="h-4 w-4 text-[#8b5cf6]" />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium text-foreground flex items-center gap-2 truncate">
+                    <div className={`font-medium flex items-center gap-2 truncate ${
+                      page.is_request ? 'text-muted-foreground' : 'text-foreground'
+                    }`}>
                       {page.page_name}
                       {page.is_request && (
-                        <Clock className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+                        <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
+                          <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5 animate-pulse"></div>
+                          Creation Pending
+                        </span>
                       )}
                       {page.verification_status === 'verified' && !page.is_request && (
                         <Verified className="h-3 w-3 text-blue-500 flex-shrink-0" />
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-2">
-                      {page.followers_count > 0 && (
+                      {!page.is_request && page.followers_count > 0 && (
                         <div className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           <span>{page.followers_count.toLocaleString()}</span>
                         </div>
                       )}
-                      {page.followers_count > 0 && page.likes_count > 0 && <span>•</span>}
-                      {page.likes_count > 0 && (
+                      {!page.is_request && page.followers_count > 0 && page.likes_count > 0 && <span>•</span>}
+                      {!page.is_request && page.likes_count > 0 && (
                         <div className="flex items-center gap-1">
                           <Heart className="h-3 w-3" />
                           <span>{page.likes_count.toLocaleString()}</span>
                         </div>
+                      )}
+                      {page.is_request && (
+                        <span>Awaiting creation</span>
                       )}
                     </div>
                   </div>
@@ -560,23 +562,10 @@ export default function PagesPage() {
 
                 {/* Status */}
                 <div className="flex items-center">
-                  {page.is_request ? (
-                    <Badge 
-                      variant={page.request_status === 'pending' ? 'secondary' : 'outline'}
-                      className={`text-xs ${
-                        page.request_status === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-800 border-yellow-200' 
-                          : 'bg-blue-100 text-blue-800 border-blue-200'
-                      }`}
-                    >
-                      {page.request_status === 'pending' ? 'Pending Review' : 'Processing'}
-                    </Badge>
-                  ) : (
-                    <StatusBadge 
-                      status={page.status as any} 
-                      size="sm" 
-                    />
-                  )}
+                  <StatusBadge 
+                    status={page.is_request ? page.request_status as any : page.status as any} 
+                    size="sm" 
+                  />
                 </div>
 
                 {/* Actions */}
@@ -587,11 +576,6 @@ export default function PagesPage() {
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
-                  )}
-                  {page.is_request && (
-                    <span className="text-xs text-muted-foreground">
-                      {page.request_status === 'pending' ? 'Under Review' : 'Being Processed'}
-                    </span>
                   )}
                 </div>
               </div>
