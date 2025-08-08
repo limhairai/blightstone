@@ -119,9 +119,6 @@ export default function AdminPixelRequestsPage() {
       // Refresh the data
       refreshData()
       
-      // Close the dialog
-      setSelectedRequest(null)
-      
     } catch (error) {
       console.error('Error processing pixel request:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to update pixel request')
