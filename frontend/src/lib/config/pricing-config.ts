@@ -95,8 +95,8 @@ export const PRICING_CONFIG: PricingConfig = {
         pixels: 0, // No pixel limits
         domainsPerBm: 2, // 2 promotion URLs (domains) per BM
         pagesPerBm: 3, // 3 Facebook pages per BM
-        adSpendFee: 1.25, // 1.25% of top-ups
-        spendFeeCap: 149, // Fee line caps at $149
+        adSpendFee: 3.0, // 3.0% of top-ups
+        spendFeeCap: 450, // Fee line caps at $450 (3% of $15k)
         monthlyTopupLimit: 15000, // Monthly spend allowance $15,000
         unlimitedReplacements: true,
         bmApplicationFee: 0, // No BM application fees in new model
@@ -108,8 +108,8 @@ export const PRICING_CONFIG: PricingConfig = {
         pixels: 0, // No pixel limits
         domainsPerBm: 3, // 3 domains per BM
         pagesPerBm: 5, // 5 Facebook pages per BM
-        adSpendFee: 1.0, // 1.00% spend fee
-        spendFeeCap: 449, // Caps at $449
+        adSpendFee: 2.5, // 2.5% spend fee
+        spendFeeCap: 1500, // Caps at $1,500 (2.5% of $60k)
         monthlyTopupLimit: 60000, // Monthly spend allowance $60,000
         unlimitedReplacements: true,
         bmApplicationFee: 0, // No BM application fees in new model
@@ -121,8 +121,8 @@ export const PRICING_CONFIG: PricingConfig = {
         pixels: 0, // No pixel limits
         domainsPerBm: 5, // 5 domains per BM
         pagesPerBm: 10, // 10 Facebook pages per BM
-        adSpendFee: 0.5, // 0.50% spend fee
-        spendFeeCap: 1499, // Caps at $1,499
+        adSpendFee: 2.0, // 2.0% spend fee
+        spendFeeCap: 6000, // Caps at $6,000 (2% of $300k)
         monthlyTopupLimit: 300000, // Monthly spend allowance $300,000
         unlimitedReplacements: true,
         bmApplicationFee: 0, // No BM application fees in new model
