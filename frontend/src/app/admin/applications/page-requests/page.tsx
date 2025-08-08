@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import useSWR, { mutate } from 'swr'
-import { authenticatedFetcher } from '@/lib/swr-config'
+
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -72,9 +72,17 @@ export default function AdminPageRequestsPage() {
   const [adminNotes, setAdminNotes] = useState('')
   const [newStatus, setNewStatus] = useState<string>('')
 
+  const fetcher = async (url: string) => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  };
+
   const { data: pageRequestsData, error, isLoading, mutate: mutateRequests } = useSWR(
-    '/api/page-requests',
-    authenticatedFetcher,
+    '/api/admin/page-requests',
+    fetcher,
     { 
       refreshInterval: 30000,
       revalidateOnFocus: true
@@ -91,7 +99,7 @@ export default function AdminPageRequestsPage() {
     setProcessing(true)
     
     try {
-      const response = await fetch('/api/page-requests', {
+      const response = await fetch('/api/admin/page-requests', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
