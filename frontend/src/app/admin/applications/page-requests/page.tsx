@@ -1,4 +1,7 @@
-"use client"
+"use client";
+
+// Force dynamic rendering for authentication-protected page
+export const dynamic = 'force-dynamic';
 
 import { useState, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -6,24 +9,27 @@ import useSWR, { mutate } from 'swr'
 import { authenticatedFetcher } from '@/lib/swr-config'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Input } from '@/components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AdminInstantButton } from '@/components/ui/admin-instant-button'
+import { useAdminPerformance, useInstantAdminTable } from '@/lib/admin-performance'
 import { 
   FileText, 
-  Search, 
-  Filter, 
   CheckCircle, 
   XCircle, 
   Clock, 
   RefreshCw,
   Eye,
-  MessageSquare
+  AlertCircle,
+  Building2,
+  Globe
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from "@/lib/utils"
 
 interface PageRequest {
   request_id: string
@@ -59,9 +65,8 @@ function getStatusBadge(status: string) {
 }
 
 export default function AdminPageRequestsPage() {
-  const { user } = useAuth()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const { session } = useAuth()
+  const { navigateToAdmin } = useAdminPerformance()
   const [selectedRequest, setSelectedRequest] = useState<PageRequest | null>(null)
   const [processing, setProcessing] = useState(false)
   const [adminNotes, setAdminNotes] = useState('')
@@ -78,17 +83,9 @@ export default function AdminPageRequestsPage() {
 
   const pageRequests: PageRequest[] = pageRequestsData?.pageRequests || []
 
-  const filteredRequests = useMemo(() => {
-    return pageRequests.filter(request => {
-      const matchesSearch = !searchQuery || 
-        request.page_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        request.organizations.name.toLowerCase().includes(searchQuery.toLowerCase())
-      
-      const matchesStatus = statusFilter === 'all' || request.status === statusFilter
-      
-      return matchesSearch && matchesStatus
-    })
-  }, [pageRequests, searchQuery, statusFilter])
+  const filterRequests = (status: string) => {
+    return pageRequests.filter((request: PageRequest) => request.status === status);
+  };
 
   const handleProcessRequest = async (requestId: string, status: string, notes: string) => {
     setProcessing(true)
@@ -103,7 +100,7 @@ export default function AdminPageRequestsPage() {
           request_id: requestId,
           status,
           admin_notes: notes,
-          processed_by: user?.id
+          processed_by: session?.user?.id
         })
       })
 
@@ -132,175 +129,165 @@ export default function AdminPageRequestsPage() {
     setNewStatus(request.status)
   }
 
-  if (error) {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const renderRequestsTable = (requests: PageRequest[]) => {
+    const adminTableHook = useInstantAdminTable();
+
+    if (requests.length === 0) {
+      return (
+        <div className="border rounded-lg p-8 text-center">
+          <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Page Requests</h3>
+          <p className="text-muted-foreground">No page requests found for this status.</p>
+        </div>
+      );
+    }
+
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Error Loading Page Requests</h3>
-          <p className="text-muted-foreground mb-4">Failed to load page requests</p>
-          <Button onClick={() => mutateRequests()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Page Requests</h1>
-          <p className="text-muted-foreground">Manage client requests for custom Facebook pages</p>
-        </div>
-        
-        <Button onClick={() => mutateRequests()} variant="outline">
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Total Requests</p>
-              <p className="text-2xl font-bold">{pageRequests.length}</p>
-            </div>
-            <FileText className="w-8 h-8 text-blue-500" />
-          </div>
-        </div>
-        
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-              <p className="text-2xl font-bold">{pageRequests.filter(r => r.status === 'pending').length}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-500" />
-          </div>
-        </div>
-        
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Approved</p>
-              <p className="text-2xl font-bold">{pageRequests.filter(r => r.status === 'approved').length}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-500" />
-          </div>
-        </div>
-        
-        <div className="bg-card border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Completed</p>
-              <p className="text-2xl font-bold">{pageRequests.filter(r => r.status === 'completed').length}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search requests..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-48">
-            <Filter className="w-4 h-4 mr-2" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Requests Table */}
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Page Name</TableHead>
-              <TableHead>Organization</TableHead>
+              <TableHead>Organization & Page</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Business Manager</TableHead>
+              <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-                  Loading requests...
-                </TableCell>
-              </TableRow>
-            ) : filteredRequests.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No Page Requests</h3>
-                  <p className="text-muted-foreground">No page requests found matching your criteria</p>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredRequests.map((request) => (
-                <TableRow key={request.request_id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{request.page_name}</div>
-                      {request.page_description && (
-                        <div className="text-sm text-muted-foreground truncate max-w-xs">
-                          {request.page_description}
-                        </div>
-                      )}
+            {requests.map((request) => (
+              <TableRow key={request.request_id}>
+                <TableCell>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                      <FileText className="h-4 w-4" />
                     </div>
-                  </TableCell>
-                  <TableCell>{request.organizations.name}</TableCell>
-                  <TableCell>
-                    {request.page_category ? (
-                      <Badge variant="outline">{request.page_category}</Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>{getStatusBadge(request.status)}</TableCell>
-                  <TableCell>{new Date(request.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openRequestDialog(request)}
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      View
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{request.organizations.name}</div>
+                      <div className="text-sm text-muted-foreground truncate">{request.page_name}</div>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {request.page_category ? (
+                    <Badge variant="outline">{request.page_category}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {request.business_manager_id ? (
+                    <div className="text-xs text-muted-foreground font-mono">
+                      {request.business_manager_id}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="text-sm">{formatDate(request.created_at)}</div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <div className={`h-2 w-2 rounded-full ${
+                        request.status === 'pending' ? 'bg-yellow-500' :
+                        request.status === 'approved' ? 'bg-blue-500' :
+                        request.status === 'completed' ? 'bg-green-500' :
+                        'bg-red-500'
+                      }`} />
+                      <span className="text-xs font-medium capitalize">{request.status}</span>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <AdminInstantButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openRequestDialog(request)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View
+                  </AdminInstantButton>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+        Loading page requests...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-600">
+        <AlertCircle className="h-6 w-6 mr-2" />
+        Failed to load page requests: {error.message}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Tabs defaultValue="pending" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <TabsList>
+            <TabsTrigger value="pending">
+              Pending ({filterRequests('pending').length})
+            </TabsTrigger>
+            <TabsTrigger value="approved">
+              Approved ({filterRequests('approved').length})
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed ({filterRequests('completed').length})
+            </TabsTrigger>
+            <TabsTrigger value="rejected">
+              Rejected ({filterRequests('rejected').length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <AdminInstantButton onClick={() => mutateRequests()} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </AdminInstantButton>
+        </div>
+
+        <TabsContent value="pending" className="space-y-4">
+          {renderRequestsTable(filterRequests('pending'))}
+        </TabsContent>
+
+        <TabsContent value="approved" className="space-y-4">
+          {renderRequestsTable(filterRequests('approved'))}
+        </TabsContent>
+
+        <TabsContent value="completed" className="space-y-4">
+          {renderRequestsTable(filterRequests('completed'))}
+        </TabsContent>
+
+        <TabsContent value="rejected" className="space-y-4">
+          {renderRequestsTable(filterRequests('rejected'))}
+        </TabsContent>
+      </Tabs>
 
       {/* Request Details Dialog */}
       <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
