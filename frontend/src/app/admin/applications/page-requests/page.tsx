@@ -122,9 +122,6 @@ export default function AdminPageRequestsPage() {
       // Refresh the data
       mutateRequests()
       
-      // Close the dialog
-      setSelectedRequest(null)
-      
     } catch (error) {
       console.error('Error processing page request:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to update page request')
