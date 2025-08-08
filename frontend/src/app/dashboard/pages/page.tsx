@@ -56,7 +56,6 @@ interface PagesResponse {
   pages: FacebookPage[]
   pagination: {
     total: number
-    limit: number
     canAddMore: boolean
   }
 }
@@ -113,7 +112,7 @@ export default function PagesPage() {
       revalidateOnMount: true, // ✅ Fresh data on mount
       dedupingInterval: 60000, // 60 seconds - pages don't change frequently
       keepPreviousData: true, // ✅ Smooth transitions
-      fallbackData: { pages: [], pagination: { total: 0, limit: 0, canAddMore: true } }, // ⚡ Prevent loading states
+      fallbackData: { pages: [], pagination: { total: 0, canAddMore: true } }, // ⚡ Prevent loading states
     }
   )
 
@@ -276,7 +275,7 @@ export default function PagesPage() {
               Active Pages
             </span>
             <div className="text-foreground font-semibold text-lg">
-              {pagination.limit === -1 ? activePages : `${activePages} / ${pagination.limit}`}
+              {activePages}
             </div>
           </div>
 
@@ -331,7 +330,6 @@ export default function PagesPage() {
           <Dialog open={isAddingPage} onOpenChange={setIsAddingPage}>
             <DialogTrigger asChild>
               <Button 
-                disabled={!pagination.canAddMore}
                 className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -450,25 +448,7 @@ export default function PagesPage() {
         </Button>
       </div>
 
-      {/* Page limit warnings */}
-      {pagination.limit > 0 && activePages >= pagination.limit && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            You've reached your page limit ({pagination.limit} pages). Upgrade your plan to add more pages.
-          </AlertDescription>
-        </Alert>
-      )}
 
-      {/* Zero pages allowed warning - only show after data has loaded */}
-      {!isLoading && pagination.limit === 0 && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
-            Your current plan doesn't include Facebook pages. Upgrade your plan to add pages.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Pages Table - matching ad accounts design */}
       <div className="border border-border rounded-lg overflow-hidden bg-card">
