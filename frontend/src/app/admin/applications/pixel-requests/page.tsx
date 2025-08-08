@@ -12,10 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AdminInstantButton } from '@/components/ui/admin-instant-button'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Label } from '@/components/ui/label'
+
 import { useAdminPerformance, useInstantAdminTable } from '@/lib/admin-performance'
 import { 
   Target, 
@@ -23,7 +20,6 @@ import {
   XCircle, 
   Clock, 
   RefreshCw,
-  Eye,
   AlertCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -64,10 +60,7 @@ export default function AdminPixelRequestsPage() {
   const { session } = useAuth()
   const { navigateToAdmin } = useAdminPerformance()
   const adminTableHook = useInstantAdminTable()
-  const [selectedRequest, setSelectedRequest] = useState<PixelRequest | null>(null)
   const [processing, setProcessing] = useState(false)
-  const [adminNotes, setAdminNotes] = useState('')
-  const [newStatus, setNewStatus] = useState<string>('')
 
   // Fetch pixel requests from applications table
   const fetcher = async (url: string) => {
@@ -137,11 +130,7 @@ export default function AdminPixelRequestsPage() {
     }
   }
 
-  const openRequestDialog = (request: PixelRequest) => {
-    setSelectedRequest(request)
-    setAdminNotes(request.admin_notes || '')
-    setNewStatus(request.status)
-  }
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -233,14 +222,40 @@ export default function AdminPixelRequestsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <AdminInstantButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openRequestDialog(request)}
-                  >
-                    <Eye className="h-4 w-4 mr-2" />
-                    View
-                  </AdminInstantButton>
+                  <div className="flex gap-2">
+                    {request.status === 'pending' && (
+                      <>
+                        <AdminInstantButton
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleProcessRequest(request.application_id, 'rejected', '')}
+                        >
+                          Reject
+                        </AdminInstantButton>
+                        <AdminInstantButton
+                          size="sm"
+                          onClick={() => handleProcessRequest(request.application_id, 'processing', '')}
+                          style={{
+                            background: 'linear-gradient(90deg, #b4a0ff 0%, #ffb4a0 100%)',
+                            color: 'black',
+                            border: 'none'
+                          }}
+                          className="hover:opacity-90"
+                        >
+                          Approve
+                        </AdminInstantButton>
+                      </>
+                    )}
+                    {request.status === 'processing' && (
+                      <AdminInstantButton
+                        size="sm"
+                        onClick={() => handleProcessRequest(request.application_id, 'completed', '')}
+                        className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                      >
+                        Mark as Completed
+                      </AdminInstantButton>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -309,98 +324,6 @@ export default function AdminPixelRequestsPage() {
           {renderRequestsTable(filterRequests('rejected'))}
         </TabsContent>
       </Tabs>
-
-      {/* Process Request Dialog */}
-      <Dialog open={!!selectedRequest} onOpenChange={(open) => !open && setSelectedRequest(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Process Pixel Request</DialogTitle>
-            <DialogDescription>
-              Update the status and add notes for this pixel connection request.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <Label className="font-medium">Organization</Label>
-                  <p className="text-muted-foreground">{selectedRequest.organizations.name}</p>
-                </div>
-                <div>
-                  <Label className="font-medium">Pixel Name</Label>
-                  <p className="text-muted-foreground">{selectedRequest.pixel_name}</p>
-                </div>
-                <div>
-                  <Label className="font-medium">Pixel ID</Label>
-                  <p className="text-muted-foreground font-mono">{selectedRequest.pixel_id}</p>
-                </div>
-                <div>
-                  <Label className="font-medium">Business Manager</Label>
-                  <p className="text-muted-foreground font-mono">
-                    {selectedRequest.target_bm_dolphin_id || '—'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="admin-notes">Admin Notes</Label>
-                <Textarea
-                  id="admin-notes"
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  placeholder="Add notes about this request..."
-                  rows={3}
-                />
-              </div>
-              
-              {selectedRequest.client_notes && (
-                <div className="space-y-2">
-                  <Label>Client Notes</Label>
-                  <p className="text-sm text-muted-foreground p-3 bg-muted rounded-md">
-                    {selectedRequest.client_notes}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setSelectedRequest(null)}
-              disabled={processing}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => selectedRequest && handleProcessRequest(
-                selectedRequest.application_id,
-                newStatus,
-                adminNotes
-              )}
-              disabled={processing || !newStatus}
-            >
-              {processing ? 'Processing...' : 'Update Request'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

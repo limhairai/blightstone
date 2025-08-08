@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
                 admin_notes
             `)
             .eq('organization_id', profile.organization_id)
-            .neq('request_type', 'pixel_connection')
+            .not('request_type', 'in', '("pixel_connection")')
             .order('created_at', { ascending: false });
 
         if (error) {
