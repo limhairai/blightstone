@@ -40,24 +40,27 @@ export interface SupportTicket {
 
 export interface SupportMessage {
   id: string
-  message_id: string
+  message_id?: string
   ticketId: string
-  senderId: string
+  senderId?: string
   content: string
   isInternal: boolean
   messageType: 'message' | 'status_change' | 'assignment' | 'note'
   createdAt: string
+  updatedAt?: string
   editedAt?: string
-  readByCustomer: boolean
-  readByAdmin: boolean
+  readByCustomer?: boolean
+  readByAdmin?: boolean
   metadata?: {
     sent_from_admin?: boolean
     sent_from_admin_panel?: boolean
   }
   sender?: {
+    id: string
     name: string
     email: string
-    role: string
+    role?: string
+    isAdmin?: boolean
   }
   senderName?: string
   senderType?: 'admin' | 'user'
@@ -67,6 +70,9 @@ export interface SupportMessage {
     url: string
     size: number
   }>
+  // ⚡ INSTANT MESSAGING: Optimistic update fields
+  sending?: boolean
+  failed?: boolean
 }
 
 export type TicketStatus = 'open' | 'pending' | 'resolved' | 'closed'

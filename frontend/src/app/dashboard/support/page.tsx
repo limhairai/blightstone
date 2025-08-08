@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
-import { useDebounce } from 'use-debounce'
+
 import useSWR from 'swr'
 import { authenticatedFetcher } from '@/lib/swr-config'
 import { Button } from '@/components/ui/button'
@@ -53,8 +53,8 @@ export default function SupportPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [categoryFilter, setCategoryFilter] = useState('all')
 
-  // Debounce search query to prevent excessive API calls
-  const [debouncedSearchQuery] = useDebounce(searchQuery, 500)
+  // ⚡ INSTANT: No debounce for instant search like Telegram
+  const debouncedSearchQuery = searchQuery
 
   // Build query parameters
   const queryParams = useMemo(() => {
@@ -275,14 +275,13 @@ export default function SupportPage() {
               ticket={selectedTicket} 
               isAdminPanel={false}
               onTicketUpdate={(updatedTicket) => {
-                // Optimistic update
+                // ⚡ INSTANT: Optimistic update without revalidation
                 const optimisticData = {
                   tickets: tickets.map((t: any) => 
-                  t.id === updatedTicket.id ? updatedTicket : t
+                    t.id === updatedTicket.id ? updatedTicket : t
                   )
                 }
-                mutate(optimisticData, false)
-                mutate() // Revalidate
+                mutate(optimisticData, false) // Update cache without revalidation
                 setSelectedTicket(updatedTicket)
               }}
             />

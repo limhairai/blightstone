@@ -92,6 +92,41 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
     e.preventDefault()
     if (!newMessage.trim() || sending || !session?.access_token) return
 
+    const messageContent = newMessage.trim()
+    const tempId = `temp-${Date.now()}`
+    
+    // ⚡ INSTANT: Create optimistic message immediately
+    const optimisticMessage: SupportMessage = {
+      id: tempId,
+      content: messageContent,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      isInternal: false,
+      messageType: 'message',
+      sender: {
+        id: session.user.id,
+        name: session.user.user_metadata?.full_name || session.user.email || 'You',
+        email: session.user.email || '',
+        isAdmin: isAdminPanel
+      },
+      ticketId: ticket.id,
+      sending: true // Mark as sending for UI feedback
+    }
+
+    // ⚡ INSTANT: Add message to UI immediately
+    setMessages(prev => [...prev, optimisticMessage])
+    setNewMessage('')
+    
+    // ⚡ INSTANT: Update ticket info immediately
+    if (onTicketUpdate) {
+      onTicketUpdate({
+        ...ticket,
+        messageCount: (ticket.messageCount || 0) + 1,
+        lastMessageAt: new Date().toISOString(),
+        lastMessageContent: messageContent
+      })
+    }
+
     try {
       setSending(true)
       
@@ -102,10 +137,10 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          content: newMessage.trim(),
+          content: messageContent,
           isInternal: false,
           messageType: 'message',
-          sentFromAdmin: isAdminPanel // Add context about where message was sent from
+          sentFromAdmin: isAdminPanel
         }),
       })
 
@@ -116,26 +151,26 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
       }
 
       const newMsg = await response.json()
-      
-      // Handle the nested message structure from API
       const messageData = newMsg.message || newMsg
       
-      setMessages(prev => [...prev, messageData])
+      // ⚡ REPLACE: Update optimistic message with real data
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId 
+          ? { ...messageData, sending: false }
+          : msg
+      ))
       
-      // Update ticket's last message info
-      if (onTicketUpdate) {
-        onTicketUpdate({
-          ...ticket,
-          messageCount: (ticket.messageCount || 0) + 1,
-          lastMessageAt: new Date().toISOString(),
-          lastMessageContent: newMessage
-        })
-      }
-
-      setNewMessage('')
     } catch (error) {
       console.error('Error sending message:', error)
-      toast.error('Failed to send message')
+      
+      // ⚡ ERROR HANDLING: Mark message as failed, allow retry
+      setMessages(prev => prev.map(msg => 
+        msg.id === tempId 
+          ? { ...msg, sending: false, failed: true }
+          : msg
+      ))
+      
+      toast.error('Failed to send message. Click to retry.')
     } finally {
       setSending(false)
     }
@@ -333,14 +368,31 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
                       </div>
                     )}
                     
-                    <div className={`rounded-2xl px-4 py-2 inline-block max-w-full ${
+                    <div className={`rounded-2xl px-4 py-2 inline-block max-w-full relative ${
                       messageInfo.alignRight 
-                        ? 'bg-primary text-primary-foreground' 
+                        ? message.failed 
+                          ? 'bg-destructive/20 text-destructive border border-destructive/30' 
+                          : message.sending
+                            ? 'bg-primary/70 text-primary-foreground' 
+                            : 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}>
                       <p className="text-sm whitespace-pre-wrap break-words">
                         {message.content}
                       </p>
+                      
+                      {/* ⚡ INSTANT FEEDBACK: Sending/Failed indicators */}
+                      {message.sending && (
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-background rounded-full flex items-center justify-center border">
+                          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
+                        </div>
+                      )}
+                      
+                      {message.failed && (
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-background rounded-full flex items-center justify-center border border-destructive">
+                          <AlertCircle className="w-2 h-2 text-destructive" />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -358,9 +410,16 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
+              placeholder="Type a message... (Enter to send)"
               className="border-muted focus:border-primary"
               disabled={sending}
+              onKeyDown={(e) => {
+                // ⚡ INSTANT: Ctrl/Cmd + Enter for sending (like Telegram)
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault()
+                  handleSendMessage(e as any)
+                }
+              }}
             />
           </div>
           <Button 
