@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { RefreshCw, Info, Building2, Loader2, Power, PowerOff, Search, Users, Heart } from 'lucide-react'
+import { RefreshCw, Info, Building2, Loader2, Power, PowerOff, Search, Users, Heart, HelpCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { PixelRequestDialog } from '@/components/pixels/pixel-request-dialog'
 import { useAuth } from '@/contexts/AuthContext'
 import { useOrganizationStore } from '@/lib/stores/organization-store'
@@ -51,6 +52,7 @@ export default function PixelsPage() {
   }>({ open: false, asset: null })
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [showHowToDialog, setShowHowToDialog] = useState(false)
 
   // ✅ FIXED: Optimized SWR data fetching with proper cache revalidation
   const { data: pixelsData, error: pixelsError, isLoading: pixelsLoading, mutate: mutatePixels } = useSWR(
@@ -227,6 +229,34 @@ export default function PixelsPage() {
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          <Dialog open={showHowToDialog} onOpenChange={setShowHowToDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="h-9">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                How to
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader className="space-y-3">
+                <DialogTitle className="text-xl">How to Connect Facebook Pixels</DialogTitle>
+                <DialogDescription className="text-base">
+                  Connect your existing pixels to our Business Manager for tracking
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-8 py-4">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base mb-3 text-foreground">Existing Pixels</h4>
+                  <ol className="text-sm text-muted-foreground space-y-3 list-decimal list-inside leading-relaxed">
+                    <li className="pl-2">Go to Facebook Business Settings</li>
+                    <li className="pl-2">Find "Datasets & Pixels" in the left menu</li>
+                    <li className="pl-2">Click "Partners" → "Assign Partner"</li>
+                    <li className="pl-2">Select "Use events dataset"</li>
+                  </ol>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
           <PixelRequestDialog 
             businessManagers={businessManagers}
             onRequestSubmitted={handleRequestSubmitted}
