@@ -105,7 +105,7 @@ export async function GET(
       subscriptionLimit = 0
     } else {
       // Use pricing config as single source of truth
-      const planPricing = getPlanPricing(planId as 'starter' | 'growth' | 'scale')
+      const planPricing = getPlanPricing(planId as 'starter' | 'growth' | 'scale' | 'plus')
       
       if (planPricing && typeof planPricing.pixels === 'number') {
         subscriptionLimit = planPricing.pixels

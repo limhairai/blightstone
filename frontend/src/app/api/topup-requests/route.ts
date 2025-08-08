@@ -369,7 +369,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Get plan limits from pricing config (single source of truth)
-        const planId = orgData.plan_id as 'starter' | 'growth' | 'scale';
+        const planId = orgData.plan_id as 'starter' | 'growth' | 'scale' | 'plus';
         const planLimits = getPlanPricing(planId);
         
         if (planLimits) {

@@ -40,7 +40,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
   const canUpgradeTo = (planId: string) => {
     if (!currentPlan || currentPlan.id === 'free') return true
     
-    const planOrder = ['starter', 'growth', 'scale']
+    const planOrder = ['starter', 'growth', 'scale', 'plus']
     const currentIndex = planOrder.indexOf(currentPlan.id)
     const targetIndex = planOrder.indexOf(planId)
     
@@ -50,7 +50,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
   const isDowngrade = (planId: string) => {
     if (!currentPlan || currentPlan.id === 'free') return false
     
-    const planOrder = ['starter', 'growth', 'scale']
+    const planOrder = ['starter', 'growth', 'scale', 'plus']
     const currentIndex = planOrder.indexOf(currentPlan.id)
     const targetIndex = planOrder.indexOf(planId)
     
@@ -337,20 +337,26 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
 
         {/* Plus plan - horizontal layout */}
         <div className="border-t pt-8">
-          <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="bg-card rounded-2xl border border-[#b4a0ff]/30 shadow-md ring-1 ring-[#b4a0ff]/10 p-6">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
               {/* Left side - Title and Button */}
               <div className="lg:min-w-[200px]">
                 <div className="mb-4">
                   <h3 className="text-lg font-semibold text-foreground mb-2">PLUS</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Enterprise-grade solution with premium features
+                  </p>
                 </div>
                 
                 <Button
-                  disabled={true}
-                  className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-background hover:bg-accent text-foreground border border-border"
-                  variant="outline"
+                  onClick={() => {
+                    // TODO: Open contact form or redirect to contact page
+                    toast.info("Contact us for Plus plan pricing and setup")
+                  }}
+                  className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
+                  variant="default"
                 >
-                  Coming Soon
+                  Contact Us
                 </Button>
               </div>
 

@@ -17,7 +17,7 @@ export async function GET() {
       const { data: dbPlans, error: dbError } = await supabase
         .from('plans')
         .select('plan_id, stripe_price_id')
-        .in('plan_id', ['starter', 'growth', 'scale'])
+        .in('plan_id', ['starter', 'growth', 'scale', 'plus'])
         .eq('is_active', true)
 
       const stripeIds: Record<string, string | null> = {}

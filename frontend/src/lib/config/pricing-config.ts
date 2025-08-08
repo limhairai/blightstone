@@ -52,6 +52,23 @@ export interface PricingConfig {
         unlimitedReplacements: boolean;
         bmApplicationFee: number;
       };
+      plus: {
+        price: number;
+        businessManagers: number; // -1 for unlimited
+        adAccounts: number; // -1 for unlimited
+        pixels: number; // -1 for unlimited
+        domainsPerBm: number; // -1 for unlimited
+        pagesPerBm: number; // -1 for unlimited
+        adSpendFee: number;
+        spendFeeCap: number; // -1 for no cap
+        monthlyTopupLimit: number; // -1 for unlimited
+        unlimitedReplacements: boolean;
+        bmApplicationFee: number;
+        postPayCredit: boolean;
+        whiteGloveServices: boolean;
+        dedicatedAccountManager: boolean;
+        volumeBasedCashback: boolean;
+      };
     };
   };
 }
@@ -110,6 +127,23 @@ export const PRICING_CONFIG: PricingConfig = {
         unlimitedReplacements: true,
         bmApplicationFee: 0, // No BM application fees in new model
       },
+      plus: {
+        price: 1499, // Platform fee $1,499/month (premium enterprise tier)
+        businessManagers: -1, // Unlimited
+        adAccounts: -1, // Unlimited
+        pixels: -1, // Unlimited
+        domainsPerBm: -1, // Unlimited
+        pagesPerBm: -1, // Unlimited
+        adSpendFee: 2.5, // 2.5% spend fee (1.5% cost + 1% markup for profit + fees)
+        spendFeeCap: -1, // No cap on spend fees
+        monthlyTopupLimit: -1, // No monthly limits
+        unlimitedReplacements: true,
+        bmApplicationFee: 0, // No BM application fees
+        postPayCredit: true, // Post-pay credit lines
+        whiteGloveServices: true, // White glove services
+        dedicatedAccountManager: true, // Dedicated account manager
+        volumeBasedCashback: true, // Volume-based cashback
+      },
     },
   },
 };
@@ -125,7 +159,7 @@ export const shouldEnableAdAccountStatusDisplay = () => PRICING_CONFIG.enableAdA
 export const isNewPricingEnabled = () => PRICING_CONFIG.newPricingModel.enabled;
 
 // Get pricing for a specific plan
-export const getPlanPricing = (planId: 'starter' | 'growth' | 'scale') => {
+export const getPlanPricing = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (isNewPricingEnabled()) {
     return PRICING_CONFIG.newPricingModel.plans[planId];
   }
@@ -133,88 +167,120 @@ export const getPlanPricing = (planId: 'starter' | 'growth' | 'scale') => {
 };
 
 // Get pixel limit for a plan
-export const getPixelLimit = (planId: 'free' | 'starter' | 'growth' | 'scale') => {
+export const getPixelLimit = (planId: 'free' | 'starter' | 'growth' | 'scale' | 'plus') => {
   if (planId === 'free') {
     return 0;
   }
   if (shouldEnablePixelLimits() && isNewPricingEnabled()) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].pixels;
+    const limit = PRICING_CONFIG.newPricingModel.plans[planId].pixels;
+    return limit === -1 ? null : limit; // -1 means unlimited
   }
   return null;
 };
 
 // Get active BM limit for a plan
-export const getActiveBmLimit = (planId: 'starter' | 'growth' | 'scale') => {
+export const getActiveBmLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (isNewPricingEnabled()) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].businessManagers;
+    const limit = PRICING_CONFIG.newPricingModel.plans[planId].businessManagers;
+    return limit === -1 ? null : limit; // -1 means unlimited
   }
   return null;
 };
 
 // Get active ad account limit for a plan
-export const getActiveAdAccountLimit = (planId: 'starter' | 'growth' | 'scale') => {
+export const getActiveAdAccountLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (isNewPricingEnabled()) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].adAccounts;
+    const limit = PRICING_CONFIG.newPricingModel.plans[planId].adAccounts;
+    return limit === -1 ? null : limit; // -1 means unlimited
   }
   return null;
 };
 
 // Get domain limit per BM for a plan
-export const getDomainLimit = (planId: 'starter' | 'growth' | 'scale') => {
+export const getDomainLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (shouldEnableDomainLimits() && isNewPricingEnabled()) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].domainsPerBm;
+    const limit = PRICING_CONFIG.newPricingModel.plans[planId].domainsPerBm;
+    return limit === -1 ? null : limit; // -1 means unlimited
   }
   return null;
 };
 
 // Get page limit per BM for a plan
-export const getPageLimit = (planId: 'starter' | 'growth' | 'scale' | undefined | null) => {
+export const getPageLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus' | undefined | null) => {
   if (isNewPricingEnabled() && planId && planId in PRICING_CONFIG.newPricingModel.plans) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].pagesPerBm;
+    const limit = PRICING_CONFIG.newPricingModel.plans[planId].pagesPerBm;
+    return limit === -1 ? null : limit; // -1 means unlimited
   }
   return 3; // Default to 3 pages if plan is undefined or not found
 };
 
 // Get monthly top-up limit for a plan
-export const getMonthlyTopupLimit = (planId: 'starter' | 'growth' | 'scale') => {
+export const getMonthlyTopupLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (shouldEnableTopupLimits() && isNewPricingEnabled()) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].monthlyTopupLimit;
+    const limit = PRICING_CONFIG.newPricingModel.plans[planId].monthlyTopupLimit;
+    return limit === -1 ? null : limit; // -1 means unlimited
   }
   return null;
 };
 
 // Get spend fee cap for a plan
-export const getSpendFeeCap = (planId: 'starter' | 'growth' | 'scale') => {
+export const getSpendFeeCap = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (shouldEnableAdSpendFees() && isNewPricingEnabled()) {
-    return PRICING_CONFIG.newPricingModel.plans[planId].spendFeeCap;
+    const cap = PRICING_CONFIG.newPricingModel.plans[planId].spendFeeCap;
+    return cap === -1 ? null : cap; // -1 means no cap
   }
   return null;
 };
 
 // Calculate maximum possible ad accounts based on BM limit
 // Each BM can host max 7 ad accounts from provider
-export const getMaxPossibleAdAccounts = (planId: 'starter' | 'growth' | 'scale') => {
+export const getMaxPossibleAdAccounts = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   const bmLimit = getActiveBmLimit(planId);
-  if (!bmLimit) return null;
+  if (!bmLimit) return null; // null means unlimited
   
   // Each BM can host 7 ad accounts max from provider
   return bmLimit * 7;
 };
 
 // Check if ad account limit exceeds BM capacity
-export const validateAdAccountLimits = (planId: 'starter' | 'growth' | 'scale') => {
+export const validateAdAccountLimits = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   const adAccountLimit = getActiveAdAccountLimit(planId);
   const maxPossible = getMaxPossibleAdAccounts(planId);
   
+  // If either is unlimited (null), validation passes
   if (!adAccountLimit || !maxPossible) return true;
   
   return adAccountLimit <= maxPossible;
 };
 
 // Get BM application fee for a plan
-export const getBmApplicationFee = (planId: 'starter' | 'growth' | 'scale') => {
+export const getBmApplicationFee = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
   if (shouldEnableBmApplicationFees() && isNewPricingEnabled()) {
     return PRICING_CONFIG.newPricingModel.plans[planId].bmApplicationFee;
   }
   return 0;
+};
+
+// Check if plan has premium features (Plus plan)
+export const isPremiumPlan = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
+  return planId === 'plus';
+};
+
+// Get premium features for Plus plan
+export const getPremiumFeatures = (planId: 'starter' | 'growth' | 'scale' | 'plus') => {
+  if (planId === 'plus' && isNewPricingEnabled()) {
+    const plan = PRICING_CONFIG.newPricingModel.plans.plus;
+    return {
+      postPayCredit: plan.postPayCredit,
+      whiteGloveServices: plan.whiteGloveServices,
+      dedicatedAccountManager: plan.dedicatedAccountManager,
+      volumeBasedCashback: plan.volumeBasedCashback,
+    };
+  }
+  return {
+    postPayCredit: false,
+    whiteGloveServices: false,
+    dedicatedAccountManager: false,
+    volumeBasedCashback: false,
+  };
 }; 

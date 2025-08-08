@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       }
     } else {
       // Get plan pricing from pricing config (single source of truth)
-      const planId = orgData.plan_id as 'starter' | 'growth' | 'scale'
+      const planId = orgData.plan_id as 'starter' | 'growth' | 'scale' | 'plus'
       const planPricing = getPlanPricing(planId)
       
       if (planPricing) {

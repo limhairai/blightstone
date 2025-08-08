@@ -109,7 +109,8 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
 
   // Page management functions
   const addPageField = () => {
-    if (formData.pages.length < maxPagesPerBm) {
+    // If maxPagesPerBm is null, it means unlimited pages (Plus plan)
+    if (maxPagesPerBm === null || formData.pages.length < maxPagesPerBm) {
       setFormData(prev => ({
         ...prev,
         pages: [...prev.pages, { name: "" }]
@@ -396,9 +397,9 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-foreground">
-                Pages for this Business Manager ({formData.pages.filter(p => p.name.trim()).length}/{maxPagesPerBm})
+                Pages for this Business Manager ({formData.pages.filter(p => p.name.trim()).length}/{maxPagesPerBm === null ? '∞' : maxPagesPerBm})
               </Label>
-              {formData.pages.length < maxPagesPerBm && (
+              {(maxPagesPerBm === null || formData.pages.length < maxPagesPerBm) && (
                 <Button
                   type="button"
                   variant="outline"

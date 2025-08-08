@@ -24,6 +24,9 @@ import { useSWRConfig } from "swr"
 import { useAuth } from "@/contexts/AuthContext"
 import { useSubscription } from "@/hooks/useSubscription"
 import { PageSelector } from '@/components/pages/page-selector'
+import { AccountTypeSelector, type AccountType } from '@/components/accounts/account-type-selector'
+import { BmAttachmentSelector, type BmAttachmentType, type BmAttachmentData } from '@/components/business-managers/bm-attachment-selector'
+import { isPremiumPlan } from '@/lib/config/pricing-config'
 
 interface CreateAdAccountDialogProps {
   trigger: React.ReactNode
@@ -34,7 +37,7 @@ interface CreateAdAccountDialogProps {
 export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: CreateAdAccountDialogProps) {
   const { session } = useAuth();
   const { currentOrganizationId } = useOrganizationStore();
-  const { usage, checkLimit } = useSubscription();
+  const { usage, checkLimit, currentPlan } = useSubscription();
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -55,23 +58,44 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
   const canAddMoreAccounts = checkLimit('adAccounts', usage?.adAccounts || 0)
   const hasReachedAccountLimit = !canAddMoreAccounts
 
+  // Check if current plan is Plus (has premium features)
+  // Temporarily disabled while Plus plan is in "Contact Us" mode
+  const isPlus = false // currentPlan ? isPremiumPlan(currentPlan.id as any) : false
+
   const [formData, setFormData] = useState({
     business_manager_id: bmId || "",
     timezone: "UTC",
     selectedPageIds: [] as string[],
+    // Plus plan specific fields
+    accountType: 'prepay' as AccountType, // Default to prepay for backwards compatibility
+    bmAttachment: {
+      type: 'request' as BmAttachmentType,
+      bmId: '',
+      bmName: '',
+      justification: ''
+    } as BmAttachmentData
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.business_manager_id) {
+    // For non-Plus plans or prepay accounts, require BM selection
+    if (!formData.business_manager_id && (!isPlus || formData.accountType === 'prepay')) {
         toast.error("Please select a business manager.");
         return;
     }
 
-    // Validate pages
-    if (formData.selectedPageIds.length === 0) {
-      toast.error('At least one Facebook page is required');
+    // For post-pay accounts with own BM attachment, validate BM details
+    if (isPlus && formData.accountType === 'postpay' && formData.bmAttachment.type === 'own') {
+      if (!formData.bmAttachment.bmId || !formData.bmAttachment.bmName) {
+        toast.error("Please provide Business Manager ID and name for attachment.");
+        return;
+      }
+    }
+
+    // Only require pages for prepay accounts (post-pay accounts might not have pages initially)
+    if (formData.accountType === 'prepay' && formData.selectedPageIds.length === 0) {
+      toast.error('At least one Facebook page is required for prepay accounts');
       return;
     }
 
@@ -97,6 +121,11 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
           timezone: formData.timezone,
           type: 'ad_account', // Specify the application type
           page_ids: formData.selectedPageIds, // Include selected Facebook pages
+          // Plus plan specific fields (temporarily disabled)
+          // ...(isPlus && {
+          //   account_type: formData.accountType,
+          //   bm_attachment: formData.accountType === 'postpay' ? formData.bmAttachment : null,
+          // }),
         }),
       });
 
@@ -117,7 +146,18 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
       }
 
       setTimeout(() => {
-        setFormData({ business_manager_id: bmId || "", timezone: "UTC", selectedPageIds: [] })
+        setFormData({ 
+          business_manager_id: bmId || "", 
+          timezone: "UTC", 
+          selectedPageIds: [],
+          accountType: 'prepay' as AccountType,
+          bmAttachment: {
+            type: 'request' as BmAttachmentType,
+            bmId: '',
+            bmName: '',
+            justification: ''
+          } as BmAttachmentData
+        })
         setShowSuccess(false)
         setOpen(false)
         onAccountCreated?.()
@@ -229,6 +269,25 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
                     </SelectContent>
                     </Select>
                 </div>
+
+                {/* Plus Plan Features - Account Type & BM Attachment */}
+                {isPlus && (
+                  <>
+                    <AccountTypeSelector
+                      selectedType={formData.accountType}
+                      onTypeChange={(type) => setFormData(prev => ({ ...prev, accountType: type }))}
+                      className="space-y-2"
+                    />
+
+                    {formData.accountType === 'postpay' && (
+                      <BmAttachmentSelector
+                        selectedData={formData.bmAttachment}
+                        onDataChange={(data) => setFormData(prev => ({ ...prev, bmAttachment: data }))}
+                        className="space-y-2"
+                      />
+                    )}
+                  </>
+                )}
 
                 {/* Facebook Pages Selection - Only from this BM */}
                 <div className="space-y-2">

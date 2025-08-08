@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate BM application fee
-    const bmApplicationFee = getBmApplicationFee(orgData.plan_id as 'starter' | 'growth' | 'scale')
+    const bmApplicationFee = getBmApplicationFee(orgData.plan_id as 'starter' | 'growth' | 'scale' | 'plus')
     const isFirstBm = existingBmCount === 0
     const actualFee = isFirstBm ? 0 : bmApplicationFee
 

@@ -141,7 +141,7 @@ export function useSubscription() {
     if (!currentPlan) return false
     
     // Get plan limits from pricing config (single source of truth)
-    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale' | 'plus'
     const planLimits = getPlanPricing(planId)
     
     if (!planLimits) {
@@ -172,7 +172,7 @@ export function useSubscription() {
     if (!currentPlan) return 0
     
     // Get plan limits from pricing config (single source of truth)
-    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale' | 'plus'
     const planLimits = getPlanPricing(planId)
     
     if (!planLimits) {
@@ -387,7 +387,7 @@ export function useSubscriptionLegacy() {
     if (!currentPlan) return false
     
     // Get plan limits from pricing config (single source of truth)
-    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale' | 'plus'
     const planLimits = getPlanPricing(planId)
     
     if (!planLimits) {
@@ -418,7 +418,7 @@ export function useSubscriptionLegacy() {
     if (!currentPlan) return 0
     
     // Get plan limits from pricing config (single source of truth)
-    const planId = currentPlan.id as 'starter' | 'growth' | 'scale'
+    const planId = currentPlan.id as 'starter' | 'growth' | 'scale' | 'plus'
     const planLimits = getPlanPricing(planId)
     
     if (!planLimits) {
