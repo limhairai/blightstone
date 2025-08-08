@@ -26,7 +26,8 @@ import {
   RefreshCw,
   Info,
   Search,
-  HelpCircle
+  HelpCircle,
+  Clock
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -46,6 +47,9 @@ interface FacebookPage {
   bm_name?: string
   bm_id?: string
   business_manager_id?: string
+  // Request status for pending requests
+  request_status?: 'pending' | 'processing' | 'completed' | 'rejected'
+  is_request?: boolean
 }
 
 interface PagesResponse {
@@ -109,11 +113,52 @@ export default function PagesPage() {
     }
   )
 
-  const pages = pagesData?.pages || []
+  // Fetch page requests data
+  const { data: pageRequestsData, error: requestsError, mutate: mutateRequests } = useSWR<any>(
+    session?.access_token && currentOrganizationId 
+      ? [`/api/page-requests?organization_id=${currentOrganizationId}`, session.access_token]
+      : null,
+    ([url, token]: [string, string]) => authenticatedFetcher(url, token),
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60000,
+    }
+  )
+
+  // Combine active pages with pending page requests
+  const activePagesData = pagesData?.pages || []
+  const pendingRequests = pageRequestsData?.pageRequests || []
+  
+  // Convert page requests to page-like objects for display
+  const pendingPagesData = pendingRequests
+    .filter((req: any) => req.status !== 'completed' && req.status !== 'rejected')
+    .map((req: any) => ({
+      page_id: `request-${req.requestId}`,
+      facebook_page_id: req.requestId,
+      page_name: req.pageName,
+      page_url: req.pageDescription?.includes('URL:') ? req.pageDescription.replace('URL: ', '') : undefined,
+      category: req.pageCategory || 'General',
+      verification_status: 'pending' as const,
+      status: 'inactive' as const,
+      followers_count: 0,
+      likes_count: 0,
+      created_at: req.createdAt,
+      updated_at: req.updatedAt,
+      request_status: req.status as 'pending' | 'processing',
+      is_request: true,
+      bm_name: undefined,
+      bm_id: undefined,
+      business_manager_id: undefined
+    }))
+
+  // Combine both datasets
+  const pages = [...activePagesData, ...pendingPagesData]
   const pagination = pagesData?.pagination || { total: 0, limit: 1, canAddMore: false }
 
   const handleRefresh = async () => {
     mutate()
+    mutateRequests()
   }
 
   const handleAddPage = async (e: React.FormEvent) => {
@@ -149,7 +194,8 @@ export default function PagesPage() {
       })
       setNewPageForm({ facebook_page_id: '', page_name: '', page_url: '' })
       setIsAddingPage(false)
-      mutate() // Refresh the data
+      mutate() // Refresh active pages
+      mutateRequests() // Refresh page requests
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to submit page request')
     }
@@ -170,15 +216,25 @@ export default function PagesPage() {
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter(page => page.status === statusFilter)
+      if (statusFilter === "pending") {
+        // Show pending requests
+        filtered = filtered.filter(page => page.is_request && page.request_status === 'pending')
+      } else if (statusFilter === "processing") {
+        // Show processing requests
+        filtered = filtered.filter(page => page.is_request && page.request_status === 'processing')
+      } else {
+        // Show active pages by status
+        filtered = filtered.filter(page => !page.is_request && page.status === statusFilter)
+      }
     }
 
     return filtered
   }, [pages, searchQuery, statusFilter])
 
   // Calculate metrics
-  const activePages = pages.filter(page => page.status === 'active').length
-  const verifiedPages = pages.filter(page => page.verification_status === 'verified').length
+  const activePages = pages.filter(page => !page.is_request && page.status === 'active').length
+  const verifiedPages = pages.filter(page => !page.is_request && page.verification_status === 'verified').length
+  const pendingRequests = pages.filter(page => page.is_request).length
 
   return (
     <div className="space-y-6">
@@ -201,6 +257,16 @@ export default function PagesPage() {
               {verifiedPages}
             </div>
           </div>
+          {pendingRequests > 0 && (
+            <div className="flex flex-col">
+              <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
+                Pending Requests
+              </span>
+              <div className="text-yellow-600 font-semibold text-lg">
+                {pendingRequests}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -340,6 +406,12 @@ export default function PagesPage() {
             <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
               Suspended
             </SelectItem>
+            <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
+              Pending Request
+            </SelectItem>
+            <SelectItem value="processing" className="text-popover-foreground hover:bg-accent">
+              Processing Request
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -410,18 +482,31 @@ export default function PagesPage() {
             filteredPages.map((page) => (
               <div
                 key={page.page_id}
-                className="grid gap-4 px-6 py-5 hover:bg-muted/50 transition-colors group cursor-pointer border-b border-border"
+                className={`grid gap-4 px-6 py-5 transition-colors group border-b border-border ${
+                  page.is_request 
+                    ? 'opacity-60 bg-muted/20 cursor-default' 
+                    : 'hover:bg-muted/50 cursor-pointer'
+                }`}
                 style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
               >
                 {/* Page */}
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20 flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-[#8b5cf6]" />
+                  <div className={`h-8 w-8 rounded-lg flex items-center justify-center ${
+                    page.is_request 
+                      ? 'bg-gradient-to-br from-yellow-100/50 to-orange-100/50' 
+                      : 'bg-gradient-to-br from-[#8b5cf6]/20 to-[#06b6d4]/20'
+                  }`}>
+                    <FileText className={`h-4 w-4 ${
+                      page.is_request ? 'text-yellow-600' : 'text-[#8b5cf6]'
+                    }`} />
                   </div>
                   <div className="min-w-0">
                     <div className="font-medium text-foreground flex items-center gap-2 truncate">
                       {page.page_name}
-                      {page.verification_status === 'verified' && (
+                      {page.is_request && (
+                        <Clock className="h-3 w-3 text-yellow-600 flex-shrink-0" />
+                      )}
+                      {page.verification_status === 'verified' && !page.is_request && (
                         <Verified className="h-3 w-3 text-blue-500 flex-shrink-0" />
                       )}
                     </div>
@@ -455,7 +540,9 @@ export default function PagesPage() {
                   {page.bm_name ? (
                     <span className="text-sm text-foreground truncate">{page.bm_name}</span>
                   ) : (
-                    <span className="text-xs text-muted-foreground">Not assigned</span>
+                    <span className="text-xs text-muted-foreground">
+                      {page.is_request ? 'Pending Assignment' : 'Not assigned'}
+                    </span>
                   )}
                 </div>
 
@@ -466,26 +553,46 @@ export default function PagesPage() {
                       {page.bm_id}
                     </div>
                   ) : (
-                    <span className="text-xs text-muted-foreground">-</span>
+                    <span className="text-xs text-muted-foreground">
+                      {page.is_request ? 'Pending' : '-'}
+                    </span>
                   )}
                 </div>
 
                 {/* Status */}
                 <div className="flex items-center">
-                  <StatusBadge 
-                    status={page.status as any} 
-                    size="sm" 
-                  />
+                  {page.is_request ? (
+                    <Badge 
+                      variant={page.request_status === 'pending' ? 'secondary' : 'outline'}
+                      className={`text-xs ${
+                        page.request_status === 'pending' 
+                          ? 'bg-yellow-100 text-yellow-800 border-yellow-200' 
+                          : 'bg-blue-100 text-blue-800 border-blue-200'
+                      }`}
+                    >
+                      {page.request_status === 'pending' ? 'Pending Review' : 'Processing'}
+                    </Badge>
+                  ) : (
+                    <StatusBadge 
+                      status={page.status as any} 
+                      size="sm" 
+                    />
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex items-center">
-                  {page.page_url && (
+                  {page.page_url && !page.is_request && (
                     <Button variant="ghost" size="sm" asChild>
                       <a href={page.page_url} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
+                  )}
+                  {page.is_request && (
+                    <span className="text-xs text-muted-foreground">
+                      {page.request_status === 'pending' ? 'Under Review' : 'Being Processed'}
+                    </span>
                   )}
                 </div>
               </div>
