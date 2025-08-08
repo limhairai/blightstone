@@ -105,7 +105,7 @@ export default function PagesPage() {
     session?.access_token && currentOrganizationId 
       ? [`/api/pages?organization_id=${currentOrganizationId}`, session.access_token]
       : null,
-    ([url, token]: [string, string]) => authenticatedFetcher(url, token),
+    ([url, token]: readonly [string, string]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: true, // ✅ Refresh when returning to pages
       revalidateOnReconnect: true, // ✅ Refresh on reconnect
@@ -113,7 +113,7 @@ export default function PagesPage() {
       revalidateOnMount: true, // ✅ Fresh data on mount
       dedupingInterval: 60000, // 60 seconds - pages don't change frequently
       keepPreviousData: true, // ✅ Smooth transitions
-      fallbackData: { pages: [], pagination: { total: 0, canAddMore: true } }, // ⚡ Prevent loading states
+      fallbackData: { pages: [], pagination: { total: 0, limit: 0, canAddMore: true } }, // ⚡ Prevent loading states
     }
   )
 
@@ -122,7 +122,7 @@ export default function PagesPage() {
     session?.access_token && currentOrganizationId 
       ? [`/api/page-requests?organization_id=${currentOrganizationId}`, session.access_token]
       : null,
-    ([url, token]: [string, string]) => authenticatedFetcher(url, token),
+    ([url, token]: readonly [string, string]) => authenticatedFetcher(url, token),
     {
       revalidateOnFocus: true, // ✅ Refresh when returning to pages
       revalidateOnReconnect: true, // ✅ Refresh on reconnect

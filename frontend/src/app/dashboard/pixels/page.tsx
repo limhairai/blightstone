@@ -111,7 +111,7 @@ export default function PixelsPage() {
 
     if (searchQuery) {
       filtered = filtered.filter(
-        (pixel) =>
+        (pixel: any) =>
           pixel.pixel_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
           pixel.pixel_id.includes(searchQuery) ||
           (pixel.business_manager_name && pixel.business_manager_name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -121,16 +121,16 @@ export default function PixelsPage() {
     if (statusFilter !== "all") {
       if (statusFilter === "pending") {
         // Show pending requests
-        filtered = filtered.filter(pixel => pixel.type === 'application' && pixel.status === 'pending')
+        filtered = filtered.filter((pixel: any) => pixel.type === 'application' && pixel.status === 'pending')
       } else if (statusFilter === "processing") {
         // Show processing requests
-        filtered = filtered.filter(pixel => pixel.type === 'application' && pixel.status === 'processing')
+        filtered = filtered.filter((pixel: any) => pixel.type === 'application' && pixel.status === 'processing')
       } else if (statusFilter === "active") {
         // Show active pixels only
-        filtered = filtered.filter(pixel => pixel.type !== 'application' && pixel.status === 'active' && pixel.is_active !== false)
+        filtered = filtered.filter((pixel: any) => pixel.type !== 'application' && pixel.status === 'active' && pixel.is_active !== false)
       } else if (statusFilter === "inactive") {
         // Show inactive/deactivated pixels
-        filtered = filtered.filter(pixel => pixel.type !== 'application' && (pixel.status === 'inactive' || pixel.is_active === false))
+        filtered = filtered.filter((pixel: any) => pixel.type !== 'application' && (pixel.status === 'inactive' || pixel.is_active === false))
       }
     }
 
@@ -138,8 +138,8 @@ export default function PixelsPage() {
   }, [pixels, searchQuery, statusFilter])
 
   // Calculate metrics
-  const activePixels = pixels.filter(pixel => pixel.type !== 'application' && pixel.status === 'active' && pixel.is_active !== false).length
-  const pendingRequests = pixels.filter(pixel => pixel.type === 'application').length
+  const activePixels = pixels.filter((pixel: any) => pixel.type !== 'application' && pixel.status === 'active' && pixel.is_active !== false).length
+  const pendingRequests = pixels.filter((pixel: any) => pixel.type === 'application').length
 
   // Update subscription limit when pixels data changes
   useEffect(() => {
