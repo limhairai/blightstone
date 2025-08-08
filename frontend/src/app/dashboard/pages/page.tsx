@@ -128,10 +128,10 @@ export default function PagesPage() {
 
   // Combine active pages with pending page requests
   const activePagesData = pagesData?.pages || []
-  const pendingRequests = pageRequestsData?.pageRequests || []
+  const pendingRequestsData = pageRequestsData?.pageRequests || []
   
   // Convert page requests to page-like objects for display
-  const pendingPagesData = pendingRequests
+  const pendingPagesData = pendingRequestsData
     .filter((req: any) => req.status !== 'completed' && req.status !== 'rejected')
     .map((req: any) => ({
       page_id: `request-${req.requestId}`,
@@ -277,29 +277,28 @@ export default function PagesPage() {
                 How to
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>How to Add Facebook Pages</DialogTitle>
-                <DialogDescription>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader className="space-y-3">
+                <DialogTitle className="text-xl">How to Add Facebook Pages</DialogTitle>
+                <DialogDescription className="text-base">
                   Two ways to add pages to your Business Manager
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-sm mb-2">New BM Applications</h4>
-                  <p className="text-sm text-muted-foreground">
+              <div className="space-y-8 py-4">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base mb-3 text-foreground">New BM Applications</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     Specify pages during BM application - we'll create them for you automatically.
                   </p>
                 </div>
-                <div>
-                  <h4 className="font-medium text-sm mb-2">Existing Business Managers</h4>
-                  <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-                    <li>Go to Facebook Business Settings</li>
-                    <li>Find "Pages" in the left menu</li>
-                    <li>Click "Add" → "Request access to a Page"</li>
-                    <li>Enter your BM ID (from Business Managers list)</li>
-                    <li>Select "Partial access (business tools only)"</li>
-                    <li>Choose needed permissions (Content, Ads, etc.)</li>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-base mb-3 text-foreground">Existing Business Managers</h4>
+                  <ol className="text-sm text-muted-foreground space-y-3 list-decimal list-inside leading-relaxed">
+                    <li className="pl-2">Go to Facebook Business Settings</li>
+                    <li className="pl-2">Find "Pages" in the left menu</li>
+                    <li className="pl-2">Click "Assign Partner" → "Business ID"</li>
+                    <li className="pl-2">Enter your BM ID (from Business Managers list)</li>
+                    <li className="pl-2">Select "Partial access (business tools and Facebook)"</li>
                   </ol>
                 </div>
               </div>
