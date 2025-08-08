@@ -40,7 +40,6 @@ interface PixelRequest {
   client_notes: string | null
   created_at: string
   updated_at: string
-  processed_by: string | null
   organizations: {
     name: string
   }
@@ -112,8 +111,7 @@ export default function AdminPixelRequestsPage() {
         body: JSON.stringify({
           application_id: requestId,
           status,
-          admin_notes: notes,
-          processed_by: session?.user?.id
+          admin_notes: notes
         })
       })
 

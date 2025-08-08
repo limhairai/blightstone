@@ -17,7 +17,6 @@ const transformPixelRequestToFrontend = (req: any) => ({
   status: req.status,
   admin_notes: req.admin_notes,
   client_notes: req.client_notes,
-  processed_by: req.processed_by,
   created_at: req.created_at,
   updated_at: req.updated_at,
   organizations: {
@@ -38,7 +37,6 @@ export async function GET(request: NextRequest) {
         status,
         admin_notes,
         client_notes,
-        processed_by,
         created_at,
         updated_at,
         organizations!inner(name)
@@ -63,7 +61,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
-    const { application_id, status, admin_notes, processed_by } = body
+    const { application_id, status, admin_notes } = body
 
     if (!application_id || !status) {
       return NextResponse.json({
@@ -74,7 +72,6 @@ export async function PATCH(request: NextRequest) {
     const updateData: any = {
       status,
       admin_notes: admin_notes || null,
-      processed_by: processed_by || null,
       updated_at: new Date().toISOString()
     }
 
@@ -92,7 +89,6 @@ export async function PATCH(request: NextRequest) {
         status,
         admin_notes,
         client_notes,
-        processed_by,
         created_at,
         updated_at,
         organizations!inner(name)
