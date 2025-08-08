@@ -205,13 +205,13 @@ export const getDomainLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus') 
   return null;
 };
 
-// Get page limit per BM for a plan
+// Get page creation limit per BM for a plan (pages WE create, not total bound pages)
 export const getPageLimit = (planId: 'starter' | 'growth' | 'scale' | 'plus' | undefined | null) => {
   if (isNewPricingEnabled() && planId && planId in PRICING_CONFIG.newPricingModel.plans) {
     const limit = PRICING_CONFIG.newPricingModel.plans[planId].pagesPerBm;
     return limit === -1 ? null : limit; // -1 means unlimited
   }
-  return 3; // Default to 3 pages if plan is undefined or not found
+  return 3; // Default to 3 pages we can create if plan is undefined or not found
 };
 
 // Get monthly top-up limit for a plan

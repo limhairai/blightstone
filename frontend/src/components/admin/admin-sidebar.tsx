@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Zap,
   Target,
+  Globe,
   type LucideIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
@@ -65,7 +66,7 @@ export function AdminSidebar({ className }: { className?: string }) {
       icon: FileText,
       subItems: [
         { name: "BM & Ad Account Apps", href: "/admin/applications", icon: FileText },
-        { name: "Page Requests", href: "/admin/applications/page-requests", icon: FileText },
+        { name: "Page Requests", href: "/admin/applications/page-requests", icon: Globe },
         { name: "Pixel Requests", href: "/admin/applications/pixel-requests", icon: Target },
         { name: "Application History", href: "/admin/applications/history", icon: FileText },
       ],

@@ -130,30 +130,11 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    // Get plan limits for the organization
-    const { data: orgData, error: orgError } = await supabaseAdmin
-      .from('organizations')
-      .select('plan_id')
-      .eq('organization_id', organizationId)
-      .single()
-
-    const planId = orgData?.plan_id || 'free'
-    const planLimits = {
-      free: 1,
-      starter: 3,
-      growth: 5,
-      scale: 10
-    }
-
-    const pageLimit = planLimits[planId as keyof typeof planLimits] || 1
-    const currentCount = pagesWithBMInfo?.length || 0
-
     return NextResponse.json({
       pages: pagesWithBMInfo || [],
       pagination: {
-        total: currentCount,
-        limit: pageLimit,
-        canAddMore: currentCount < pageLimit
+        total: pagesWithBMInfo?.length || 0,
+        canAddMore: true // ⚡ UNLIMITED: Clients can bind as many pages as they want
       }
     })
 
