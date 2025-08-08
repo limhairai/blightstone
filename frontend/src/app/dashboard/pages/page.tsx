@@ -26,7 +26,8 @@ import {
   Info,
   Search,
   HelpCircle,
-  Clock
+  Clock,
+  Verified
 } from 'lucide-react'
 import { toast } from 'sonner'
 
