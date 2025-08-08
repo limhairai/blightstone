@@ -385,7 +385,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                   <ul className="space-y-2">
                     <li className="flex items-start">
                       <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">Post-pay credit lines</span>
+                      <span className="text-sm text-muted-foreground">Connect your own credit card</span>
                     </li>
                     <li className="flex items-start">
                       <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
