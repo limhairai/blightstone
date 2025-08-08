@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import useSWR from 'swr'
 import { authenticatedFetcher, useBusinessManagers } from '@/lib/swr-config'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { RefreshCw, Info, Building2, Loader2, Power, PowerOff } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { RefreshCw, Info, Building2, Loader2, Power, PowerOff, Search, Users, Heart } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PixelRequestDialog } from '@/components/pixels/pixel-request-dialog'
 import { useAuth } from '@/contexts/AuthContext'
@@ -47,6 +49,8 @@ export default function PixelsPage() {
     open: boolean;
     asset: any | null;
   }>({ open: false, asset: null })
+  const [searchQuery, setSearchQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   // ✅ FIXED: Optimized SWR data fetching with proper cache revalidation
   const { data: pixelsData, error: pixelsError, isLoading: pixelsLoading, mutate: mutatePixels } = useSWR(
@@ -98,6 +102,42 @@ export default function PixelsPage() {
   }
   const loading = pixelsLoading || bmLoading
   const error = pixelsError || bmError
+
+  // Filter pixels based on search and status
+  const filteredPixels = useMemo(() => {
+    let filtered = pixels
+
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (pixel) =>
+          pixel.pixel_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          pixel.pixel_id.includes(searchQuery) ||
+          (pixel.business_manager_name && pixel.business_manager_name.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    }
+
+    if (statusFilter !== "all") {
+      if (statusFilter === "pending") {
+        // Show pending requests
+        filtered = filtered.filter(pixel => pixel.type === 'application' && pixel.status === 'pending')
+      } else if (statusFilter === "processing") {
+        // Show processing requests
+        filtered = filtered.filter(pixel => pixel.type === 'application' && pixel.status === 'processing')
+      } else if (statusFilter === "active") {
+        // Show active pixels only
+        filtered = filtered.filter(pixel => pixel.type !== 'application' && pixel.status === 'active' && pixel.is_active !== false)
+      } else if (statusFilter === "inactive") {
+        // Show inactive/deactivated pixels
+        filtered = filtered.filter(pixel => pixel.type !== 'application' && (pixel.status === 'inactive' || pixel.is_active === false))
+      }
+    }
+
+    return filtered
+  }, [pixels, searchQuery, statusFilter])
+
+  // Calculate metrics
+  const activePixels = pixels.filter(pixel => pixel.type !== 'application' && pixel.status === 'active' && pixel.is_active !== false).length
+  const pendingRequests = pixels.filter(pixel => pixel.type === 'application').length
 
   // Update subscription limit when pixels data changes
   useEffect(() => {
@@ -159,9 +199,7 @@ export default function PixelsPage() {
 
   // SWR handles data fetching automatically, no need for manual useEffect
 
-  // Calculate active pixels based on the new data structure
-  const activePixels = pixels.filter((pixel: any) => pixel.is_active && pixel.status === 'active').length
-  const pendingPixels = pixels.filter((pixel: any) => pixel.status === 'pending' || pixel.status === 'processing').length
+
 
   return (
     <div className="space-y-6">
@@ -181,8 +219,8 @@ export default function PixelsPage() {
             <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
               Pending Requests
             </span>
-            <div className="text-foreground font-semibold text-lg">
-              {pendingPixels}
+            <div className="text-yellow-600 font-semibold text-lg">
+              {pendingRequests}
             </div>
           </div>
         </div>
@@ -241,35 +279,97 @@ export default function PixelsPage() {
         </Alert>
       )}
 
-      {/* Pixels List */}
-      <div className="space-y-3">
-        {pixels.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Building2 className="h-8 w-8 text-muted-foreground mb-3" />
-            <h3 className="text-lg font-medium text-foreground mb-2">No pixels found</h3>
-            <p className="text-sm text-muted-foreground">
-              Request your first pixel connection to get started
-            </p>
-          </div>
-        ) : (
-          pixels.map((pixel: any) => {
-            const isPendingApplication = pixel.type === 'application';
-            const isGreyedOut = isPendingApplication || pixel.is_active === false;
-            
-            return (
-              <div
-                key={pixel.id}
-                className={`bg-card border rounded-lg p-4 shadow-sm transition-all ${
-                  isGreyedOut ? 'opacity-60' : ''
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-foreground" />
+      {/* Search and Filter Controls */}
+      <div className="flex items-center justify-between gap-4">
+        {/* Search */}
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search pixels, pixel IDs, or business managers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-9 bg-background border-border text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[140px] h-9 bg-background border-border text-foreground">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="bg-popover border-border">
+            <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+              All Status
+            </SelectItem>
+            <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+              Active
+            </SelectItem>
+            <SelectItem value="inactive" className="text-popover-foreground hover:bg-accent">
+              Inactive
+            </SelectItem>
+            <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
+              Pending Request
+            </SelectItem>
+            <SelectItem value="processing" className="text-popover-foreground hover:bg-accent">
+              Processing Request
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Pixels Table */}
+      <div className="bg-card rounded-lg border border-border">
+        {/* Table Headers */}
+        <div 
+          className="grid gap-4 px-6 py-4 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wide"
+          style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+        >
+          <div className="flex items-center">PIXEL</div>
+          <div className="flex items-center">PIXEL ID</div>
+          <div className="flex items-center">BM NAME</div>
+          <div className="flex items-center">BM ID</div>
+          <div className="flex items-center">STATUS</div>
+          <div className="flex items-center">ACTIONS</div>
+        </div>
+
+        {/* Table Body */}
+        <div className="divide-y divide-border">
+          {filteredPixels.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Building2 className="h-8 w-8 text-muted-foreground mb-3" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                {searchQuery || statusFilter !== "all" ? "No pixels match your filters" : "No pixels found"}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery || statusFilter !== "all" 
+                  ? "Try adjusting your search or filter criteria" 
+                  : "Request your first pixel connection to get started"
+                }
+              </p>
+            </div>
+          ) : (
+            filteredPixels.map((pixel: any) => {
+              const isPendingApplication = pixel.type === 'application';
+              
+              return (
+                <div
+                  key={pixel.id}
+                  className={`grid gap-4 px-6 py-5 transition-colors group border-b border-border ${
+                    isPendingApplication 
+                      ? 'cursor-default' 
+                      : 'hover:bg-muted/50 cursor-pointer'
+                  }`}
+                  style={{ gridTemplateColumns: "260px 140px 200px 140px 100px 80px" }}
+                >
+                  {/* Pixel */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
+                      <Building2 className="h-4 w-4 text-[#b4a0ff]" />
                     </div>
-                    <div>
-                      <div className={`font-semibold ${isPendingApplication ? 'text-muted-foreground' : 'text-foreground'}`}>
+                    <div className="min-w-0">
+                      <div className={`font-medium flex items-center gap-2 truncate ${
+                        isPendingApplication ? 'text-muted-foreground' : 'text-foreground'
+                      }`}>
                         {(pixel as any).pixel_name || pixel.pixel_name || `Pixel ${pixel.pixel_id}`}
                         {isPendingApplication && (
                           <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800">
@@ -278,42 +378,63 @@ export default function PixelsPage() {
                           </span>
                         )}
                       </div>
-                      <div className={`text-sm flex items-center gap-2 ${isPendingApplication ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
-                        <span>ID: {pixel.pixel_id}</span>
-                        {((pixel as any).bm_name || pixel.business_manager_name) && (
-                          <>
-                            <span>•</span>
-                            <span>BM: {(pixel as any).bm_name || pixel.business_manager_name}</span>
-                          </>
-                        )}
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
                         {isPendingApplication && (
-                          <>
-                            <span>•</span>
-                            <span>Awaiting connection</span>
-                          </>
+                          <span>Awaiting connection</span>
                         )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {/* Status Badge */}
-                    <div className="flex items-center gap-2">
-                      {pixel.is_active === false && !isPendingApplication ? (
-                        <span className="px-2 py-1 text-xs bg-muted text-muted-foreground rounded">
-                          Deactivated
-                        </span>
-                      ) : (
-                        <StatusBadge 
-                          status={pixel.status as any} 
-                          size="sm" 
-                        />
-                      )}
+                  {/* Pixel ID */}
+                  <div className="flex items-center">
+                    <div className="text-xs font-mono text-foreground bg-muted px-2 py-1 rounded border">
+                      {pixel.pixel_id}
                     </div>
+                  </div>
 
-                    {/* Actions dropdown removed - no functionality implemented */}
-                    
-                    {/* Cancel button for pending applications */}
+                  {/* BM Name */}
+                  <div className="flex items-center">
+                    {((pixel as any).bm_name || pixel.business_manager_name) ? (
+                      <span className="text-sm text-foreground truncate">
+                        {(pixel as any).bm_name || pixel.business_manager_name}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {isPendingApplication ? 'Pending Assignment' : 'Not assigned'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* BM ID */}
+                  <div className="flex items-center">
+                    {pixel.business_manager_id ? (
+                      <div className="text-xs font-mono text-foreground bg-muted px-2 py-1 rounded border">
+                        {pixel.business_manager_id}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        {isPendingApplication ? 'Pending' : '-'}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Status */}
+                  <div className="flex items-center">
+                    {pixel.is_active === false && !isPendingApplication ? (
+                      <Badge variant="secondary" className="text-xs bg-muted text-muted-foreground">
+                        Deactivated
+                      </Badge>
+                    ) : (
+                      <StatusBadge 
+                        status={pixel.status as any} 
+                        size="sm" 
+                      />
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center">
                     {isPendingApplication && (
                       <Button
                         variant="ghost"
@@ -326,10 +447,15 @@ export default function PixelsPage() {
                     )}
                   </div>
                 </div>
-              </div>
             );
-          })
-        )}
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Results count */}
+      <div className="text-xs text-muted-foreground">
+        Showing {filteredPixels.length} of {pixels.length} pixels
       </div>
 
       {/* Deactivation Dialog */}
