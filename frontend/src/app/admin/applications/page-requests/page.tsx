@@ -35,7 +35,7 @@ interface PageRequest {
   page_category: string | null
   page_description: string | null
   business_manager_id: string | null
-  status: 'pending' | 'approved' | 'rejected' | 'completed'
+  status: 'pending' | 'processing' | 'approved' | 'rejected' | 'completed'
   admin_notes: string | null
   created_at: string
   updated_at: string
@@ -50,6 +50,8 @@ function getStatusBadge(status: string) {
   switch (status) {
     case 'pending':
       return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+    case 'processing':
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200"><RefreshCw className="w-3 h-3 mr-1" />Processing</Badge>
     case 'approved':
       return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200"><CheckCircle className="w-3 h-3 mr-1" />Approved</Badge>
     case 'rejected':
