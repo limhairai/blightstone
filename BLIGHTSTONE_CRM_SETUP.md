@@ -58,7 +58,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - `tests/` - Test suites
 
 ## 🔗 Repository
-- **GitHub**: [https://github.com/demetrius900/blightstone](https://github.com/demetrius900/blightstone)
+- **GitHub**: [https://github.com/limhairai/blightstone](https://github.com/limhairai/blightstone)
 
 ## 📋 Next Steps
 1. Customize the CRM features for your specific needs

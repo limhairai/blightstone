@@ -12,7 +12,7 @@ chmod +x setup-environment.sh && ./setup-environment.sh
 For detailed setup instructions, see [BLIGHTSTONE_CRM_SETUP.md](./BLIGHTSTONE_CRM_SETUP.md)
 
 ## 🔗 Links
-- **GitHub Repository**: [https://github.com/demetrius900/blightstone](https://github.com/demetrius900/blightstone)
+- **GitHub Repository**: [https://github.com/limhairai/blightstone](https://github.com/limhairai/blightstone)
 - **Supabase Dashboard**: [https://supabase.com/dashboard/project/vddtsunsahhccmtamdcg](https://supabase.com/dashboard/project/vddtsunsahhccmtamdcg)
 
 ## Testing
