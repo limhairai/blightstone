@@ -27,7 +27,7 @@ export function FunnelLayout({
       <header className="border-b border-[#222222] py-4">
         <div className="container mx-auto px-4 flex items-center justify-between">
           <Link href="/dashboard" className="text-2xl font-bold">
-            <span className={`bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-transparent bg-clip-text`}>Blightstone</span>
+            <span className="text-foreground font-inter font-bold">Blightstone</span>
           </Link>
 
           {showBackButton && (
@@ -51,7 +51,7 @@ export function FunnelLayout({
       <footer className="py-8 border-t border-[#222222] mt-16">
         <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
           <div className="mb-4 md:mb-0">
-            <p className="text-sm text-[#666666]">© 2025 Blightstone. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground font-inter">© 2025 Blightstone. All rights reserved.</p>
           </div>
           <div className="flex gap-6">
             <Link href="/terms" className="text-sm text-[#666666] hover:text-[#B6BEC4]">

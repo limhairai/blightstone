@@ -75,19 +75,19 @@ export function NewLandingView() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
             {/* Main Heading - DM Sans 82px */}
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight font-dm-sans">
-              Client Management <span className="text-blue-400">Simplified</span>
+            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight font-inter">
+              Client Management <span className="text-muted-foreground">Simplified</span>
             </h1>
             
             {/* Subheading - Inter Display 18px */}
-            <p className="text-lg text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed font-inter">
+            <p className="text-lg text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed font-inter">
               Blightstone offers a comprehensive CRM solution for managing your clients and business operations. Streamlined workflows. Real-time insights. Scale efficiently.
             </p>
 
             {/* CTA Button */}
             <Button 
               size="lg" 
-              className="bg-white text-black hover:bg-white/90 font-medium px-8 py-4 text-lg rounded-lg font-inter"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-8 py-4 text-lg rounded-lg font-inter"
             >
               Get Started
             </Button>

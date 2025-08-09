@@ -14,9 +14,9 @@ export function BlightstoneLogo({ className, size = "md" }: BlightstoneLogoProps
   }
 
   return (
-    <div className={cn("font-bold", sizeClasses[size], className)}>
-      <span className="text-white">Blight</span>
-      <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">
+    <div className={cn("font-bold font-inter", sizeClasses[size], className)}>
+      <span className="text-foreground">Blight</span>
+      <span className="text-muted-foreground">
         stone
       </span>
     </div>
