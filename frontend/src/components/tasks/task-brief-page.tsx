@@ -23,20 +23,14 @@ import {
   ChevronRight,
   Settings,
   Trash2,
+  StickyNote,
+  Upload,
+  ExternalLink,
+  Download,
 } from "lucide-react"
 
-// Re-using the Task interface from tasks-page.tsx
-interface Task {
-  id: string
-  title: string
-  description: string
-  status: "todo" | "in-progress" | "completed"
-  priority: "low" | "medium" | "high" | "urgent"
-  assignee: string
-  dueDate: string
-  createdAt: string
-  category: string
-}
+// Import interfaces from project store
+import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
 
 interface TaskBriefPageProps {
   task: Task | null
@@ -127,6 +121,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const navItems = [
     { id: "overview", label: "Overview", icon: List },
     { id: "description", label: "Description", icon: FileText },
+    { id: "notes", label: "Notes", icon: StickyNote },
     { id: "attachments", label: "Attachments", icon: Paperclip },
     { id: "links", label: "Links", icon: LinkIcon },
   ]
@@ -288,30 +283,180 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
             )}
           </div>
         )
+      case "notes":
+        return (
+          <div className="bg-card p-6 rounded-lg shadow-sm border border-border space-y-4">
+            <h2 className="text-lg font-semibold">Quick Notes</h2>
+            {isEditMode ? (
+              <Textarea
+                value={editingTask?.notes || ""}
+                onChange={(e) => setEditingTask({ ...editingTask!, notes: e.target.value })}
+                placeholder="Add quick notes about this task..."
+                className="min-h-[120px] resize-none"
+              />
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[120px]">
+                <p className="text-foreground whitespace-pre-wrap leading-relaxed">
+                  {task.notes || "No notes added."}
+                </p>
+              </div>
+            )}
+          </div>
+        )
       case "attachments":
         return (
           <div className="bg-card p-6 rounded-lg shadow-sm border border-border space-y-4">
-            <h2 className="text-lg font-semibold">Attachments</h2>
-            <div className="bg-muted/30 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center text-muted-foreground border border-dashed border-muted-foreground/30">
-              <Paperclip className="h-8 w-8 mb-2" />
-              <p className="text-center text-sm">Drag and drop files here, or click to upload.</p>
-              <Button variant="outline" size="sm" className="mt-3 bg-transparent">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Attachments</h2>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  // Simulate file upload for demo
+                  if (editingTask) {
+                    const newAttachment: TaskAttachment = {
+                      id: Date.now().toString(),
+                      name: `document-${Date.now()}.pdf`,
+                      url: `/files/document-${Date.now()}.pdf`,
+                      type: "application/pdf",
+                      size: Math.floor(Math.random() * 1000000) + 100000,
+                      uploadedAt: new Date().toISOString()
+                    }
+                    setEditingTask({
+                      ...editingTask,
+                      attachments: [...(editingTask.attachments || []), newAttachment]
+                    })
+                  }
+                }}
+              >
+                <Upload className="h-4 w-4 mr-2" />
                 Upload File
               </Button>
             </div>
+            
+            {/* Existing Attachments */}
+            {task.attachments && task.attachments.length > 0 ? (
+              <div className="space-y-2">
+                {task.attachments.map((attachment) => (
+                  <div key={attachment.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{attachment.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(attachment.size / 1024).toFixed(1)} KB • {new Date(attachment.uploadedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => window.open(attachment.url, '_blank')}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      {isEditMode && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            if (editingTask) {
+                              setEditingTask({
+                                ...editingTask,
+                                attachments: editingTask.attachments?.filter(a => a.id !== attachment.id)
+                              })
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center text-muted-foreground border border-dashed border-muted-foreground/30">
+                <Paperclip className="h-8 w-8 mb-2" />
+                <p className="text-center text-sm">No attachments yet. Upload files to get started.</p>
+              </div>
+            )}
           </div>
         )
       case "links":
         return (
           <div className="bg-card p-6 rounded-lg shadow-sm border border-border space-y-4">
-            <h2 className="text-lg font-semibold">Links</h2>
-            <div className="bg-muted/30 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center text-muted-foreground border border-dashed border-muted-foreground/30">
-              <LinkIcon className="h-8 w-8 mb-2" />
-              <p className="text-center text-sm">Add relevant links here.</p>
-              <Button variant="outline" size="sm" className="mt-3 bg-transparent">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Links</h2>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => {
+                  // Simulate adding a link for demo
+                  const url = prompt("Enter URL:")
+                  const title = prompt("Enter link title:")
+                  if (url && title && editingTask) {
+                    const newLink: TaskLink = {
+                      id: Date.now().toString(),
+                      title,
+                      url,
+                      description: "",
+                      addedAt: new Date().toISOString()
+                    }
+                    setEditingTask({
+                      ...editingTask,
+                      links: [...(editingTask.links || []), newLink]
+                    })
+                  }
+                }}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
                 Add Link
               </Button>
             </div>
+            
+            {/* Existing Links */}
+            {task.links && task.links.length > 0 ? (
+              <div className="space-y-2">
+                {task.links.map((link) => (
+                  <div key={link.id} className="flex items-center justify-between p-3 bg-muted/20 rounded-lg border">
+                    <div className="flex items-center gap-3 flex-1">
+                      <LinkIcon className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{link.title}</p>
+                        <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                        {link.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{link.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => window.open(link.url, '_blank')}>
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                      {isEditMode && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            if (editingTask) {
+                              setEditingTask({
+                                ...editingTask,
+                                links: editingTask.links?.filter(l => l.id !== link.id)
+                              })
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center text-muted-foreground border border-dashed border-muted-foreground/30">
+                <LinkIcon className="h-8 w-8 mb-2" />
+                <p className="text-center text-sm">No links added yet. Add relevant links to get started.</p>
+              </div>
+            )}
           </div>
         )
       default:

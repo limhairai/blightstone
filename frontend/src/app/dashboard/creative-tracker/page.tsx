@@ -1,12 +1,15 @@
 "use client"
 
-
+import React from "react"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Plus, Eye } from "lucide-react"
-import CreativeBriefPage from "@/components/creative/creative-brief-page"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Plus, Eye, Edit3 } from "lucide-react"
+// Lazy load the brief page for better performance
+const CreativeBriefPage = React.lazy(() => import("@/components/creative/creative-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
 import { useState, useEffect } from "react"
 
@@ -28,6 +31,9 @@ interface Creative {
   results: string
   winningAdLink: string // "All Winning Ads or Best Performing Ad"
   briefLink: string // "Link to Brief"
+  driveLink: string // "Google Drive link for creative files"
+  createdAt: string // "Date when the creative was created"
+  notes?: string // "Quick notes about the creative"
 }
 
 // Define the interface for a Persona entry (re-used from persona-page.tsx)
@@ -76,7 +82,10 @@ export default function CreativeTrackerPage() {
           hookPattern: "Problem-agitation-solution with emotional appeal",
           results: "3.2% CTR, $1.85 CPC, 12% conversion rate",
           winningAdLink: "https://example.com/winning-ad-1",
-          briefLink: "https://example.com/brief-1"
+          briefLink: "https://example.com/brief-1",
+          driveLink: "https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j",
+          createdAt: "2025-01-08",
+          notes: "High performing hook, test more variations"
         }
       ]
     } else if (currentProjectId === "2") {
@@ -97,7 +106,10 @@ export default function CreativeTrackerPage() {
           hookPattern: "Authority-based with social proof",
           results: "Pending launch",
           winningAdLink: "https://example.com/winning-ad-2",
-          briefLink: "https://example.com/brief-2"
+          briefLink: "https://example.com/brief-2",
+          driveLink: "https://drive.google.com/drive/folders/9z8y7x6w5v4u3t2s1r0q",
+          createdAt: "2025-01-10",
+          notes: "Pending review, targeting professionals"
         }
       ]
     }
@@ -224,6 +236,8 @@ export default function CreativeTrackerPage() {
   ])
 
   const [selectedCreative, setSelectedCreative] = useState<Creative | null>(null)
+  const [notesEditingCreative, setNotesEditingCreative] = useState<Creative | null>(null)
+  const [tempNotes, setTempNotes] = useState("")
 
   const getStatusColor = (status: Creative["status"]) => {
     switch (status) {
@@ -276,7 +290,33 @@ export default function CreativeTrackerPage() {
       results: "",
       winningAdLink: "",
       briefLink: "",
+      driveLink: "",
+      createdAt: new Date().toISOString().split("T")[0],
+      notes: "",
     })
+  }
+
+  const handleNotesEdit = (creative: Creative) => {
+    setNotesEditingCreative(creative)
+    setTempNotes(creative.notes || "")
+  }
+
+  const handleNotesSave = () => {
+    if (notesEditingCreative) {
+      const updatedCreatives = creatives.map(creative => 
+        creative.id === notesEditingCreative.id 
+          ? { ...creative, notes: tempNotes }
+          : creative
+      )
+      setCreatives(updatedCreatives)
+      setNotesEditingCreative(null)
+      setTempNotes("")
+    }
+  }
+
+  const handleNotesCancel = () => {
+    setNotesEditingCreative(null)
+    setTempNotes("")
   }
 
   return (
@@ -294,6 +334,9 @@ export default function CreativeTrackerPage() {
               <TableHead>Batch #</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Ad Concept (Inspo)</TableHead>
+              <TableHead>Created Date</TableHead>
+              <TableHead>Drive Link</TableHead>
+              <TableHead>Notes</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -305,6 +348,39 @@ export default function CreativeTrackerPage() {
                   <Badge className={getStatusColor(creative.status)}>{creative.status.replace("-", " ")}</Badge>
                 </TableCell>
                 <TableCell>{creative.adConcept}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{creative.createdAt}</TableCell>
+                <TableCell>
+                  {creative.driveLink ? (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => window.open(creative.driveLink, '_blank')}
+                      className="text-blue-600 hover:text-blue-800 p-0 h-auto"
+                    >
+                      Open Drive
+                    </Button>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">No link</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="max-w-24 truncate text-sm text-muted-foreground">
+                      {creative.notes || "No notes"}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleNotesEdit(creative)
+                      }}
+                      className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" onClick={() => setSelectedCreative(creative)}>
                     <Eye className="h-4 w-4 mr-2" />
@@ -317,15 +393,47 @@ export default function CreativeTrackerPage() {
         </Table>
       </Card>
 
+      {/* Notes Edit Dialog */}
+      <Dialog open={!!notesEditingCreative} onOpenChange={() => setNotesEditingCreative(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Notes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Creative: <span className="font-medium">{notesEditingCreative?.adConcept}</span>
+              </p>
+              <Textarea
+                value={tempNotes}
+                onChange={(e) => setTempNotes(e.target.value)}
+                placeholder="Add your notes here..."
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleNotesCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleNotesSave}>
+              Save Notes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Creative Brief Page (Full-screen overlay) */}
       {selectedCreative && (
-        <CreativeBriefPage
-          creative={selectedCreative}
-          onClose={() => setSelectedCreative(null)}
-          onUpdateCreative={handleUpdateCreative}
-          onDeleteCreative={handleDeleteCreative}
-          NEW_CREATIVE_ID={NEW_CREATIVE_ID}
-        />
+        <React.Suspense fallback={<div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">Loading...</div>}>
+          <CreativeBriefPage
+            creative={selectedCreative}
+            onClose={() => setSelectedCreative(null)}
+            onUpdateCreative={handleUpdateCreative}
+            onDeleteCreative={handleDeleteCreative}
+            NEW_CREATIVE_ID={NEW_CREATIVE_ID}
+          />
+        </React.Suspense>
       )}
     </div>
   )

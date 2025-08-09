@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { TableCell } from "@/components/ui/table"
 
 import { TableBody } from "@/components/ui/table"
@@ -21,22 +22,15 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, User, Calendar, Filter } from "lucide-react"
-import TaskBriefPage from "@/components/tasks/task-brief-page" // Import the new component
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { Plus, User, Calendar, Filter, Edit3 } from "lucide-react"
+// Lazy load the brief page for better performance
+const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
 
-// Task interface
-interface Task {
-  id: string
-  title: string
-  description: string
-  status: "todo" | "in-progress" | "completed"
-  priority: "low" | "medium" | "high" | "urgent"
-  assignee: string
-  dueDate: string
-  createdAt: string
-  category: string
-}
+// Import interfaces from project store
+import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
 
 // Define a constant for a new task's temporary ID
 const NEW_TASK_ID = "new-task-temp-id"
@@ -59,6 +53,26 @@ export default function TasksPage() {
           dueDate: "2025-01-10",
           createdAt: "2025-01-08",
           category: "Research",
+          notes: "Need to interview 3 more customers before finalizing",
+          attachments: [
+            {
+              id: "att1",
+              name: "customer-interview-template.pdf",
+              url: "/files/customer-interview-template.pdf",
+              type: "application/pdf",
+              size: 245760,
+              uploadedAt: "2025-01-08T10:30:00Z"
+            }
+          ],
+          links: [
+            {
+              id: "link1",
+              title: "Customer Research Best Practices",
+              url: "https://example.com/research-guide",
+              description: "Comprehensive guide on conducting customer interviews",
+              addedAt: "2025-01-08T11:00:00Z"
+            }
+          ]
         },
         {
           id: "2", 
@@ -70,6 +84,7 @@ export default function TasksPage() {
           dueDate: "2025-01-15",
           createdAt: "2025-01-08",
           category: "Creative",
+          notes: "Focus on before/after sleep quality testimonials",
         }
       ]
     } else if (currentProjectId === "2") {
@@ -85,6 +100,7 @@ export default function TasksPage() {
           dueDate: "2025-01-05",
           createdAt: "2025-01-01",
           category: "Research",
+          notes: "Found 12 key competitors, analysis complete",
         },
         {
           id: "4",
@@ -96,6 +112,7 @@ export default function TasksPage() {
           dueDate: "2025-01-20",
           createdAt: "2025-01-10",
           category: "Strategy",
+          notes: "Draft messaging framework ready for review",
         }
       ]
     }
@@ -114,6 +131,8 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterPriority, setFilterPriority] = useState<string>("all")
+  const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
+  const [tempNotes, setTempNotes] = useState("")
 
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
@@ -218,7 +237,33 @@ export default function TasksPage() {
       dueDate: "",
       createdAt: new Date().toISOString().split("T")[0],
       category: "General",
+      notes: "",
+      attachments: [],
+      links: [],
     })
+  }
+
+  const handleNotesEdit = (task: Task) => {
+    setNotesEditingTask(task)
+    setTempNotes(task.notes || "")
+  }
+
+  const handleNotesSave = () => {
+    if (notesEditingTask) {
+      const updatedTasks = tasks.map(task => 
+        task.id === notesEditingTask.id 
+          ? { ...task, notes: tempNotes }
+          : task
+      )
+      setTasks(updatedTasks)
+      setNotesEditingTask(null)
+      setTempNotes("")
+    }
+  }
+
+  const handleNotesCancel = () => {
+    setNotesEditingTask(null)
+    setTempNotes("")
   }
 
   return (
@@ -284,6 +329,7 @@ export default function TasksPage() {
                   <TableHead>Assignee</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead>Category</TableHead>
+                  <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -328,6 +374,24 @@ export default function TasksPage() {
                     <TableCell>{task.dueDate}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{task.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="max-w-24 truncate text-sm text-muted-foreground">
+                          {task.notes || "No notes"}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleNotesEdit(task)
+                          }}
+                          className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -403,15 +467,47 @@ export default function TasksPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Notes Edit Dialog */}
+      <Dialog open={!!notesEditingTask} onOpenChange={() => setNotesEditingTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Notes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Task: <span className="font-medium">{notesEditingTask?.title}</span>
+              </p>
+              <Textarea
+                value={tempNotes}
+                onChange={(e) => setTempNotes(e.target.value)}
+                placeholder="Add your notes here..."
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleNotesCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleNotesSave}>
+              Save Notes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Task Brief Page (Full-screen overlay) */}
       {selectedTask && (
-        <TaskBriefPage
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onUpdateTask={handleUpdateTask}
-          onDeleteTask={handleDeleteTask}
-          NEW_TASK_ID={NEW_TASK_ID} // Pass the constant
-        />
+        <React.Suspense fallback={<div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">Loading...</div>}>
+          <TaskBriefPage
+            task={selectedTask}
+            onClose={() => setSelectedTask(null)}
+            onUpdateTask={handleUpdateTask}
+            onDeleteTask={handleDeleteTask}
+            NEW_TASK_ID={NEW_TASK_ID} // Pass the constant
+          />
+        </React.Suspense>
       )}
     </div>
   )

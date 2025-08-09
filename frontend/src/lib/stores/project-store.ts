@@ -1,6 +1,35 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+// Performance optimization: Debounce function for search/filter operations
+export const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => func(...args), wait)
+  }
+}
+
+export interface TaskAttachment {
+  id: string
+  name: string
+  url: string
+  type: string
+  size: number
+  uploadedAt: string
+}
+
+export interface TaskLink {
+  id: string
+  title: string
+  url: string
+  description?: string
+  addedAt: string
+}
+
 export interface Task {
   id: string
   title: string
@@ -13,6 +42,9 @@ export interface Task {
   category: string
   projectId: string
   createdBy?: string
+  notes?: string
+  attachments?: TaskAttachment[]
+  links?: TaskLink[]
 }
 
 export interface CustomerAvatar {

@@ -43,6 +43,7 @@ interface Creative {
   results: string
   winningAdLink: string
   briefLink: string
+  driveLink: string
 }
 
 interface CreativeBriefPageProps {
@@ -312,6 +313,11 @@ export default function CreativeBriefPage({
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Brief Link</h2>
               {renderLinkField("Brief Link", creative.briefLink, "briefLink")}
+            </div>
+
+            <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
+              <h2 className="text-lg font-semibold mb-3">Google Drive Link</h2>
+              {renderLinkField("Google Drive Link", creative.driveLink, "driveLink")}
             </div>
           </div>
         )
