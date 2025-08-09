@@ -12,7 +12,7 @@ import {
 } from "../ui/dropdown-menu"
 
 import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
-import { User, Settings, Moon, Sun, Monitor, LogOut, Zap, Shield } from "lucide-react"
+import { Moon, Sun, Monitor, LogOut, Zap, Shield } from "lucide-react"
 import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
 import { useTheme } from "next-themes"
@@ -132,32 +132,17 @@ export function Topbar({
               </div>
             </div>
 
-            <div className="py-2">
-              <Link href="/dashboard/settings/account">
-                <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
-                  <User className="h-4 w-4 mr-2" />
-                  Profile
-                </DropdownMenuItem>
-              </Link>
-              <Link href="/dashboard/settings">
-                <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </DropdownMenuItem>
-              </Link>
-            </div>
 
-            <DropdownMenuSeparator className="bg-border" />
 
             <div className="py-2">
-              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2">
+              <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2">
                 <Moon className="h-4 w-4 mr-2" />
                 Theme
                 <div className="ml-auto flex items-center gap-1">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={`h-6 w-6 rounded-sm ${theme === 'system' ? 'bg-accent' : ''}`}
+                    className={`h-6 w-6 rounded-sm ${theme === 'system' ? 'bg-[#F5F5F5]' : ''}`}
                     onClick={() => handleThemeChange('system')}
                   >
                     <Monitor className="h-3.5 w-3.5" />
@@ -165,7 +150,7 @@ export function Topbar({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={`h-6 w-6 rounded-sm ${theme === 'light' ? 'bg-accent' : ''}`}
+                    className={`h-6 w-6 rounded-sm ${theme === 'light' ? 'bg-[#F5F5F5]' : ''}`}
                     onClick={() => handleThemeChange('light')}
                   >
                     <Sun className="h-3.5 w-3.5" />
@@ -173,7 +158,7 @@ export function Topbar({
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={`h-6 w-6 rounded-sm ${theme === 'dark' ? 'bg-accent' : ''}`}
+                    className={`h-6 w-6 rounded-sm ${theme === 'dark' ? 'bg-[#F5F5F5]' : ''}`}
                     onClick={() => handleThemeChange('dark')}
                   >
                     <Moon className="h-3.5 w-3.5" />
@@ -188,7 +173,7 @@ export function Topbar({
               {/* Admin Panel Access - Only show for users with admin permissions */}
               {canViewAdmin && (
                 <DropdownMenuItem
-                  className="text-popover-foreground hover:bg-accent px-4 py-2"
+                  className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2"
                   onClick={() => router.push('/admin')}
                 >
                   <Shield className="h-4 w-4 mr-2" />

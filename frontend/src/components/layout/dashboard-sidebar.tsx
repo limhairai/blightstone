@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { ProjectSelector } from "../projects/project-selector"
 import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { cn } from "../../lib/utils"
-import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe, FolderOpen, BarChart3, CheckSquare } from "lucide-react"
+import { Home, Building2, Wallet, Receipt, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe, FolderOpen, BarChart3, CheckSquare } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useAuth } from '@/contexts/AuthContext'
@@ -88,7 +88,6 @@ export function DashboardSidebar() {
     { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target },
     { name: "Personas", href: "/dashboard/personas", icon: Users },
     { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
-    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 
   const toggleExpanded = (itemName: string) => {
