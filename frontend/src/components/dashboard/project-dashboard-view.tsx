@@ -17,8 +17,9 @@ interface Task {
 }
 
 export function ProjectDashboardView() {
-  const { getCurrentProject } = useProjectStore()
+  const { getCurrentProject, currentProjectId, getTasksForProject } = useProjectStore()
   const currentProject = getCurrentProject()
+  const recentTasks = currentProjectId ? getTasksForProject(currentProjectId).slice(0, 3) : []
   
   if (!currentProject) {
     return (
@@ -27,34 +28,6 @@ export function ProjectDashboardView() {
       </div>
     )
   }
-
-  // Mock recent tasks - in real app this would come from API
-  const recentTasks: Task[] = [
-    {
-      id: "1",
-      title: "Create customer avatar for Persona 1 (Catherine)",
-      status: "in-progress",
-      priority: "high",
-      dueDate: "2025-01-10",
-      assignee: "You"
-    },
-    {
-      id: "2",
-      title: "Design video ad creative for grounding sheets",
-      status: "todo",
-      priority: "medium",
-      dueDate: "2025-01-12",
-      assignee: "Designer"
-    },
-    {
-      id: "3",
-      title: "Research top 5 competitors pricing strategies",
-      status: "completed",
-      priority: "medium",
-      dueDate: "2025-01-09",
-      assignee: "You"
-    }
-  ]
 
   const getStatusColor = (status: string) => {
     switch (status) {

@@ -9,116 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Building2, ExternalLink, Globe, TrendingUp, Star, DollarSign } from "lucide-react"
-
-interface Competitor {
-  id: string
-  name: string
-  website: string
-  market: string
-  level: "Poor" | "Medium" | "High"
-  pricing: string
-  strengths: string[]
-  weaknesses: string[]
-  positioning: string
-  targetAudience: string
-  marketShare: string
-  notes: string
-}
+import { useProjectStore, Competitor } from "@/lib/stores/project-store"
 
 export default function CompetitorsPage() {
-  const [competitors, setCompetitors] = useState<Competitor[]>([
-    {
-      id: "1",
-      name: "Earthing Harmony",
-      website: "https://earthingharmony.eu/",
-      market: "Worldwide",
-      level: "High",
-      pricing: "$89-199",
-      strengths: [
-        "Strong European presence",
-        "High-quality materials",
-        "Comprehensive product range",
-        "Good customer reviews"
-      ],
-      weaknesses: [
-        "Higher price point",
-        "Limited US marketing",
-        "Slow shipping to some regions"
-      ],
-      positioning: "Premium wellness brand focused on natural healing",
-      targetAudience: "Health-conscious Europeans, wellness enthusiasts",
-      marketShare: "15%",
-      notes: "Main competitor in European market. Strong brand recognition."
-    },
-    {
-      id: "2",
-      name: "Earthing.com",
-      website: "https://www.earthing.com/",
-      market: "Worldwide", 
-      level: "High",
-      pricing: "$69-299",
-      strengths: [
-        "First-mover advantage",
-        "Extensive research backing",
-        "Wide product variety",
-        "Strong SEO presence"
-      ],
-      weaknesses: [
-        "Outdated website design",
-        "Complex product selection",
-        "Higher pricing"
-      ],
-      positioning: "Original earthing/grounding company with scientific backing",
-      targetAudience: "Health researchers, biohackers, wellness professionals",
-      marketShare: "25%",
-      notes: "Market leader but showing signs of age. Opportunity to capture modern audience."
-    },
-    {
-      id: "3",
-      name: "GroundingWell",
-      website: "https://www.groundingwell.com/",
-      market: "USA",
-      level: "High",
-      pricing: "$79-159",
-      strengths: [
-        "Modern branding",
-        "Strong social media presence",
-        "Influencer partnerships",
-        "Fast shipping"
-      ],
-      weaknesses: [
-        "Limited product range",
-        "Newer brand with less trust",
-        "Focused mainly on sheets"
-      ],
-      positioning: "Modern wellness brand for sleep optimization",
-      targetAudience: "Millennials, sleep-focused consumers, social media users",
-      marketShare: "12%",
-      notes: "Growing rapidly through digital marketing. Direct competitor for our target demographic."
-    },
-    {
-      id: "4",
-      name: "Sleep Earthed",
-      website: "https://www.sleepearthed.co.uk/",
-      market: "UK",
-      level: "Medium",
-      pricing: "$45-89",
-      strengths: [
-        "Competitive pricing",
-        "UK-focused marketing",
-        "Simple product line"
-      ],
-      weaknesses: [
-        "Limited market reach",
-        "Basic website",
-        "Minimal brand recognition"
-      ],
-      positioning: "Affordable grounding solutions for better sleep",
-      targetAudience: "Budget-conscious UK consumers",
-      marketShare: "5%",
-      notes: "Regional player. Not a major threat but shows market demand for affordable options."
-    }
-  ])
+  const { currentProjectId, getCompetitorsForProject, addCompetitor } = useProjectStore()
+  const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
 
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newCompetitor, setNewCompetitor] = useState<Partial<Competitor>>({})
@@ -133,7 +28,7 @@ export default function CompetitorsPage() {
   }
 
   const handleCreateCompetitor = () => {
-    if (newCompetitor.name && newCompetitor.website) {
+    if (newCompetitor.name && newCompetitor.website && currentProjectId) {
       const competitor: Competitor = {
         id: Date.now().toString(),
         name: newCompetitor.name || "",
@@ -146,9 +41,10 @@ export default function CompetitorsPage() {
         positioning: newCompetitor.positioning || "",
         targetAudience: newCompetitor.targetAudience || "",
         marketShare: newCompetitor.marketShare || "",
-        notes: newCompetitor.notes || ""
+        notes: newCompetitor.notes || "",
+        projectId: currentProjectId
       }
-      setCompetitors([...competitors, competitor])
+      addCompetitor(competitor)
       setNewCompetitor({})
       setShowCreateForm(false)
     }
@@ -280,7 +176,7 @@ export default function CompetitorsPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{competitors.length}</div>
+            <div className="text-2xl font-bold">{projectCompetitors.length}</div>
             <p className="text-xs text-muted-foreground">Being tracked</p>
           </CardContent>
         </Card>
@@ -291,7 +187,7 @@ export default function CompetitorsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{competitors.filter(c => c.level === 'High').length}</div>
+            <div className="text-2xl font-bold">{projectCompetitors.filter(c => c.level === 'High').length}</div>
             <p className="text-xs text-muted-foreground">Major competitors</p>
           </CardContent>
         </Card>
@@ -303,7 +199,7 @@ export default function CompetitorsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(competitors.map(c => c.market)).size}
+              {new Set(projectCompetitors.map(c => c.market)).size}
             </div>
             <p className="text-xs text-muted-foreground">Different markets</p>
           </CardContent>
@@ -316,7 +212,7 @@ export default function CompetitorsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.round(competitors.reduce((sum, c) => sum + parseInt(c.marketShare.replace('%', '') || '0'), 0) / competitors.length)}%
+              {projectCompetitors.length > 0 ? Math.round(projectCompetitors.reduce((sum, c) => sum + parseInt(c.marketShare.replace('%', '') || '0'), 0) / projectCompetitors.length) : 0}%
             </div>
             <p className="text-xs text-muted-foreground">Market penetration</p>
           </CardContent>
@@ -324,7 +220,7 @@ export default function CompetitorsPage() {
       </div>
 
       <div className="grid gap-6">
-        {competitors.map((competitor) => (
+        {projectCompetitors.map((competitor) => (
           <Card key={competitor.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
