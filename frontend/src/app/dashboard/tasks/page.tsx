@@ -9,66 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, CheckSquare, Clock, AlertCircle, User, Calendar, Filter } from "lucide-react"
-
-interface Task {
-  id: string
-  title: string
-  description: string
-  status: "todo" | "in-progress" | "completed" | "blocked"
-  priority: "low" | "medium" | "high" | "urgent"
-  assignee: string
-  dueDate: string
-  createdAt: string
-  category: string
-}
+import { useProjectStore, Task } from "@/lib/stores/project-store"
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Create customer avatar for Persona 1 (Catherine)",
-      description: "Develop detailed customer avatar including pain points, desires, and objections for the mom persona",
-      status: "in-progress",
-      priority: "high",
-      assignee: "You",
-      dueDate: "2025-01-10",
-      createdAt: "2025-01-08",
-      category: "Research"
-    },
-    {
-      id: "2",
-      title: "Design video ad creative for grounding sheets",
-      description: "Create video ad focusing on sleep improvement benefits, targeting problem-aware customers",
-      status: "todo",
-      priority: "medium",
-      assignee: "Designer",
-      dueDate: "2025-01-12",
-      createdAt: "2025-01-08",
-      category: "Creative"
-    },
-    {
-      id: "3",
-      title: "Research top 5 competitors pricing strategies",
-      description: "Analyze competitor pricing, positioning, and unique selling propositions",
-      status: "completed",
-      priority: "medium",
-      assignee: "You",
-      dueDate: "2025-01-09",
-      createdAt: "2025-01-07",
-      category: "Research"
-    },
-    {
-      id: "4",
-      title: "Write awareness stage content for blog",
-      description: "Create educational content explaining the 5 awareness stages for our blog",
-      status: "todo",
-      priority: "low",
-      assignee: "Content Writer",
-      dueDate: "2025-01-15",
-      createdAt: "2025-01-08",
-      category: "Content"
-    }
-  ])
+  const { currentProjectId, getTasksForProject, addTask, updateTask } = useProjectStore()
+  const projectTasks = currentProjectId ? getTasksForProject(currentProjectId) : []
 
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newTask, setNewTask] = useState<Partial<Task>>({})
@@ -96,7 +41,7 @@ export default function TasksPage() {
   }
 
   const handleCreateTask = () => {
-    if (newTask.title && newTask.description) {
+    if (newTask.title && newTask.description && currentProjectId) {
       const task: Task = {
         id: Date.now().toString(),
         title: newTask.title || "",
@@ -106,32 +51,31 @@ export default function TasksPage() {
         assignee: newTask.assignee || "You",
         dueDate: newTask.dueDate || "",
         createdAt: new Date().toISOString().split('T')[0],
-        category: newTask.category || "General"
+        category: newTask.category || "General",
+        projectId: currentProjectId
       }
-      setTasks([...tasks, task])
+      addTask(task)
       setNewTask({})
       setShowCreateForm(false)
     }
   }
 
   const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, status: newStatus } : task
-    ))
+    updateTask(taskId, { status: newStatus })
   }
 
-  const filteredTasks = tasks.filter(task => {
+  const filteredTasks = projectTasks.filter(task => {
     if (filterStatus !== "all" && task.status !== filterStatus) return false
     if (filterPriority !== "all" && task.priority !== filterPriority) return false
     return true
   })
 
   const taskStats = {
-    total: tasks.length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    inProgress: tasks.filter(t => t.status === 'in-progress').length,
-    todo: tasks.filter(t => t.status === 'todo').length,
-    blocked: tasks.filter(t => t.status === 'blocked').length
+    total: projectTasks.length,
+    completed: projectTasks.filter(t => t.status === 'completed').length,
+    inProgress: projectTasks.filter(t => t.status === 'in-progress').length,
+    todo: projectTasks.filter(t => t.status === 'todo').length,
+    blocked: projectTasks.filter(t => t.status === 'blocked').length
   }
 
   return (

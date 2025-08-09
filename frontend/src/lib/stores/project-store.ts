@@ -1,6 +1,80 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export interface Task {
+  id: string
+  title: string
+  description: string
+  status: "todo" | "in-progress" | "completed" | "blocked"
+  priority: "low" | "medium" | "high" | "urgent"
+  assignee: string
+  dueDate: string
+  createdAt: string
+  category: string
+  projectId: string
+}
+
+export interface CustomerAvatar {
+  id: string
+  name: string
+  type: string
+  age: string
+  gender: string
+  location: string
+  struggles: string[]
+  characteristics: string[]
+  statusDesired: string[]
+  productHelp: string[]
+  beliefs: string[]
+  failedSolutions: string[]
+  awareness: string
+  sophistication: string
+  insecurities: string[]
+  mindset: string
+  painPoints: string[]
+  desires: string[]
+  objections: string[]
+  projectId: string
+}
+
+export interface Competitor {
+  id: string
+  name: string
+  website: string
+  market: string
+  level: "Poor" | "Medium" | "High"
+  pricing: string
+  strengths: string[]
+  weaknesses: string[]
+  positioning: string
+  targetAudience: string
+  marketShare: string
+  notes: string
+  projectId: string
+}
+
+export interface CreativeTracker {
+  id: string
+  batch: string
+  brand: string
+  status: "planned" | "in-progress" | "completed" | "paused"
+  launchDate: string
+  adConcept: string
+  adType: string
+  adVariable: string
+  desire: string
+  benefit: string
+  objections: string
+  persona: string
+  positioning: string
+  positioningHow: string
+  hookPattern: string
+  results: string
+  winningAds: string
+  briefLink: string
+  projectId: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -15,9 +89,31 @@ export interface Project {
 interface ProjectStore {
   currentProjectId: string | null
   projects: Project[]
+  tasks: Task[]
+  customerAvatars: CustomerAvatar[]
+  competitors: Competitor[]
+  creativeTrackers: CreativeTracker[]
+  
   setCurrentProjectId: (id: string) => void
   getCurrentProject: () => Project | null
   addProject: (project: Project) => void
+  
+  // Task methods
+  getTasksForProject: (projectId: string) => Task[]
+  addTask: (task: Task) => void
+  updateTask: (taskId: string, updates: Partial<Task>) => void
+  
+  // Customer Avatar methods
+  getAvatarsForProject: (projectId: string) => CustomerAvatar[]
+  addAvatar: (avatar: CustomerAvatar) => void
+  
+  // Competitor methods
+  getCompetitorsForProject: (projectId: string) => Competitor[]
+  addCompetitor: (competitor: Competitor) => void
+  
+  // Creative Tracker methods
+  getCreativeTrackersForProject: (projectId: string) => CreativeTracker[]
+  addCreativeTracker: (tracker: CreativeTracker) => void
 }
 
 // Mock projects data
@@ -54,11 +150,180 @@ const mockProjects: Project[] = [
   }
 ]
 
+// Mock project-specific data
+const mockTasks: Task[] = [
+  // Grounding.co Campaign tasks
+  {
+    id: "1",
+    title: "Create customer avatar for Persona 1 (Catherine)",
+    description: "Develop detailed customer avatar including pain points, desires, and objections for the mom persona",
+    status: "in-progress",
+    priority: "high",
+    assignee: "You",
+    dueDate: "2025-01-10",
+    createdAt: "2025-01-08",
+    category: "Research",
+    projectId: "1"
+  },
+  {
+    id: "2",
+    title: "Design video ad creative for grounding sheets",
+    description: "Create video ad focusing on sleep improvement benefits, targeting problem-aware customers",
+    status: "todo",
+    priority: "medium",
+    assignee: "Designer",
+    dueDate: "2025-01-12",
+    createdAt: "2025-01-08",
+    category: "Creative",
+    projectId: "1"
+  },
+  {
+    id: "3",
+    title: "Research top 5 competitors pricing strategies",
+    description: "Analyze competitor pricing, positioning, and unique selling propositions",
+    status: "completed",
+    priority: "medium",
+    assignee: "You",
+    dueDate: "2025-01-09",
+    createdAt: "2025-01-07",
+    category: "Research",
+    projectId: "1"
+  },
+  // Brand X Product Launch tasks
+  {
+    id: "4",
+    title: "Develop Brand X positioning strategy",
+    description: "Define unique value proposition and market positioning",
+    status: "in-progress",
+    priority: "high",
+    assignee: "Strategy Team",
+    dueDate: "2025-01-11",
+    createdAt: "2025-01-07",
+    category: "Strategy",
+    projectId: "2"
+  },
+  {
+    id: "5",
+    title: "Create Brand X customer personas",
+    description: "Research and develop detailed customer personas for Brand X",
+    status: "todo",
+    priority: "high",
+    assignee: "Research Team",
+    dueDate: "2025-01-13",
+    createdAt: "2025-01-07",
+    category: "Research",
+    projectId: "2"
+  }
+]
+
+const mockCustomerAvatars: CustomerAvatar[] = [
+  // Grounding.co Campaign avatars
+  {
+    id: "1",
+    name: "Catherine (Mom)",
+    type: "Persona 1",
+    age: "35-60",
+    gender: "Female",
+    location: "United States",
+    struggles: ["Bad Sleeper", "Stress", "Headache And Migraine"],
+    characteristics: ["Caring person", "Organized", "Health-Conscious", "Thoughtful", "Reliable"],
+    statusDesired: ["Recognized for her ability to balance family, work, and personal life seamlessly"],
+    productHelp: ["Restful sleep and reduced stress help her manage family life with ease"],
+    beliefs: ["Natural remedies take too long to work", "Grounding products are complicated to use"],
+    failedSolutions: ["Sleep supplements: Left her groggy in the morning"],
+    awareness: "Problem Aware",
+    sophistication: "Low to Medium",
+    insecurities: ["Worried about being perceived as a tired, overwhelmed mom"],
+    mindset: "Catherine juggles multiple responsibilities daily—work, home, and family. She's always 'on,' and her to-do list feels endless.",
+    painPoints: ["Feeling exhausted and unable to give her best to her family"],
+    desires: ["To wake up feeling energized and ready to take on the day"],
+    objections: ["Will this really improve my sleep, or is it just another gimmick?"],
+    projectId: "1"
+  },
+  // Brand X Product Launch avatars
+  {
+    id: "2",
+    name: "Alex (Professional)",
+    type: "Persona 1",
+    age: "28-45",
+    gender: "Non-binary",
+    location: "Urban Areas",
+    struggles: ["Work Stress", "Time Management", "Health Maintenance"],
+    characteristics: ["Ambitious", "Tech-savvy", "Health-conscious", "Busy"],
+    statusDesired: ["Recognized as a high-performing professional"],
+    productHelp: ["Helps maintain energy and focus during busy workdays"],
+    beliefs: ["Quick solutions don't work long-term"],
+    failedSolutions: ["Energy drinks: Caused crashes later"],
+    awareness: "Solution Aware",
+    sophistication: "High",
+    insecurities: ["Fear of falling behind professionally"],
+    mindset: "Alex is focused on career growth while trying to maintain a healthy lifestyle.",
+    painPoints: ["Struggling to balance work demands with personal health"],
+    desires: ["To maintain peak performance without sacrificing health"],
+    objections: ["Is this just another wellness trend?"],
+    projectId: "2"
+  }
+]
+
+const mockCompetitors: Competitor[] = [
+  // Grounding.co Campaign competitors
+  {
+    id: "1",
+    name: "Earthing Harmony",
+    website: "https://earthingharmony.eu/",
+    market: "Worldwide",
+    level: "High",
+    pricing: "$89-199",
+    strengths: ["Strong European presence", "High-quality materials"],
+    weaknesses: ["Higher price point", "Limited US marketing"],
+    positioning: "Premium wellness brand focused on natural healing",
+    targetAudience: "Health-conscious Europeans, wellness enthusiasts",
+    marketShare: "15%",
+    notes: "Main competitor in European market. Strong brand recognition.",
+    projectId: "1"
+  },
+  {
+    id: "2",
+    name: "GroundingWell",
+    website: "https://www.groundingwell.com/",
+    market: "USA",
+    level: "High",
+    pricing: "$79-159",
+    strengths: ["Modern branding", "Strong social media presence"],
+    weaknesses: ["Limited product range", "Newer brand with less trust"],
+    positioning: "Modern wellness brand for sleep optimization",
+    targetAudience: "Millennials, sleep-focused consumers",
+    marketShare: "12%",
+    notes: "Growing rapidly through digital marketing. Direct competitor.",
+    projectId: "1"
+  },
+  // Brand X Product Launch competitors
+  {
+    id: "3",
+    name: "Wellness Pro",
+    website: "https://wellnesspro.com/",
+    market: "USA",
+    level: "Medium",
+    pricing: "$50-120",
+    strengths: ["Professional focus", "B2B partnerships"],
+    weaknesses: ["Limited consumer marketing", "Complex product line"],
+    positioning: "Professional wellness solutions",
+    targetAudience: "Working professionals, corporate wellness",
+    marketShare: "8%",
+    notes: "Focuses on workplace wellness. Different positioning angle.",
+    projectId: "2"
+  }
+]
+
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set, get) => ({
       currentProjectId: "1", // Default to first project
       projects: mockProjects,
+      tasks: mockTasks,
+      customerAvatars: mockCustomerAvatars,
+      competitors: mockCompetitors,
+      creativeTrackers: [],
       
       setCurrentProjectId: (id: string) => {
         set({ currentProjectId: id })
@@ -72,6 +337,62 @@ export const useProjectStore = create<ProjectStore>()(
       addProject: (project: Project) => {
         set(state => ({
           projects: [...state.projects, project]
+        }))
+      },
+      
+      // Task methods
+      getTasksForProject: (projectId: string) => {
+        const { tasks } = get()
+        return tasks.filter(task => task.projectId === projectId)
+      },
+      
+      addTask: (task: Task) => {
+        set(state => ({
+          tasks: [...state.tasks, task]
+        }))
+      },
+      
+      updateTask: (taskId: string, updates: Partial<Task>) => {
+        set(state => ({
+          tasks: state.tasks.map(task => 
+            task.id === taskId ? { ...task, ...updates } : task
+          )
+        }))
+      },
+      
+      // Customer Avatar methods
+      getAvatarsForProject: (projectId: string) => {
+        const { customerAvatars } = get()
+        return customerAvatars.filter(avatar => avatar.projectId === projectId)
+      },
+      
+      addAvatar: (avatar: CustomerAvatar) => {
+        set(state => ({
+          customerAvatars: [...state.customerAvatars, avatar]
+        }))
+      },
+      
+      // Competitor methods
+      getCompetitorsForProject: (projectId: string) => {
+        const { competitors } = get()
+        return competitors.filter(competitor => competitor.projectId === projectId)
+      },
+      
+      addCompetitor: (competitor: Competitor) => {
+        set(state => ({
+          competitors: [...state.competitors, competitor]
+        }))
+      },
+      
+      // Creative Tracker methods
+      getCreativeTrackersForProject: (projectId: string) => {
+        const { creativeTrackers } = get()
+        return creativeTrackers.filter(tracker => tracker.projectId === projectId)
+      },
+      
+      addCreativeTracker: (tracker: CreativeTracker) => {
+        set(state => ({
+          creativeTrackers: [...state.creativeTrackers, tracker]
         }))
       }
     }),

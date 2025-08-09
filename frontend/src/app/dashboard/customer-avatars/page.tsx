@@ -8,164 +8,17 @@ import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Users, Target, Brain, Heart, AlertTriangle } from "lucide-react"
-
-interface CustomerAvatar {
-  id: string
-  name: string
-  type: string
-  age: string
-  gender: string
-  location: string
-  struggles: string[]
-  characteristics: string[]
-  statusDesired: string[]
-  productHelp: string[]
-  beliefs: string[]
-  failedSolutions: string[]
-  awareness: string
-  sophistication: string
-  insecurities: string[]
-  mindset: string
-  painPoints: string[]
-  desires: string[]
-  objections: string[]
-}
+import { useProjectStore, CustomerAvatar } from "@/lib/stores/project-store"
 
 export default function CustomerAvatarsPage() {
-  const [avatars, setAvatars] = useState<CustomerAvatar[]>([
-    {
-      id: "1",
-      name: "Catherine (Mom)",
-      type: "Persona 1",
-      age: "35-60",
-      gender: "Female",
-      location: "United States",
-      struggles: [
-        "Bad Sleeper",
-        "Stress",
-        "Headache And Migraine"
-      ],
-      characteristics: [
-        "Caring person",
-        "Organized", 
-        "Health-Conscious",
-        "Thoughtful",
-        "Reliable"
-      ],
-      statusDesired: [
-        "Recognized for her ability to balance family, work, and personal life seamlessly",
-        "Known for her commitment to a healthy and sustainable lifestyle",
-        "Respected for her involvement in school, local events, or charitable causes"
-      ],
-      productHelp: [
-        "Restful sleep and reduced stress help her manage family life with ease",
-        "Shows her commitment to natural, holistic wellness for her and her family",
-        "Increased energy lets her stay active and involved"
-      ],
-      beliefs: [
-        "Natural remedies take too long to work",
-        "Grounding products are complicated to use", 
-        "I don't have time for self-care"
-      ],
-      failedSolutions: [
-        "Sleep supplements: Left her groggy in the morning",
-        "Meditation apps: Hard to stay consistent",
-        "Expensive mattresses: Didn't resolve stress-related sleep issues"
-      ],
-      awareness: "Problem Aware",
-      sophistication: "Low to Medium",
-      insecurities: [
-        "Worried about being perceived as a tired, overwhelmed mom",
-        "Feels guilty if she's not prioritizing her family's health and her own self-care",
-        "Insecure about her lack of sleep and visible signs of exhaustion"
-      ],
-      mindset: "Catherine juggles multiple responsibilities daily—work, home, and family. She's always 'on,' and her to-do list feels endless.",
-      painPoints: [
-        "Feeling exhausted and unable to give her best to her family",
-        "Waking up feeling more tired than when she went to bed",
-        "Emotional frustration from being spread too thin and lacking 'me time'"
-      ],
-      desires: [
-        "To wake up feeling energized and ready to take on the day",
-        "To create a calm and nurturing environment for her family without feeling burned out",
-        "To have moments of uninterrupted rest and self-care"
-      ],
-      objections: [
-        "Will this really improve my sleep, or is it just another gimmick?",
-        "I'm too busy to add another routine or product to my life",
-        "Is it safe to use around my children?"
-      ]
-    },
-    {
-      id: "2",
-      name: "John (Dad)",
-      type: "Persona 2", 
-      age: "35-60",
-      gender: "Male",
-      location: "United States",
-      struggles: [
-        "Back pain",
-        "Muscle pain",
-        "Bad sleeper"
-      ],
-      characteristics: [
-        "Protective & a provider for the family",
-        "Handy and fixing things",
-        "Resilient and problem-solver",
-        "Active & physically strong",
-        "Knowledgeable and has wisdom"
-      ],
-      statusDesired: [
-        "Viewed as a dependable provider and protector for his family",
-        "Respected for maintaining physical health and mental health",
-        "Admired for his ability to fix things and take care of his household"
-      ],
-      productHelp: [
-        "Better sleep and less pain make him strong and dependable",
-        "Faster recovery keeps him consistent with workouts", 
-        "Pain-free mobility helps him tackle home projects"
-      ],
-      beliefs: [
-        "Back pain is just part of getting older",
-        "Quick fixes don't last",
-        "Grounding can't be as effective as medication"
-      ],
-      failedSolutions: [
-        "Pain relief creams: Temporary relief only",
-        "Chiropractor visits: Too costly and time-consuming",
-        "Heating pads: Helped briefly but didn't address the root issue"
-      ],
-      awareness: "Problem Aware",
-      sophistication: "Medium",
-      insecurities: [
-        "Concerned about showing weakness or needing help for body pain or stress",
-        "Insecure about missing out on family activities due to back pain or fatigue",
-        "Worried he won't be seen as the strong, dependable 'provider'"
-      ],
-      mindset: "John is focused on providing for his family and managing his responsibilities at work and home. He pushes through discomfort and fatigue.",
-      painPoints: [
-        "Chronic back pain and muscle tightness that affect his productivity and mood",
-        "Anxiety about losing physical strength and energy as he ages",
-        "Feeling disconnected from his family due to fatigue after work"
-      ],
-      desires: [
-        "To feel physically strong and capable, maintaining his role as a provider and protector",
-        "To enjoy quality time with his family without being held back by pain or fatigue",
-        "To sleep deeply and wake up refreshed for peak performance"
-      ],
-      objections: [
-        "Is this durable enough for long-term use?",
-        "Will this actually help me recover from aches and pains after a long day?",
-        "What makes this better than other products I've tried?"
-      ]
-    }
-  ])
+  const { currentProjectId, getAvatarsForProject, addAvatar } = useProjectStore()
+  const projectAvatars = currentProjectId ? getAvatarsForProject(currentProjectId) : []
 
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newAvatar, setNewAvatar] = useState<Partial<CustomerAvatar>>({})
 
   const handleCreateAvatar = () => {
-    if (newAvatar.name && newAvatar.type) {
+    if (newAvatar.name && newAvatar.type && currentProjectId) {
       const avatar: CustomerAvatar = {
         id: Date.now().toString(),
         name: newAvatar.name || "",
@@ -185,9 +38,10 @@ export default function CustomerAvatarsPage() {
         mindset: newAvatar.mindset || "",
         painPoints: [],
         desires: [],
-        objections: []
+        objections: [],
+        projectId: currentProjectId
       }
-      setAvatars([...avatars, avatar])
+      addAvatar(avatar)
       setNewAvatar({})
       setShowCreateForm(false)
     }
@@ -312,7 +166,7 @@ export default function CustomerAvatarsPage() {
       )}
 
       <div className="grid gap-6">
-        {avatars.map((avatar) => (
+        {projectAvatars.map((avatar) => (
           <Card key={avatar.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
