@@ -315,6 +315,74 @@ const mockCompetitors: Competitor[] = [
   }
 ]
 
+const mockCreativeTrackers: CreativeTracker[] = [
+  // Grounding.co Campaign trackers
+  {
+    id: "1",
+    batch: "Batch 001",
+    brand: "Grounding.co",
+    status: "in-progress",
+    launchDate: "2025-01-10",
+    adConcept: "Problem-aware messaging for sleep issues",
+    adType: "Video + Static",
+    adVariable: "Hook variation",
+    desire: "Better sleep naturally",
+    benefit: "Improved sleep quality without medication",
+    objections: "Skeptical about grounding effectiveness",
+    persona: "Persona 1 - Catherine (Mom)",
+    positioning: "Natural sleep solution for busy moms",
+    positioningHow: "Position as easy-to-use bedtime routine",
+    hookPattern: "Problem → Agitation → Solution",
+    results: "CTR: 2.3%, CPC: $0.85",
+    winningAds: "Video #1 performing best",
+    briefLink: "",
+    projectId: "1"
+  },
+  {
+    id: "2", 
+    batch: "Batch 002",
+    brand: "Grounding.co",
+    status: "completed",
+    launchDate: "2025-01-08",
+    adConcept: "Pain relief messaging for back pain",
+    adType: "Static + Carousel",
+    adVariable: "Benefit focus",
+    desire: "Pain-free mobility",
+    benefit: "Reduced back pain and muscle tension",
+    objections: "Doubt about lasting results",
+    persona: "Persona 2 - John (Dad)",
+    positioning: "Recovery solution for active dads",
+    positioningHow: "Position as performance enhancement tool",
+    hookPattern: "Before/After transformation",
+    results: "CTR: 3.1%, CPC: $0.72, 15 sales",
+    winningAds: "Static #2 best performer",
+    briefLink: "",
+    projectId: "1"
+  },
+  // Brand X Product Launch trackers
+  {
+    id: "3",
+    batch: "Batch 001",
+    brand: "Brand X",
+    status: "planned",
+    launchDate: "2025-01-12",
+    adConcept: "Professional wellness positioning",
+    adType: "Video",
+    adVariable: "Professional angle",
+    desire: "Peak performance",
+    benefit: "Maintain energy and focus during busy workdays",
+    objections: "Is this just another wellness trend?",
+    persona: "Alex (Professional)",
+    positioning: "Performance enhancement for professionals",
+    positioningHow: "Position as productivity tool",
+    hookPattern: "Problem → Solution → Results",
+    results: "Pending launch",
+    winningAds: "TBD",
+    briefLink: "",
+    projectId: "2"
+  }
+]
+
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set, get) => ({
@@ -323,7 +391,7 @@ export const useProjectStore = create<ProjectStore>()(
       tasks: mockTasks,
       customerAvatars: mockCustomerAvatars,
       competitors: mockCompetitors,
-      creativeTrackers: [],
+      creativeTrackers: mockCreativeTrackers,
       
       setCurrentProjectId: (id: string) => {
         set({ currentProjectId: id })

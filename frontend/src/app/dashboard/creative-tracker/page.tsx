@@ -9,71 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Target, Calendar, BarChart3, ExternalLink, Edit2 } from "lucide-react"
-
-interface CreativeTracker {
-  id: string
-  batch: string
-  brand: string
-  status: "planned" | "in-progress" | "completed" | "paused"
-  launchDate: string
-  adConcept: string
-  adType: string
-  adVariable: string
-  desire: string
-  benefit: string
-  objections: string
-  persona: string
-  positioning: string
-  positioningHow: string
-  hookPattern: string
-  results: string
-  winningAds: string
-  briefLink: string
-}
+import { useProjectStore, CreativeTracker } from "@/lib/stores/project-store"
 
 export default function CreativeTrackerPage() {
-  const [trackers, setTrackers] = useState<CreativeTracker[]>([
-    {
-      id: "1",
-      batch: "Batch 001",
-      brand: "Grounding.co",
-      status: "planned",
-      launchDate: "2025-01-10",
-      adConcept: "Problem-aware messaging for sleep issues",
-      adType: "Video + Static",
-      adVariable: "Hook variation",
-      desire: "Better sleep naturally",
-      benefit: "Improved sleep quality without medication",
-      objections: "Skeptical about grounding effectiveness",
-      persona: "Persona 1 - Catherine (Mom)",
-      positioning: "Natural sleep solution for busy moms",
-      positioningHow: "Position as easy-to-use bedtime routine",
-      hookPattern: "Problem → Agitation → Solution",
-      results: "Pending launch",
-      winningAds: "TBD",
-      briefLink: ""
-    },
-    {
-      id: "2", 
-      batch: "Batch 002",
-      brand: "Grounding.co",
-      status: "in-progress",
-      launchDate: "2025-01-11",
-      adConcept: "Pain relief messaging for back pain",
-      adType: "Static + Carousel",
-      adVariable: "Benefit focus",
-      desire: "Pain-free mobility",
-      benefit: "Reduced back pain and muscle tension",
-      objections: "Doubt about lasting results",
-      persona: "Persona 2 - John (Dad)",
-      positioning: "Recovery solution for active dads",
-      positioningHow: "Position as performance enhancement tool",
-      hookPattern: "Before/After transformation",
-      results: "Testing in progress",
-      winningAds: "Static #2 performing best",
-      briefLink: ""
-    }
-  ])
+  const { currentProjectId, getCreativeTrackersForProject, addCreativeTracker } = useProjectStore()
+  const projectTrackers = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
 
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [newTracker, setNewTracker] = useState<Partial<CreativeTracker>>({})
@@ -89,7 +29,7 @@ export default function CreativeTrackerPage() {
   }
 
   const handleCreateTracker = () => {
-    if (newTracker.batch && newTracker.brand) {
+    if (newTracker.batch && newTracker.brand && currentProjectId) {
       const tracker: CreativeTracker = {
         id: Date.now().toString(),
         batch: newTracker.batch || "",
@@ -108,9 +48,10 @@ export default function CreativeTrackerPage() {
         hookPattern: newTracker.hookPattern || "",
         results: "Pending",
         winningAds: "",
-        briefLink: newTracker.briefLink || ""
+        briefLink: newTracker.briefLink || "",
+        projectId: currentProjectId
       }
-      setTrackers([...trackers, tracker])
+      addCreativeTracker(tracker)
       setNewTracker({})
       setShowCreateForm(false)
     }
@@ -208,7 +149,7 @@ export default function CreativeTrackerPage() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{trackers.length}</div>
+            <div className="text-2xl font-bold">{projectTrackers.length}</div>
             <p className="text-xs text-muted-foreground">Active tracking</p>
           </CardContent>
         </Card>
@@ -219,7 +160,7 @@ export default function CreativeTrackerPage() {
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{trackers.filter(t => t.status === 'in-progress').length}</div>
+            <div className="text-2xl font-bold">{projectTrackers.filter(t => t.status === 'in-progress').length}</div>
             <p className="text-xs text-muted-foreground">Currently running</p>
           </CardContent>
         </Card>
@@ -230,7 +171,7 @@ export default function CreativeTrackerPage() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{trackers.filter(t => t.status === 'completed').length}</div>
+            <div className="text-2xl font-bold">{projectTrackers.filter(t => t.status === 'completed').length}</div>
             <p className="text-xs text-muted-foreground">Finished campaigns</p>
           </CardContent>
         </Card>
@@ -242,7 +183,7 @@ export default function CreativeTrackerPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {trackers.filter(t => t.status === 'completed').length > 0 ? '75%' : '0%'}
+              {projectTrackers.filter(t => t.status === 'completed').length > 0 ? '75%' : '0%'}
             </div>
             <p className="text-xs text-muted-foreground">Campaign effectiveness</p>
           </CardContent>
@@ -269,7 +210,7 @@ export default function CreativeTrackerPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {trackers.map((tracker) => (
+                {projectTrackers.map((tracker) => (
                   <TableRow key={tracker.id}>
                     <TableCell className="font-medium">{tracker.batch}</TableCell>
                     <TableCell>{tracker.brand}</TableCell>
