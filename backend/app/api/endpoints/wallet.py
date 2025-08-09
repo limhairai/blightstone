@@ -9,7 +9,7 @@ import logging
 import uuid
 
 router = APIRouter()
-logger = logging.getLogger("adhub_app")
+logger = logging.getLogger("blightstone_app")
 
 class TopupRequest(BaseModel):
     organization_id: str

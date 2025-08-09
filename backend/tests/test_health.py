@@ -16,7 +16,7 @@ def test_root_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert "message" in data
-    assert data["message"] == "AdHub API is running"
+    assert data["message"] == "Blightstone CRM API is running"
 
 def test_api_version():
     """Test that the API version endpoint works"""

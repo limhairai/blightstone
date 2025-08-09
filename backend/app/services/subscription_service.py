@@ -13,7 +13,7 @@ from typing import Dict, Any, Optional, List
 from app.core.supabase_client import get_supabase_client
 from app.core.config import settings
 
-logger = logging.getLogger("adhub_app")
+logger = logging.getLogger("blightstone_app")
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def get_pricing_config():

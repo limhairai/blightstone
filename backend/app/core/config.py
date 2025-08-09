@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     
     # ✅ SECURE: Database configuration
-    DATABASE_URL: str = "sqlite:///./adhub.db"
+    DATABASE_URL: str = "sqlite:///./blightstone.db"
     
     # ✅ SECURE: API configuration
     API_URL: str = "http://localhost:8000"

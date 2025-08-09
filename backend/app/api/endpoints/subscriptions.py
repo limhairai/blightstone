@@ -7,7 +7,7 @@ from pydantic import BaseModel
 import logging
 
 router = APIRouter()
-logger = logging.getLogger("adhub_app")
+logger = logging.getLogger("blightstone_app")
 
 class CreateSubscriptionRequest(BaseModel):
     organization_id: str

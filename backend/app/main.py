@@ -40,7 +40,7 @@ if sentry_dsn:
         send_default_pii=True,
     )
 
-app = FastAPI(title="AdHub API", version="1.0.0")
+app = FastAPI(title="Blightstone CRM API", version="1.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -58,7 +58,7 @@ app.include_router(api_router, prefix="/api")
 @app.on_event("startup")
 async def startup_event():
     """Start background tasks on application startup"""
-    logger.info("🚀 Starting AdHub API...")
+    logger.info("🚀 Starting Blightstone CRM API...")
     
     # Start the auto-sync scheduler in the background
     if auto_sync_scheduler:
@@ -73,7 +73,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up background tasks on application shutdown"""
-    logger.info("🛑 Shutting down AdHub API...")
+    logger.info("🛑 Shutting down Blightstone CRM API...")
     
     # Stop the auto-sync scheduler
     if auto_sync_scheduler:
@@ -87,7 +87,7 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": "AdHub API is running"}
+    return {"message": "Blightstone CRM API is running"}
 
 @app.get("/health")
 async def health_check():

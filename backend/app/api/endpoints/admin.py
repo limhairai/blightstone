@@ -7,7 +7,7 @@ import logging
 from datetime import datetime
 
 router = APIRouter()
-logger = logging.getLogger("adhub_app")
+logger = logging.getLogger("blightstone_app")
 
 # Legacy endpoint - replaced by Supabase-based admin functionality
 # @router.get("/stats")

@@ -1,6 +1,6 @@
 # 🚀 Blightstone CRM - Development Scripts Guide
 
-Quick reference for starting your development environment, just like your previous AdHub setup.
+Quick reference for starting your development environment, just like your previous AdHub setup, now rebranded as Blightstone CRM.
 
 ## 🎯 Quick Start Commands
 

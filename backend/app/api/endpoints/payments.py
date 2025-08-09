@@ -13,7 +13,7 @@ from app.schemas.payment import PaymentIntentCreateRequest, PaymentIntentRespons
 from app.services.subscription_service import SubscriptionService
 
 router = APIRouter()
-logger = logging.getLogger("adhub_app")
+logger = logging.getLogger("blightstone_app")
 
 # Initialize Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
