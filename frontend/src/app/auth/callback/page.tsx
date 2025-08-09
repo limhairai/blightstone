@@ -212,7 +212,7 @@ export default function AuthCallbackPage() {
                 })
                 router.push('/dashboard')
               } else {
-                // User without organization - go to onboarding (truly new user)
+                // User without organization - go to dashboard
                 let message = "🎉 Welcome to Blightstone! Let's get you set up.";
                 if (isGoogleOAuth) {
                   message = "🎉 Welcome to Blightstone! Account created successfully.";
@@ -226,7 +226,7 @@ export default function AuthCallbackPage() {
                 toast.success(message, {
                   description: "Let's get your account set up"
                 })
-                router.push('/onboarding')
+                router.push('/dashboard')
               }
                       } else {
             // Can't check organization - default to dashboard for safety

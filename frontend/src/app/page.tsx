@@ -29,38 +29,8 @@ export default function HomePage() {
     
     if (!loading) {
       if (session) {
-        // User is authenticated, check if they need onboarding first
-        const checkOnboardingAndRedirect = async () => {
-          try {
-            const response = await fetch('/api/onboarding-progress', {
-              headers: {
-                'Authorization': `Bearer ${session.access_token}`
-              }
-            });
-            
-            if (response.ok) {
-              const onboardingData = await response.json();
-              // ONBOARDING = Basic info collection only (org name, industry, etc.)
-              // SETUP = Business operations (plan, wallet, BM, etc.) - handled by setup widget
-              const hasCompletedBasicOnboarding = onboardingData.progress.hasSetupOrganization;
-              
-              if (!hasCompletedBasicOnboarding) {
-                router.replace('/onboarding');
-              } else {
-                router.replace('/dashboard');
-              }
-            } else {
-              // Fallback to dashboard if we can't check onboarding
-              router.replace('/dashboard');
-            }
-          } catch (error) {
-            console.error('Error checking onboarding status:', error);
-            // Fallback to dashboard
-            router.replace('/dashboard');
-          }
-        };
-        
-        checkOnboardingAndRedirect();
+        // User is authenticated, redirect directly to dashboard
+        router.replace('/dashboard');
       } else {
         // User is not authenticated, redirect to login
         router.replace('/login')

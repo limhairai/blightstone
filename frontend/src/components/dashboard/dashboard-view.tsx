@@ -11,10 +11,10 @@ import { StatusBadge } from "../ui/status-badge"
 import { StatusDot } from "./status-dot"
 import { ErrorBoundary } from "../ui/error-boundary"
 
-import { EmailVerificationBanner } from "../onboarding/email-verification-banner"
+// Email verification banner removed - not needed for internal CRM
 
 import { CompactAccountsTable } from "./compact-accounts-table"
-import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
+// Advanced onboarding hook removed - not needed for internal CRM
 
 
 import { ArrowUpRight, CreditCard, ChevronDown, MoreHorizontal, ArrowDownIcon, ArrowUpIcon, RefreshCw, ArrowRight } from "lucide-react"
@@ -53,8 +53,7 @@ export function DashboardView() {
   const [isCreatingOrg, setIsCreatingOrg] = useState(false)
   const [showLoadingScreen, setShowLoadingScreen] = useState(false) // Disable slow loading screen
 
-  // Check onboarding status - RESTORED
-  const { shouldShowOnboarding, progressData, isLoading: onboardingLoading } = useAdvancedOnboarding()
+  // Onboarding removed for internal CRM
   
   // ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL LOGIC
   const [showEmptyStateElements, setShowEmptyStateElements] = useState(false)

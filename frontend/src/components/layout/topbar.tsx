@@ -26,7 +26,7 @@ import useSWR from 'swr'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useSubscription } from '@/hooks/useSubscription'
 import { useAdminRoute } from '@/hooks/useAdminRoute'
-import { useAdvancedOnboarding } from '@/hooks/useAdvancedOnboarding'
+// Advanced onboarding hook removed - not needed for internal CRM
 
 import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
 
@@ -70,9 +70,8 @@ export function Topbar({
   const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
   const planName = currentPlan?.name || 'Free';
 
-  // Get setup progress data
-  const { progressData } = useAdvancedOnboarding();
-  const actualSetupPercentage = progressData?.completionPercentage || 0;
+  // Setup progress removed for internal CRM
+  const actualSetupPercentage = 100; // Always complete for internal CRM
 
 
 

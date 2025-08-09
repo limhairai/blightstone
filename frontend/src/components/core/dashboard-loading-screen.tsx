@@ -33,7 +33,7 @@ export function DashboardLoadingScreen({ isLoading, onComplete }: DashboardLoadi
     "💡 Use the sidebar to quickly navigate between sections",
     "🚀 Hover over navigation items to preload data instantly",
     "⚡ Business managers and ad accounts are preloaded for speed",
-    "🎯 Use the setup guide to complete your onboarding",
+            "🎯 Welcome to your internal CRM dashboard",
     "💰 Check your wallet balance in the top bar",
     "📊 View detailed analytics in each section",
   ]

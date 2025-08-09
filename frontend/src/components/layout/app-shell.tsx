@@ -4,9 +4,7 @@ import type { ReactNode } from "react"
 import { useEffect, useCallback, useState, createContext, useContext } from "react"
 import { DashboardSidebar } from "./dashboard-sidebar"
 import { Topbar } from "./topbar"
-import { SetupGuideWidget } from "../onboarding/setup-guide-widget"
-import { WelcomeOverlay } from "../onboarding/welcome-overlay"
-import { useAdvancedOnboarding } from "../../hooks/useAdvancedOnboarding"
+// Onboarding components removed - internal CRM doesn't need onboarding
 import { usePathname } from "next/navigation"
 import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
@@ -45,15 +43,10 @@ export function AppShell({ children }: AppShellProps) {
   const { setPageTitle } = usePageTitle()
   const { user, session, loading: authLoading } = useAuth()
   const [setupWidgetState, setSetupWidgetState] = useState<"expanded" | "collapsed" | "closed">("expanded") // Show widget expanded
-  const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false)
+  // Welcome overlay removed for internal CRM
   const { setOrganization } = useOrganizationStore()
   
-  // Use the new, simplified onboarding hook
-  const {
-    shouldShowOnboarding,
-    isLoading,
-    progressData
-  } = useAdvancedOnboarding()
+  // Onboarding removed for internal CRM
 
   // Show simple loading screen during initial auth
   if (authLoading) {
@@ -87,45 +80,7 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [user]) // Remove dependency on API data
 
-  // Show welcome overlay for new users - IMMEDIATE display (NO API DEPENDENCY)
-  useEffect(() => {
-    if (!user) return // Remove isLoading dependency
-    
-    // Check if user is new (hasn't seen welcome overlay before)
-    const hasSeenWelcome = localStorage.getItem(`blightstone_welcome_seen_${user.id}`)
-    
-    // Show welcome overlay IMMEDIATELY for:
-    // 1. Any user who hasn't seen it before
-    // 2. Users coming from onboarding
-    // 3. New users (created within last 48 hours - more generous)
-    if (!hasSeenWelcome) {
-      const urlParams = new URLSearchParams(window.location.search)
-      const fromOnboarding = urlParams.get('welcome') === 'true'
-      const isNewUser = user.created_at && new Date(user.created_at) > new Date(Date.now() - 48 * 60 * 60 * 1000) // 48 hours
-      
-      // Show for ANY new user or anyone from onboarding
-      if (fromOnboarding || isNewUser || !hasSeenWelcome) {
-        console.log('🎉 Showing welcome overlay for new user IMMEDIATELY');
-        setShowWelcomeOverlay(true)
-        setSetupWidgetState("expanded") // Also expand setup guide immediately
-      }
-    }
-  }, [user]) // Remove isLoading dependency completely
-
-  const handleWelcomeOverlayDismiss = () => {
-    if (user) {
-      localStorage.setItem(`blightstone_welcome_seen_${user.id}`, 'true')
-    }
-    setShowWelcomeOverlay(false)
-    
-    // Clean up URL parameter if it exists
-    const urlParams = new URLSearchParams(window.location.search)
-    if (urlParams.get('welcome')) {
-      urlParams.delete('welcome')
-      const newUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`
-      window.history.replaceState({}, '', newUrl)
-    }
-  }
+  // Welcome overlay logic removed for internal CRM
 
   useEffect(() => {
     if (session?.user?.app_metadata?.organization_id && session?.user?.app_metadata?.organization_name) {
@@ -186,16 +141,7 @@ export function AppShell({ children }: AppShellProps) {
           </main>
         </div>
 
-        {/* Global Setup Guide Widget - Higher z-index when blocking */}
-        <SetupGuideWidget 
-          widgetState={setupWidgetState} 
-          onStateChange={setSetupWidgetState}
-        />
-
-        {/* Welcome Overlay for New Users - Always on top */}
-        {showWelcomeOverlay && (
-          <WelcomeOverlay onDismiss={handleWelcomeOverlayDismiss} />
-        )}
+        {/* Setup guide and welcome overlay removed for internal CRM */}
       </div>
     </SetupWidgetContext.Provider>
   )

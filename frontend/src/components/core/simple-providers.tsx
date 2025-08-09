@@ -97,10 +97,10 @@ function AppRouter({ children }: { children: React.ReactNode }) {
 
   // If the user is authenticated and on a protected page, wrap the content in the AppShell.
   // The AppDataProvider is included to provide necessary data for the authenticated experience.
-  // Exception: Admin pages and onboarding have their own layout and should not be wrapped in AppShell.
+  // Exception: Admin pages have their own layout and should not be wrapped in AppShell.
   if (isAuthenticated && isProtectedPage) {
-    if (pathname && (isAdminPage(pathname) || pathname === '/onboarding')) {
-      // Admin pages and onboarding handle their own layout and don't need AppShell
+    if (pathname && isAdminPage(pathname)) {
+      // Admin pages handle their own layout and don't need AppShell
       return <PageTransition>{children}</PageTransition>;
     }
     

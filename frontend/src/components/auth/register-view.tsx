@@ -82,7 +82,7 @@ export function RegisterView() {
         toast.success("Registration successful! Let's get you set up...");
         setLoading(false);
         setTimeout(() => {
-          router.push("/onboarding");
+          router.push("/dashboard");
         }, 1000);
         return;
       } else {
