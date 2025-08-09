@@ -1,5 +1,19 @@
-# Trigger staging deployment - Thu Jul  3 00:57:57 CST 2025
-# Trigger deployment - Thu Jul  3 01:22:01 CST 2025
+# Blightstone CRM
+
+An internal CRM tool built with Next.js, FastAPI, and Supabase.
+
+## 🚀 Quick Setup
+
+Run the setup script to configure environment variables:
+```bash
+chmod +x setup-environment.sh && ./setup-environment.sh
+```
+
+For detailed setup instructions, see [BLIGHTSTONE_CRM_SETUP.md](./BLIGHTSTONE_CRM_SETUP.md)
+
+## 🔗 Links
+- **GitHub Repository**: [https://github.com/demetrius900/blightstone](https://github.com/demetrius900/blightstone)
+- **Supabase Dashboard**: [https://supabase.com/dashboard/project/vddtsunsahhccmtamdcg](https://supabase.com/dashboard/project/vddtsunsahhccmtamdcg)
 
 ## Testing
 
