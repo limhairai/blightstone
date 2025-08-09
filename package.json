@@ -54,8 +54,8 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install",
     "test:e2e:codegen": "playwright codegen http://localhost:3000",
-    "test:e2e:staging": "PLAYWRIGHT_BASE_URL=https://staging.adhub.tech playwright test",
-    "test:e2e:production": "PLAYWRIGHT_BASE_URL=https://adhub.tech playwright test --project=chromium",
+    "test:e2e:staging": "PLAYWRIGHT_BASE_URL=https://blightstone-crm-staging.vercel.app playwright test",
+    "test:e2e:production": "PLAYWRIGHT_BASE_URL=https://blightstone.vercel.app playwright test --project=chromium",
     "test:setup": "playwright install && playwright install-deps"
   }
 }

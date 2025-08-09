@@ -1,62 +1,105 @@
-# 🎯 Blightstone CRM
+# Blightstone CRM
 
-A clean, modern internal CRM system for project management, customer personas, competitor analysis, and creative tracking.
-
-## ✨ Features
-
-- **📋 Project Management** - Organize work by projects with dedicated dashboards
-- **✅ Task Management** - Full task tracking with notes, attachments, and links
-- **👥 Customer Personas** - Track customer avatars with awareness stages
-- **🔍 Competitor Analysis** - Monitor competitors with ads library integration
-- **🎨 Creative Tracking** - Manage creative campaigns with Google Drive links
-- **🔐 Secure & Isolated** - Each user sees only their own data
+An internal project management and CRM tool for tracking tasks, creative campaigns, customer personas, and competitor analysis.
 
 ## 🚀 Quick Start
 
-1. **Clone & Install:**
+### Prerequisites
+- Node.js 18+ 
+- Supabase account
+- Vercel account (for deployment)
+
+### Development Setup
+
+1. **Clone and install dependencies:**
    ```bash
    git clone https://github.com/limhairai/blightstone.git
-   cd blightstone/frontend
-   npm install
+   cd blightstone
+   cd frontend && npm install
    ```
 
-2. **Database Setup:**
-   - Run the SQL in `database-setup.sql` in your Supabase dashboard
-   - Update `frontend/.env.local` with your Supabase credentials
-
-3. **Start Development:**
+2. **Set up environment variables:**
    ```bash
-   npm run dev
+   # Run the setup script
+   ./dev-scripts/setup-environment.sh
+   
+   # Or manually create frontend/.env.local with:
+   # NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   # NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key  
+   # SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   # SUPABASE_JWT_SECRET=your_jwt_secret
    ```
 
-## 🛠️ Tech Stack
+3. **Set up database:**
+   - Run the SQL in `docs/database-setup.sql` in your Supabase SQL Editor
+   - This creates all necessary tables (projects, tasks, personas, competitors, creatives)
 
-- **Frontend:** Next.js 14, TypeScript, Tailwind CSS
+4. **Start development server:**
+   ```bash
+   ./dev-scripts/start-dev.sh
+   # or
+   cd frontend && npm run dev
+   ```
+
+Visit `http://localhost:3000` to access the application.
+
+## 🏗️ Architecture
+
+- **Frontend:** Next.js 14 with TypeScript, Tailwind CSS, and Radix UI
+- **Backend:** Next.js API Routes (serverless functions)
 - **Database:** Supabase (PostgreSQL)
 - **Authentication:** Supabase Auth
-- **State Management:** Zustand
-- **UI Components:** shadcn/ui
+- **Deployment:** Vercel
+- **Testing:** Playwright for E2E tests
 
 ## 📁 Project Structure
 
 ```
-frontend/src/
-├── app/dashboard/
-│   ├── tasks/           # Task management
-│   ├── creative-tracker/ # Creative campaigns
-│   ├── personas/        # Customer avatars
-│   └── competitors/     # Competitor analysis
-├── components/          # Reusable UI components
-├── lib/stores/         # Zustand state management
-└── lib/api.ts          # API client functions
+├── frontend/           # Next.js application
+│   ├── src/
+│   │   ├── app/        # App router pages and API routes
+│   │   ├── components/ # Reusable UI components
+│   │   └── lib/        # Utilities and stores
+├── supabase/           # Database migrations and config
+├── docs/               # Documentation and database setup
+├── dev-scripts/        # Development and setup scripts
+├── archive/            # Archived files and old assets
+├── playwright/         # E2E test files
+└── .github/            # GitHub workflows
 ```
 
-## 🔗 Links
+## 🧪 Testing
 
-- **Production:** [Deployed on Vercel](https://github.com/limhairai/blightstone)
-- **Database:** Supabase PostgreSQL
-- **Repository:** [GitHub](https://github.com/limhairai/blightstone)
+```bash
+# Run E2E tests
+npm run test:e2e
 
----
+# Run tests with UI
+npm run test:e2e:ui
 
-**Built for internal team use** • Clean codebase with no legacy business logic
+# Test against production
+npm run test:e2e:production
+```
+
+## 🚀 Deployment
+
+The application is automatically deployed to Vercel on push to `main` branch.
+
+**Production URL:** https://blightstone.vercel.app
+
+## 📚 Features
+
+- **Project Management:** Create and manage multiple projects
+- **Task Tracking:** Assign tasks with priorities, due dates, and status
+- **Creative Tracker:** Track ad campaigns and creative performance
+- **Personas:** Manage customer avatars and target audience profiles  
+- **Competitor Analysis:** Track competitor strategies and positioning
+- **Team Collaboration:** Multi-user support with attribution
+
+## 🛠️ Development Scripts
+
+See `dev-scripts/README.md` for available development scripts.
+
+## 📄 License
+
+Internal use only.
