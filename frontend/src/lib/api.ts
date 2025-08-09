@@ -14,7 +14,10 @@ export const projectsApi = {
   async getAll(): Promise<Project[]> {
     try {
       const response = await fetch(`${API_BASE}/projects`)
-      if (!response.ok) throw new Error('Failed to fetch projects')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch projects')
+      }
       const data = await response.json()
       return data.projects || []
     } catch (error) {
@@ -23,14 +26,17 @@ export const projectsApi = {
     }
   },
 
-  async create(project: { name: string; description?: string; status?: string }): Promise<Project> {
+  async create(project: { name: string; description?: string; status?: string; user_id?: string; created_by?: string }): Promise<Project> {
     try {
       const response = await fetch(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project)
       })
-      if (!response.ok) throw new Error('Failed to create project')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create project')
+      }
       const data = await response.json()
       return data.project
     } catch (error) {

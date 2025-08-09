@@ -149,6 +149,7 @@ interface ProjectStore {
   setCurrentProjectId: (id: string) => void
   getCurrentProject: () => Project | null
   addProject: (project: Project) => void
+  loadProjects: () => Promise<void>
   getProjectWithDynamicCounts: (projectId: string) => Project | null
   
   // Task methods
@@ -214,6 +215,15 @@ export const useProjectStore = create<ProjectStore>()(
         set(state => ({
           projects: [...state.projects, project]
         }))
+      },
+      
+      loadProjects: async () => {
+        try {
+          const projects = await projectsApi.getAll()
+          set({ projects })
+        } catch (error) {
+          console.error('Error loading projects:', error)
+        }
       },
       
       // Task methods

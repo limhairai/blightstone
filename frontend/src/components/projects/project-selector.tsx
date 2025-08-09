@@ -17,7 +17,7 @@ import ProjectCreationDialog from "./project-creation-dialog"
 export function ProjectSelector() {
   const { theme } = useTheme()
   const router = useRouter()
-  const { currentProjectId, setCurrentProjectId, projects, getCurrentProject, getProjectWithDynamicCounts } = useProjectStore()
+  const { currentProjectId, setCurrentProjectId, projects, getCurrentProject, getProjectWithDynamicCounts, loadProjects } = useProjectStore()
   const { session, user } = useAuth()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
@@ -28,6 +28,13 @@ export function ProjectSelector() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   const currentProject = currentProjectId ? getProjectWithDynamicCounts(currentProjectId) : null
+
+  // Load projects when component mounts and user is authenticated
+  useEffect(() => {
+    if (user && session) {
+      loadProjects()
+    }
+  }, [user, session, loadProjects])
 
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects

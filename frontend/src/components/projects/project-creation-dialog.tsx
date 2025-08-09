@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { X, FolderPlus } from "lucide-react"
 import { useProjectStore } from "@/lib/stores/project-store"
 import { useAuth } from "@/contexts/AuthContext"
+import { projectsApi } from "@/lib/api"
 
 interface ProjectCreationDialogProps {
   isOpen: boolean
@@ -40,30 +41,34 @@ export default function ProjectCreationDialog({ isOpen, onClose }: ProjectCreati
 
     setIsSubmitting(true)
     
-    const newProject = {
-      id: Date.now().toString(),
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      status: formData.status,
-      tasksCount: 0,
-      completedTasks: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      lastActivity: "Just now",
-      createdBy: user?.email || "Unknown"
-    }
+    try {
+      // Create project via API
+      const newProject = await projectsApi.create({
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        status: formData.status,
+        user_id: user?.id || "",
+        created_by: user?.email || "Unknown"
+      })
 
-    addProject(newProject)
-    setCurrentProjectId(newProject.id)
-    
-    // Reset form
-    setFormData({
-      name: "",
-      description: "",
-      status: "active"
-    })
-    
-    setIsSubmitting(false)
-    onClose()
+      // Add to store and set as current
+      addProject(newProject)
+      setCurrentProjectId(newProject.id)
+      
+      // Reset form
+      setFormData({
+        name: "",
+        description: "",
+        status: "active"
+      })
+      
+      onClose()
+    } catch (error) {
+      console.error('Error creating project:', error)
+      // You could add toast notification here
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleClose = () => {
