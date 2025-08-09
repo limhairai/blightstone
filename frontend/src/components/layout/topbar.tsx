@@ -12,10 +12,9 @@ import {
 } from "../ui/dropdown-menu"
 
 import { Bell, Globe, ExternalLink, CreditCard, Building2 } from "lucide-react"
-import { Moon, Sun, Monitor, LogOut, Zap, Shield } from "lucide-react"
+import { LogOut, Zap, Shield } from "lucide-react"
 import { usePageTitle } from "../core/simple-providers"
 import { useAuth } from "../../contexts/AuthContext"
-import { useTheme } from "next-themes"
 import Link from "next/link"
 import { formatCurrency } from "../../utils/format"
 import { useState, useEffect } from "react"
@@ -54,7 +53,7 @@ export function Topbar({
 }: TopbarProps) {
   const { pageTitle } = usePageTitle()
   const { user, signOut } = useAuth()
-  const { theme, setTheme } = useTheme()
+
   const [mounted, setMounted] = useState(false)
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
   const router = useRouter()
@@ -99,9 +98,7 @@ export function Topbar({
   const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
   const userAvatar = user?.user_metadata?.avatar_url
 
-  const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme)
-  }
+
 
   return (
     <div className="sticky top-0 z-50 h-16 border-b border-border/20 flex items-center justify-between px-3 md:px-4 bg-card/80 backdrop-blur-md">
@@ -135,39 +132,6 @@ export function Topbar({
             </div>
 
 
-
-            <div className="py-2">
-              <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2">
-                <Moon className="h-4 w-4 mr-2" />
-                Theme
-                <div className="ml-auto flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={`h-6 w-6 rounded-sm ${theme === 'system' ? 'bg-[#F5F5F5]' : ''}`}
-                    onClick={() => handleThemeChange('system')}
-                  >
-                    <Monitor className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={`h-6 w-6 rounded-sm ${theme === 'light' ? 'bg-[#F5F5F5]' : ''}`}
-                    onClick={() => handleThemeChange('light')}
-                  >
-                    <Sun className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={`h-6 w-6 rounded-sm ${theme === 'dark' ? 'bg-[#F5F5F5]' : ''}`}
-                    onClick={() => handleThemeChange('dark')}
-                  >
-                    <Moon className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </DropdownMenuItem>
-            </div>
 
             <DropdownMenuSeparator className="bg-border" />
 

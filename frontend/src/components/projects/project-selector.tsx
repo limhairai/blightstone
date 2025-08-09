@@ -72,13 +72,24 @@ export function ProjectSelector() {
 
   if (!currentProject) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 text-muted-foreground">
-        <FolderOpen className="h-4 w-4" />
-        <span>No Project</span>
-        <Button variant="ghost" size="sm">
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      <>
+        <div className="flex items-center gap-2 px-3 py-2 text-muted-foreground">
+          <FolderOpen className="h-4 w-4" />
+          <span>No Project</span>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setIsCreateDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <ProjectCreationDialog 
+          isOpen={isCreateDialogOpen}
+          onClose={() => setIsCreateDialogOpen(false)}
+        />
+      </>
     )
   }
 
