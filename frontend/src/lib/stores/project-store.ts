@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 // Performance optimization: Debounce function for search/filter operations
 export const debounce = <T extends (...args: any[]) => any>(
@@ -12,6 +13,9 @@ export const debounce = <T extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), wait)
   }
 }
+
+// API client
+const supabase = createClientComponentClient()
 
 export interface TaskAttachment {
   id: string
@@ -114,13 +118,17 @@ export interface CreativeTracker {
 export interface Project {
   id: string
   name: string
-  description: string
+  description?: string
   status: "active" | "paused" | "completed"
-  tasksCount: number
-  completedTasks: number
-  createdAt: string
-  lastActivity: string
-  createdBy?: string
+  user_id?: string
+  created_by?: string
+  created_at?: string
+  updated_at?: string
+  // Computed fields (not stored in DB)
+  tasksCount?: number
+  completedTasks?: number
+  createdAt?: string // Legacy field for compatibility
+  lastActivity?: string // Legacy field for compatibility
 }
 
 interface ProjectStore {

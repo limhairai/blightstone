@@ -1,47 +1,190 @@
-// API utility functions for consistent token handling
-import { Session } from '@supabase/supabase-js';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import type { Task, Project } from './stores/project-store'
 
-interface FetchOptions extends RequestInit {
-  headers?: Record<string, string>;
+const supabase = createClientComponentClient()
+
+// API base URL for our custom routes
+const API_BASE = '/api'
+
+// Projects API
+export const projectsApi = {
+  async getAll(): Promise<Project[]> {
+    try {
+      const response = await fetch(`${API_BASE}/projects`)
+      if (!response.ok) throw new Error('Failed to fetch projects')
+      const data = await response.json()
+      return data.projects || []
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+      throw error
+    }
+  },
+
+  async create(project: { name: string; description?: string; status?: string }): Promise<Project> {
+    try {
+      const response = await fetch(`${API_BASE}/projects`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(project)
+      })
+      if (!response.ok) throw new Error('Failed to create project')
+      const data = await response.json()
+      return data.project
+    } catch (error) {
+      console.error('Error creating project:', error)
+      throw error
+    }
+  }
 }
 
-/**
- * Make an authenticated API call using Supabase session token
- */
-export async function authenticatedFetch(
-  url: string, 
-  session: Session | null, 
-  options: FetchOptions = {}
-): Promise<Response> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+// Tasks API
+export const tasksApi = {
+  async getByProject(projectId: string): Promise<Task[]> {
+    try {
+      const response = await fetch(`${API_BASE}/tasks?project_id=${projectId}`)
+      if (!response.ok) throw new Error('Failed to fetch tasks')
+      const data = await response.json()
+      return data.tasks || []
+    } catch (error) {
+      console.error('Error fetching tasks:', error)
+      throw error
+    }
+  },
 
-  if (session?.access_token) {
-    headers['Authorization'] = `Bearer ${session.access_token}`;
+  async create(task: Partial<Task>): Promise<Task> {
+    try {
+      const response = await fetch(`${API_BASE}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(task)
+      })
+      if (!response.ok) throw new Error('Failed to create task')
+      const data = await response.json()
+      return data.task
+    } catch (error) {
+      console.error('Error creating task:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, updates: Partial<Task>): Promise<Task> {
+    try {
+      const response = await fetch(`${API_BASE}/tasks`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates })
+      })
+      if (!response.ok) throw new Error('Failed to update task')
+      const data = await response.json()
+      return data.task
+    } catch (error) {
+      console.error('Error updating task:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/tasks?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error('Failed to delete task')
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      throw error
+    }
   }
-
-  return fetch(url, {
-    ...options,
-    headers,
-  });
 }
 
-/**
- * Helper for common JSON API requests
- */
-export async function apiRequest<T = any>(
-  url: string,
-  session: Session | null,
-  options: FetchOptions = {}
-): Promise<T> {
-  const response = await authenticatedFetch(url, session, options);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `HTTP ${response.status}: ${response.statusText}`);
+// Personas API
+export const personasApi = {
+  async getByProject(projectId: string) {
+    try {
+      const response = await fetch(`${API_BASE}/personas?project_id=${projectId}`)
+      if (!response.ok) throw new Error('Failed to fetch personas')
+      const data = await response.json()
+      return data.personas || []
+    } catch (error) {
+      console.error('Error fetching personas:', error)
+      throw error
+    }
+  },
+
+  async create(persona: any) {
+    try {
+      const response = await fetch(`${API_BASE}/personas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(persona)
+      })
+      if (!response.ok) throw new Error('Failed to create persona')
+      const data = await response.json()
+      return data.persona
+    } catch (error) {
+      console.error('Error creating persona:', error)
+      throw error
+    }
   }
-  
-  return response.json();
-} 
+}
+
+// Competitors API
+export const competitorsApi = {
+  async getByProject(projectId: string) {
+    try {
+      const response = await fetch(`${API_BASE}/competitors?project_id=${projectId}`)
+      if (!response.ok) throw new Error('Failed to fetch competitors')
+      const data = await response.json()
+      return data.competitors || []
+    } catch (error) {
+      console.error('Error fetching competitors:', error)
+      throw error
+    }
+  },
+
+  async create(competitor: any) {
+    try {
+      const response = await fetch(`${API_BASE}/competitors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(competitor)
+      })
+      if (!response.ok) throw new Error('Failed to create competitor')
+      const data = await response.json()
+      return data.competitor
+    } catch (error) {
+      console.error('Error creating competitor:', error)
+      throw error
+    }
+  }
+}
+
+// Creatives API
+export const creativesApi = {
+  async getByProject(projectId: string) {
+    try {
+      const response = await fetch(`${API_BASE}/creatives?project_id=${projectId}`)
+      if (!response.ok) throw new Error('Failed to fetch creatives')
+      const data = await response.json()
+      return data.creatives || []
+    } catch (error) {
+      console.error('Error fetching creatives:', error)
+      throw error
+    }
+  },
+
+  async create(creative: any) {
+    try {
+      const response = await fetch(`${API_BASE}/creatives`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(creative)
+      })
+      if (!response.ok) throw new Error('Failed to create creative')
+      const data = await response.json()
+      return data.creative
+    } catch (error) {
+      console.error('Error creating creative:', error)
+      throw error
+    }
+  }
+}

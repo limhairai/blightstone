@@ -1,0 +1,112 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const projectId = searchParams.get('project_id')
+
+    if (!projectId) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
+    const { data: personas, error } = await supabase
+      .from('personas')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching personas:', error)
+      return NextResponse.json({ error: 'Failed to fetch personas' }, { status: 500 })
+    }
+
+    return NextResponse.json({ personas })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies })
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { 
+      name,
+      age_gender_location,
+      daily_struggles,
+      desired_characteristics,
+      desired_social_status,
+      product_help_achieve_status,
+      beliefs_to_overcome,
+      failed_solutions,
+      market_awareness,
+      market_sophistication,
+      insecurities,
+      mindset,
+      deeper_pain_points,
+      hidden_specific_desires,
+      objections,
+      angle,
+      domino_statement,
+      project_id,
+      notes
+    } = body
+
+    if (!name || !project_id) {
+      return NextResponse.json({ error: 'Name and project_id are required' }, { status: 400 })
+    }
+
+    const { data: persona, error } = await supabase
+      .from('personas')
+      .insert({
+        name,
+        age_gender_location,
+        daily_struggles,
+        desired_characteristics,
+        desired_social_status,
+        product_help_achieve_status,
+        beliefs_to_overcome,
+        failed_solutions,
+        market_awareness,
+        market_sophistication,
+        insecurities,
+        mindset,
+        deeper_pain_points,
+        hidden_specific_desires,
+        objections,
+        angle,
+        domino_statement,
+        project_id,
+        notes,
+        created_by: user.email
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error creating persona:', error)
+      return NextResponse.json({ error: 'Failed to create persona' }, { status: 500 })
+    }
+
+    return NextResponse.json({ persona })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

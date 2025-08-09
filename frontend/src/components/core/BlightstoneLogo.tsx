@@ -15,10 +15,7 @@ export function BlightstoneLogo({ className, size = "md" }: BlightstoneLogoProps
 
   return (
     <div className={cn("font-bold font-inter", sizeClasses[size], className)}>
-      <span className="text-foreground">Blight</span>
-      <span className="text-muted-foreground">
-        stone
-      </span>
+      <span className="text-foreground">Blightstone</span>
     </div>
   )
 } 

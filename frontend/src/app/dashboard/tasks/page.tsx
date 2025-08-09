@@ -28,6 +28,7 @@ import { Plus, User, Calendar, Filter, Edit3 } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
+import { tasksApi } from "@/lib/api"
 
 // Import interfaces from project store
 import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
@@ -38,8 +39,36 @@ const NEW_TASK_ID = "new-task-temp-id"
 export default function TasksPage() {
   const { currentProjectId } = useProjectStore()
   
-  // Project-specific mock data
-  const getTasksForCurrentProject = () => {
+  // State for real data
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Fetch tasks when project changes
+  useEffect(() => {
+    if (!currentProjectId) return
+    
+    const fetchTasks = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const fetchedTasks = await tasksApi.getByProject(currentProjectId)
+        setTasks(fetchedTasks)
+      } catch (err) {
+        setError('Failed to fetch tasks')
+        console.error('Error fetching tasks:', err)
+        // Fallback to mock data for development
+        setTasks(getMockTasksForCurrentProject())
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchTasks()
+  }, [currentProjectId])
+  
+  // Fallback mock data for development
+  const getMockTasksForCurrentProject = () => {
     if (currentProjectId === "1") {
       // Grounding.co Campaign tasks
       return [
@@ -119,12 +148,7 @@ export default function TasksPage() {
     return [] // Default empty for other projects
   }
 
-  const [tasks, setTasks] = useState<Task[]>(getTasksForCurrentProject())
-  
-  // Add effect to update tasks when project changes
-  useEffect(() => {
-    setTasks(getTasksForCurrentProject())
-  }, [currentProjectId])
+  // Remove old mock data state - now using real data from above
 
 
 
@@ -189,22 +213,47 @@ export default function TasksPage() {
     }
   }
 
-  const handleUpdateTask = (updatedTask: Task) => {
-    if (updatedTask.id === NEW_TASK_ID) {
-      // This is a new task being saved
-      const newTaskWithId = { ...updatedTask, id: Date.now().toString() }
-      setTasks([...tasks, newTaskWithId])
-      setSelectedTask(null) // Close the brief after creation
-    } else {
-      // This is an existing task being updated
-      setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)))
-      setSelectedTask(updatedTask) // Update selected task to reflect changes
+  const handleUpdateTask = async (updatedTask: Task) => {
+    try {
+      if (updatedTask.id === NEW_TASK_ID) {
+        // Creating a new task
+        const newTask = await tasksApi.create({
+          ...updatedTask,
+          project_id: currentProjectId!
+        })
+        setTasks(prev => [...prev, newTask])
+        setSelectedTask(null)
+      } else {
+        // Updating existing task
+        const updated = await tasksApi.update(updatedTask.id, updatedTask)
+        setTasks(prev => prev.map(task => task.id === updated.id ? updated : task))
+        setSelectedTask(updated)
+      }
+    } catch (error) {
+      console.error('Error updating task:', error)
+      // Fallback to local update for development
+      if (updatedTask.id === NEW_TASK_ID) {
+        const newTaskWithId = { ...updatedTask, id: Date.now().toString() }
+        setTasks([...tasks, newTaskWithId])
+        setSelectedTask(null)
+      } else {
+        setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)))
+        setSelectedTask(updatedTask)
+      }
     }
   }
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter((task) => task.id !== taskId))
-    setSelectedTask(null)
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await tasksApi.delete(taskId)
+      setTasks(prev => prev.filter(task => task.id !== taskId))
+      setSelectedTask(null)
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      // Fallback to local delete for development
+      setTasks(tasks.filter((task) => task.id !== taskId))
+      setSelectedTask(null)
+    }
   }
 
   const handleStatusChange = (taskId: string, newStatus: Task["status"]) => {
@@ -266,8 +315,25 @@ export default function TasksPage() {
     setTempNotes("")
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading tasks...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-800 text-sm">{error}</p>
+        </div>
+      )}
+      
       {/* Header with New Task button and Filters */}
       <div className="flex items-center justify-between">
         {/* Filters */}
