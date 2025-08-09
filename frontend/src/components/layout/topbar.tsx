@@ -70,7 +70,7 @@ export function Topbar({
   // Subscription removed for CRM
   const currentPlan = null;
   const isSubscriptionLoading = false;
-  const planName = currentPlan?.name || 'Free';
+  // Removed plan logic for internal CRM
 
   // Setup progress removed for internal CRM
   const actualSetupPercentage = 100; // Always complete for internal CRM

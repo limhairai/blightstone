@@ -25,7 +25,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 
-// Define the interface for a Creative entry
+// Define the interface for a Creative entry - aligned with creative tracker page
 interface Creative {
   id: string
   batch: string
@@ -44,6 +44,8 @@ interface Creative {
   winningAdLink: string
   briefLink: string
   driveLink: string
+  createdAt: string
+  notes?: string
 }
 
 interface CreativeBriefPageProps {

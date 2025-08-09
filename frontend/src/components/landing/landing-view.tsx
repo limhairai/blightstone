@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Button } from "../ui/button"
 import { ProfessionalFeaturesSection } from "./professional-features-section"
 import { FAQSection } from "./faq-section"
-import { AccountManagementSection } from "../accounts/account-management-section"
+
 
 import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useInView } from 'react-intersection-observer'
@@ -319,7 +319,7 @@ export function LandingView() {
             <div className="absolute bottom-1/6 left-1/6 w-40 h-40 md:w-56 md:h-56 rounded-full bg-gradient-to-l from-[#ffb4a0]/5 to-[#b4a0ff]/5 md:from-[#ffb4a0]/7 md:to-[#b4a0ff]/7 blur-xl md:blur-3xl animate-pulse delay-2200"></div>
           </div>
           <div className="relative z-10">
-            <AccountManagementSection />
+            {/* AccountManagementSection removed for internal CRM */}
             
             {/* Simple Funding Section */}
             <div className="py-16 px-4 sm:px-6 lg:px-8">

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Eye, Edit3 } from "lucide-react"
-import { useProjectStore } from "@/lib/stores/project-store"
+import { useProjectStore, CustomerAvatar } from "@/lib/stores/project-store"
 // Lazy load the brief page for better performance
 const PersonaBriefPage = React.lazy(() => import("@/components/personas/persona-brief-page"))
 
@@ -31,6 +31,7 @@ interface Persona {
   objections: string // What are her objections?
   angle: string // New: The specific angle to approach this persona
   dominoStatement: string // New: The key idea that unlocks their skepticism
+  description: string // Description of the persona
   projectId: string // Add project association
   notes?: string // Quick notes about the persona
 }
@@ -47,14 +48,28 @@ export default function PersonasPage() {
     if (!currentProjectId) return
     
     // Convert from new Persona format to existing CustomerAvatar format for the store
-    const avatarData = {
+    const avatarData: CustomerAvatar = {
       id: updatedPersona.id === "new-persona-temp-id" ? Date.now().toString() : updatedPersona.id,
       name: updatedPersona.name,
-      description: `${updatedPersona.ageGenderLocation} - ${updatedPersona.dailyStruggles}`,
-      painPoints: updatedPersona.deeperPainPoints,
-      desires: updatedPersona.hiddenSpecificDesires,
-      objections: updatedPersona.objections,
-      projectId: currentProjectId
+      type: "Customer Avatar",
+      age: updatedPersona.ageGenderLocation.split(' ')[0] || "Unknown",
+      gender: updatedPersona.ageGenderLocation.split(' ')[1] || "Unknown",
+      location: updatedPersona.ageGenderLocation.split(' ').slice(2).join(' ') || "Unknown",
+      struggles: [updatedPersona.dailyStruggles],
+      characteristics: [updatedPersona.desiredCharacteristics],
+      statusDesired: [updatedPersona.desiredSocialStatus],
+      productHelp: [updatedPersona.productHelpAchieveStatus],
+      beliefs: [updatedPersona.beliefsToOvercome],
+      failedSolutions: [updatedPersona.failedSolutions],
+      awareness: updatedPersona.marketAwareness,
+      sophistication: updatedPersona.marketSophistication,
+      insecurities: [updatedPersona.insecurities],
+      mindset: updatedPersona.mindset,
+      painPoints: [updatedPersona.deeperPainPoints],
+      desires: [updatedPersona.hiddenSpecificDesires],
+      objections: [updatedPersona.objections],
+      projectId: currentProjectId,
+      createdBy: "You"
     }
 
     addAvatar(avatarData)
@@ -84,8 +99,9 @@ export default function PersonasPage() {
       deeperPainPoints: "",
       hiddenSpecificDesires: "",
       objections: "",
-      angle: "",
-      dominoStatement: "",
+      angle: "To be defined",
+      dominoStatement: "To be defined",
+      description: "New persona",
       projectId: currentProjectId || "",
       notes: ""
     })
@@ -157,8 +173,8 @@ export default function PersonasPage() {
                         handleNotesEdit({
                           id: avatar.id,
                           name: avatar.name,
-                          ageGenderLocation: avatar.description?.split(' - ')[0] || "",
-                          dailyStruggles: avatar.description?.split(' - ')[1] || "",
+                          ageGenderLocation: `${avatar.age} ${avatar.gender} ${avatar.location}`,
+                          dailyStruggles: avatar.struggles[0] || "",
                           desiredCharacteristics: "",
                           desiredSocialStatus: "",
                           productHelpAchieveStatus: "",
@@ -168,11 +184,12 @@ export default function PersonasPage() {
                           marketSophistication: "",
                           insecurities: "",
                           mindset: "",
-                          deeperPainPoints: avatar.painPoints,
-                          hiddenSpecificDesires: avatar.desires,
-                          objections: avatar.objections,
-                          angle: "",
-                          dominoStatement: "",
+                          deeperPainPoints: avatar.painPoints[0] || "",
+                          hiddenSpecificDesires: avatar.desires[0] || "",
+                          objections: avatar.objections[0] || "",
+                          angle: "To be defined",
+                          dominoStatement: "To be defined",
+                          description: `${avatar.age} ${avatar.gender} ${avatar.location} - ${avatar.struggles[0] || ""}`,
                           projectId: avatar.projectId,
                           notes: ""
                         })
@@ -189,8 +206,8 @@ export default function PersonasPage() {
                     setSelectedPersona({
                       id: avatar.id,
                       name: avatar.name,
-                      ageGenderLocation: avatar.description?.split(' - ')[0] || "",
-                      dailyStruggles: avatar.description?.split(' - ')[1] || "",
+                      ageGenderLocation: `${avatar.age} ${avatar.gender} ${avatar.location}`,
+                      dailyStruggles: avatar.struggles[0] || "",
                       desiredCharacteristics: "",
                       desiredSocialStatus: "",
                       productHelpAchieveStatus: "",
@@ -200,11 +217,12 @@ export default function PersonasPage() {
                       marketSophistication: "",
                       insecurities: "",
                       mindset: "",
-                      deeperPainPoints: avatar.painPoints,
-                      hiddenSpecificDesires: avatar.desires,
-                      objections: avatar.objections,
-                      angle: "",
-                      dominoStatement: "",
+                      deeperPainPoints: avatar.painPoints[0] || "",
+                      hiddenSpecificDesires: avatar.desires[0] || "",
+                      objections: avatar.objections[0] || "",
+                      angle: "To be defined",
+                      dominoStatement: "To be defined",
+                      description: `${avatar.age} ${avatar.gender} ${avatar.location} - ${avatar.struggles[0] || ""}`,
                       projectId: avatar.projectId
                     })
                   }}>

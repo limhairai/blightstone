@@ -8,22 +8,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { X, Edit, List, Search, ChevronRight, Settings, Trash2, LinkIcon, BarChart, ExternalLink } from "lucide-react"
 
-// Re-using the Competitor interface from competitor-tracker-page.tsx
-interface Competitor {
+// Import the Competitor interface from the store
+import { Competitor } from "@/lib/stores/project-store"
+
+// Define the interface for the brief page (different from store)
+interface CompetitorBrief {
   id: string
   name: string
-  websiteUrl: string
+  website: string
   adLibraryLink: string
   market: string
   offerUrl: string
   trafficVolume: string
   level: "Poor" | "Medium" | "High"
+  projectId: string
+  notes?: string
 }
 
 interface CompetitorBriefPageProps {
-  competitor: Competitor | null
+  competitor: CompetitorBrief | null
   onClose: () => void
-  onUpdateCompetitor: (updatedCompetitor: Competitor) => void
+  onUpdateCompetitor: (updatedCompetitor: CompetitorBrief) => void
   onDeleteCompetitor: (competitorId: string) => void
   NEW_COMPETITOR_ID: string // Constant for new competitor temp ID
 }
@@ -35,7 +40,7 @@ export default function CompetitorBriefPage({
   onDeleteCompetitor,
   NEW_COMPETITOR_ID,
 }: CompetitorBriefPageProps) {
-  const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null)
+  const [editingCompetitor, setEditingCompetitor] = useState<CompetitorBrief | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeSection, setActiveSection] = useState("overview") // For left navigation
   const [mounted, setMounted] = useState(false)
@@ -89,7 +94,7 @@ export default function CompetitorBriefPage({
   ]
 
   const renderSectionContent = (sectionId: string) => {
-    const renderField = (label: string, value: string, fieldName: keyof Competitor, isInput = true) => (
+    const renderField = (label: string, value: string, fieldName: keyof CompetitorBrief, isInput = true) => (
       <div className="bg-muted/30 rounded-lg p-4 min-h-[80px] space-y-2">
         <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
         {isEditMode ? (
@@ -106,7 +111,7 @@ export default function CompetitorBriefPage({
       </div>
     )
 
-    const renderLinkField = (label: string, value: string, fieldName: keyof Competitor) => (
+    const renderLinkField = (label: string, value: string, fieldName: keyof CompetitorBrief) => (
       <div className="bg-muted/30 rounded-lg p-4 min-h-[80px] space-y-2">
         <h3 className="text-sm font-semibold text-muted-foreground">{label}</h3>
         {isEditMode ? (
@@ -173,7 +178,7 @@ export default function CompetitorBriefPage({
           <div className="space-y-4">
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Website URL</h2>
-              {renderLinkField("Website URL", competitor.websiteUrl, "websiteUrl")}
+              {renderLinkField("Website URL", competitor.website, "website")}
             </div>
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Ad Library Link</h2>

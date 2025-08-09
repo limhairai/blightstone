@@ -100,11 +100,6 @@ export function AppShell({ children }: AppShellProps) {
       return `${greeting}, ${userName}`
     }
     const pathTitles: Record<string, string> = {
-      "/dashboard/businesses": "Businesses",
-      // Business managers removed for CRM
-      "/dashboard/wallet": "Wallet",
-      "/dashboard/topup-requests": "Transactions",
-      "/dashboard/accounts": "Ad Accounts",
       "/dashboard/settings": "Settings",
     }
     if (pathTitles[pathname]) return pathTitles[pathname]

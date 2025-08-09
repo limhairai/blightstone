@@ -33,10 +33,10 @@ export default function CompetitorsPage() {
   const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
 
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorBrief | null>(null)
-  const [notesEditingCompetitor, setNotesEditingCompetitor] = useState<Competitor | null>(null)
+  const [notesEditingCompetitor, setNotesEditingCompetitor] = useState<CompetitorBrief | null>(null)
   const [tempNotes, setTempNotes] = useState("")
 
-  const handleUpdateCompetitor = (updatedCompetitor: Competitor) => {
+  const handleUpdateCompetitor = (updatedCompetitor: CompetitorBrief) => {
     if (!currentProjectId) return
     
     if (updatedCompetitor.id === "new-competitor-temp-id") {
@@ -47,7 +47,7 @@ export default function CompetitorsPage() {
       }
       
       // Convert to store format
-      const competitorData = {
+      const competitorData: Competitor = {
         id: newCompetitorWithId.id,
         name: newCompetitorWithId.name,
         website: newCompetitorWithId.website || "",
@@ -61,7 +61,10 @@ export default function CompetitorsPage() {
         marketShare: "Unknown",
         notes: "",
         projectId: currentProjectId || "",
-        createdBy: "You"
+        createdBy: "You",
+        adLibraryLink: newCompetitorWithId.adLibraryLink || "",
+        offerUrl: newCompetitorWithId.offerUrl || "",
+        trafficVolume: newCompetitorWithId.trafficVolume || ""
       }
       
       addCompetitor(competitorData)
@@ -92,7 +95,7 @@ export default function CompetitorsPage() {
     })
   }
 
-  const handleNotesEdit = (competitor: Competitor) => {
+  const handleNotesEdit = (competitor: CompetitorBrief) => {
     setNotesEditingCompetitor(competitor)
     setTempNotes(competitor.notes || "")
   }
@@ -174,13 +177,13 @@ export default function CompetitorsPage() {
                           id: competitor.id,
                           name: competitor.name,
                           website: competitor.website,
-                          adLibraryLink: "",
+                          adLibraryLink: competitor.adLibraryLink || "",
                           market: competitor.market || 'USA',
-                          offerUrl: "",
-                          trafficVolume: "",
+                          offerUrl: competitor.offerUrl || "",
+                          trafficVolume: competitor.trafficVolume || "",
                           level: competitor.level || "Medium",
                           projectId: competitor.projectId,
-                          notes: ""
+                          notes: competitor.notes || ""
                         })
                       }}
                       className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
@@ -196,10 +199,10 @@ export default function CompetitorsPage() {
                       id: competitor.id,
                       name: competitor.name,
                       website: competitor.website,
-                      adLibraryLink: "",
+                      adLibraryLink: competitor.adLibraryLink || "",
                       market: competitor.market || 'USA',
-                      offerUrl: "",
-                      trafficVolume: "",
+                      offerUrl: competitor.offerUrl || "",
+                      trafficVolume: competitor.trafficVolume || "",
                       level: competitor.level || "Medium",
                       projectId: competitor.projectId
                     })

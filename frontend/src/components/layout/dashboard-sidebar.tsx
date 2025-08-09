@@ -34,14 +34,7 @@ export function DashboardSidebar() {
   // ⚡ AGGRESSIVE ROUTE PREFETCHING: Prefetch all dashboard routes for instant navigation
   useEffect(() => {
     const routesToPrefetch = [
-      '/dashboard/wallet',
-      '/dashboard/support', 
-      '/dashboard/settings',
-      '/dashboard/topup-requests',
-      // Business managers removed for CRM
-      '/dashboard/accounts',
-      '/dashboard/pixels',
-      '/dashboard/applications'
+      '/dashboard/settings'
     ]
 
     // Prefetch all routes after a short delay to not interfere with initial load
@@ -162,22 +155,7 @@ export function DashboardSidebar() {
         //   .catch(() => {}) // Silent fail
         break
       
-      case '/dashboard/applications':
-        // Preload applications data
-        fetch('/api/applications', { headers })
-          .catch(() => {}) // Silent fail
-        break
-        
-      case '/dashboard/support':
-        // Preload support tickets
-        fetch('/api/support/tickets', { headers })
-          .catch(() => {}) // Silent fail
-        break
-      case '/dashboard/topup-requests':
-        // Preload transactions data
-        fetch('/api/transactions', { headers })
-          .catch(() => {}) // Silent fail
-        break
+
     }
   }, [session, currentOrganizationId])
 

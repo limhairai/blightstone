@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 
 // Define the interface for a Persona entry
+// Use the local Persona interface from the personas page
 interface Persona {
   id: string
   name: string
@@ -35,6 +36,11 @@ interface Persona {
   marketAwareness: string
   marketSophistication: string
   insecurities: string
+  mindset: string
+  deeperPainPoints: string
+  hiddenSpecificDesires: string
+  objections: string
+  projectId: string
   description: string
   angle: string
   dominoStatement: string
@@ -164,7 +170,7 @@ export default function PersonaBriefPage({
             {/* Description */}
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Description</h2>
-              {renderField("Description", persona.description, "description", true)}
+              {renderField("Description", persona.description || "", "description", true)}
             </div>
           </div>
         )
@@ -263,12 +269,12 @@ export default function PersonaBriefPage({
           <div className="space-y-4">
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Angle</h2>
-              {renderField("Angle", persona.angle, "angle", true)}
+              {renderField("Angle", persona.angle || "", "angle", true)}
             </div>
 
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Domino Statement</h2>
-              {renderField("Domino Statement", persona.dominoStatement, "dominoStatement", true)}
+              {renderField("Domino Statement", persona.dominoStatement || "", "dominoStatement", true)}
             </div>
           </div>
         )

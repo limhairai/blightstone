@@ -13,7 +13,7 @@ import { ErrorBoundary } from "../ui/error-boundary"
 
 // Email verification banner removed - not needed for internal CRM
 
-import { CompactAccountsTable } from "./compact-accounts-table"
+
 // Advanced onboarding hook removed - not needed for internal CRM
 
 
@@ -739,10 +739,7 @@ export function DashboardView() {
   return (
     <ErrorBoundary>
       <div className={layoutTokens.spacing.container}>
-        {/* Email verification banner */}
-        {showEmailBanner && (
-          <EmailVerificationBanner onResendEmail={handleResendEmail} />
-        )}
+        {/* Email verification banner removed for internal CRM */}
 
         {/* Setup Guide Widget is now handled by AppShell globally */}
 
@@ -1083,12 +1080,7 @@ export function DashboardView() {
 
           </div>
 
-          <CompactAccountsTable
-            initialBusinessFilter="all"
-            businessFilter="all"
-            onBusinessFilterChange={() => {}} // Dashboard doesn't need business filter changes
-            bmIdFilter={null}
-          />
+          {/* CompactAccountsTable removed for internal CRM */}
         </div>
       </div>
 

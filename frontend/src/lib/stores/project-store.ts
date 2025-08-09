@@ -90,9 +90,12 @@ export interface Competitor {
   positioning: string
   targetAudience: string
   marketShare: string
-  notes: string
+  notes?: string
   projectId: string
   createdBy?: string
+  adLibraryLink?: string
+  offerUrl?: string
+  trafficVolume?: string
 }
 
 export interface CreativeTracker {

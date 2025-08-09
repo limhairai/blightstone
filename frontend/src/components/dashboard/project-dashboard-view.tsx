@@ -61,7 +61,7 @@ export function ProjectDashboardView() {
     return total > 0 ? Math.round((completed / total) * 100) : 0
   }
 
-  const progressPercentage = getProgressPercentage(currentProject.completedTasks, currentProject.tasksCount)
+  const progressPercentage = getProgressPercentage(currentProject.completedTasks || 0, currentProject.tasksCount || 0)
 
   return (
     <div className="space-y-8">
@@ -124,7 +124,7 @@ export function ProjectDashboardView() {
                   </div>
                   <p className="text-2xl font-bold text-foreground">{projectCreatives.length}</p>
                   <p className="text-sm text-muted-foreground">
-                    {projectCreatives.filter(c => c.status === 'live').length} live campaigns
+                    {projectCreatives.filter(c => c.status === 'completed').length} completed campaigns
                   </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -190,7 +190,7 @@ export function ProjectDashboardView() {
                   <div className="space-y-1">
                     <h4 className="font-medium text-foreground">{task.title}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Due {task.dueDate} • {task.assignedTo || 'Unassigned'}
+                      Due {task.dueDate} • {task.assignee || 'Unassigned'}
                     </p>
                   </div>
                   <Badge 

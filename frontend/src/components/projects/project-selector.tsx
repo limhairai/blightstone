@@ -98,7 +98,7 @@ export function ProjectSelector() {
                 </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground w-full">
-                <span>{getProgressPercentage(currentProject.completedTasks, currentProject.tasksCount)}% complete</span>
+                <span>{getProgressPercentage(currentProject.completedTasks || 0, currentProject.tasksCount || 0)}% complete</span>
                 <span>•</span>
                 <span>{currentProject.completedTasks}/{currentProject.tasksCount} tasks</span>
               </div>
@@ -161,7 +161,7 @@ export function ProjectSelector() {
 
                 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{getProgressPercentage(projectWithCounts.completedTasks, projectWithCounts.tasksCount)}% complete</span>
+                  <span>{getProgressPercentage(projectWithCounts.completedTasks || 0, projectWithCounts.tasksCount || 0)}% complete</span>
                   <span>•</span>
                   <span>{projectWithCounts.completedTasks}/{projectWithCounts.tasksCount} tasks</span>
                 </div>
@@ -169,7 +169,7 @@ export function ProjectSelector() {
                 <div className="w-full bg-muted rounded-full h-1 mt-1">
                   <div 
                     className="bg-primary h-1 rounded-full transition-all duration-300" 
-                    style={{ width: `${getProgressPercentage(projectWithCounts.completedTasks, projectWithCounts.tasksCount)}%` }}
+                    style={{ width: `${getProgressPercentage(projectWithCounts.completedTasks || 0, projectWithCounts.tasksCount || 0)}%` }}
                   />
                 </div>
               </div>

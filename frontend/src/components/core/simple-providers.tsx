@@ -13,8 +13,8 @@ import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { SWRConfig } from 'swr'
 import { swrConfig } from '@/lib/swr-config'
 import { PageTransition } from '@/lib/instant-transitions'
-import { useAggressivePreloading, usePredictiveLoading } from '@/lib/bundle-optimization'
-import { ResourceHints, CriticalCSS } from '@/lib/bundle-components'
+
+
 import { MicroInteractionsProvider } from '@/lib/micro-interactions'
 import { useInstantPerformance } from '@/lib/instant-performance'
 
@@ -71,8 +71,6 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   const [hasHydrated, setHasHydrated] = useState(false);
 
   // Initialize performance optimizations
-  useAggressivePreloading()
-  usePredictiveLoading()
   useInstantPerformance()
 
   // Track hydration to prevent SSR/client mismatches
@@ -124,8 +122,7 @@ export function SimpleProviders({ children }: { children: React.ReactNode }) {
           <MicroInteractionsProvider>
             <AuthProvider>
               <PageTitleProvider>
-                <ResourceHints />
-                <CriticalCSS />
+
                 <AppRouter>{children}</AppRouter>
               </PageTitleProvider>
             </AuthProvider>
