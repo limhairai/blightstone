@@ -103,7 +103,7 @@ export default function CompetitorsPage() {
               <TableRow key={competitor.id}>
                 <TableCell className="font-medium">{competitor.name}</TableCell>
                 <TableCell>{competitor.website}</TableCell>
-                <TableCell>{competitor.strengths?.split(', ')[1]?.replace('Market: ', '') || 'Unknown'}</TableCell>
+                <TableCell>{(typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[1]?.replace('Market: ', '') : null) || 'Unknown'}</TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" onClick={() => {
                     // Convert from store format to Competitor format for editing
@@ -112,10 +112,10 @@ export default function CompetitorsPage() {
                       name: competitor.name,
                       websiteUrl: competitor.website,
                       adLibraryLink: "",
-                      market: competitor.strengths?.split(', ')[1]?.replace('Market: ', '') || 'USA',
+                      market: (typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[1]?.replace('Market: ', '') : null) || 'USA',
                       offerUrl: "",
                       trafficVolume: "",
-                      level: competitor.strengths?.split(', ')[0]?.replace('Level: ', '') as "Poor" | "Medium" | "High" || "Medium",
+                      level: ((typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[0]?.replace('Level: ', '') : null) || "Medium") as "Poor" | "Medium" | "High",
                       projectId: competitor.projectId
                     })
                   }}>
