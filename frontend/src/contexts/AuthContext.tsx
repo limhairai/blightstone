@@ -67,21 +67,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ALL HOOKS AND FUNCTIONS MUST BE AT THE TOP - NEVER CONDITIONALLY
   
-  // Fetch user profile function
+  // Fetch user profile function - simplified for internal CRM
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('profile_id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        return null;
+      // For internal CRM, we don't need a profiles table
+      // Just use the user data from Supabase auth
+      const response = await fetch('/api/auth/user');
+      if (response.ok) {
+        return await response.json();
       }
-
-      return profile as UserProfile;
+      return null;
     } catch (error) {
       console.error('Error fetching user profile:', error);
       return null;
@@ -594,11 +589,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Try to get user profile on sign in with retry logic
         try {
-          const response = await fetch('/api/auth/user', {
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          });
+          // No Authorization header needed - cookies are handled automatically
+          const response = await fetch('/api/auth/user');
           
           if (response.ok) {
             const userData = await response.json();
