@@ -383,7 +383,7 @@ export function OrganizationSelector() {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between bg-background border-border text-foreground hover:bg-accent"
+            className="w-full justify-between bg-background border-border text-foreground hover:bg-[#F5F5F5]"
             disabled={Boolean(componentIsLoading || globalLoading)}
           >
             <div className="flex items-center">
@@ -425,7 +425,7 @@ export function OrganizationSelector() {
                 <div key={org.id} className="relative">
                   <DropdownMenuItem
                     className={cn(
-                      "flex items-center p-2 cursor-pointer rounded-md hover:bg-accent",
+                      "flex items-center p-2 cursor-pointer rounded-md hover:bg-[#F5F5F5]",
                       org.id === selectedOrg.id && "bg-accent"
                     )}
                     onMouseEnter={() => handleOrgMouseEnter(org.id)}
@@ -461,7 +461,7 @@ export function OrganizationSelector() {
                   {filteredBusinessManagers.map((bm) => (
                     <DropdownMenuItem
                       key={bm.id}
-                      className="flex items-center p-2 cursor-pointer rounded-md hover:bg-accent/50 ml-2"
+                      className="flex items-center p-2 cursor-pointer rounded-md hover:bg-[#F5F5F5]/50 ml-2"
                       onClick={() => handleBusinessManagerClick(bm)}
                     >
                       <Building2 className="h-4 w-4 mr-3 text-muted-foreground" />

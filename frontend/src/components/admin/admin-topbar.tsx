@@ -127,7 +127,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
         <div className="md:hidden">
           <GlobalSearch 
             trigger={
-              <Button variant="ghost" size="icon" className="hover:bg-accent">
+              <Button variant="ghost" size="icon" className="hover:bg-[#F5F5F5]">
                 <Search className="h-5 w-5 text-muted-foreground" />
               </Button>
             }
@@ -144,7 +144,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
         {/* Admin Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-[#F5F5F5]">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={(user as any)?.avatar_url || user?.user_metadata?.avatar_url || undefined} alt="Admin" />
                 <AvatarFallback className={gradientTokens.avatar}>
@@ -171,7 +171,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
             <DropdownMenuSeparator className="bg-border" />
 
             <div className="py-2">
-              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={(e) => e.preventDefault()}>
+              <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2" onClick={(e) => e.preventDefault()}>
                 <Moon className="h-4 w-4 mr-2" />
                 Theme
                 <div className="ml-auto flex items-center gap-1">
@@ -207,13 +207,13 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
 
             <div className="py-2">
               <DropdownMenuItem
-                className="text-popover-foreground hover:bg-accent px-4 py-2"
+                className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2"
                 onClick={() => (window.location.href = "/dashboard")}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Switch to Client View
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={handleSignOut}>
+              <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out
               </DropdownMenuItem>

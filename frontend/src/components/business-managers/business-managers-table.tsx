@@ -313,22 +313,22 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="all" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 All Statuses
               </SelectItem>
-              <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="active" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Active
               </SelectItem>
-              <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="pending" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Pending
               </SelectItem>
-              <SelectItem value="processing" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="processing" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Processing
               </SelectItem>
-              <SelectItem value="rejected" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="rejected" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Rejected
               </SelectItem>
-              <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="suspended" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Suspended
               </SelectItem>
             </SelectContent>
@@ -339,13 +339,13 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="activity" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="activity" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Last Activity
               </SelectItem>
-              <SelectItem value="name" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="name" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Name
               </SelectItem>
-              <SelectItem value="accounts" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="accounts" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Ad Accounts
               </SelectItem>
             </SelectContent>

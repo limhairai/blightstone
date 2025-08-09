@@ -115,7 +115,7 @@ export function Topbar({
         {/* User Profile Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
+            <Button variant="ghost" size="icon" className="rounded-full hover:bg-[#F5F5F5]">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={userAvatar} alt="User" />
                 <AvatarFallback className={gradientTokens.avatar}>
@@ -180,7 +180,7 @@ export function Topbar({
                   Go to Admin Panel
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem className="text-popover-foreground hover:bg-accent px-4 py-2" onClick={signOut}>
+              <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5] px-4 py-2" onClick={signOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Log out
               </DropdownMenuItem>

@@ -338,7 +338,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                 key={item.id}
                 variant="ghost"
                 className={`w-full justify-start h-10 ${
-                  activeSection === item.id ? "bg-accent text-accent-foreground" : "hover:bg-accent"
+                  activeSection === item.id ? "bg-accent text-accent-foreground" : "hover:bg-[#F5F5F5]"
                 }`}
                 onClick={() => setActiveSection(item.id)}
               >

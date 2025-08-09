@@ -198,12 +198,12 @@ export function AccountSettings() {
                 <Button onClick={handleSave} disabled={loading} className="bg-[#c4b5fd] hover:bg-[#b4a0ff] text-white">
                   {loading ? "Saving..." : "Save Changes"}
                 </Button>
-                <Button variant="outline" onClick={handleCancel} className="border-border text-foreground hover:bg-accent">
+                <Button variant="outline" onClick={handleCancel} className="border-border text-foreground hover:bg-[#F5F5F5]">
                   Cancel
                 </Button>
               </>
             ) : (
-              <Button onClick={() => setIsEditing(true)} variant="outline" className="border-border text-foreground hover:bg-accent">
+              <Button onClick={() => setIsEditing(true)} variant="outline" className="border-border text-foreground hover:bg-[#F5F5F5]">
                 Edit Profile
               </Button>
             )}

@@ -61,7 +61,7 @@ export function AdminView() {
             variant="outline"
             size="sm"
             onClick={() => setShowDemoPanel(!showDemoPanel)}
-            className="border-border text-foreground hover:bg-accent"
+            className="border-border text-foreground hover:bg-[#F5F5F5]"
           >
             <Database className="h-4 w-4 mr-2" />
             Demo Data
@@ -69,7 +69,7 @@ export function AdminView() {
           <Button
             variant="outline"
             size="sm"
-            className="border-border text-foreground hover:bg-accent"
+            className="border-border text-foreground hover:bg-[#F5F5F5]"
           >
             <Download className="h-4 w-4 mr-2" />
             {contentTokens.actions.export}
@@ -148,7 +148,7 @@ export function AdminView() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-border text-foreground hover:bg-accent"
+                  className="border-border text-foreground hover:bg-[#F5F5F5]"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {contentTokens.actions.add}

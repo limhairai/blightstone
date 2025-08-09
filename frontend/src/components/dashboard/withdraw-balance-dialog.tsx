@@ -193,7 +193,7 @@ export function WithdrawBalanceDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => setAmount((account.balance * 0.25).toFixed(2))}
-                className="border-border text-foreground hover:bg-accent"
+                className="border-border text-foreground hover:bg-[#F5F5F5]"
                 disabled={isLoading}
               >
                 25%
@@ -202,7 +202,7 @@ export function WithdrawBalanceDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => setAmount((account.balance * 0.5).toFixed(2))}
-                className="border-border text-foreground hover:bg-accent"
+                className="border-border text-foreground hover:bg-[#F5F5F5]"
                 disabled={isLoading}
               >
                 50%
@@ -211,7 +211,7 @@ export function WithdrawBalanceDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => setAmount((account.balance * 0.75).toFixed(2))}
-                className="border-border text-foreground hover:bg-accent"
+                className="border-border text-foreground hover:bg-[#F5F5F5]"
                 disabled={isLoading}
               >
                 75%
@@ -220,7 +220,7 @@ export function WithdrawBalanceDialog({
                 variant="outline"
                 size="sm"
                 onClick={() => setAmount(account.balance.toFixed(2))}
-                className="border-border text-foreground hover:bg-accent"
+                className="border-border text-foreground hover:bg-[#F5F5F5]"
                 disabled={isLoading}
               >
                 All

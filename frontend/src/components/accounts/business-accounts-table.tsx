@@ -137,19 +137,19 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent className="bg-popover border-border">
-            <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="all" className="text-popover-foreground hover:bg-[#F5F5F5]">
               All Statuses
             </SelectItem>
-            <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="active" className="text-popover-foreground hover:bg-[#F5F5F5]">
               {contentTokens.status.active}
             </SelectItem>
-            <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="pending" className="text-popover-foreground hover:bg-[#F5F5F5]">
               {contentTokens.status.pending}
             </SelectItem>
-            <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="suspended" className="text-popover-foreground hover:bg-[#F5F5F5]">
               {contentTokens.status.suspended}
             </SelectItem>
-            <SelectItem value="error" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="error" className="text-popover-foreground hover:bg-[#F5F5F5]">
               {contentTokens.status.failed}
             </SelectItem>
           </SelectContent>
@@ -160,16 +160,16 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent className="bg-popover border-border">
-            <SelectItem value="name" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="name" className="text-popover-foreground hover:bg-[#F5F5F5]">
               Name
             </SelectItem>
-            <SelectItem value="balance" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="balance" className="text-popover-foreground hover:bg-[#F5F5F5]">
               Balance
             </SelectItem>
-            <SelectItem value="dateAdded" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="dateAdded" className="text-popover-foreground hover:bg-[#F5F5F5]">
               Date Added
             </SelectItem>
-            <SelectItem value="quota" className="text-popover-foreground hover:bg-accent">
+            <SelectItem value="quota" className="text-popover-foreground hover:bg-[#F5F5F5]">
               Quota
             </SelectItem>
           </SelectContent>
@@ -182,11 +182,11 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
           <span className="text-sm text-foreground font-medium">
             {selectedAccounts.length} account{selectedAccounts.length > 1 ? "s" : ""} selected
           </span>
-          <Button variant="outline" size="sm" className="ml-auto border-border text-foreground hover:bg-accent">
+          <Button variant="outline" size="sm" className="ml-auto border-border text-foreground hover:bg-[#F5F5F5]">
             <Pause className="h-4 w-4 mr-1" />
             Pause
           </Button>
-          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-accent">
+          <Button variant="outline" size="sm" className="border-border text-foreground hover:bg-[#F5F5F5]">
             <Play className="h-4 w-4 mr-1" />
             Resume
           </Button>
@@ -251,21 +251,21 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border-border text-foreground hover:bg-accent">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 border-border text-foreground hover:bg-[#F5F5F5]">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="bg-popover border-border">
-                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                        <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5]">
                           <Eye className="h-4 w-4 mr-2" />
                           {contentTokens.actions.view} Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                        <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5]">
                           <Edit className="h-4 w-4 mr-2" />
                           {contentTokens.actions.edit}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator className="bg-border" />
-                        <DropdownMenuItem className="text-popover-foreground hover:bg-accent">
+                        <DropdownMenuItem className="text-popover-foreground hover:bg-[#F5F5F5]">
                           <Pause className="h-4 w-4 mr-2" />
                           Pause
                         </DropdownMenuItem>

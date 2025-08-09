@@ -242,7 +242,7 @@ export default function CompetitorBriefPage({
                 key={item.id}
                 variant="ghost"
                 className={`w-full justify-start h-10 ${
-                  activeSection === item.id ? "bg-accent text-accent-foreground" : "hover:bg-accent"
+                  activeSection === item.id ? "bg-accent text-accent-foreground" : "hover:bg-[#F5F5F5]"
                 }`}
                 onClick={() => setActiveSection(item.id)}
               >
@@ -304,7 +304,7 @@ export default function CompetitorBriefPage({
               <Button variant="outline" onClick={handleDiscard}>
                 {isNewCompetitor ? "Cancel" : "Discard changes"}
               </Button>
-              <Button onClick={handleSave} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button onClick={handleSave} className="bg-accent hover:bg-[#F5F5F5]/90 text-accent-foreground">
                 {isNewCompetitor ? "Create Competitor" : "Save changes"}
               </Button>
             </>

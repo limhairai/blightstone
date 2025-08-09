@@ -184,16 +184,16 @@ export function BusinessesTable() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="all" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 All Statuses
               </SelectItem>
-              <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="active" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 {contentTokens.status.active}
               </SelectItem>
-              <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="pending" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 {contentTokens.status.pending}
               </SelectItem>
-              <SelectItem value="inactive" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="inactive" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 {contentTokens.status.inactive}
               </SelectItem>
             </SelectContent>
@@ -204,11 +204,11 @@ export function BusinessesTable() {
               <SelectValue placeholder="Industry" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="all" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 All Industries
               </SelectItem>
               {uniqueIndustries.map((industry) => (
-                <SelectItem key={String(industry)} value={String(industry)} className="text-popover-foreground hover:bg-accent">
+                <SelectItem key={String(industry)} value={String(industry)} className="text-popover-foreground hover:bg-[#F5F5F5]">
                   {String(industry)}
                 </SelectItem>
               ))}
@@ -225,16 +225,16 @@ export function BusinessesTable() {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent className="bg-popover border-border">
-              <SelectItem value="activity" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="activity" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Last Activity
               </SelectItem>
-              <SelectItem value="name" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="name" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Name
               </SelectItem>
-              <SelectItem value="accounts" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="accounts" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Ad Accounts
               </SelectItem>
-              <SelectItem value="balance" className="text-popover-foreground hover:bg-accent">
+              <SelectItem value="balance" className="text-popover-foreground hover:bg-[#F5F5F5]">
                 Balance
               </SelectItem>
             </SelectContent>

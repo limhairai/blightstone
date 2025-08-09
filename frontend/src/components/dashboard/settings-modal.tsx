@@ -78,7 +78,7 @@ export function SettingsModal({ open, onOpenChange, defaultSection = "organizati
                       "w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors text-left",
                       isActive
                         ? "bg-accent text-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
+                        : "text-muted-foreground hover:text-foreground hover:bg-[#F5F5F5]/50",
                     )}
                   >
                     <Icon className="h-4 w-4 flex-shrink-0" />

@@ -257,7 +257,7 @@ export function CompactAccountsTable({
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-auto border-border text-foreground hover:bg-accent bg-transparent"
+                className="ml-auto border-border text-foreground hover:bg-[#F5F5F5] bg-transparent"
               >
                 <Wallet className="h-4 w-4 mr-1" />
                 Top Up Selected
@@ -374,14 +374,14 @@ export function CompactAccountsTable({
                       variant="ghost"
                       size="icon"
                       onClick={(e) => e.stopPropagation()}
-                      className="h-8 w-8 opacity-100 hover:bg-accent"
+                      className="h-8 w-8 opacity-100 hover:bg-[#F5F5F5]"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-popover border-border w-48">
                     <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
+                      className="text-popover-foreground hover:bg-[#F5F5F5]"
                       onClick={(e) => {
                         e.stopPropagation()
                         navigator.clipboard.writeText(account.adAccount)
@@ -392,7 +392,7 @@ export function CompactAccountsTable({
                     </DropdownMenuItem>
                     {account.bmId && (
                       <DropdownMenuItem
-                        className="text-popover-foreground hover:bg-accent"
+                        className="text-popover-foreground hover:bg-[#F5F5F5]"
                         onClick={(e) => {
                           e.stopPropagation()
                           navigator.clipboard.writeText(account.bmId!)
@@ -404,7 +404,7 @@ export function CompactAccountsTable({
                     )}
                     <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
+                      className="text-popover-foreground hover:bg-[#F5F5F5]"
                       onClick={(e) => {
                         e.stopPropagation()
                         setTransferBalanceAccount({
@@ -422,7 +422,7 @@ export function CompactAccountsTable({
                       Transfer Balance
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
+                      className="text-popover-foreground hover:bg-[#F5F5F5]"
                       onClick={(e) => {
                         e.stopPropagation()
                         setResetBalanceAccount({
@@ -441,7 +441,7 @@ export function CompactAccountsTable({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem
-                      className="text-popover-foreground hover:bg-accent"
+                      className="text-popover-foreground hover:bg-[#F5F5F5]"
                       onClick={(e) => handleDeactivationClick(account, e)}
                     >
                       {account.is_active === false ? (
@@ -478,7 +478,7 @@ export function CompactAccountsTable({
                       onClick={(e) => {
                         e.stopPropagation()
                       }}
-                      className="h-7 px-2 text-xs border-border hover:bg-accent"
+                      className="h-7 px-2 text-xs border-border hover:bg-[#F5F5F5]"
                     >
                       <Wallet className="h-3 w-3 mr-1" />
                       Top Up

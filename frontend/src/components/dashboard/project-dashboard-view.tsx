@@ -4,8 +4,9 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { CheckSquare, Target, Users, BarChart3, Calendar, Clock, AlertCircle, TrendingUp } from "lucide-react"
+import { CheckSquare, Target, Users, Building2, Calendar, Clock, Plus, ArrowRight, Activity } from "lucide-react"
 import { useProjectStore } from "../../lib/stores/project-store"
+import Link from "next/link"
 
 interface Task {
   id: string
@@ -17,34 +18,32 @@ interface Task {
 }
 
 export function ProjectDashboardView() {
-  const { getCurrentProject, currentProjectId, getTasksForProject } = useProjectStore()
+  const { getCurrentProject, currentProjectId, getTasksForProject, getAvatarsForProject, getCompetitorsForProject, getCreativeTrackersForProject } = useProjectStore()
   const currentProject = getCurrentProject()
-  const recentTasks = currentProjectId ? getTasksForProject(currentProjectId).slice(0, 3) : []
+  const projectTasks = currentProjectId ? getTasksForProject(currentProjectId) : []
+  const projectAvatars = currentProjectId ? getAvatarsForProject(currentProjectId) : []
+  const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
+  const projectCreatives = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
   
   if (!currentProject) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No project selected</p>
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <Target className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground">Select a project to get started</p>
+        </div>
       </div>
     )
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-accent text-accent-foreground"
-      case "paused": return "bg-muted text-muted-foreground" 
-      case "completed": return "bg-primary text-primary-foreground"
-      default: return "bg-secondary text-secondary-foreground"
-    }
-  }
-
-  const getTaskStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "bg-accent text-accent-foreground"
-      case "in-progress": return "bg-primary text-primary-foreground"
-      case "todo": return "bg-secondary text-secondary-foreground"
-      case "blocked": return "bg-muted text-muted-foreground"
-      default: return "bg-secondary text-secondary-foreground"
+      case "active": return "bg-foreground text-background"
+      case "paused": return "bg-muted text-muted-foreground border border-border"
+      case "completed": return "bg-foreground text-background"
+      default: return "bg-muted text-muted-foreground border border-border"
     }
   }
 
@@ -65,176 +64,169 @@ export function ProjectDashboardView() {
   const progressPercentage = getProgressPercentage(currentProject.completedTasks, currentProject.tasksCount)
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-8">
       {/* Project Header */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-foreground">{currentProject.name}</h1>
               <Badge className={getStatusColor(currentProject.status)}>
                 {currentProject.status}
               </Badge>
             </div>
-            <p className="text-muted-foreground">{currentProject.description}</p>
+            <p className="text-muted-foreground max-w-2xl">{currentProject.description}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-6 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
+        <div className="flex items-center gap-8 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             <span>Created {currentProject.createdAt}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
             <span>Last activity {currentProject.lastActivity}</span>
           </div>
-          <div className="flex items-center gap-1">
-            <CheckSquare className="h-4 w-4" />
-            <span>{currentProject.completedTasks}/{currentProject.tasksCount} tasks completed</span>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">Project Progress</span>
-            <span className="font-bold">{progressPercentage}%</span>
-          </div>
-          <div className="w-full bg-secondary rounded-full h-3">
-            <div 
-              className="bg-accent h-3 rounded-full transition-all duration-300" 
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentProject.tasksCount}</div>
-            <p className="text-xs text-muted-foreground">
-              +2 from yesterday
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentProject.completedTasks}</div>
-            <p className="text-xs text-muted-foreground">
-              {progressPercentage}% completion rate
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <AlertCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {recentTasks.filter(t => t.status === 'in-progress').length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Active tasks
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Week</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">
-              Tasks completed
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Tasks */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Recent Tasks</CardTitle>
-            <Button variant="outline" size="sm">
-              View All Tasks
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentTasks.map((task) => (
-              <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                <div className="space-y-1">
+      {/* Project Overview Cards */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/dashboard/tasks">
+          <Card className="group hover:bg-[#F5F5F5] transition-colors cursor-pointer border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-medium">{task.title}</h4>
-                    <Badge className={getPriorityColor(task.priority)}>
-                      {task.priority}
-                    </Badge>
+                    <CheckSquare className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium text-foreground">Tasks</span>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>Due: {task.dueDate}</span>
-                    <span>Assigned to: {task.assignee}</span>
-                  </div>
+                  <p className="text-2xl font-bold text-foreground">{projectTasks.length}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {projectTasks.filter(t => t.status === 'completed').length} completed
+                  </p>
                 </div>
-                <Badge className={getTaskStatusColor(task.status)}>
-                  {task.status.replace('-', ' ')}
-                </Badge>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </Link>
 
-      {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-            <CheckSquare className="h-8 w-8 text-accent mb-2" />
-            <h3 className="font-semibold mb-1">Manage Tasks</h3>
-            <p className="text-sm text-muted-foreground">Create and track project tasks</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-            <Target className="h-8 w-8 text-accent mb-2" />
-            <h3 className="font-semibold mb-1">Creative Tracker</h3>
-            <p className="text-sm text-muted-foreground">Track ad campaigns and creatives</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-            <Users className="h-8 w-8 text-accent mb-2" />
-            <h3 className="font-semibold mb-1">Customer Avatars</h3>
-            <p className="text-sm text-muted-foreground">Define target customer personas</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="flex flex-col items-center justify-center p-6 text-center">
-            <BarChart3 className="h-8 w-8 text-accent mb-2" />
-            <h3 className="font-semibold mb-1">Analytics</h3>
-            <p className="text-sm text-muted-foreground">View project performance</p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/creative-tracker">
+          <Card className="group hover:bg-[#F5F5F5] transition-colors cursor-pointer border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium text-foreground">Creative Tracker</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{projectCreatives.length}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {projectCreatives.filter(c => c.status === 'live').length} live campaigns
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/personas">
+          <Card className="group hover:bg-[#F5F5F5] transition-colors cursor-pointer border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium text-foreground">Personas</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{projectAvatars.length}</p>
+                  <p className="text-sm text-muted-foreground">Customer profiles</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/competitors">
+          <Card className="group hover:bg-[#F5F5F5] transition-colors cursor-pointer border-border">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                    <span className="font-medium text-foreground">Competitors</span>
+                  </div>
+                  <p className="text-2xl font-bold text-foreground">{projectCompetitors.length}</p>
+                  <p className="text-sm text-muted-foreground">Market analysis</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
+
+      {/* Recent Activity */}
+      {projectTasks.length > 0 && (
+        <Card className="border-border">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold">Recent Tasks</CardTitle>
+              <Link href="/dashboard/tasks">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  View all <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {projectTasks.slice(0, 3).map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5F5] transition-colors">
+                  <div className="space-y-1">
+                    <h4 className="font-medium text-foreground">{task.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Due {task.dueDate} • {task.assignedTo || 'Unassigned'}
+                    </p>
+                  </div>
+                  <Badge 
+                    className={task.status === 'completed' ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground border border-border'}
+                  >
+                    {task.status.replace('-', ' ')}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {projectTasks.length === 0 && projectCreatives.length === 0 && projectAvatars.length === 0 && projectCompetitors.length === 0 && (
+        <Card className="border-border">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Plus className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-2">Get started with your project</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              Create your first task, persona, or competitor analysis to begin organizing your project.
+            </p>
+            <div className="flex gap-3">
+              <Link href="/dashboard/tasks">
+                <Button size="sm">Create Task</Button>
+              </Link>
+              <Link href="/dashboard/personas">
+                <Button variant="outline" size="sm">Add Persona</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

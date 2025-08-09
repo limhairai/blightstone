@@ -208,7 +208,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
         <Button
           variant="outline"
           onClick={() => setOpen(true)}
-          className="w-full justify-start text-muted-foreground hover:bg-accent/50 border-border/50 bg-background/50 backdrop-blur-sm"
+          className="w-full justify-start text-muted-foreground hover:bg-[#F5F5F5]/50 border-border/50 bg-background/50 backdrop-blur-sm"
         >
           <Search className="h-4 w-4 mr-3 text-muted-foreground/70" />
           <span className="text-sm">Search organizations, accounts...</span>

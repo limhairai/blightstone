@@ -566,7 +566,7 @@ export function OrganizationSettings() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-border text-foreground hover:bg-accent"
+                      className="border-border text-foreground hover:bg-[#F5F5F5]"
                       onClick={() => setPaymentMethodOpen(true)}
                     >
                       <CreditCard className="h-4 w-4 mr-1" />
@@ -575,7 +575,7 @@ export function OrganizationSettings() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-border text-foreground hover:bg-accent"
+                      className="border-border text-foreground hover:bg-[#F5F5F5]"
                       onClick={() => setBillingHistoryOpen(true)}
                     >
                       <Calendar className="h-4 w-4 mr-1" />
@@ -613,7 +613,7 @@ export function OrganizationSettings() {
             <Button
               variant="outline"
               onClick={() => setEditOrgOpen(false)}
-              className="border-border text-foreground hover:bg-accent"
+              className="border-border text-foreground hover:bg-[#F5F5F5]"
             >
               Cancel
             </Button>
@@ -725,7 +725,7 @@ export function OrganizationSettings() {
             <Button
               variant="outline"
               onClick={() => setBillingHistoryOpen(false)}
-              className="border-border text-foreground hover:bg-accent"
+              className="border-border text-foreground hover:bg-[#F5F5F5]"
             >
               Close
             </Button>
@@ -783,7 +783,7 @@ export function OrganizationSettings() {
               )}
               <Button
                 variant="outline"
-                className="w-full border-border text-foreground hover:bg-accent"
+                className="w-full border-border text-foreground hover:bg-[#F5F5F5]"
                 onClick={handleAddPaymentMethod}
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -795,7 +795,7 @@ export function OrganizationSettings() {
             <Button
               variant="outline"
               onClick={() => setPaymentMethodOpen(false)}
-              className="border-border text-foreground hover:bg-accent"
+              className="border-border text-foreground hover:bg-[#F5F5F5]"
             >
               Close
             </Button>

@@ -318,10 +318,10 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     disabled={isCurrent || isUpgrading}
                     className={`w-full h-11 font-medium ${
                       isCurrent
-                        ? 'bg-background hover:bg-accent text-foreground border border-border'
+                        ? 'bg-background hover:bg-[#F5F5F5] text-foreground border border-border'
                         : isPopular
                         ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-0'
-                        : 'bg-background hover:bg-accent text-foreground border border-border'
+                        : 'bg-background hover:bg-[#F5F5F5] text-foreground border border-border'
                     }`}
                     variant={isCurrent ? 'outline' : isPopular ? 'default' : 'outline'}
                   >

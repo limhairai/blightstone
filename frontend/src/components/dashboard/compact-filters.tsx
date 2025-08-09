@@ -42,25 +42,25 @@ export function CompactFilters({
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent className="bg-popover border-border">
-          <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="all" className="text-popover-foreground hover:bg-[#F5F5F5]">
             All Status
           </SelectItem>
-          <SelectItem value="active" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="active" className="text-popover-foreground hover:bg-[#F5F5F5]">
             Active
           </SelectItem>
-          <SelectItem value="pending" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="pending" className="text-popover-foreground hover:bg-[#F5F5F5]">
             Pending
           </SelectItem>
-          <SelectItem value="inactive" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="inactive" className="text-popover-foreground hover:bg-[#F5F5F5]">
             Inactive
           </SelectItem>
-          <SelectItem value="restricted" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="restricted" className="text-popover-foreground hover:bg-[#F5F5F5]">
             Restricted
           </SelectItem>
-          <SelectItem value="suspended" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="suspended" className="text-popover-foreground hover:bg-[#F5F5F5]">
             Suspended
           </SelectItem>
-          <SelectItem value="error" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="error" className="text-popover-foreground hover:bg-[#F5F5F5]">
             Error
           </SelectItem>
         </SelectContent>
@@ -72,14 +72,14 @@ export function CompactFilters({
           <SelectValue placeholder="Business" />
         </SelectTrigger>
         <SelectContent className="bg-popover border-border">
-          <SelectItem value="all" className="text-popover-foreground hover:bg-accent">
+          <SelectItem value="all" className="text-popover-foreground hover:bg-[#F5F5F5]">
             All Businesses
           </SelectItem>
           {Array.isArray(businessManagers) && businessManagers.map((business: any) => (
             <SelectItem 
               key={business.id} 
               value={business.name || business.metadata?.business_manager || `BM ${business.id}`} 
-              className="text-popover-foreground hover:bg-accent"
+              className="text-popover-foreground hover:bg-[#F5F5F5]"
             >
               {business.name || business.metadata?.business_manager || `BM ${business.id}`}
             </SelectItem>

@@ -155,7 +155,7 @@ export function AdminSidebar({ className }: { className?: string }) {
                 "w-full justify-start rounded-md text-sm",
                 active || subActive
                   ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  : "text-muted-foreground hover:bg-[#F5F5F5] hover:text-foreground",
                 collapsed ? "h-10 px-0 justify-center" : "h-10 px-3",
                   )}
                 >
@@ -208,7 +208,7 @@ export function AdminSidebar({ className }: { className?: string }) {
                             "h-8 w-full justify-start rounded-md px-3 text-sm",
                             isItemActive(sub.href)
                               ? "bg-accent/50 text-foreground"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                              : "text-muted-foreground hover:bg-[#F5F5F5] hover:text-foreground",
                       )}
                     >
                           {SubIcon && <SubIcon className="mr-2 h-3.5 w-3.5" />}
@@ -230,7 +230,7 @@ export function AdminSidebar({ className }: { className?: string }) {
           <button
             onClick={toggleSidebar}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="rounded-md p-1 hover:bg-accent"
+            className="rounded-md p-1 hover:bg-[#F5F5F5]"
           >
             <Menu className="h-4 w-4 text-muted-foreground" />
           </button>
