@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     WS_API_URL: str = "ws://localhost:8000"
     
     # ✅ SECURE: CORS origins
-    ALLOWED_ORIGINS: Union[str, List[str]] = Field(default="http://localhost:3000,http://127.0.0.1:3000")
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
     
     # ✅ SECURE: External services
     STRIPE_SECRET_KEY: str = ""
@@ -52,8 +52,6 @@ class Settings(BaseSettings):
     def assemble_cors_origins(cls, v):
         if isinstance(v, str) and v:
             return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list):
-            return v
         return ["http://localhost:3000", "http://127.0.0.1:3000"]
     
     class Config:
