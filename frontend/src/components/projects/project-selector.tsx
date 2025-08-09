@@ -11,27 +11,12 @@ import { Badge } from "../ui/badge"
 import { ChevronDown, Search, FolderOpen, Plus, Loader2, Check } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { useAuth } from "../../contexts/AuthContext"
-
-interface Project {
-  id: string
-  name: string
-  description?: string
-  status: "active" | "paused" | "completed"
-  tasksCount: number
-  completedTasks: number
-  createdAt: string
-}
-
-// Mock project store - in real app this would be a proper store
-const useProjectStore = () => {
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>("1")
-  return { currentProjectId, setCurrentProjectId }
-}
+import { useProjectStore, Project } from "../../lib/stores/project-store"
 
 export function ProjectSelector() {
   const { theme } = useTheme()
   const router = useRouter()
-  const { currentProjectId, setCurrentProjectId } = useProjectStore()
+  const { currentProjectId, setCurrentProjectId, projects, getCurrentProject } = useProjectStore()
   const { session, user } = useAuth()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
@@ -39,39 +24,8 @@ export function ProjectSelector() {
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  
-  // Mock projects data - in real app this would come from API
-  const projects: Project[] = [
-    {
-      id: "1",
-      name: "Grounding.co Campaign",
-      description: "Complete marketing campaign for grounding products",
-      status: "active",
-      tasksCount: 12,
-      completedTasks: 8,
-      createdAt: "2025-01-08"
-    },
-    {
-      id: "2", 
-      name: "Brand X Product Launch",
-      description: "New product launch campaign",
-      status: "active",
-      tasksCount: 8,
-      completedTasks: 3,
-      createdAt: "2025-01-07"
-    },
-    {
-      id: "3",
-      name: "Wellness Blog Content",
-      description: "Content marketing strategy",
-      status: "paused",
-      tasksCount: 5,
-      completedTasks: 2,
-      createdAt: "2025-01-05"
-    }
-  ]
 
-  const currentProject = projects.find(p => p.id === currentProjectId)
+  const currentProject = getCurrentProject()
 
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects
@@ -129,7 +83,7 @@ export function ProjectSelector() {
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="flex-shrink-0">
-              <FolderOpen className="h-5 w-5 text-accent" />
+              <FolderOpen className="h-5 w-5 text-primary" />
             </div>
             <div className="flex flex-col items-start min-w-0 flex-1">
               <div className="flex items-center gap-2 w-full">
@@ -185,7 +139,7 @@ export function ProjectSelector() {
               onMouseLeave={() => setHoveredProjectId(null)}
             >
               <div className="flex-shrink-0">
-                <FolderOpen className="h-4 w-4 text-accent" />
+                <FolderOpen className="h-4 w-4 text-primary" />
               </div>
               
               <div className="flex-1 min-w-0">
@@ -195,15 +149,11 @@ export function ProjectSelector() {
                     {project.status}
                   </Badge>
                   {project.id === currentProjectId && (
-                    <Check className="h-4 w-4 text-accent" />
+                    <Check className="h-4 w-4 text-primary" />
                   )}
                 </div>
                 
-                {project.description && (
-                  <p className="text-xs text-muted-foreground truncate mb-1">
-                    {project.description}
-                  </p>
-                )}
+
                 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{getProgressPercentage(project.completedTasks, project.tasksCount)}% complete</span>
@@ -213,7 +163,7 @@ export function ProjectSelector() {
                 
                 <div className="w-full bg-muted rounded-full h-1 mt-1">
                   <div 
-                    className="bg-accent h-1 rounded-full transition-all duration-300" 
+                    className="bg-primary h-1 rounded-full transition-all duration-300" 
                     style={{ width: `${getProgressPercentage(project.completedTasks, project.tasksCount)}%` }}
                   />
                 </div>

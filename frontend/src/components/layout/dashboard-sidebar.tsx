@@ -89,7 +89,6 @@ export function DashboardSidebar() {
     { name: "Customer Avatars", href: "/dashboard/customer-avatars", icon: Users },
     { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
     { name: "Awareness Stages", href: "/dashboard/awareness-stages", icon: Brain },
-    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 

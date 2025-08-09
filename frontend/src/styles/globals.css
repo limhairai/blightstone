@@ -162,29 +162,29 @@
   :root {
     /* Blightstone Pure Black & White Theme */
     --background: 0 0% 100%; /* Pure white background */
-    --foreground: 0 0% 7%; /* #121212 text */
+    --foreground: 0 0% 9%; /* #161616 text */
     --card: 0 0% 100%; /* Pure white cards */
-    --card-foreground: 0 0% 7%;
+    --card-foreground: 0 0% 9%;
     --popover: 0 0% 100%; /* Pure white popover */
-    --popover-foreground: 0 0% 7%;
-    --primary: 0 0% 7%; /* Pure black primary */
-    --primary-foreground: 0 0% 100%; /* Pure white text on black */
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 9%; /* #161616 primary */
+    --primary-foreground: 0 0% 100%; /* Pure white text on dark gray */
     --secondary: 0 0% 95%; /* Very light gray for subtle contrast */
-    --secondary-foreground: 0 0% 7%;
+    --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96%; /* Subtle gray for muted areas */
     --muted-foreground: 0 0% 45%; /* Medium gray for muted text */
-    --accent: 150 45% 60%; /* Green accent (#4EB38F) */
-    --accent-foreground: 0 0% 100%; /* White text on green */
+    --accent: 0 0% 9%; /* Dark gray accent (#161616) */
+    --accent-foreground: 0 0% 100%; /* White text on dark gray */
     --destructive: 0 0% 20%; /* Dark gray for destructive (no red) */
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 90%; /* Light gray borders */
     --input: 0 0% 98%; /* Very light gray input backgrounds */
-    --ring: 0 0% 7%; /* Black focus rings */
+    --ring: 0 0% 9%; /* Dark gray focus rings */
 
-    /* Status Colors - Black & White Only */
-    --status-active-dot: 0 0% 7%; /* Black dot for active */
+    /* Status Colors - Dark Gray & White Only */
+    --status-active-dot: 0 0% 9%; /* Dark gray dot for active */
     --status-active-badge-background: 0 0% 96%; /* Light gray background */
-    --status-active-badge-foreground: 0 0% 7%; /* Black text */
+    --status-active-badge-foreground: 0 0% 9%; /* Dark gray text */
 
     --status-pending-dot: 0 0% 50%; /* Medium gray for pending */
     --status-pending-badge-background: 0 0% 94%; /* Light gray background */
@@ -198,10 +198,9 @@
     --status-inactive-badge-background: 0 0% 98%; /* Very light gray background */
     --status-inactive-badge-foreground: 0 0% 60%; /* Medium gray text */
 
-    /* Blightstone Brand Colors - Black, White & Green Accent */
-    --brand-primary: #121212; /* Pure black */
+    /* Blightstone Brand Colors - Dark Gray and White */
+    --brand-primary: #161616; /* Dark gray */
     --brand-secondary: #ffffff; /* Pure white */
-    --brand-accent: #4EB38F; /* Green accent for highlights */
 
     /* Radius */
     --radius-sm: 0.25rem;

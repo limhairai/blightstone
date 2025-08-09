@@ -5,17 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { CheckSquare, Target, Users, BarChart3, Calendar, Clock, AlertCircle, TrendingUp } from "lucide-react"
-
-interface Project {
-  id: string
-  name: string
-  description: string
-  status: "active" | "paused" | "completed"
-  tasksCount: number
-  completedTasks: number
-  createdAt: string
-  lastActivity: string
-}
+import { useProjectStore } from "../../lib/stores/project-store"
 
 interface Task {
   id: string
@@ -27,16 +17,15 @@ interface Task {
 }
 
 export function ProjectDashboardView() {
-  // Mock current project data - in real app this would come from project store/API
-  const currentProject: Project = {
-    id: "1",
-    name: "Grounding.co Campaign",
-    description: "Complete marketing campaign for grounding products including creative assets, customer research, and competitor analysis",
-    status: "active",
-    tasksCount: 12,
-    completedTasks: 8,
-    createdAt: "2025-01-08",
-    lastActivity: "2 hours ago"
+  const { getCurrentProject } = useProjectStore()
+  const currentProject = getCurrentProject()
+  
+  if (!currentProject) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">No project selected</p>
+      </div>
+    )
   }
 
   // Mock recent tasks - in real app this would come from API
