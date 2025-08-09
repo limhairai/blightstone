@@ -269,8 +269,8 @@ export function DashboardSidebar() {
                       className={cn(
                         "flex-1 rounded-md text-sm transition-colors flex items-center",
                         (item.href && isActive(item.href))
-                          ? "bg-accent text-accent-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                          ? "bg-[#F5F5F5] text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-[#F5F5F5]",
                         collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
                       )}
                       prefetch={false}
@@ -299,7 +299,7 @@ export function DashboardSidebar() {
                             className={cn(
                               "w-full justify-start rounded-md text-sm h-8 px-3",
                               isActive(subItem.href)
-                                ? "bg-accent/50 text-foreground"
+                                ? "bg-[#F5F5F5] text-foreground"
                                 : "text-muted-foreground hover:text-foreground hover:bg-[#F5F5F5]",
                             )}
                             onMouseEnter={() => debouncedPreload(subItem.href)}
@@ -322,7 +322,7 @@ export function DashboardSidebar() {
           <div className={cn("flex items-center", collapsed ? "justify-center" : "justify-between")}>
             <button
               onClick={toggleSidebar}
-              className="p-1 rounded-md hover:bg-accent"
+              className="p-1 rounded-md hover:bg-[#F5F5F5]"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               <Menu className="h-4 w-4 text-muted-foreground" />

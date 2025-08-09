@@ -77,12 +77,7 @@ export default function CompetitorsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Competitor Analysis</h1>
-          <p className="text-muted-foreground">Analyze competitors for your current project</p>
-        </div>
-        
+      <div className="flex items-center justify-end">
         <Button onClick={handleNewCompetitorClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           <Plus className="h-4 w-4 mr-2" />
           New Competitor
