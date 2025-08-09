@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Plus, Eye } from "lucide-react"
-import { useProjectStore } from "@/lib/stores/project-store"
+import CreativeBriefPage from "@/components/creative/creative-brief-page"
 
 // Define the interface for a Creative entry
 interface Creative {
@@ -26,12 +26,144 @@ interface Creative {
   results: string
   winningAdLink: string // "All Winning Ads or Best Performing Ad"
   briefLink: string // "Link to Brief"
-  projectId: string // Add project association
 }
 
+// Define the interface for a Persona entry (re-used from persona-page.tsx)
+interface Persona {
+  id: string
+  name: string // Persona Type (Naming) - e.g., "Catherine (Mom, 35-50, stressed, sleep-deprived)"
+  ageGenderLocation: string
+  dailyStruggles: string
+  desiredCharacteristics: string
+  desiredSocialStatus: string
+  productHelpAchieveStatus: string
+  beliefsToOvercome: string
+  failedSolutions: string
+  marketAwareness: string
+  marketSophistication: string
+  insecurities: string
+  mindset: string
+  deeperPainPoints: string
+  hiddenSpecificDesires: string
+  objections: string
+}
+
+// Define a constant for a new creative's temporary ID
+const NEW_CREATIVE_ID = "new-creative-temp-id"
+
 export default function CreativeTrackerPage() {
-  const { currentProjectId, getCreativeTrackersForProject, addCreativeTracker } = useProjectStore()
-  const projectTrackers = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
+  // Mock data for the Creative Tracker
+  const [creatives, setCreatives] = useState<Creative[]>([
+    {
+      id: "c1",
+      batch: "Batch #001",
+      status: "live",
+      launchDate: "2025-07-15",
+      adConcept: "Grounding Sheets - Sleep Improvement",
+      testHypothesis:
+        "Creating a video ad focusing on sleep improvement benefits for problem-aware customers. Confidence comes from high search volume for 'sleep problems' and positive testimonials.",
+      adType: "Video Ad",
+      adVariable: "Hook (Problem-Solution)",
+      desire: "Better sleep, reduced stress, improved well-being.",
+      objections: "Skepticism about 'grounding', cost, effectiveness.",
+      persona: "Catherine (Mom, 35-50, stressed, sleep-deprived)",
+      hookPattern: "Start with a common sleep problem, introduce grounding sheets as a natural solution.",
+      results: "Initial positive CTR, monitoring conversion rates.",
+      winningAdLink: "https://example.com/ad-001-video",
+      briefLink: "https://example.com/brief-001",
+      benefit:
+        "Emphasize deep, restorative sleep, natural stress reduction, and waking up refreshed without medication.",
+    },
+    {
+      id: "c2",
+      batch: "Batch #002",
+      status: "draft",
+      launchDate: "2025-08-01",
+      adConcept: "Grounding Mats - Desk Setup",
+      testHypothesis:
+        "Testing static image ads showcasing grounding mats in a home office setting to target remote workers experiencing fatigue. Confidence from increasing remote work trends.",
+      adType: "Image Ad",
+      adVariable: "Visual (Home Office)",
+      desire: "Increased focus, reduced fatigue, better energy during work.",
+      objections: "Clutter, aesthetics, perceived necessity.",
+      persona: "David (Remote Worker, 28-45, tech-savvy, health-conscious)",
+      hookPattern: "Show a sleek desk setup with the mat, pose a question about workday fatigue.",
+      results: "N/A",
+      winningAdLink: "",
+      briefLink: "https://example.com/brief-002",
+      benefit: "Highlight improved concentration, reduced eye strain, and sustained energy throughout the workday.",
+    },
+    {
+      id: "c3",
+      batch: "Batch #001",
+      status: "completed",
+      launchDate: "2025-07-01",
+      adConcept: "Grounding Pillowcases - Anxiety Relief",
+      testHypothesis:
+        "Short-form video ad targeting individuals with mild anxiety, focusing on the calming effects of grounding. Confidence from anecdotal evidence and mental wellness trends.",
+      adType: "Short Video",
+      adVariable: "Benefit (Calmness)",
+      desire: "Reduced anxiety, feeling more grounded, peaceful sleep.",
+      objections: "Effectiveness, scientific backing, 'woo-woo' perception.",
+      persona: "Sarah (Young Professional, 25-35, struggles with mild anxiety)",
+      hookPattern:
+        "Quick cuts showing a person unwinding, then a serene sleep, with text overlays about anxiety relief.",
+      results: "High engagement, good conversion rate. Winning ad.",
+      winningAdLink: "https://example.com/ad-003-video",
+      briefLink: "https://example.com/brief-003",
+      benefit: "Emphasize a sense of calm, reduced nighttime restlessness, and a peaceful start to the day.",
+    },
+  ])
+
+  // Mock personas for the dropdown
+  const [personas] = useState<Persona[]>([
+    {
+      id: "p1",
+      name: "Catherine (Mom, 35-50, stressed, sleep-deprived)",
+      ageGenderLocation: "Female - 35/60 - United States",
+      dailyStruggles: "Bad Sleeper, Stress, Headache And Migraine",
+      desiredCharacteristics: "Caring person, Organized, Health-Conscious, Thoughtful, Reliable",
+      desiredSocialStatus:
+        "Recognized for her ability to balance family, work, and personal life seamlessly. Known for her commitment to a healthy and sustainable lifestyle. Respected for her involvement in school, local events, or charitable causes. Admired by other moms for her wisdom, organization, and compassion.",
+      productHelpAchieveStatus:
+        "Restful sleep and reduced stress help her manage family life with ease. Shows her commitment to natural, holistic wellness for her and her family. Increased energy lets her stay active and involved. Balances health and family, inspiring other moms.",
+      beliefsToOvercome:
+        "Natural remedies take too long to work. Grounding products are complicated to use. I don't have time for self-care.",
+      failedSolutions:
+        "Sleep supplements: Left her groggy in the morning. Meditation apps: Hard to stay consistent. Expensive mattresses: Didn't resolve stress-related sleep issues.",
+      marketAwareness: "Problem Aware",
+      marketSophistication: "Low to Medium",
+      insecurities:
+        "Worried about being perceived as a tired, overwhelmed mom. Feels guilty if she's not prioritizing her family's health and her own self-care. Insecure about her lack of sleep and visible signs of exhaustion (e.g., dark circles, irritability).",
+      mindset:
+        "Catherine juggles multiple responsibilities daily—work, home, and family. She's always "on," and her to-do list feels endless. She believes that caring for her family comes first, often putting her own well-being last. However, she craves peace of mind and sees solving her sleep and pain issues as a way to become more energized and present for her family.",
+      deeperPainPoints:
+        "Feeling exhausted and unable to give her best to her family. Waking up feeling more tired than when she went to bed. Emotional frustration from being spread too thin and lacking "me time." Fear of long-term health issues due to poor sleep and constant body tension.",
+      hiddenSpecificDesires:
+        "To wake up feeling energized and ready to take on the day. To create a calm and nurturing environment for her family without feeling burned out. To have moments of uninterrupted rest and self-care. To maintain her health so she can stay active for her kids long-term. To look pretty without wrinkles or dark circles.",
+      objections:
+        "Will this really improve my sleep, or is it just another gimmick? I'm too busy to add another routine or product to my life. Is it safe to use around my children? What if it doesn't work as promised?",
+    },
+    {
+      id: "p2",
+      name: "David (Remote Worker, 28-45, tech-savvy, health-conscious)",
+      ageGenderLocation: "Male - 28/45 - United States",
+      dailyStruggles: "Fatigue, lack of focus, eye strain from screen time.",
+      desiredCharacteristics: "Productive, efficient, healthy, innovative.",
+      desiredSocialStatus: "Recognized as a high-performer, early adopter of wellness tech.",
+      productHelpAchieveStatus: "Grounding mats boost focus and reduce fatigue, enhancing productivity.",
+      beliefsToOvercome: "Skepticism about 'alternative' health, preference for tech solutions.",
+      failedSolutions: "More coffee, energy drinks, ergonomic chairs (didn't address root cause).",
+      marketAwareness: "Solution Aware",
+      marketSophistication: "Medium",
+      insecurities: "Worried about burnout, falling behind, not optimizing his health.",
+      mindset: "Always seeking an edge, values efficiency and data-driven solutions.",
+      deeperPainPoints: "Chronic low energy, mental fog, feeling disconnected from nature.",
+      hiddenSpecificDesires:
+        "Sustained energy without crashes, mental clarity, feeling more 'connected' to his environment.",
+      objections: "Is it scientifically proven? Is it worth the desk space? Will it look good?",
+    },
+  ])
 
   const [selectedCreative, setSelectedCreative] = useState<Creative | null>(null)
 
@@ -53,42 +185,24 @@ export default function CreativeTrackerPage() {
   }
 
   const handleUpdateCreative = (updatedCreative: Creative) => {
-    if (!currentProjectId) return
-    
-    if (updatedCreative.id === "new-creative-temp-id") {
-      const newCreativeWithId = { 
-        ...updatedCreative, 
-        id: Date.now().toString(),
-        projectId: currentProjectId
-      }
-      
-      // Convert to store format
-      const trackerData = {
-        id: newCreativeWithId.id,
-        batch: newCreativeWithId.batch,
-        campaign: newCreativeWithId.adConcept,
-        status: newCreativeWithId.status,
-        launchDate: newCreativeWithId.launchDate,
-        results: newCreativeWithId.results,
-        projectId: currentProjectId
-      }
-      
-      addCreativeTracker(trackerData)
+    if (updatedCreative.id === NEW_CREATIVE_ID) {
+      const newCreativeWithId = { ...updatedCreative, id: Date.now().toString() }
+      setCreatives([...creatives, newCreativeWithId])
       setSelectedCreative(null)
     } else {
-      // TODO: Implement update functionality in the store
-      setSelectedCreative(null)
+      setCreatives(creatives.map((c) => (c.id === updatedCreative.id ? updatedCreative : c)))
+      setSelectedCreative(updatedCreative)
     }
   }
 
   const handleDeleteCreative = (creativeId: string) => {
-    // TODO: Implement delete functionality in the store
+    setCreatives(creatives.filter((c) => c.id !== creativeId))
     setSelectedCreative(null)
   }
 
   const handleNewCreativeClick = () => {
     setSelectedCreative({
-      id: "new-creative-temp-id",
+      id: NEW_CREATIVE_ID,
       batch: "",
       status: "draft",
       launchDate: "",
@@ -99,29 +213,22 @@ export default function CreativeTrackerPage() {
       desire: "",
       benefit: "",
       objections: "",
-      persona: "",
+      persona: "", // Default to empty string
       hookPattern: "",
       results: "",
       winningAdLink: "",
       briefLink: "",
-      projectId: currentProjectId || ""
     })
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Creative Tracker</h1>
-          <p className="text-muted-foreground">Track creative campaigns for your current project</p>
-        </div>
-        
-        <Button onClick={handleNewCreativeClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+        <Button onClick={handleNewCreativeClick} className="bg-black hover:bg-black/90 text-white">
           <Plus className="h-4 w-4 mr-2" />
           New Creative
         </Button>
       </div>
-      
       <Card>
         <Table>
           <TableHeader>
@@ -133,36 +240,15 @@ export default function CreativeTrackerPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectTrackers.map((tracker) => (
-              <TableRow key={tracker.id}>
-                <TableCell className="font-medium">{tracker.batch}</TableCell>
+            {creatives.map((creative) => (
+              <TableRow key={creative.id}>
+                <TableCell className="font-medium">{creative.batch}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(tracker.status as Creative["status"])}>{tracker.status.replace("-", " ")}</Badge>
+                  <Badge className={getStatusColor(creative.status)}>{creative.status.replace("-", " ")}</Badge>
                 </TableCell>
-                <TableCell>{tracker.campaign}</TableCell>
+                <TableCell>{creative.adConcept}</TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    // Convert from store format to Creative format for editing
-                    setSelectedCreative({
-                      id: tracker.id,
-                      batch: tracker.batch,
-                      status: tracker.status as Creative["status"],
-                      launchDate: tracker.launchDate,
-                      adConcept: tracker.campaign,
-                      testHypothesis: "",
-                      adType: "",
-                      adVariable: "",
-                      desire: "",
-                      benefit: "",
-                      objections: "",
-                      persona: "",
-                      hookPattern: "",
-                      results: tracker.results,
-                      winningAdLink: "",
-                      briefLink: "",
-                      projectId: tracker.projectId
-                    })
-                  }}>
+                  <Button variant="outline" size="sm" onClick={() => setSelectedCreative(creative)}>
                     <Eye className="h-4 w-4 mr-2" />
                     View Details
                   </Button>
@@ -173,133 +259,15 @@ export default function CreativeTrackerPage() {
         </Table>
       </Card>
 
-      {/* Creative Brief Page (Full-screen overlay) - Simplified for now */}
+      {/* Creative Brief Page (Full-screen overlay) */}
       {selectedCreative && (
-        <div className="fixed inset-0 bg-background z-50 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">
-                {selectedCreative.id === "new-creative-temp-id" ? "Create New Creative" : "Edit Creative"}
-              </h2>
-              <Button variant="outline" onClick={() => setSelectedCreative(null)}>
-                Close
-              </Button>
-            </div>
-            
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Batch #</label>
-                    <input 
-                      type="text" 
-                      value={selectedCreative.batch}
-                      onChange={(e) => setSelectedCreative({...selectedCreative, batch: e.target.value})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                      placeholder="e.g., Batch #001"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Status</label>
-                    <select 
-                      value={selectedCreative.status}
-                      onChange={(e) => setSelectedCreative({...selectedCreative, status: e.target.value as Creative["status"]})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="in-review">In Review</option>
-                      <option value="live">Live</option>
-                      <option value="paused">Paused</option>
-                      <option value="completed">Completed</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Launch Date</label>
-                    <input 
-                      type="date" 
-                      value={selectedCreative.launchDate}
-                      onChange={(e) => setSelectedCreative({...selectedCreative, launchDate: e.target.value})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Ad Type</label>
-                    <input 
-                      type="text" 
-                      value={selectedCreative.adType}
-                      onChange={(e) => setSelectedCreative({...selectedCreative, adType: e.target.value})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                      placeholder="e.g., Video Ad, Image Ad"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Ad Concept</label>
-                  <input 
-                    type="text" 
-                    value={selectedCreative.adConcept}
-                    onChange={(e) => setSelectedCreative({...selectedCreative, adConcept: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="e.g., Grounding Sheets - Sleep Improvement"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Test Hypothesis</label>
-                  <textarea 
-                    value={selectedCreative.testHypothesis}
-                    onChange={(e) => setSelectedCreative({...selectedCreative, testHypothesis: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-24"
-                    placeholder="What are you creating/testing and what gives you the confidence this test will improve overall performance?"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Hook Pattern</label>
-                  <textarea 
-                    value={selectedCreative.hookPattern}
-                    onChange={(e) => setSelectedCreative({...selectedCreative, hookPattern: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-20"
-                    placeholder="Describe how the hook will look like"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Results</label>
-                  <textarea 
-                    value={selectedCreative.results}
-                    onChange={(e) => setSelectedCreative({...selectedCreative, results: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-20"
-                    placeholder="Campaign results and performance metrics"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => handleUpdateCreative(selectedCreative)} 
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    {selectedCreative.id === "new-creative-temp-id" ? "Create Creative" : "Update Creative"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setSelectedCreative(null)}>
-                    Cancel
-                  </Button>
-                  {selectedCreative.id !== "new-creative-temp-id" && (
-                    <Button variant="destructive" onClick={() => handleDeleteCreative(selectedCreative.id)}>
-                      Delete
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        <CreativeBriefPage
+          creative={selectedCreative}
+          onClose={() => setSelectedCreative(null)}
+          onUpdateCreative={handleUpdateCreative}
+          onDeleteCreative={handleDeleteCreative}
+          NEW_CREATIVE_ID={NEW_CREATIVE_ID}
+        />
       )}
     </div>
   )

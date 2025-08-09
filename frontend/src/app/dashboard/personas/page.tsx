@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Plus, Eye } from "lucide-react"
 import { useProjectStore } from "@/lib/stores/project-store"
+import PersonaBriefPage from "@/components/personas/persona-brief-page"
 
 // Define the interface for a Persona entry
 interface Persona {
@@ -146,98 +147,15 @@ export default function PersonasPage() {
         </Table>
       </Card>
 
-      {/* TODO: Integrate PersonaBriefPage component when ready */}
+      {/* Persona Brief Page (Full-screen overlay like Facebook Ads Manager) */}
       {selectedPersona && (
-        <div className="fixed inset-0 bg-background z-50 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">
-                {selectedPersona.id === "new-persona-temp-id" ? "Create New Persona" : "Edit Persona"}
-              </h2>
-              <Button variant="outline" onClick={() => setSelectedPersona(null)}>
-                Close
-              </Button>
-            </div>
-            
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Persona Name</label>
-                  <input 
-                    type="text" 
-                    value={selectedPersona.name}
-                    onChange={(e) => setSelectedPersona({...selectedPersona, name: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="e.g., Catherine (Mom, 35-50, stressed, sleep-deprived)"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Age, Gender, Location</label>
-                  <input 
-                    type="text" 
-                    value={selectedPersona.ageGenderLocation}
-                    onChange={(e) => setSelectedPersona({...selectedPersona, ageGenderLocation: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="e.g., Female - 35/60 - United States"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Daily Struggles</label>
-                  <textarea 
-                    value={selectedPersona.dailyStruggles}
-                    onChange={(e) => setSelectedPersona({...selectedPersona, dailyStruggles: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-20"
-                    placeholder="What are their day to day struggles?"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Deeper Pain Points</label>
-                  <textarea 
-                    value={selectedPersona.deeperPainPoints}
-                    onChange={(e) => setSelectedPersona({...selectedPersona, deeperPainPoints: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-20"
-                    placeholder="What are deeper pain points?"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Hidden/Specific Desires</label>
-                  <textarea 
-                    value={selectedPersona.hiddenSpecificDesires}
-                    onChange={(e) => setSelectedPersona({...selectedPersona, hiddenSpecificDesires: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-20"
-                    placeholder="What are their hidden desires?"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Objections</label>
-                  <textarea 
-                    value={selectedPersona.objections}
-                    onChange={(e) => setSelectedPersona({...selectedPersona, objections: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-20"
-                    placeholder="What are their objections?"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => handleUpdatePersona(selectedPersona)} 
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    {selectedPersona.id === "new-persona-temp-id" ? "Create Persona" : "Update Persona"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setSelectedPersona(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        <PersonaBriefPage
+          persona={selectedPersona}
+          onClose={() => setSelectedPersona(null)}
+          onUpdatePersona={handleUpdatePersona}
+          onDeletePersona={handleDeletePersona}
+          NEW_PERSONA_ID="new-persona-temp-id"
+        />
       )}
     </div>
   )

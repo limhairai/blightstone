@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Plus, Eye } from "lucide-react"
 import { useProjectStore } from "@/lib/stores/project-store"
+import CompetitorBriefPage from "@/components/competitors/competitor-brief-page"
 
 // Define the interface for a Competitor entry
 interface Competitor {
@@ -129,122 +130,15 @@ export default function CompetitorsPage() {
         </Table>
       </Card>
 
-      {/* Competitor Brief Page (Full-screen overlay) - Simplified for now */}
+      {/* Competitor Brief Page (Full-screen overlay like Facebook Ads Manager) */}
       {selectedCompetitor && (
-        <div className="fixed inset-0 bg-background z-50 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">
-                {selectedCompetitor.id === "new-competitor-temp-id" ? "Add New Competitor" : "Edit Competitor"}
-              </h2>
-              <Button variant="outline" onClick={() => setSelectedCompetitor(null)}>
-                Close
-              </Button>
-            </div>
-            
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Competitor Name</label>
-                  <input 
-                    type="text" 
-                    value={selectedCompetitor.name}
-                    onChange={(e) => setSelectedCompetitor({...selectedCompetitor, name: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="e.g., SleepWell Co."
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Website URL</label>
-                  <input 
-                    type="url" 
-                    value={selectedCompetitor.websiteUrl}
-                    onChange={(e) => setSelectedCompetitor({...selectedCompetitor, websiteUrl: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="https://example.com"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Ad Library Link</label>
-                  <input 
-                    type="url" 
-                    value={selectedCompetitor.adLibraryLink}
-                    onChange={(e) => setSelectedCompetitor({...selectedCompetitor, adLibraryLink: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="Facebook Ad Library link"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Market</label>
-                    <input 
-                      type="text" 
-                      value={selectedCompetitor.market}
-                      onChange={(e) => setSelectedCompetitor({...selectedCompetitor, market: e.target.value})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                      placeholder="e.g., USA, Canada, UK"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Level</label>
-                    <select 
-                      value={selectedCompetitor.level}
-                      onChange={(e) => setSelectedCompetitor({...selectedCompetitor, level: e.target.value as "Poor" | "Medium" | "High"})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                    >
-                      <option value="Poor">Poor</option>
-                      <option value="Medium">Medium</option>
-                      <option value="High">High</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Offer URL</label>
-                  <input 
-                    type="url" 
-                    value={selectedCompetitor.offerUrl}
-                    onChange={(e) => setSelectedCompetitor({...selectedCompetitor, offerUrl: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="Link to their main product/offer"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Traffic Volume</label>
-                  <input 
-                    type="text" 
-                    value={selectedCompetitor.trafficVolume}
-                    onChange={(e) => setSelectedCompetitor({...selectedCompetitor, trafficVolume: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="e.g., 50K-100K, 10K-50K"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => handleUpdateCompetitor(selectedCompetitor)} 
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    {selectedCompetitor.id === "new-competitor-temp-id" ? "Add Competitor" : "Update Competitor"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setSelectedCompetitor(null)}>
-                    Cancel
-                  </Button>
-                  {selectedCompetitor.id !== "new-competitor-temp-id" && (
-                    <Button variant="destructive" onClick={() => handleDeleteCompetitor(selectedCompetitor.id)}>
-                      Delete
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        <CompetitorBriefPage
+          competitor={selectedCompetitor}
+          onClose={() => setSelectedCompetitor(null)}
+          onUpdateCompetitor={handleUpdateCompetitor}
+          onDeleteCompetitor={handleDeleteCompetitor}
+          NEW_COMPETITOR_ID="new-competitor-temp-id"
+        />
       )}
     </div>
   )
