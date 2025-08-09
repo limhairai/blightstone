@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Plus, Eye } from "lucide-react"
 import CreativeBriefPage from "@/components/creative/creative-brief-page"
+import { useProjectStore } from "@/lib/stores/project-store"
+import { useState, useEffect } from "react"
 
 // Define the interface for a Creative entry
 interface Creative {
@@ -52,8 +54,64 @@ interface Persona {
 const NEW_CREATIVE_ID = "new-creative-temp-id"
 
 export default function CreativeTrackerPage() {
-  // Mock data for the Creative Tracker
-  const [creatives, setCreatives] = useState<Creative[]>([
+  const { currentProjectId } = useProjectStore()
+  
+  // Project-specific mock data
+  const getCreativesForCurrentProject = () => {
+    if (currentProjectId === "1") {
+      // Grounding.co Campaign creatives
+      return [
+        {
+          id: "c1",
+          batch: "Batch #001",
+          status: "live" as Creative["status"],
+          launchDate: "2025-07-15",
+          adConcept: "Grounding Sheets - Sleep Improvement",
+          testHypothesis: "Creating a video ad focusing on sleep improvement benefits for problem-aware customers. Confidence comes from high search volume for 'sleep problems' and positive testimonials.",
+          adType: "Video Ad",
+          adVariable: "Hook (Problem-Solution)",
+          desire: "Better sleep, reduced stress, improved well-being.",
+          objections: "Skepticism about 'grounding', cost, effectiveness.",
+          persona: "Catherine (Mom)",
+          hookPattern: "Problem-agitation-solution with emotional appeal",
+          results: "3.2% CTR, $1.85 CPC, 12% conversion rate",
+          winningAdLink: "https://example.com/winning-ad-1",
+          briefLink: "https://example.com/brief-1"
+        }
+      ]
+    } else if (currentProjectId === "2") {
+      // Brand X Product Launch creatives
+      return [
+        {
+          id: "c2",
+          batch: "Batch #002", 
+          status: "in-review" as Creative["status"],
+          launchDate: "2025-08-01",
+          adConcept: "Professional Wellness - Work-Life Balance",
+          testHypothesis: "Targeting busy professionals with wellness solutions. Confidence from market research showing high demand for professional wellness products.",
+          adType: "Carousel Ad",
+          adVariable: "Audience (Professional vs General)",
+          desire: "Peak performance without sacrificing health.",
+          objections: "Time constraints, another wellness trend.",
+          persona: "Alex (Professional)",
+          hookPattern: "Authority-based with social proof",
+          results: "Pending launch",
+          winningAdLink: "https://example.com/winning-ad-2",
+          briefLink: "https://example.com/brief-2"
+        }
+      ]
+    }
+    return [] // Default empty for other projects
+  }
+
+  const [creatives, setCreatives] = useState<Creative[]>(getCreativesForCurrentProject())
+  
+  // Add effect to update creatives when project changes
+  useEffect(() => {
+    setCreatives(getCreativesForCurrentProject())
+  }, [currentProjectId])
+
+  /* Old mock data removed - now using project-specific data
     {
       id: "c1",
       batch: "Batch #001",
@@ -113,7 +171,7 @@ export default function CreativeTrackerPage() {
       briefLink: "https://example.com/brief-003",
       benefit: "Emphasize a sense of calm, reduced nighttime restlessness, and a peaceful start to the day.",
     },
-  ])
+  ] */
 
   // Mock personas for the dropdown
   const [personas] = useState<Persona[]>([

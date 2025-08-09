@@ -14,7 +14,7 @@ import { Table } from "@/components/ui/table"
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, User, Calendar, Filter } from "lucide-react"
 import TaskBriefPage from "@/components/tasks/task-brief-page" // Import the new component
+import { useProjectStore } from "@/lib/stores/project-store"
 
 // Task interface
 interface Task {
@@ -41,57 +42,74 @@ interface Task {
 const NEW_TASK_ID = "new-task-temp-id"
 
 export default function TasksPage() {
-  // Mock data
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: "1",
-      title: "Create customer avatar for Persona 1 (Catherine)",
-      description:
-        "Develop detailed customer avatar including pain points, desires, and objections for the mom persona. This will involve interviewing existing customers and analyzing market research data. The final output should be a comprehensive document.",
-      status: "in-progress",
-      priority: "high",
-      assignee: "You",
-      dueDate: "2025-01-10",
-      createdAt: "2025-01-08",
-      category: "Research",
-    },
-    {
-      id: "2",
-      title: "Design video ad creative for grounding sheets",
-      description:
-        "Create video ad focusing on sleep improvement benefits, targeting problem-aware customers. The video should be 30-60 seconds long and suitable for YouTube and Facebook ads. Include a clear call to action.",
-      status: "todo",
-      priority: "medium",
-      assignee: "Designer",
-      dueDate: "2025-01-12",
-      createdAt: "2025-01-08",
-      category: "Creative",
-    },
-    {
-      id: "3",
-      title: "Research top 5 competitors pricing strategies",
-      description:
-        "Analyze competitor pricing, positioning, and unique selling propositions. Focus on direct competitors and emerging players in the market. Summarize findings in a presentation.",
-      status: "completed",
-      priority: "medium",
-      assignee: "You",
-      dueDate: "2025-01-09",
-      createdAt: "2025-01-07",
-      category: "Research",
-    },
-    {
-      id: "4",
-      title: "Write awareness stage content for blog",
-      description:
-        "Create educational content explaining the 5 awareness stages for our blog. This content should be engaging and provide value to readers, guiding them through the initial stages of understanding their problem.",
-      status: "todo",
-      priority: "low",
-      assignee: "Content Writer",
-      dueDate: "2025-01-15",
-      createdAt: "2025-01-08",
-      category: "Content",
-    },
-  ])
+  const { currentProjectId } = useProjectStore()
+  
+  // Project-specific mock data
+  const getTasksForCurrentProject = () => {
+    if (currentProjectId === "1") {
+      // Grounding.co Campaign tasks
+      return [
+        {
+          id: "1",
+          title: "Create customer avatar for Persona 1 (Catherine)",
+          description: "Develop detailed customer avatar including pain points, desires, and objections for the mom persona. This will involve interviewing existing customers and analyzing market research data. The final output should be a comprehensive document.",
+          status: "in-progress" as Task["status"],
+          priority: "high" as Task["priority"],
+          assignee: "You",
+          dueDate: "2025-01-10",
+          createdAt: "2025-01-08",
+          category: "Research",
+        },
+        {
+          id: "2", 
+          title: "Design video ad creative for grounding sheets",
+          description: "Create engaging video content that demonstrates the benefits of grounding sheets for better sleep. Include testimonials and scientific backing.",
+          status: "todo" as Task["status"],
+          priority: "medium" as Task["priority"],
+          assignee: "You",
+          dueDate: "2025-01-15",
+          createdAt: "2025-01-08",
+          category: "Creative",
+        }
+      ]
+    } else if (currentProjectId === "2") {
+      // Brand X Product Launch tasks
+      return [
+        {
+          id: "3",
+          title: "Market research for professional wellness products",
+          description: "Analyze competitor landscape and identify positioning opportunities for our professional wellness line.",
+          status: "completed" as Task["status"],
+          priority: "high" as Task["priority"],
+          assignee: "You",
+          dueDate: "2025-01-05",
+          createdAt: "2025-01-01",
+          category: "Research",
+        },
+        {
+          id: "4",
+          title: "Develop brand messaging for urban professionals",
+          description: "Create compelling brand narrative that resonates with busy professionals seeking work-life balance.",
+          status: "in-progress" as Task["status"],
+          priority: "medium" as Task["priority"],
+          assignee: "You",
+          dueDate: "2025-01-20",
+          createdAt: "2025-01-10",
+          category: "Strategy",
+        }
+      ]
+    }
+    return [] // Default empty for other projects
+  }
+
+  const [tasks, setTasks] = useState<Task[]>(getTasksForCurrentProject())
+  
+  // Add effect to update tasks when project changes
+  useEffect(() => {
+    setTasks(getTasksForCurrentProject())
+  }, [currentProjectId])
+
+
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>("all")
