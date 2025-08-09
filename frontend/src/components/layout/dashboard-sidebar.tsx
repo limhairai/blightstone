@@ -38,7 +38,7 @@ export function DashboardSidebar() {
       '/dashboard/support', 
       '/dashboard/settings',
       '/dashboard/topup-requests',
-      '/dashboard/business-managers',
+      // Business managers removed for CRM
       '/dashboard/accounts',
       '/dashboard/pixels',
       '/dashboard/applications'

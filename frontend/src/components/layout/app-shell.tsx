@@ -101,7 +101,7 @@ export function AppShell({ children }: AppShellProps) {
     }
     const pathTitles: Record<string, string> = {
       "/dashboard/businesses": "Businesses",
-      "/dashboard/business-managers": "Business Managers",
+      // Business managers removed for CRM
       "/dashboard/wallet": "Wallet",
       "/dashboard/topup-requests": "Transactions",
       "/dashboard/accounts": "Ad Accounts",

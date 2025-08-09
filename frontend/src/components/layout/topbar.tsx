@@ -24,11 +24,11 @@ import { useRouter } from "next/navigation"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import useSWR from 'swr'
 import { useCurrentOrganization } from '@/lib/swr-config'
-import { useSubscription } from '@/hooks/useSubscription'
+// Subscription removed for CRM
 import { useAdminRoute } from '@/hooks/useAdminRoute'
 // Advanced onboarding hook removed - not needed for internal CRM
 
-import { PlanUpgradeDialog } from '../pricing/plan-upgrade-dialog'
+// PlanUpgradeDialog removed for CRM
 
 interface TopbarProps {
   isAdmin?: boolean
@@ -67,7 +67,9 @@ export function Topbar({
   const totalBalance = organization?.balance_cents ? organization.balance_cents / 100 : 0;
   
   // Use subscription hook for plan data
-  const { currentPlan, isLoading: isSubscriptionLoading } = useSubscription();
+  // Subscription removed for CRM
+  const currentPlan = null;
+  const isSubscriptionLoading = false;
   const planName = currentPlan?.name || 'Free';
 
   // Setup progress removed for internal CRM
