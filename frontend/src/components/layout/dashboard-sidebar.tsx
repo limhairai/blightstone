@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "../ui/button"
-import { OrganizationSelector } from "../organization/organization-selector"
+import { ProjectSelector } from "../projects/project-selector"
 import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { cn } from "../../lib/utils"
 import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe, FolderOpen, Brain, BarChart3, CheckSquare } from "lucide-react"
@@ -22,7 +22,7 @@ interface SidebarItem {
 
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Project Tools"]) // Only expand Project Tools by default
+  const [expandedItems, setExpandedItems] = useState<string[]>([]) // No expanded items needed for flat navigation
   const pathname = usePathname()
   const router = useRouter()
   
@@ -84,18 +84,11 @@ export function DashboardSidebar() {
 
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Projects", href: "/dashboard/projects", icon: FolderOpen },
-    {
-      name: "Project Tools",
-      icon: BarChart3,
-      subItems: [
-        { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target },
-        { name: "Customer Avatars", href: "/dashboard/customer-avatars", icon: Users },
-        { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
-        { name: "Awareness Stages", href: "/dashboard/awareness-stages", icon: Brain },
-      ],
-    },
     { name: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+    { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target },
+    { name: "Customer Avatars", href: "/dashboard/customer-avatars", icon: Users },
+    { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
+    { name: "Awareness Stages", href: "/dashboard/awareness-stages", icon: Brain },
     { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
@@ -220,7 +213,7 @@ export function DashboardSidebar() {
               </Button>
             </div>
           ) : (
-            <OrganizationSelector />
+            <ProjectSelector />
           )}
         </div>
 
