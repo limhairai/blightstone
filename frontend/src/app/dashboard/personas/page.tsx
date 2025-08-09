@@ -104,6 +104,7 @@ export default function PersonasPage() {
             <TableRow>
               <TableHead>Persona Type (Naming)</TableHead>
               <TableHead>Age, Gender, Location</TableHead>
+              <TableHead>Domino Statement</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -111,7 +112,11 @@ export default function PersonasPage() {
             {projectAvatars.map((avatar) => (
               <TableRow key={avatar.id}>
                 <TableCell className="font-medium">{avatar.name}</TableCell>
-                <TableCell>{avatar.description || "No description"}</TableCell>
+                <TableCell>{`${avatar.gender || "Unknown"} - ${avatar.age || "Unknown"} - ${avatar.location || "Unknown"}`}</TableCell>
+                <TableCell className="text-muted-foreground italic">
+                  {/* For now showing mindset as a placeholder for domino statement */}
+                  {avatar.mindset ? avatar.mindset.substring(0, 80) + "..." : "No domino statement defined"}
+                </TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" onClick={() => {
                     // Convert from CustomerAvatar to Persona format for editing

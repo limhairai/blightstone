@@ -136,9 +136,9 @@ export default function CreativeTrackerPage() {
       insecurities:
         "Worried about being perceived as a tired, overwhelmed mom. Feels guilty if she's not prioritizing her family's health and her own self-care. Insecure about her lack of sleep and visible signs of exhaustion (e.g., dark circles, irritability).",
       mindset:
-        "Catherine juggles multiple responsibilities daily—work, home, and family. She's always "on," and her to-do list feels endless. She believes that caring for her family comes first, often putting her own well-being last. However, she craves peace of mind and sees solving her sleep and pain issues as a way to become more energized and present for her family.",
+        "Catherine juggles multiple responsibilities daily—work, home, and family. She's always \"on,\" and her to-do list feels endless. She believes that caring for her family comes first, often putting her own well-being last. However, she craves peace of mind and sees solving her sleep and pain issues as a way to become more energized and present for her family.",
       deeperPainPoints:
-        "Feeling exhausted and unable to give her best to her family. Waking up feeling more tired than when she went to bed. Emotional frustration from being spread too thin and lacking "me time." Fear of long-term health issues due to poor sleep and constant body tension.",
+        "Feeling exhausted and unable to give her best to her family. Waking up feeling more tired than when she went to bed. Emotional frustration from being spread too thin and lacking \"me time.\" Fear of long-term health issues due to poor sleep and constant body tension.",
       hiddenSpecificDesires:
         "To wake up feeling energized and ready to take on the day. To create a calm and nurturing environment for her family without feeling burned out. To have moments of uninterrupted rest and self-care. To maintain her health so she can stay active for her kids long-term. To look pretty without wrinkles or dark circles.",
       objections:

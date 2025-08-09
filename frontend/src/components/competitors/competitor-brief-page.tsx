@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -37,8 +38,14 @@ export default function CompetitorBriefPage({
   const [editingCompetitor, setEditingCompetitor] = useState<Competitor | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeSection, setActiveSection] = useState("overview") // For left navigation
+  const [mounted, setMounted] = useState(false)
 
   const isNewCompetitor = competitor?.id === NEW_COMPETITOR_ID
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
     if (competitor) {
@@ -47,7 +54,7 @@ export default function CompetitorBriefPage({
     }
   }, [competitor, isNewCompetitor])
 
-  if (!competitor) {
+  if (!competitor || !mounted) {
     return null // Should not happen if opened correctly
   }
 
@@ -216,7 +223,7 @@ export default function CompetitorBriefPage({
     }
   }
 
-  return (
+  const briefPageContent = (
     <div className="fixed inset-0 z-[9999] flex bg-background text-foreground">
       {/* Left Navigation Panel */}
       <div className="w-64 bg-card border-r border-border flex flex-col py-4 px-3">
@@ -306,4 +313,7 @@ export default function CompetitorBriefPage({
       </div>
     </div>
   )
+
+  // Render the brief page as a portal to document.body to ensure it's above everything
+  return createPortal(briefPageContent, document.body)
 }

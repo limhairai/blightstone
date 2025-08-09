@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -57,8 +58,14 @@ export default function PersonaBriefPage({
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeSection, setActiveSection] = useState("overview")
+  const [mounted, setMounted] = useState(false)
 
   const isNewPersona = persona?.id === NEW_PERSONA_ID
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
     if (persona) {
@@ -67,7 +74,7 @@ export default function PersonaBriefPage({
     }
   }, [persona, isNewPersona])
 
-  if (!persona) {
+  if (!persona || !mounted) {
     return null
   }
 
@@ -270,7 +277,7 @@ export default function PersonaBriefPage({
     }
   }
 
-  return (
+  const briefPageContent = (
     <div className="fixed inset-0 z-[9999] flex bg-background text-foreground">
       {/* Left Navigation Panel */}
       <div className="w-64 bg-card border-r border-border flex flex-col py-4 px-3">
@@ -360,4 +367,7 @@ export default function PersonaBriefPage({
       </div>
     </div>
   )
+
+  // Render the brief page as a portal to document.body to ensure it's above everything
+  return createPortal(briefPageContent, document.body)
 }

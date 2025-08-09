@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -49,8 +50,14 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeSection, setActiveSection] = useState("overview") // For left navigation
+  const [mounted, setMounted] = useState(false)
 
   const isNewTask = task?.id === NEW_TASK_ID
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
     if (task) {
@@ -59,7 +66,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     }
   }, [task, isNewTask])
 
-  if (!task) {
+  if (!task || !mounted) {
     return null // Should not happen if opened correctly
   }
 
@@ -312,8 +319,8 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex bg-background text-foreground">
+  const briefPageContent = (
+    <div className="fixed inset-0 z-[9999] flex bg-background text-foreground">
       {/* Left Navigation Panel */}
       <div className="w-64 bg-card border-r border-border flex flex-col py-4 px-3">
         <div className="flex items-center justify-between px-2 mb-4">
@@ -400,4 +407,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
       </div>
     </div>
   )
+
+  // Render the brief page as a portal to document.body to ensure it's above everything
+  return createPortal(briefPageContent, document.body)
 }

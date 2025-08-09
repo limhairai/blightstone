@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -62,8 +63,14 @@ export default function CreativeBriefPage({
   const [editingCreative, setEditingCreative] = useState<Creative | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeSection, setActiveSection] = useState("concept")
+  const [mounted, setMounted] = useState(false)
 
   const isNewCreative = creative?.id === NEW_CREATIVE_ID
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   useEffect(() => {
     if (creative) {
@@ -72,7 +79,7 @@ export default function CreativeBriefPage({
     }
   }, [creative, isNewCreative])
 
-  if (!creative) {
+  if (!creative || !mounted) {
     return null
   }
 
@@ -313,7 +320,7 @@ export default function CreativeBriefPage({
     }
   }
 
-  return (
+  const briefPageContent = (
     <div className="fixed inset-0 z-[9999] flex bg-background text-foreground">
       {/* Left Navigation Panel */}
       <div className="w-64 bg-card border-r border-border flex flex-col py-4 px-3">
@@ -403,4 +410,7 @@ export default function CreativeBriefPage({
       </div>
     </div>
   )
+
+  // Render the brief page as a portal to document.body to ensure it's above everything
+  return createPortal(briefPageContent, document.body)
 }

@@ -203,8 +203,8 @@ export function DashboardSidebar() {
         <div className="h-16 flex items-center px-4 border-b border-border">
           {collapsed ? (
             <div className="w-full flex justify-center">
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
-                <span className="text-sm font-semibold bg-primary bg-clip-text text-transparent">
+              <Button variant="ghost" size="icon" className="rounded-full hover:bg-[#F5F5F5]">
+                <span className="text-sm font-semibold text-foreground">
                   {/* Replace with actual organization name initials or user initials */}
                   {getInitials()}
                 </span>
@@ -242,14 +242,14 @@ export function DashboardSidebar() {
                         className={cn(
                           "w-full justify-start rounded-md text-sm",
                           hasActiveSubItem
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                            ? "bg-[#F5F5F5] text-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-[#F5F5F5]",
                           collapsed ? "justify-center h-10 px-0" : "h-10 px-3",
                         )}
                       >
                         <Icon
                           className={cn(
-                            hasActiveSubItem ? "text-[#c4b5fd]" : "",
+                            hasActiveSubItem ? "text-foreground" : "",
                             collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
                           )}
                         />
@@ -278,7 +278,7 @@ export function DashboardSidebar() {
                     >
                       <Icon
                         className={cn(
-                          (item.href && isActive(item.href)) ? "text-[#c4b5fd]" : "",
+                          (item.href && isActive(item.href)) ? "text-foreground" : "",
                           collapsed ? "h-5 w-5" : "h-4 w-4 mr-3",
                         )}
                       />
@@ -300,7 +300,7 @@ export function DashboardSidebar() {
                               "w-full justify-start rounded-md text-sm h-8 px-3",
                               isActive(subItem.href)
                                 ? "bg-accent/50 text-foreground"
-                                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                                : "text-muted-foreground hover:text-foreground hover:bg-[#F5F5F5]",
                             )}
                             onMouseEnter={() => debouncedPreload(subItem.href)}
                           >
