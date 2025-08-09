@@ -85,7 +85,7 @@ export default function PersonasPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-end">
         <Button onClick={handleNewPersonaClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           <Plus className="h-4 w-4 mr-2" />
