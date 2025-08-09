@@ -189,5 +189,33 @@ export const creativesApi = {
       console.error('Error creating creative:', error)
       throw error
     }
+  },
+
+  async update(id: string, creative: any) {
+    try {
+      const response = await fetch(`${API_BASE}/creatives?id=${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(creative)
+      })
+      if (!response.ok) throw new Error('Failed to update creative')
+      const data = await response.json()
+      return data.creative
+    } catch (error) {
+      console.error('Error updating creative:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/creatives?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error('Failed to delete creative')
+    } catch (error) {
+      console.error('Error deleting creative:', error)
+      throw error
+    }
   }
 }
