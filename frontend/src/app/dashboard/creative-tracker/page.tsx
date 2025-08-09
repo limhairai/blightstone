@@ -1,60 +1,111 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Plus, Target, Calendar, BarChart3, ExternalLink, Edit2 } from "lucide-react"
-import { useProjectStore, CreativeTracker } from "@/lib/stores/project-store"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Plus, Eye } from "lucide-react"
+import { useProjectStore } from "@/lib/stores/project-store"
+
+// Define the interface for a Creative entry
+interface Creative {
+  id: string
+  batch: string
+  status: "draft" | "in-review" | "live" | "paused" | "completed"
+  launchDate: string // YYYY-MM-DD
+  adConcept: string
+  testHypothesis: string // "What are you creating/testing and what gives you the confidence this test will improve overall performance?"
+  adType: string
+  adVariable: string // "What was iterated"
+  desire: string
+  benefit: string // "Focus on pain points and objections to determine which benefits to highlight."
+  objections: string
+  persona: string // This will now be a string matching Persona.name
+  hookPattern: string // "Desribe how the hook will look like"
+  results: string
+  winningAdLink: string // "All Winning Ads or Best Performing Ad"
+  briefLink: string // "Link to Brief"
+  projectId: string // Add project association
+}
 
 export default function CreativeTrackerPage() {
   const { currentProjectId, getCreativeTrackersForProject, addCreativeTracker } = useProjectStore()
   const projectTrackers = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
 
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [newTracker, setNewTracker] = useState<Partial<CreativeTracker>>({})
+  const [selectedCreative, setSelectedCreative] = useState<Creative | null>(null)
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: Creative["status"]) => {
     switch (status) {
-      case "completed": return "bg-accent text-accent-foreground"
-      case "in-progress": return "bg-primary text-primary-foreground"
-      case "planned": return "bg-secondary text-secondary-foreground"
-      case "paused": return "bg-muted text-muted-foreground"
-      default: return "bg-secondary text-secondary-foreground"
+      case "live":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "in-review":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "draft":
+        return "bg-gray-100 text-gray-800 border-gray-200"
+      case "paused":
+        return "bg-orange-100 text-orange-800 border-orange-200"
+      case "completed":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
-  const handleCreateTracker = () => {
-    if (newTracker.batch && newTracker.brand && currentProjectId) {
-      const tracker: CreativeTracker = {
+  const handleUpdateCreative = (updatedCreative: Creative) => {
+    if (!currentProjectId) return
+    
+    if (updatedCreative.id === "new-creative-temp-id") {
+      const newCreativeWithId = { 
+        ...updatedCreative, 
         id: Date.now().toString(),
-        batch: newTracker.batch || "",
-        brand: newTracker.brand || "",
-        status: "planned",
-        launchDate: newTracker.launchDate || "",
-        adConcept: newTracker.adConcept || "",
-        adType: newTracker.adType || "",
-        adVariable: newTracker.adVariable || "",
-        desire: newTracker.desire || "",
-        benefit: newTracker.benefit || "",
-        objections: newTracker.objections || "",
-        persona: newTracker.persona || "",
-        positioning: newTracker.positioning || "",
-        positioningHow: newTracker.positioningHow || "",
-        hookPattern: newTracker.hookPattern || "",
-        results: "Pending",
-        winningAds: "",
-        briefLink: newTracker.briefLink || "",
         projectId: currentProjectId
       }
-      addCreativeTracker(tracker)
-      setNewTracker({})
-      setShowCreateForm(false)
+      
+      // Convert to store format
+      const trackerData = {
+        id: newCreativeWithId.id,
+        batch: newCreativeWithId.batch,
+        campaign: newCreativeWithId.adConcept,
+        status: newCreativeWithId.status,
+        launchDate: newCreativeWithId.launchDate,
+        results: newCreativeWithId.results,
+        projectId: currentProjectId
+      }
+      
+      addCreativeTracker(trackerData)
+      setSelectedCreative(null)
+    } else {
+      // TODO: Implement update functionality in the store
+      setSelectedCreative(null)
     }
+  }
+
+  const handleDeleteCreative = (creativeId: string) => {
+    // TODO: Implement delete functionality in the store
+    setSelectedCreative(null)
+  }
+
+  const handleNewCreativeClick = () => {
+    setSelectedCreative({
+      id: "new-creative-temp-id",
+      batch: "",
+      status: "draft",
+      launchDate: "",
+      adConcept: "",
+      testHypothesis: "",
+      adType: "",
+      adVariable: "",
+      desire: "",
+      benefit: "",
+      objections: "",
+      persona: "",
+      hookPattern: "",
+      results: "",
+      winningAdLink: "",
+      briefLink: "",
+      projectId: currentProjectId || ""
+    })
   }
 
   return (
@@ -62,190 +113,194 @@ export default function CreativeTrackerPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Creative Tracker</h1>
-          <p className="text-muted-foreground">Track and manage your creative campaigns and ad variations</p>
+          <p className="text-muted-foreground">Track creative campaigns for your current project</p>
         </div>
         
-        <Button 
-          onClick={() => setShowCreateForm(true)}
-          className="bg-accent hover:bg-accent/90 text-accent-foreground"
-        >
+        <Button onClick={handleNewCreativeClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           <Plus className="h-4 w-4 mr-2" />
-          New Campaign
+          New Creative
         </Button>
       </div>
+      
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Batch #</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Ad Concept (Inspo)</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {projectTrackers.map((tracker) => (
+              <TableRow key={tracker.id}>
+                <TableCell className="font-medium">{tracker.batch}</TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(tracker.status as Creative["status"])}>{tracker.status.replace("-", " ")}</Badge>
+                </TableCell>
+                <TableCell>{tracker.campaign}</TableCell>
+                <TableCell>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    // Convert from store format to Creative format for editing
+                    setSelectedCreative({
+                      id: tracker.id,
+                      batch: tracker.batch,
+                      status: tracker.status as Creative["status"],
+                      launchDate: tracker.launchDate,
+                      adConcept: tracker.campaign,
+                      testHypothesis: "",
+                      adType: "",
+                      adVariable: "",
+                      desire: "",
+                      benefit: "",
+                      objections: "",
+                      persona: "",
+                      hookPattern: "",
+                      results: tracker.results,
+                      winningAdLink: "",
+                      briefLink: "",
+                      projectId: tracker.projectId
+                    })
+                  }}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Details
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
 
-      {showCreateForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Creative Campaign</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-medium">Batch Number</label>
-                <Input
-                  placeholder="e.g., Batch 003"
-                  value={newTracker.batch || ""}
-                  onChange={(e) => setNewTracker({...newTracker, batch: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Brand</label>
-                <Input
-                  placeholder="e.g., Grounding.co"
-                  value={newTracker.brand || ""}
-                  onChange={(e) => setNewTracker({...newTracker, brand: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Launch Date</label>
-                <Input
-                  type="date"
-                  value={newTracker.launchDate || ""}
-                  onChange={(e) => setNewTracker({...newTracker, launchDate: e.target.value})}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Ad Type</label>
-                <Select onValueChange={(value) => setNewTracker({...newTracker, adType: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select ad type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="video">Video</SelectItem>
-                    <SelectItem value="static">Static</SelectItem>
-                    <SelectItem value="carousel">Carousel</SelectItem>
-                    <SelectItem value="video-static">Video + Static</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Creative Brief Page (Full-screen overlay) - Simplified for now */}
+      {selectedCreative && (
+        <div className="fixed inset-0 bg-background z-50 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">
+                {selectedCreative.id === "new-creative-temp-id" ? "Create New Creative" : "Edit Creative"}
+              </h2>
+              <Button variant="outline" onClick={() => setSelectedCreative(null)}>
+                Close
+              </Button>
             </div>
             
-            <div>
-              <label className="text-sm font-medium">Ad Concept</label>
-              <Textarea
-                placeholder="Describe the ad concept and inspiration"
-                value={newTracker.adConcept || ""}
-                onChange={(e) => setNewTracker({...newTracker, adConcept: e.target.value})}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleCreateTracker} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                Create Campaign
-              </Button>
-              <Button variant="outline" onClick={() => setShowCreateForm(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{projectTrackers.length}</div>
-            <p className="text-xs text-muted-foreground">Active tracking</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{projectTrackers.filter(t => t.status === 'in-progress').length}</div>
-            <p className="text-xs text-muted-foreground">Currently running</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{projectTrackers.filter(t => t.status === 'completed').length}</div>
-            <p className="text-xs text-muted-foreground">Finished campaigns</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {projectTrackers.filter(t => t.status === 'completed').length > 0 ? '75%' : '0%'}
-            </div>
-            <p className="text-xs text-muted-foreground">Campaign effectiveness</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Campaign Tracker</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Batch</TableHead>
-                  <TableHead>Brand</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Launch Date</TableHead>
-                  <TableHead>Ad Concept</TableHead>
-                  <TableHead>Persona</TableHead>
-                  <TableHead>Results</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {projectTrackers.map((tracker) => (
-                  <TableRow key={tracker.id}>
-                    <TableCell className="font-medium">{tracker.batch}</TableCell>
-                    <TableCell>{tracker.brand}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(tracker.status)}>
-                        {tracker.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{tracker.launchDate}</TableCell>
-                    <TableCell className="max-w-xs">
-                      <div className="truncate" title={tracker.adConcept}>
-                        {tracker.adConcept || "No concept set"}
-                      </div>
-                    </TableCell>
-                    <TableCell>{tracker.persona}</TableCell>
-                    <TableCell>{tracker.results}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        {tracker.briefLink && (
-                          <Button variant="ghost" size="sm">
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <Card className="p-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Batch #</label>
+                    <input 
+                      type="text" 
+                      value={selectedCreative.batch}
+                      onChange={(e) => setSelectedCreative({...selectedCreative, batch: e.target.value})}
+                      className="w-full p-2 border border-border rounded mt-1"
+                      placeholder="e.g., Batch #001"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Status</label>
+                    <select 
+                      value={selectedCreative.status}
+                      onChange={(e) => setSelectedCreative({...selectedCreative, status: e.target.value as Creative["status"]})}
+                      className="w-full p-2 border border-border rounded mt-1"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="in-review">In Review</option>
+                      <option value="live">Live</option>
+                      <option value="paused">Paused</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Launch Date</label>
+                    <input 
+                      type="date" 
+                      value={selectedCreative.launchDate}
+                      onChange={(e) => setSelectedCreative({...selectedCreative, launchDate: e.target.value})}
+                      className="w-full p-2 border border-border rounded mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-medium">Ad Type</label>
+                    <input 
+                      type="text" 
+                      value={selectedCreative.adType}
+                      onChange={(e) => setSelectedCreative({...selectedCreative, adType: e.target.value})}
+                      className="w-full p-2 border border-border rounded mt-1"
+                      placeholder="e.g., Video Ad, Image Ad"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Ad Concept</label>
+                  <input 
+                    type="text" 
+                    value={selectedCreative.adConcept}
+                    onChange={(e) => setSelectedCreative({...selectedCreative, adConcept: e.target.value})}
+                    className="w-full p-2 border border-border rounded mt-1"
+                    placeholder="e.g., Grounding Sheets - Sleep Improvement"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Test Hypothesis</label>
+                  <textarea 
+                    value={selectedCreative.testHypothesis}
+                    onChange={(e) => setSelectedCreative({...selectedCreative, testHypothesis: e.target.value})}
+                    className="w-full p-2 border border-border rounded mt-1 h-24"
+                    placeholder="What are you creating/testing and what gives you the confidence this test will improve overall performance?"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Hook Pattern</label>
+                  <textarea 
+                    value={selectedCreative.hookPattern}
+                    onChange={(e) => setSelectedCreative({...selectedCreative, hookPattern: e.target.value})}
+                    className="w-full p-2 border border-border rounded mt-1 h-20"
+                    placeholder="Describe how the hook will look like"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Results</label>
+                  <textarea 
+                    value={selectedCreative.results}
+                    onChange={(e) => setSelectedCreative({...selectedCreative, results: e.target.value})}
+                    className="w-full p-2 border border-border rounded mt-1 h-20"
+                    placeholder="Campaign results and performance metrics"
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => handleUpdateCreative(selectedCreative)} 
+                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                  >
+                    {selectedCreative.id === "new-creative-temp-id" ? "Create Creative" : "Update Creative"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setSelectedCreative(null)}>
+                    Cancel
+                  </Button>
+                  {selectedCreative.id !== "new-creative-temp-id" && (
+                    <Button variant="destructive" onClick={() => handleDeleteCreative(selectedCreative.id)}>
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   )
 }

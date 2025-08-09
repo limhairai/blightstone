@@ -110,42 +110,7 @@ export function Topbar({
       
       {/* Right: Controls */}
       <div className="flex items-center gap-2 md:gap-3 ml-auto">
-        {/* Setup Guide Button - Always available when widget is closed */}
-        {setupWidgetState === "closed" && (
-          <Button
-            key="setup-guide-button"
-            variant="outline"
-            size="sm"
-            className={`
-              hidden md:flex items-center gap-2 px-3 py-2 rounded-md border-border 
-              ${gradientTokens.light} hover:opacity-80 
-              transition-all duration-300 ease-in-out
-              hover:scale-105 hover:shadow-md
-              animate-in fade-in slide-in-from-right-3 duration-500
-            `}
-            onClick={() => {
-              // First open in collapsed state, then auto-expand after brief delay
-              onSetupWidgetStateChange?.("collapsed");
-              setTimeout(() => {
-                onSetupWidgetStateChange?.("expanded");
-              }, 200); // 200ms delay for smooth animation sequence
-            }}
-          >
-            <span className="font-medium text-foreground">Setup Guide</span>
-          </Button>
-        )}
-
-
-        
-        {/* Notification Bell */}
-        {/* Removed notification bell - was non-functional */}
-
-        {/* Main Account Balance & Top Up - Now with real-time data */}
-        <div className="hidden md:flex bg-muted rounded-full px-4 py-1.5 items-center border border-border">
-          <span className="text-sm font-medium text-foreground">
-            {isOrgLoading ? "..." : formatCurrency(totalBalance)}
-          </span>
-        </div>
+        {/* Removed setup guide and balance for internal CRM */}
 
         {/* User Profile Dropdown */}
         <DropdownMenu>
@@ -164,7 +129,6 @@ export function Topbar({
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium text-popover-foreground">{userName}</p>
                 <p className="text-xs text-muted-foreground">{userEmail}</p>
-                <p className="text-xs text-muted-foreground">{isSubscriptionLoading ? "..." : planName} Plan</p>
               </div>
             </div>
 
@@ -237,24 +201,12 @@ export function Topbar({
               </DropdownMenuItem>
             </div>
 
-            <div className="p-2 border-t border-border">
-              <Button
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                size="sm"
-                onClick={() => setUpgradeDialogOpen(true)}
-              >
-                {currentPlan?.id !== 'free' ? 'Upgrade Plan' : 'Choose Plan'}
-              </Button>
-            </div>
+
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-                          <PlanUpgradeDialog
-        open={upgradeDialogOpen}
-        onOpenChange={setUpgradeDialogOpen}
-        redirectToPage={false}
-      />
+
     </div>
   )
 }

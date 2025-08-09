@@ -86,7 +86,7 @@ export function DashboardSidebar() {
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
     { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target },
-    { name: "Customer Avatars", href: "/dashboard/customer-avatars", icon: Users },
+    { name: "Personas", href: "/dashboard/personas", icon: Users },
     { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]

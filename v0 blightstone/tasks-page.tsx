@@ -1,5 +1,19 @@
 "use client"
 
+import { TableCell } from "@/components/ui/table"
+
+import { TableBody } from "@/components/ui/table"
+
+import { TableHead } from "@/components/ui/table"
+
+import { TableRow } from "@/components/ui/table"
+
+import { TableHeader } from "@/components/ui/table"
+
+import { Table } from "@/components/ui/table"
+
+import type React from "react"
+
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -7,13 +21,77 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, User, Calendar, Filter } from "lucide-react"
-import { useProjectStore, Task } from "@/lib/stores/project-store"
+import TaskBriefPage from "./components/task-brief-page" // Import the new component
+
+// Task interface
+interface Task {
+  id: string
+  title: string
+  description: string
+  status: "todo" | "in-progress" | "completed"
+  priority: "low" | "medium" | "high" | "urgent"
+  assignee: string
+  dueDate: string
+  createdAt: string
+  category: string
+}
+
+// Define a constant for a new task's temporary ID
+const NEW_TASK_ID = "new-task-temp-id"
 
 export default function TasksPage() {
-  const { currentProjectId, getTasksForProject, addTask, updateTask } = useProjectStore()
-  const projectTasks = currentProjectId ? getTasksForProject(currentProjectId) : []
+  // Mock data
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: "1",
+      title: "Create customer avatar for Persona 1 (Catherine)",
+      description:
+        "Develop detailed customer avatar including pain points, desires, and objections for the mom persona. This will involve interviewing existing customers and analyzing market research data. The final output should be a comprehensive document.",
+      status: "in-progress",
+      priority: "high",
+      assignee: "You",
+      dueDate: "2025-01-10",
+      createdAt: "2025-01-08",
+      category: "Research",
+    },
+    {
+      id: "2",
+      title: "Design video ad creative for grounding sheets",
+      description:
+        "Create video ad focusing on sleep improvement benefits, targeting problem-aware customers. The video should be 30-60 seconds long and suitable for YouTube and Facebook ads. Include a clear call to action.",
+      status: "todo",
+      priority: "medium",
+      assignee: "Designer",
+      dueDate: "2025-01-12",
+      createdAt: "2025-01-08",
+      category: "Creative",
+    },
+    {
+      id: "3",
+      title: "Research top 5 competitors pricing strategies",
+      description:
+        "Analyze competitor pricing, positioning, and unique selling propositions. Focus on direct competitors and emerging players in the market. Summarize findings in a presentation.",
+      status: "completed",
+      priority: "medium",
+      assignee: "You",
+      dueDate: "2025-01-09",
+      createdAt: "2025-01-07",
+      category: "Research",
+    },
+    {
+      id: "4",
+      title: "Write awareness stage content for blog",
+      description:
+        "Create educational content explaining the 5 awareness stages for our blog. This content should be engaging and provide value to readers, guiding them through the initial stages of understanding their problem.",
+      status: "todo",
+      priority: "low",
+      assignee: "Content Writer",
+      dueDate: "2025-01-15",
+      createdAt: "2025-01-08",
+      category: "Content",
+    },
+  ])
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>("all")
@@ -54,8 +132,6 @@ export default function TasksPage() {
         return "bg-blue-100 text-blue-800 border-blue-200"
       case "todo":
         return "bg-gray-100 text-gray-800 border-gray-200"
-      case "blocked":
-        return "bg-red-100 text-red-800 border-red-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -77,31 +153,31 @@ export default function TasksPage() {
   }
 
   const handleUpdateTask = (updatedTask: Task) => {
-    if (updatedTask.id === "new-task-temp-id") {
+    if (updatedTask.id === NEW_TASK_ID) {
       // This is a new task being saved
       const newTaskWithId = { ...updatedTask, id: Date.now().toString() }
-      addTask(newTaskWithId)
+      setTasks([...tasks, newTaskWithId])
       setSelectedTask(null) // Close the brief after creation
     } else {
       // This is an existing task being updated
-      updateTask(updatedTask.id, updatedTask)
+      setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)))
       setSelectedTask(updatedTask) // Update selected task to reflect changes
     }
   }
 
   const handleDeleteTask = (taskId: string) => {
-    // TODO: Implement delete functionality in the store
+    setTasks(tasks.filter((task) => task.id !== taskId))
     setSelectedTask(null)
   }
 
   const handleStatusChange = (taskId: string, newStatus: Task["status"]) => {
-    updateTask(taskId, { status: newStatus })
+    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
     if (selectedTask && selectedTask.id === taskId) {
       setSelectedTask({ ...selectedTask, status: newStatus })
     }
   }
 
-  const filteredTasks = projectTasks.filter((task) => {
+  const filteredTasks = tasks.filter((task) => {
     if (filterStatus !== "all" && task.status !== filterStatus) return false
     if (filterPriority !== "all" && task.priority !== filterPriority) return false
     return true
@@ -115,7 +191,7 @@ export default function TasksPage() {
 
   const handleNewTaskClick = () => {
     setSelectedTask({
-      id: "new-task-temp-id", // Temporary ID for new task
+      id: NEW_TASK_ID, // Temporary ID for new task
       title: "",
       description: "",
       status: "todo",
@@ -124,12 +200,11 @@ export default function TasksPage() {
       dueDate: "",
       createdAt: new Date().toISOString().split("T")[0],
       category: "General",
-      projectId: currentProjectId || ""
     })
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header with New Task button and Filters */}
       <div className="flex items-center justify-between">
         {/* Filters */}
@@ -147,7 +222,6 @@ export default function TasksPage() {
               <SelectItem value="todo">To Do</SelectItem>
               <SelectItem value="in-progress">In Progress</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="blocked">Blocked</SelectItem>
             </SelectContent>
           </Select>
           <Select value={filterPriority} onValueChange={setFilterPriority}>
@@ -164,11 +238,13 @@ export default function TasksPage() {
           </Select>
         </div>
         {/* New Task Button */}
-        <Button onClick={handleNewTaskClick} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+        <Button onClick={handleNewTaskClick} className="bg-black hover:bg-black/90 text-white">
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
       </div>
+
+      {/* Removed Create Task Form - now handled by TaskBriefPage */}
 
       {/* Tabs for different views */}
       <Tabs defaultValue="table" className="w-full">
@@ -309,133 +385,15 @@ export default function TasksPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Task Brief Page (Full-screen overlay) - Simplified for now */}
+      {/* Task Brief Page (Full-screen overlay) */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-background z-50 p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">
-                {selectedTask.id === "new-task-temp-id" ? "Create New Task" : "Edit Task"}
-              </h2>
-              <Button variant="outline" onClick={() => setSelectedTask(null)}>
-                Close
-              </Button>
-            </div>
-            
-            <Card className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Task Title</label>
-                  <input 
-                    type="text" 
-                    value={selectedTask.title}
-                    onChange={(e) => setSelectedTask({...selectedTask, title: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1"
-                    placeholder="Enter task title"
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <textarea 
-                    value={selectedTask.description}
-                    onChange={(e) => setSelectedTask({...selectedTask, description: e.target.value})}
-                    className="w-full p-2 border border-border rounded mt-1 h-32"
-                    placeholder="Describe the task"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Priority</label>
-                    <Select value={selectedTask.priority} onValueChange={(value) => setSelectedTask({...selectedTask, priority: value as Task['priority']})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Status</label>
-                    <Select value={selectedTask.status} onValueChange={(value) => setSelectedTask({...selectedTask, status: value as Task['status']})}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todo">To Do</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="blocked">Blocked</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Assignee</label>
-                    <input 
-                      type="text" 
-                      value={selectedTask.assignee}
-                      onChange={(e) => setSelectedTask({...selectedTask, assignee: e.target.value})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                      placeholder="Who's responsible?"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Due Date</label>
-                    <input 
-                      type="date" 
-                      value={selectedTask.dueDate}
-                      onChange={(e) => setSelectedTask({...selectedTask, dueDate: e.target.value})}
-                      className="w-full p-2 border border-border rounded mt-1"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={selectedTask.category} onValueChange={(value) => setSelectedTask({...selectedTask, category: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Research">Research</SelectItem>
-                      <SelectItem value="Creative">Creative</SelectItem>
-                      <SelectItem value="Content">Content</SelectItem>
-                      <SelectItem value="Development">Development</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => handleUpdateTask(selectedTask)} 
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    {selectedTask.id === "new-task-temp-id" ? "Create Task" : "Update Task"}
-                  </Button>
-                  <Button variant="outline" onClick={() => setSelectedTask(null)}>
-                    Cancel
-                  </Button>
-                  {selectedTask.id !== "new-task-temp-id" && (
-                    <Button variant="destructive" onClick={() => handleDeleteTask(selectedTask.id)}>
-                      Delete
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        <TaskBriefPage
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdateTask={handleUpdateTask}
+          onDeleteTask={handleDeleteTask}
+          NEW_TASK_ID={NEW_TASK_ID} // Pass the constant
+        />
       )}
     </div>
   )
