@@ -11,8 +11,11 @@ import { useProjectStore } from "@/lib/stores/project-store"
 // Lazy load the brief page for better performance
 const CompetitorBriefPage = React.lazy(() => import("@/components/competitors/competitor-brief-page"))
 
-// Define the interface for a Competitor entry
-interface Competitor {
+// Import the Competitor interface from the store
+import { Competitor } from "@/lib/stores/project-store"
+
+// Define the interface for the brief page (different from store)
+interface CompetitorBrief {
   id: string
   name: string
   websiteUrl: string
@@ -29,7 +32,7 @@ export default function CompetitorsPage() {
   const { currentProjectId, getCompetitorsForProject, addCompetitor } = useProjectStore()
   const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
 
-  const [selectedCompetitor, setSelectedCompetitor] = useState<Competitor | null>(null)
+  const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorBrief | null>(null)
   const [notesEditingCompetitor, setNotesEditingCompetitor] = useState<Competitor | null>(null)
   const [tempNotes, setTempNotes] = useState("")
 
@@ -47,11 +50,18 @@ export default function CompetitorsPage() {
       const competitorData = {
         id: newCompetitorWithId.id,
         name: newCompetitorWithId.name,
-        website: newCompetitorWithId.websiteUrl,
-        strengths: `Level: ${newCompetitorWithId.level}, Market: ${newCompetitorWithId.market}`,
-        weaknesses: "To be analyzed",
+        website: newCompetitorWithId.websiteUrl || "",
+        market: newCompetitorWithId.market || "USA",
+        level: newCompetitorWithId.level as "Poor" | "Medium" | "High",
         pricing: "Unknown",
-        projectId: currentProjectId
+        strengths: ["To be analyzed"],
+        weaknesses: ["To be analyzed"],
+        positioning: "Unknown",
+        targetAudience: "Unknown",
+        marketShare: "Unknown",
+        notes: "",
+        projectId: currentProjectId || "",
+        createdBy: "You"
       }
       
       addCompetitor(competitorData)
@@ -127,7 +137,7 @@ export default function CompetitorsPage() {
               <TableRow key={competitor.id}>
                 <TableCell className="font-medium">{competitor.name}</TableCell>
                 <TableCell>{competitor.website}</TableCell>
-                <TableCell>{(typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[1]?.replace('Market: ', '') : null) || 'Unknown'}</TableCell>
+                <TableCell>{competitor.market || 'Unknown'}</TableCell>
                 <TableCell>
                   <Button 
                     variant="ghost" 
@@ -165,10 +175,10 @@ export default function CompetitorsPage() {
                           name: competitor.name,
                           websiteUrl: competitor.website,
                           adLibraryLink: "",
-                          market: (typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[1]?.replace('Market: ', '') : null) || 'USA',
+                          market: competitor.market || 'USA',
                           offerUrl: "",
                           trafficVolume: "",
-                          level: ((typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[0]?.replace('Level: ', '') : null) || "Medium") as "Poor" | "Medium" | "High",
+                          level: competitor.level || "Medium",
                           projectId: competitor.projectId,
                           notes: ""
                         })
@@ -187,10 +197,10 @@ export default function CompetitorsPage() {
                       name: competitor.name,
                       websiteUrl: competitor.website,
                       adLibraryLink: "",
-                      market: (typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[1]?.replace('Market: ', '') : null) || 'USA',
+                      market: competitor.market || 'USA',
                       offerUrl: "",
                       trafficVolume: "",
-                      level: ((typeof competitor.strengths === 'string' ? competitor.strengths.split(', ')[0]?.replace('Level: ', '') : null) || "Medium") as "Poor" | "Medium" | "High",
+                      level: competitor.level || "Medium",
                       projectId: competitor.projectId
                     })
                   }}>

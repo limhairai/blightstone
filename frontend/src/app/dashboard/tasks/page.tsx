@@ -1,21 +1,14 @@
 "use client"
 
-import React from "react"
-import { TableCell } from "@/components/ui/table"
-
-import { TableBody } from "@/components/ui/table"
-
-import { TableHead } from "@/components/ui/table"
-
-import { TableRow } from "@/components/ui/table"
-
-import { TableHeader } from "@/components/ui/table"
-
-import { Table } from "@/components/ui/table"
-
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -82,6 +75,7 @@ export default function TasksPage() {
           dueDate: "2025-01-10",
           createdAt: "2025-01-08",
           category: "Research",
+          projectId: currentProjectId || "1",
           notes: "Need to interview 3 more customers before finalizing",
           attachments: [
             {
@@ -113,7 +107,10 @@ export default function TasksPage() {
           dueDate: "2025-01-15",
           createdAt: "2025-01-08",
           category: "Creative",
+          projectId: currentProjectId || "1",
           notes: "Focus on before/after sleep quality testimonials",
+          attachments: [],
+          links: [],
         }
       ]
     } else if (currentProjectId === "2") {
@@ -129,7 +126,10 @@ export default function TasksPage() {
           dueDate: "2025-01-05",
           createdAt: "2025-01-01",
           category: "Research",
+          projectId: currentProjectId || "2",
           notes: "Found 12 key competitors, analysis complete",
+          attachments: [],
+          links: [],
         },
         {
           id: "4",
@@ -141,7 +141,10 @@ export default function TasksPage() {
           dueDate: "2025-01-20",
           createdAt: "2025-01-10",
           category: "Strategy",
+          projectId: currentProjectId || "2",
           notes: "Draft messaging framework ready for review",
+          attachments: [],
+          links: [],
         }
       ]
     }
@@ -219,7 +222,7 @@ export default function TasksPage() {
         // Creating a new task
         const newTask = await tasksApi.create({
           ...updatedTask,
-          project_id: currentProjectId!
+          projectId: currentProjectId!
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
@@ -286,6 +289,7 @@ export default function TasksPage() {
       dueDate: "",
       createdAt: new Date().toISOString().split("T")[0],
       category: "General",
+      projectId: currentProjectId || "",
       notes: "",
       attachments: [],
       links: [],
