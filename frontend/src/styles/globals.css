@@ -173,8 +173,8 @@
     --secondary-foreground: 0 0% 7%;
     --muted: 0 0% 96%; /* Subtle gray for muted areas */
     --muted-foreground: 0 0% 45%; /* Medium gray for muted text */
-    --accent: 0 0% 96%; /* Same as muted for consistency */
-    --accent-foreground: 0 0% 7%;
+    --accent: 150 45% 60%; /* Green accent (#4EB38F) */
+    --accent-foreground: 0 0% 100%; /* White text on green */
     --destructive: 0 0% 20%; /* Dark gray for destructive (no red) */
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 90%; /* Light gray borders */
@@ -198,9 +198,10 @@
     --status-inactive-badge-background: 0 0% 98%; /* Very light gray background */
     --status-inactive-badge-foreground: 0 0% 60%; /* Medium gray text */
 
-    /* Blightstone Brand Colors - Pure Black and White */
+    /* Blightstone Brand Colors - Black, White & Green Accent */
     --brand-primary: #121212; /* Pure black */
     --brand-secondary: #ffffff; /* Pure white */
+    --brand-accent: #4EB38F; /* Green accent for highlights */
 
     /* Radius */
     --radius-sm: 0.25rem;

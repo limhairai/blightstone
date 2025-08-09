@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { OrganizationSelector } from "../organization/organization-selector"
 import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { cn } from "../../lib/utils"
-import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe } from "lucide-react"
+import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe, FolderOpen, Brain, BarChart3, CheckSquare } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useAuth } from '@/contexts/AuthContext'
@@ -22,7 +22,7 @@ interface SidebarItem {
 
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>(["Assets"]) // Only expand Assets by default
+  const [expandedItems, setExpandedItems] = useState<string[]>(["Project Tools"]) // Only expand Project Tools by default
   const pathname = usePathname()
   const router = useRouter()
   
@@ -84,19 +84,19 @@ export function DashboardSidebar() {
 
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
+    { name: "Projects", href: "/dashboard/projects", icon: FolderOpen },
     {
-      name: "Assets",
-      icon: Building2,
+      name: "Project Tools",
+      icon: BarChart3,
       subItems: [
-        { name: "Business Managers", href: "/dashboard/business-managers", icon: Building2 },
-        { name: "Ad Accounts", href: "/dashboard/accounts", icon: CreditCard },
-        { name: "Pages", href: "/dashboard/pages", icon: Globe },
-        { name: "Pixels", href: "/dashboard/pixels", icon: Target },
+        { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target },
+        { name: "Customer Avatars", href: "/dashboard/customer-avatars", icon: Users },
+        { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
+        { name: "Awareness Stages", href: "/dashboard/awareness-stages", icon: Brain },
       ],
     },
-    { name: "Wallet", href: "/dashboard/wallet", icon: Wallet },
-    { name: "Transactions", href: "/dashboard/topup-requests", icon: Receipt },
-    { name: "Support", href: "/dashboard/support", icon: MessageSquare },
+    { name: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
+    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 
