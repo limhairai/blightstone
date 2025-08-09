@@ -12,6 +12,7 @@ export interface Task {
   createdAt: string
   category: string
   projectId: string
+  createdBy?: string
 }
 
 export interface CustomerAvatar {
@@ -35,6 +36,7 @@ export interface CustomerAvatar {
   desires: string[]
   objections: string[]
   projectId: string
+  createdBy?: string
 }
 
 export interface Competitor {
@@ -51,6 +53,7 @@ export interface Competitor {
   marketShare: string
   notes: string
   projectId: string
+  createdBy?: string
 }
 
 export interface CreativeTracker {
@@ -73,6 +76,7 @@ export interface CreativeTracker {
   winningAds: string
   briefLink: string
   projectId: string
+  createdBy?: string
 }
 
 export interface Project {
@@ -84,6 +88,7 @@ export interface Project {
   completedTasks: number
   createdAt: string
   lastActivity: string
+  createdBy?: string
 }
 
 interface ProjectStore {
@@ -97,6 +102,7 @@ interface ProjectStore {
   setCurrentProjectId: (id: string) => void
   getCurrentProject: () => Project | null
   addProject: (project: Project) => void
+  getProjectWithDynamicCounts: (projectId: string) => Project | null
   
   // Task methods
   getTasksForProject: (projectId: string) => Task[]
@@ -400,6 +406,21 @@ export const useProjectStore = create<ProjectStore>()(
       getCurrentProject: () => {
         const { currentProjectId, projects } = get()
         return projects.find(p => p.id === currentProjectId) || null
+      },
+      
+      getProjectWithDynamicCounts: (projectId: string) => {
+        const { projects, tasks } = get()
+        const project = projects.find(p => p.id === projectId)
+        if (!project) return null
+        
+        const projectTasks = tasks.filter(task => task.projectId === projectId)
+        const completedTasks = projectTasks.filter(task => task.status === 'completed').length
+        
+        return {
+          ...project,
+          tasksCount: projectTasks.length,
+          completedTasks: completedTasks
+        }
       },
       
       addProject: (project: Project) => {

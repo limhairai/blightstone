@@ -12,11 +12,12 @@ import { ChevronDown, Search, FolderOpen, Plus, Loader2, Check } from "lucide-re
 import { cn } from "../../lib/utils"
 import { useAuth } from "../../contexts/AuthContext"
 import { useProjectStore, Project } from "../../lib/stores/project-store"
+import ProjectCreationDialog from "./project-creation-dialog"
 
 export function ProjectSelector() {
   const { theme } = useTheme()
   const router = useRouter()
-  const { currentProjectId, setCurrentProjectId, projects, getCurrentProject } = useProjectStore()
+  const { currentProjectId, setCurrentProjectId, projects, getCurrentProject, getProjectWithDynamicCounts } = useProjectStore()
   const { session, user } = useAuth()
   const currentTheme = (theme === "dark" || theme === "light") ? theme : "light"
   
@@ -24,8 +25,9 @@ export function ProjectSelector() {
   const [searchQuery, setSearchQuery] = useState("")
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-  const currentProject = getCurrentProject()
+  const currentProject = currentProjectId ? getProjectWithDynamicCounts(currentProjectId) : null
 
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects
@@ -74,7 +76,8 @@ export function ProjectSelector() {
   }
 
   return (
-    <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+    <>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
@@ -130,7 +133,9 @@ export function ProjectSelector() {
         <Separator />
 
         <div className="max-h-60 overflow-y-auto">
-          {filteredProjects.map((project) => (
+          {filteredProjects.map((project) => {
+            const projectWithCounts = getProjectWithDynamicCounts(project.id) || project
+            return (
             <DropdownMenuItem
               key={project.id}
               className="flex items-center gap-3 p-3 cursor-pointer"
@@ -156,29 +161,42 @@ export function ProjectSelector() {
 
                 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{getProgressPercentage(project.completedTasks, project.tasksCount)}% complete</span>
+                  <span>{getProgressPercentage(projectWithCounts.completedTasks, projectWithCounts.tasksCount)}% complete</span>
                   <span>•</span>
-                  <span>{project.completedTasks}/{project.tasksCount} tasks</span>
+                  <span>{projectWithCounts.completedTasks}/{projectWithCounts.tasksCount} tasks</span>
                 </div>
                 
                 <div className="w-full bg-muted rounded-full h-1 mt-1">
                   <div 
                     className="bg-primary h-1 rounded-full transition-all duration-300" 
-                    style={{ width: `${getProgressPercentage(project.completedTasks, project.tasksCount)}%` }}
+                    style={{ width: `${getProgressPercentage(projectWithCounts.completedTasks, projectWithCounts.tasksCount)}%` }}
                   />
                 </div>
               </div>
             </DropdownMenuItem>
-          ))}
+            )
+          })}
         </div>
 
         <Separator />
         
-        <DropdownMenuItem className="flex items-center gap-2 p-3">
+        <DropdownMenuItem 
+          className="flex items-center gap-2 p-3 cursor-pointer"
+          onSelect={() => {
+            setIsDropdownOpen(false)
+            setIsCreateDialogOpen(true)
+          }}
+        >
           <Plus className="h-4 w-4" />
           <span>Create New Project</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+      
+      <ProjectCreationDialog 
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+      />
+    </>
   )
 }
