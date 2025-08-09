@@ -295,7 +295,7 @@ export default function SupportPage() {
                 </p>
                 <Button 
                   onClick={() => setCreating(true)}
-                  className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Ticket

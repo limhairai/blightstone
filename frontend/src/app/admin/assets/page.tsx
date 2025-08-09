@@ -366,7 +366,7 @@ export default function AssetsPage() {
               <tr key={pixel.pixelId} className="border-b border-border/50 hover:bg-muted/30">
                 <td className="p-3">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                       <span className="text-xs font-medium text-foreground">
                         {pixel.pixelName?.charAt(0).toUpperCase() || 'P'}
                       </span>

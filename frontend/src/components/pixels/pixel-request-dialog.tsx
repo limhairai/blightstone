@@ -96,7 +96,7 @@ export function PixelRequestDialog({ businessManagers, onRequestSubmitted }: Pix
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">
+        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
           <Plus className="mr-2 h-4 w-4" />
           Add Pixel
         </Button>
@@ -160,7 +160,7 @@ export function PixelRequestDialog({ businessManagers, onRequestSubmitted }: Pix
             <Button 
               type="submit" 
               disabled={loading}
-              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {loading ? (
                 <>

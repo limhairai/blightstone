@@ -57,7 +57,7 @@ export function AccountTypeSelector({
                 : 'border-border hover:border-border/60'
             }`}>
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20">
+                <div className="p-2 rounded-lg bg-muted">
                   <CreditCard className="h-5 w-5 text-[#b4a0ff]" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -116,7 +116,7 @@ export function AccountTypeSelector({
 
       {/* Additional info based on selection */}
       {selectedType === 'postpay' && (
-        <div className="mt-4 p-3 bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 rounded-lg border border-[#b4a0ff]/20">
+        <div className="mt-4 p-3 bg-muted rounded-lg border border-[#b4a0ff]/20">
           <p className="text-sm text-foreground">
             <strong>Post-pay accounts:</strong> You'll need to provide your own Business Manager or request one. 
             Our team will handle the credit line setup and account management.

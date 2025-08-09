@@ -113,7 +113,7 @@ export function WithdrawBalanceDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-md bg-card border-border">
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="w-16 h-16 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mb-4">
               <Check className="w-8 h-8 text-white" />
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">Withdrawal Successful!</h3>
@@ -263,7 +263,7 @@ export function WithdrawBalanceDialog({
             <Button
               onClick={() => handleWithdraw(withdrawAmount)}
               disabled={isLoading || withdrawAmount <= 0 || withdrawAmount > account.balance}
-              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:opacity-90 text-white"
+              className="bg-gradient-to-r from-primary to-primary hover:opacity-90 text-white"
             >
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

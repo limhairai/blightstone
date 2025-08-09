@@ -614,7 +614,7 @@ export function ApplicationAssetBindingDialog({
           <Button 
             onClick={handleSubmit} 
             disabled={loading || loadingAssets || (mode !== 'additional-accounts-specific' && !selectedBusinessManager) || selectedAdAccounts.length === 0}
-            className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:from-[#b4a0ff] to-[#ffb4a0] text-black border-0"
+            className="bg-primary hover:from-[#b4a0ff] to-[#ffb4a0] text-black border-0"
             size="sm"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

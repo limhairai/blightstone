@@ -48,7 +48,7 @@ export function AdAccountsList() {
       {accounts.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">No ad accounts found. Create your first account to get started.</p>
-          <Button className="mt-4 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">Request Account</Button>
+          <Button className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground border-0">Request Account</Button>
         </div>
       )}
     </div>

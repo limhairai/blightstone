@@ -199,7 +199,7 @@ export default function PricingPage() {
             <Link href="https://blightstone.com" className="flex items-center space-x-2">
               <div className="text-xl font-bold">
                 <span className="text-foreground">Ad</span>
-                <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">
+                <span className="bg-primary bg-clip-text text-transparent">
                   Hub
                 </span>
               </div>
@@ -215,7 +215,7 @@ export default function PricingPage() {
                     <Button variant="ghost" size="sm">Sign In</Button>
                   </Link>
                   <Link href="/register">
-                    <Button size="sm" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0">
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
                       Get Started
                     </Button>
                   </Link>
@@ -264,7 +264,7 @@ export default function PricingPage() {
                     {/* Popular badge */}
                     {isPopular && (
                       <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                        <div className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white px-4 py-1.5 rounded-full text-sm font-medium shadow-lg">
+                        <div className="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-medium shadow-lg">
                           Most Popular
                         </div>
                       </div>
@@ -310,7 +310,7 @@ export default function PricingPage() {
                           isCurrent
                             ? 'bg-green-500 hover:bg-green-600 text-white'
                             : isPopular
-                            ? 'bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0'
+                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-0'
                             : 'bg-background hover:bg-accent text-foreground border border-border'
                         }`}
                         variant={isCurrent ? 'default' : isPopular ? 'default' : 'outline'}
@@ -340,7 +340,7 @@ export default function PricingPage() {
               The platform is intuitive, reliable, and their support team is incredible."
             </blockquote>
             <div className="flex items-center justify-center space-x-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center">
                 <span className="text-white font-semibold">JD</span>
               </div>
               <div className="text-left">
@@ -363,7 +363,7 @@ export default function PricingPage() {
           </p>
           {!currentOrganizationId && (
             <Link href="/register">
-              <Button size="lg" className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
                 Start Free Trial
               </Button>
             </Link>

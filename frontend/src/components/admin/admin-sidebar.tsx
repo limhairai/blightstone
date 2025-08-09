@@ -235,7 +235,7 @@ export function AdminSidebar({ className }: { className?: string }) {
             <Menu className="h-4 w-4 text-muted-foreground" />
           </button>
           {!collapsed && (
-            <span className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-sm font-semibold text-transparent">
+            <span className="bg-primary bg-clip-text text-sm font-semibold text-transparent">
               Blightstone CRM Admin
             </span>
           )}

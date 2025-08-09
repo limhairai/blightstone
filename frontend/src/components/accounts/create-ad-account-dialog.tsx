@@ -323,7 +323,7 @@ export function CreateAdAccountDialog({ trigger, bmId, onAccountCreated }: Creat
                     <Button 
                       type="submit" 
                       disabled={isLoading || hasReachedAccountLimit}
-                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90 disabled:opacity-50"
+                      className="bg-primary text-black hover:opacity-90 disabled:opacity-50"
                     >
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Request Account

@@ -129,7 +129,7 @@ export function SettingsView() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-lg flex items-center justify-center text-black font-bold text-base">TO</div>
+                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-black font-bold text-base">TO</div>
                     <div>
                       <h2 className="text-lg font-semibold">Test Org</h2>
                       <p className="text-xs text-muted-foreground">Created January 15, 2025</p>
@@ -141,7 +141,7 @@ export function SettingsView() {
                         <Button variant="outline" size="sm" onClick={handleCancel}>
                           <X className="w-3 h-3 mr-1" />Cancel
                         </Button>
-                        <Button size="sm" onClick={handleSave} className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90">
+                        <Button size="sm" onClick={handleSave} className="bg-primary text-black hover:opacity-90">
                           <Save className="w-3 h-3 mr-1" />Save
                         </Button>
                       </>
@@ -305,7 +305,7 @@ export function SettingsView() {
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div 
-                          className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                          className="bg-primary h-2 rounded-full transition-all duration-300" 
                           style={{ 
                             width: `${planLimits.monthlyTopupLimit === -1 ? 0 : Math.min(100, ((topupUsage?.currentUsage || 0) / planLimits.monthlyTopupLimit) * 100)}%` 
                           }}
@@ -411,7 +411,7 @@ export function SettingsView() {
                       </div>
                       <div className="space-y-2">
                         <Button 
-                          className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" 
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
                           size="sm"
                           onClick={() => setUpgradeDialogOpen(true)}
                         >
@@ -423,7 +423,7 @@ export function SettingsView() {
                     <div className="text-center py-4">
                       <p className="text-xs text-muted-foreground mb-3">No subscription plan</p>
                       <Button 
-                        className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black" 
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" 
                         size="sm"
                         onClick={() => setUpgradeDialogOpen(true)}
                       >

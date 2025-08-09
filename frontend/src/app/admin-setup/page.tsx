@@ -89,7 +89,7 @@ export default function AdminSetupPage() {
       <div className="w-full max-w-md space-y-8">
         {/* Header */}
         <div className="text-center space-y-3">
-          <div className="mx-auto w-12 h-12 rounded-full bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center">
             <Users className="h-6 w-6 text-foreground" />
           </div>
           <div>

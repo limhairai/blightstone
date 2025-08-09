@@ -139,7 +139,7 @@ export function AccountProvisioningTable() {
                 <TableRow key={business.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center">
+                      <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
                         <Building2 className="h-4 w-4 text-white" />
                       </div>
                       <div>

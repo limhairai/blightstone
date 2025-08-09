@@ -173,7 +173,7 @@ export default function AdminPageRequestsPage() {
               <TableRow key={request.request_id} className="admin-table-row border-border hover:bg-muted/50">
                 <TableCell>
                   <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                       <FileText className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -260,7 +260,7 @@ export default function AdminPageRequestsPage() {
                       <AdminInstantButton
                         size="sm"
                         onClick={() => handleProcessRequest(request.request_id, 'completed', '')}
-                        className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                       >
                         Mark as Completed
                       </AdminInstantButton>

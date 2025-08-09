@@ -192,7 +192,7 @@ export default function ApplicationsPage() {
 
         <CreateAdAccountDialog
           trigger={
-            <Button className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
               <Plus className="mr-2 h-4 w-4" />
               New Application
             </Button>
@@ -279,7 +279,7 @@ export default function ApplicationsPage() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center">
+                    <div className="h-12 w-12 bg-primary rounded-full flex items-center justify-center">
                       <Building2 className="h-6 w-6 text-white" />
                     </div>
                     

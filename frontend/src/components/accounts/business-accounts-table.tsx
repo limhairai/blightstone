@@ -244,7 +244,7 @@ export function BusinessAccountsTable({ businessName }: BusinessAccountsTablePro
                     <Button
                       size="sm"
                       onClick={() => openTopUpDialog(account)}
-                      className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Top Up

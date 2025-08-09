@@ -121,7 +121,7 @@ export function ViewDetailsDialog({ account, open, onOpenChange }: ViewDetailsDi
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] transition-all duration-500"
+                  className="h-full bg-primary transition-all duration-500"
                   style={{ width: `${Math.min(((account.spent || 0) / 10000) * 100, 100)}%` }}
                 />
               </div>

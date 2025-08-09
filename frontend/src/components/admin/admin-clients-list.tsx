@@ -144,7 +144,7 @@ export function AdminClientsList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90">
+        <Button className="w-full sm:w-auto bg-primary text-black hover:opacity-90">
           <UserCog className="h-4 w-4 mr-2" /> Add New Client
         </Button>
       </div>

@@ -247,7 +247,7 @@ export function ProvisioningPipeline() {
                   <TableRow key={business.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center">
+                        <div className="h-8 w-8 bg-primary rounded-full flex items-center justify-center">
                           <Building2 className="h-4 w-4 text-white" />
                         </div>
                         <div>
@@ -279,7 +279,7 @@ export function ProvisioningPipeline() {
                       <div className="flex items-center gap-2">
                         <div className="w-24 bg-gray-200 rounded-full h-2">
                           <div 
-                            className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] h-2 rounded-full transition-all duration-300"
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
                             style={{ width: "10%" }}
                           />
                         </div>

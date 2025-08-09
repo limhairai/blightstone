@@ -259,7 +259,7 @@ Processing time: 1-3 business days`
                 
                 <Button
                   onClick={generateReferenceNumber}
-                  className="flex-1 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                   size="sm"
                   disabled={loading}
                 >
@@ -284,7 +284,7 @@ Processing time: 1-3 business days`
                     onSuccess?.()
                     onClose()
                   }}
-                  className="flex-1 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                  className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                   size="sm"
                 >
                   Done

@@ -125,7 +125,7 @@ export function BmAttachmentSelector({
                 : 'border-border hover:border-border/60'
             }`}>
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20">
+                <div className="p-2 rounded-lg bg-muted">
                   <Plus className="h-5 w-5 text-[#b4a0ff]" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -169,7 +169,7 @@ export function BmAttachmentSelector({
       )}
 
       {selectedData.type === 'request' && (
-        <div className="mt-4 p-3 bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 rounded-lg border border-[#b4a0ff]/20">
+        <div className="mt-4 p-3 bg-muted rounded-lg border border-[#b4a0ff]/20">
           <p className="text-sm text-foreground">
             <strong>New BM creation:</strong> Our white glove team will handle the entire setup process, 
             including Business Manager creation, verification, and initial configuration.

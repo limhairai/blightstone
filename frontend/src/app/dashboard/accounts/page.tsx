@@ -87,7 +87,7 @@ export default function AccountsPage() {
         <CreateAdAccountDialog
           bmId={bmId}
           trigger={
-            <Button className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground border-0">
               <Plus className="mr-2 h-4 w-4" />
               Add
             </Button>

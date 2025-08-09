@@ -118,7 +118,7 @@ function AppRouter({ children }: { children: React.ReactNode }) {
 
 export function SimpleProviders({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
       <TooltipProvider>
         <SWRConfig value={swrConfig}>
           <MicroInteractionsProvider>

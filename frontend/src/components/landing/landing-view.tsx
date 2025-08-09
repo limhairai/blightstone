@@ -98,7 +98,7 @@ export function LandingView() {
               </div>
             ) : user ? (
               <Link href="/dashboard">
-                <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
                   Dashboard
                 </Button>
               </Link>
@@ -110,7 +110,7 @@ export function LandingView() {
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
                     Get Started
                   </Button>
                 </Link>
@@ -182,7 +182,7 @@ export function LandingView() {
                   </div>
                 ) : user ? (
                   <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black justify-center py-3">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground justify-center py-3">
                       Dashboard
                     </Button>
                   </Link>
@@ -194,7 +194,7 @@ export function LandingView() {
                       </Button>
                     </Link>
                     <Link href="/register" className="block" onClick={() => setMobileMenuOpen(false)}>
-                      <Button className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black justify-center py-3">
+                      <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground justify-center py-3">
                         Get Started
                       </Button>
                     </Link>
@@ -243,7 +243,7 @@ export function LandingView() {
                   ) : user ? (
                     <>
                       <Link href="/dashboard" className="w-full sm:w-auto">
-                        <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                        <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
                           Dashboard
                         </Button>
                       </Link>
@@ -256,7 +256,7 @@ export function LandingView() {
                   ) : (
                     <>
                       <Link href="/register" className="w-full sm:w-auto">
-                        <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
+                        <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium rounded-xl hover:scale-105 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] transition-all duration-200">
                         Get Started
                         </Button>
                       </Link>
@@ -294,7 +294,7 @@ export function LandingView() {
                 {heroInternalEffectsVisible && (
                   <>
                     {/* Mobile-optimized decorative elements */}
-                    <div className="absolute -top-4 sm:-top-8 -left-4 sm:-left-8 w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-full opacity-15 sm:opacity-20 blur-lg sm:blur-xl animate-pulse"></div>
+                    <div className="absolute -top-4 sm:-top-8 -left-4 sm:-left-8 w-16 h-16 sm:w-24 sm:h-24 bg-primary rounded-full opacity-15 sm:opacity-20 blur-lg sm:blur-xl animate-pulse"></div>
                     <div className="absolute -bottom-6 sm:-bottom-12 -right-6 sm:-right-12 w-20 h-20 sm:w-32 sm:h-32 bg-gradient-to-l from-[#ffb4a0] to-[#b4a0ff] rounded-full opacity-15 sm:opacity-20 blur-lg sm:blur-xl animate-pulse delay-1000"></div>
                     <div className="absolute top-1/2 -left-8 sm:-left-16 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-[#d4b4ff] to-[#ffb4a0] rounded-full opacity-10 sm:opacity-15 blur-md sm:blur-lg animate-pulse delay-500"></div>
                     <div className="absolute inset-0 bg-gradient-to-r from-[#b4a0ff]/8 to-[#ffb4a0]/8 md:from-[#b4a0ff]/10 md:to-[#ffb4a0]/10 rounded-2xl sm:rounded-3xl blur-2xl sm:blur-3xl opacity-50 sm:opacity-60 scale-110 -z-10 group-hover:opacity-70 sm:group-hover:opacity-80 transition-opacity duration-500 animate-pulse"></div>
@@ -392,7 +392,7 @@ export function LandingView() {
                     <Link href="/dashboard" className="w-full sm:w-auto">
                       <Button
                         size="lg"
-                        className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
                       >
                         Go to Dashboard
                         <svg
@@ -428,7 +428,7 @@ export function LandingView() {
                     <Link href="/register" className="w-full sm:w-auto">
                       <Button
                         size="lg"
-                        className="w-full sm:w-auto bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg font-medium rounded-xl sm:rounded-2xl shadow-lg transition-all duration-200 hover:shadow-[0_0_50px_rgba(180,160,255,0.4)] hover:scale-105 flex items-center justify-center gap-3 group"
                       >
                         Get Started for Free
                         <svg

@@ -421,7 +421,7 @@ export function OrganizationSettings() {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                    className="bg-primary h-2 rounded-full transition-all duration-300" 
                     style={{ 
                       width: `${planLimits.businessManagers === -1 ? 0 : Math.min(100, (activeBusinesses / planLimits.businessManagers) * 100)}%` 
                     }}
@@ -439,7 +439,7 @@ export function OrganizationSettings() {
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                    className="bg-primary h-2 rounded-full transition-all duration-300" 
                     style={{ 
                       width: `${planLimits.adAccounts === -1 ? 0 : Math.min(100, (activeAccounts / planLimits.adAccounts) * 100)}%` 
                     }}
@@ -460,7 +460,7 @@ export function OrganizationSettings() {
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                     <div 
-                      className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-2 rounded-full transition-all duration-300" 
+                      className="bg-primary h-2 rounded-full transition-all duration-300" 
                       style={{ 
                         width: `${planLimits.monthlyTopupLimit === -1 ? 0 : Math.min(100, (monthlyTopupUsage / planLimits.monthlyTopupLimit) * 100)}%` 
                       }}

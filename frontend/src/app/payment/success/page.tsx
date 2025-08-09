@@ -132,7 +132,7 @@ export default function PaymentSuccessPage() {
             <div className="space-y-3">
               <Button 
                 onClick={() => router.push('/dashboard')}
-                className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <ArrowRight className="h-4 w-4 mr-2" />
                 Go to Dashboard

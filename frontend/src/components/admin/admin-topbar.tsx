@@ -221,7 +221,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
 
             <div className="p-2 border-t border-border">
               <Button
-                className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0 w-full"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground border-0 w-full"
                 size="sm"
               >
                 <Shield className="h-4 w-4 mr-2" />

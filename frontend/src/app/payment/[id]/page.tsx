@@ -134,7 +134,7 @@ function PaymentForm({ paymentIntent }: { paymentIntent: PaymentIntent }) {
       <Button
         type="submit"
         disabled={!stripe || isProcessing}
-        className="w-full bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black"
+        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
       >
         {isProcessing ? (
           <div className="flex items-center gap-2">
@@ -242,7 +242,7 @@ export default function PaymentPage() {
       <div className="max-w-md mx-auto pt-8">
         <Card>
           <CardHeader>
-            <CardTitle className="text-center bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-transparent bg-clip-text">
+            <CardTitle className="text-center bg-primary text-transparent bg-clip-text">
               Complete Payment
             </CardTitle>
             <CardDescription className="text-center">

@@ -259,7 +259,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                 {/* Popular badge */}
                 {isPopular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
-                    <div className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black px-4 py-1.5 rounded-full text-sm font-medium shadow-lg">
+                    <div className="bg-primary text-black px-4 py-1.5 rounded-full text-sm font-medium shadow-lg">
                       Most Popular
                     </div>
                   </div>
@@ -320,7 +320,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                       isCurrent
                         ? 'bg-background hover:bg-accent text-foreground border border-border'
                         : isPopular
-                        ? 'bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0'
+                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-0'
                         : 'bg-background hover:bg-accent text-foreground border border-border'
                     }`}
                     variant={isCurrent ? 'outline' : isPopular ? 'default' : 'outline'}
@@ -350,7 +350,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     // TODO: Open contact form or redirect to contact page
                     toast.info("Contact us for Plus plan pricing and setup")
                   }}
-                  className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
+                  className="w-full lg:w-auto lg:min-w-[140px] h-11 font-medium bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                   variant="default"
                 >
                   Contact Us

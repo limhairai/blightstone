@@ -62,7 +62,7 @@ export function AccountManagementPreview() {
 
   return (
     <div className="relative rounded-2xl overflow-hidden border border-white/20 shadow-2xl bg-black w-full max-w-4xl">
-      <div className="absolute inset-0 bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10"></div>
+      <div className="absolute inset-0 bg-muted"></div>
       <div className="relative z-10 p-8">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-lg font-semibold text-white">Account Management</h3>
@@ -94,7 +94,7 @@ export function AccountManagementPreview() {
             </div>
           </div>
           <div className="flex gap-4 pt-2">
-            <Button size="default" className="flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-black hover:opacity-90">Top Up</Button>
+            <Button size="default" className="flex-1 bg-primary text-black hover:opacity-90">Top Up</Button>
             <Button size="default" variant="outline" className="flex-1 border-white/20 text-white hover:bg-white/10">View Details</Button>
           </div>
         </div>

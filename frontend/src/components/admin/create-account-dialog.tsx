@@ -139,7 +139,7 @@ export function CreateAccountDialog({
         {business && (
           <div className="bg-muted/50 p-4 rounded-lg border">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] rounded-full flex items-center justify-center">
+              <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
                 <Building2 className="h-5 w-5 text-black" />
               </div>
               <div>
@@ -289,7 +289,7 @@ export function CreateAccountDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             >
               {isSubmitting ? "Creating Account..." : "Create Account"}
             </Button>

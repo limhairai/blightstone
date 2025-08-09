@@ -266,7 +266,7 @@ export default function BusinessManagerDetailPage() {
                     <tr key={account.id} className="border-t hover:bg-muted/50">
                       <td className="p-4">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                          <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                             <CreditCard className="h-4 w-4 text-foreground" />
                           </div>
                           <div className="min-w-0 flex-1">

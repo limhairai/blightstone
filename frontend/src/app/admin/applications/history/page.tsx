@@ -203,7 +203,7 @@ export default function ApplicationHistoryPage() {
                   <TableRow key={app.id} className="border-border hover:bg-muted/50">
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-0">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                           {requestTypeInfo.icon}
                         </div>
                         <div className="min-w-0 flex-1">

@@ -35,7 +35,7 @@ export default function OnboardingPage() {
         <div className="relative flex flex-col items-center justify-center">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-6">
-              Welcome to Ad<span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">Hub</span>
+              Welcome to Ad<span className="bg-primary bg-clip-text text-transparent">Hub</span>
             </h1>
             <p className="text-lg text-gray-400">
               Let's get your account set up in just a few steps.
@@ -270,7 +270,7 @@ export default function OnboardingPage() {
           <div className="text-center mb-12">
             <div className="w-full bg-gray-700 h-1 rounded-full mb-2">
               <div 
-                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] h-1 rounded-full transition-all duration-500 ease-in-out" 
+                className="bg-primary h-1 rounded-full transition-all duration-500 ease-in-out" 
                 style={{ width: `${(currentStep / totalSteps) * 100}%` }}
               />
             </div>
@@ -308,7 +308,7 @@ export default function OnboardingPage() {
             {currentStep < totalSteps ? (
               <Button 
                 onClick={handleNextWithValidation}
-                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 py-3 rounded-md font-semibold flex items-center gap-2"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-semibold flex items-center gap-2"
               >
                 Next <ArrowRight size={16} />
               </Button>
@@ -316,7 +316,7 @@ export default function OnboardingPage() {
               <Button 
                 onClick={handleComplete}
                 disabled={loading}
-                className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black px-6 py-3 rounded-md font-semibold"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-3 rounded-md font-semibold"
               >
                 {loading ? "Finalizing..." : "Complete Setup"}
               </Button>

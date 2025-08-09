@@ -263,7 +263,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
                       )}
                       onClick={() => handleSelect(result)}
                     >
-                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
                         {getResultIcon(result.type)}
                       </div>
                       

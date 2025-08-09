@@ -114,7 +114,7 @@ export function AccountsCardGrid({ accounts, onViewAccount }: AccountsCardGridPr
             <CardFooter className="p-4 pt-2 flex justify-between gap-2">
               <Button 
                 size="sm" 
-                className="flex-1 bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-black hover:opacity-90"
+                className="flex-1 bg-primary text-black hover:opacity-90"
                 onClick={() => openTopUpDialog(account)}
               >
                 <Wallet className="h-4 w-4 mr-2" />

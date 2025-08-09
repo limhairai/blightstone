@@ -97,7 +97,7 @@ export function ProfessionalFeaturesSection() {
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="text-white/60 text-xs mb-1">Account Balance</div>
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 sm:h-2 flex-1 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-full shadow-[0_0_10px_rgba(180,160,255,0.3)]"></div>
+                      <div className="h-1.5 sm:h-2 flex-1 bg-primary rounded-full shadow-[0_0_10px_rgba(180,160,255,0.3)]"></div>
                       <div className="text-white font-semibold text-xs sm:text-sm">$15,000</div>
                     </div>
                   </div>
@@ -126,7 +126,7 @@ export function ProfessionalFeaturesSection() {
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <span className="text-white/60 text-xs sm:text-sm">Choose Your Entity</span>
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] flex items-center justify-center shadow-[0_0_15px_rgba(180,160,255,0.3)]">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-primary flex items-center justify-center shadow-[0_0_15px_rgba(180,160,255,0.3)]">
                     <Building2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black" />
                   </div>
                 </div>

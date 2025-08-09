@@ -218,7 +218,7 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
       return (
         <Avatar className="h-8 w-8">
           <AvatarImage src="/adhub-icon.png" alt="Blightstone Support" />
-          <AvatarFallback className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white text-xs font-semibold">
+          <AvatarFallback className="bg-primary text-white text-xs font-semibold">
             AH
           </AvatarFallback>
         </Avatar>

@@ -164,7 +164,7 @@ export default function TeamsPage() {
                 <TableRow key={team.id} className="border-border hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-2 min-w-0 cursor-pointer" onClick={() => handleTeamClick(team)}>
-                      <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                      <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                         <Users className="h-4 w-4 text-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -224,7 +224,7 @@ export default function TeamsPage() {
             <div className="space-y-6">
               {/* Team Overview */}
               <div className="grid grid-cols-4 gap-4">
-                <div className="bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 border border-[#b4a0ff]/20 p-3 rounded-lg">
+                <div className="bg-muted border border-[#b4a0ff]/20 p-3 rounded-lg">
                   <div className="text-sm font-medium text-[#b4a0ff]">Profiles</div>
                   <div className="text-2xl font-bold">{selectedTeam.profilesCount}</div>
                   <div className="text-xs text-muted-foreground">{selectedTeam.activeProfiles} active</div>

@@ -499,7 +499,7 @@ export default function AdminApplicationsPage() {
                         <TableRow key={application.applicationId} className="admin-table-row border-border hover:bg-muted/50">
                           <TableCell>
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-[#b4a0ff]/20 to-[#ffb4a0]/20 flex items-center justify-center flex-shrink-0">
+                              <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                                 {requestTypeInfo.icon}
                               </div>
                               <div className="min-w-0 flex-1">
@@ -641,7 +641,7 @@ export default function AdminApplicationsPage() {
                                   size="sm"
                                   onClick={() => handleFulfill(application)}
                                   action="Marking as fulfilled"
-                                  className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0"
+                                  className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                                   disabled={processingId === application.applicationId}
                                 >
                                   {processingId === application.applicationId ? 'Processing...' : 'Mark as Fulfilled'}
@@ -695,7 +695,7 @@ export default function AdminApplicationsPage() {
             <AlertDialogAction 
               onClick={confirmApprove}
               disabled={processingId === applicationToApprove?.applicationId}
-              className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black border-0"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground border-0"
             >
               {processingId === applicationToApprove?.applicationId ? (
                 <>

@@ -213,7 +213,7 @@ export function DashboardSidebar() {
           {collapsed ? (
             <div className="w-full flex justify-center">
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-accent">
-                <span className="text-sm font-semibold bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-transparent">
+                <span className="text-sm font-semibold bg-primary bg-clip-text text-transparent">
                   {/* Replace with actual organization name initials or user initials */}
                   {getInitials()}
                 </span>

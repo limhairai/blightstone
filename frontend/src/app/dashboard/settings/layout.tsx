@@ -226,11 +226,11 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
           <Badge 
             variant="secondary" 
             className={cn(
-              "text-xs font-medium px-3 py-1.5 bg-gradient-to-r from-[#b4a0ff]/10 to-[#ffb4a0]/10 border-[#b4a0ff]/20 text-foreground",
+              "text-xs font-medium px-3 py-1.5 bg-muted border-[#b4a0ff]/20 text-foreground",
               "hover:from-[#b4a0ff]/20 hover:to-[#ffb4a0]/20 transition-all duration-200"
             )}
           >
-            <span className="w-2 h-2 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] rounded-full mr-2"></span>
+            <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
             {planName}
           </Badge>
         </div>

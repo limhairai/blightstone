@@ -160,26 +160,26 @@
 
 @layer base {
   :root {
-    /* Blightstone Dark Mode - Black (#121212) and White */
-    --background: 0 0% 7%; /* #121212 */
-    --foreground: 0 0% 100%; /* Pure white */
-    --card: 0 0% 9%; /* Slightly lighter than background */
-    --card-foreground: 0 0% 100%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%; /* White primary */
-    --primary-foreground: 0 0% 7%; /* Black text on white */
-    --secondary: 0 0% 15%; /* Dark gray */
-    --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 20%; /* Medium gray */
-    --muted-foreground: 0 0% 70%; /* Light gray text */
-    --accent: 0 0% 15%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    /* Blightstone Light Mode - White and Black */
+    --background: 0 0% 100%; /* Pure white background */
+    --foreground: 0 0% 7%; /* #121212 text */
+    --card: 0 0% 98%; /* Slightly off-white */
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 0 0% 7%; /* Black primary */
+    --primary-foreground: 0 0% 100%; /* White text on black */
+    --secondary: 0 0% 95%; /* Light gray */
+    --secondary-foreground: 0 0% 7%;
+    --muted: 0 0% 90%; /* Light gray */
+    --muted-foreground: 0 0% 40%; /* Dark gray text */
+    --accent: 0 0% 95%;
+    --accent-foreground: 0 0% 7%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 25%; /* Gray borders */
-    --input: 0 0% 15%; /* Dark input backgrounds */
-    --ring: 0 0% 100%; /* White focus rings */
+    --border: 0 0% 85%; /* Light gray borders */
+    --input: 0 0% 95%; /* Light input backgrounds */
+    --ring: 0 0% 7%; /* Black focus rings */
 
     /* Status Colors - Dark Mode */
     --status-active-dot: 145 63% 55%;
@@ -215,27 +215,27 @@
     --chart-5: 27 87% 67%;
   }
 
-  .light {
-    /* Blightstone Light Mode - White and Black */
-    --background: 0 0% 100%; /* Pure white background */
-    --foreground: 0 0% 7%; /* #121212 text */
-    --card: 0 0% 98%; /* Slightly off-white */
-    --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 0 0% 7%; /* Black primary */
-    --primary-foreground: 0 0% 100%; /* White text on black */
-    --secondary: 0 0% 95%; /* Light gray */
-    --secondary-foreground: 0 0% 7%;
-    --muted: 0 0% 90%; /* Light gray */
-    --muted-foreground: 0 0% 40%; /* Dark gray text */
-    --accent: 0 0% 95%;
-    --accent-foreground: 0 0% 7%;
-    --destructive: 0 70% 50%;
+  .dark {
+    /* Blightstone Dark Mode - Black (#121212) and White */
+    --background: 0 0% 7%; /* #121212 */
+    --foreground: 0 0% 100%; /* Pure white */
+    --card: 0 0% 9%; /* Slightly lighter than background */
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%; /* White primary */
+    --primary-foreground: 0 0% 7%; /* Black text on white */
+    --secondary: 0 0% 15%; /* Dark gray */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 20%; /* Medium gray */
+    --muted-foreground: 0 0% 70%; /* Light gray text */
+    --accent: 0 0% 15%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 85%; /* Light gray borders */
-    --input: 0 0% 95%; /* Light input backgrounds */
-    --ring: 0 0% 7%; /* Black focus rings */
+    --border: 0 0% 25%; /* Gray borders */
+    --input: 0 0% 15%; /* Dark input backgrounds */
+    --ring: 0 0% 100%; /* White focus rings */
 
     /* Status Colors - Light Mode */
     --status-active-badge-background: 145 85% 98%;

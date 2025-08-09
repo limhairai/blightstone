@@ -91,7 +91,7 @@ export function AccountsFilter({ onFilterChange }: AccountsFilterProps) {
           <div className="w-full sm:w-auto flex items-end gap-2">
             <Button
               type="submit"
-              className="bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-black hover:opacity-90"
+              className="bg-primary text-black hover:opacity-90"
               onClick={() => handleFilterChange(filters)}
             >
               Apply Filters

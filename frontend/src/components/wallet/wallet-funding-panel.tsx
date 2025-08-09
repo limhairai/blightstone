@@ -296,7 +296,7 @@ export function WalletFundingPanel({ onSuccess }: WalletFundingPanelProps) {
 
           <Button 
             type="submit" 
-            className="w-full bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] hover:opacity-90 text-black border-0" 
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground border-0" 
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

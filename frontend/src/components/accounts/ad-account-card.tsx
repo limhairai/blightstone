@@ -88,7 +88,7 @@ export function AdAccountCard({
 
         <div className="flex justify-between gap-2 mt-4">
           <Button
-            className="flex-1 bg-gradient-to-r from-[#b19cd9] to-[#f8c4b4] text-black hover:opacity-90"
+            className="flex-1 bg-primary text-black hover:opacity-90"
             size="sm"
             onClick={onTopUp}
           >

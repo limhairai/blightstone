@@ -115,7 +115,7 @@ export function EmailConfirmationView() {
 
                 <Button
                   onClick={handleBackToLogin}
-              className="w-full h-11 bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] hover:opacity-90 text-black rounded-md font-medium"
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-medium"
                 >
                   Back to Sign In
                 </Button>

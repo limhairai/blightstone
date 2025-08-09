@@ -102,7 +102,7 @@ export function RequestPageDialog({ businessManagers = [] }: RequestPageDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
+        <Button className="bg-gradient-to-r from-primary to-primary hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
           <Plus className="w-4 h-4 mr-2" />
           Request Page
         </Button>
@@ -208,7 +208,7 @@ export function RequestPageDialog({ businessManagers = [] }: RequestPageDialogPr
             <Button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="bg-gradient-to-r from-primary to-primary hover:from-blue-700 hover:to-purple-700"
             >
               {loading ? (
                 <>
