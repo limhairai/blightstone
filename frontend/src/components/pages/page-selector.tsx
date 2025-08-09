@@ -133,9 +133,9 @@ export function PageSelector({
   const getVerificationIcon = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Verified className="h-4 w-4 text-blue-500" />
+        return <Verified className="h-4 w-4 text-foreground" />
       case 'pending':
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />
+        return <AlertCircle className="h-4 w-4 text-muted-foreground" />
       default:
         return <AlertCircle className="h-4 w-4 text-gray-400" />
     }
@@ -172,7 +172,7 @@ export function PageSelector({
           {selectedPages.map((page: FacebookPage) => (
             <div key={page.page_id} className="flex items-center justify-between p-3 border rounded-lg bg-blue-50/50">
               <div className="flex items-center space-x-3">
-                <Facebook className="h-4 w-4 text-blue-600" />
+                <Facebook className="h-4 w-4 text-foreground" />
                 {getVerificationIcon(page.verification_status)}
                 <div>
                   <div className="font-medium">{page.page_name}</div>
@@ -211,7 +211,7 @@ export function PageSelector({
                   disabled={!selectedPageIds.includes(page.page_id) && selectedPageIds.length >= maxPages}
                 />
                 <div className="flex items-center space-x-2 flex-1">
-                  <Facebook className="h-4 w-4 text-blue-600" />
+                  <Facebook className="h-4 w-4 text-foreground" />
                   {getVerificationIcon(page.verification_status)}
                   <div className="flex-1">
                     <div className="font-medium text-sm">{page.page_name}</div>
@@ -264,7 +264,7 @@ export function PageSelector({
             <DialogDescription>
               Add a new Facebook page to your organization.
               {!canAddMore && (
-                <span className="text-red-600 block mt-2">
+                <span className="text-muted-foreground block mt-2">
                   You've reached your plan limit. Upgrade to add more pages.
                 </span>
               )}
@@ -334,7 +334,7 @@ export function PageSelector({
       )}
 
       {required && selectedPageIds.length === 0 && (
-        <p className="text-sm text-red-600 mt-2">
+        <p className="text-sm text-muted-foreground mt-2">
           At least one Facebook page is required for this application.
         </p>
       )}

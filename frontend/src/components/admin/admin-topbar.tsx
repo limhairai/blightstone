@@ -158,7 +158,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium text-popover-foreground">{userEmail}</p>
                 <div className="flex items-center gap-2">
-                  <Crown className="h-3 w-3 text-yellow-500" />
+                  <Crown className="h-3 w-3 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">System Administrator</p>
                 </div>
               </div>

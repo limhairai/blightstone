@@ -225,7 +225,7 @@ export function LandingView() {
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-12 sm:mb-16">
                 <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm px-3 sm:px-4 py-2 text-xs sm:text-sm text-white/80 mb-6 sm:mb-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-                  <span className="flex h-2 w-2 rounded-full bg-green-400 mr-2 sm:mr-3 animate-pulse"></span>
+                  <span className="flex h-2 w-2 rounded-full bg-secondary mr-2 sm:mr-3 animate-pulse"></span>
                   <span>Instant access to Meta ad accounts</span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-6 sm:mb-8 leading-tight">

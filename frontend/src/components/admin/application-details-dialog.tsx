@@ -37,10 +37,10 @@ export function ApplicationDetailsDialog({
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { label: "Pending Review", variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
-      under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-orange-600" },
+      pending: { label: "Pending Review", variant: "secondary" as const, icon: Clock, color: "text-muted-foreground" },
+      under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-muted-foreground" },
       active: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
-      rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
+      rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-muted-foreground" },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -128,7 +128,7 @@ export function ApplicationDetailsDialog({
                       href={application.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex items-center gap-1"
+                      className="text-foreground hover:underline flex items-center gap-1"
                     >
                       {application.website}
                       <ExternalLink className="h-3 w-3" />
@@ -164,8 +164,8 @@ export function ApplicationDetailsDialog({
 
             <div className="space-y-3">
               {/* Application Submitted */}
-              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <div className="flex items-start gap-3 p-3 bg-blue-50 border border-border rounded-lg">
+                <div className="h-8 w-8 bg-secondary rounded-full flex items-center justify-center">
                   <FileText className="h-4 w-4 text-white" />
                 </div>
                 <div className="flex-1">
@@ -183,8 +183,8 @@ export function ApplicationDetailsDialog({
 
               {/* Rejection Reason */}
               {application.rejectionReason && (
-                <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="h-8 w-8 bg-red-600 rounded-full flex items-center justify-center">
+                <div className="flex items-start gap-3 p-3 bg-red-50 border border-border rounded-lg">
+                  <div className="h-8 w-8 bg-muted rounded-full flex items-center justify-center">
                     <XCircle className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex-1">
@@ -201,7 +201,7 @@ export function ApplicationDetailsDialog({
 
               {/* Approval */}
               {application.status === "active" && (
-                <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start gap-3 p-3 bg-green-50 border border-border rounded-lg">
                   <div className="h-8 w-8 bg-[#34D197] rounded-full flex items-center justify-center">
                     <CheckCircle className="h-4 w-4 text-white" />
                   </div>

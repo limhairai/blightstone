@@ -69,7 +69,7 @@ export function AccountsCardGrid({ accounts, onViewAccount }: AccountsCardGridPr
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Account
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="hover:bg-[#1A1A1A] text-red-400 cursor-pointer">
+                    <DropdownMenuItem className="hover:bg-[#1A1A1A] text-muted-foreground cursor-pointer">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete Account
                     </DropdownMenuItem>
@@ -84,10 +84,10 @@ export function AccountsCardGrid({ accounts, onViewAccount }: AccountsCardGridPr
                     variant={account.status === "active" ? "default" : "outline"}
                     className={cn(
                       account.status === "active"
-                        ? "bg-green-500/20 text-green-500 border-green-500"
+                        ? "bg-secondary/20 text-foreground border-border"
                         : account.status === "pending"
-                          ? "bg-yellow-500/10 text-yellow-500 border-yellow-500"
-                          : "bg-red-500/10 text-red-500 border-red-500",
+                          ? "bg-muted/10 text-muted-foreground border-border"
+                          : "bg-muted/10 text-muted-foreground border-border",
                     )}
                   >
                     {account.status.charAt(0).toUpperCase() + account.status.slice(1)}

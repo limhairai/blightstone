@@ -53,7 +53,7 @@ export function BusinessBalancesTable() {
       description: "Funds being allocated to accounts",
       amount: reservedBalance,
       icon: <Clock className="h-4 w-4" />,
-      color: "text-orange-600"
+      color: "text-muted-foreground"
     });
   }
   

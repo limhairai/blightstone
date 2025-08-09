@@ -131,7 +131,7 @@ export function WithdrawBalanceDialog({
       <DialogContent className="sm:max-w-md bg-card border-border">
         <DialogHeader>
           <DialogTitle className="text-foreground flex items-center gap-2">
-            <ArrowUpRight className="h-5 w-5 text-blue-500" />
+            <ArrowUpRight className="h-5 w-5 text-foreground" />
             Withdraw Balance
           </DialogTitle>
         </DialogHeader>

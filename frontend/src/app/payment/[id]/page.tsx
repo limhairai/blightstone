@@ -84,7 +84,7 @@ function PaymentForm({ paymentIntent }: { paymentIntent: PaymentIntent }) {
   if (paymentSuccess) {
     return (
       <div className="text-center py-8">
-        <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+        <CheckCircle className="h-16 w-16 text-foreground mx-auto mb-4" />
         <h2 className="text-2xl font-bold text-[#34D197] mb-2">Payment Successful!</h2>
         <p className="text-muted-foreground mb-4">
           Your wallet has been topped up with ${paymentIntent.amount.toFixed(2)}
@@ -198,7 +198,7 @@ export default function PaymentPage() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle className="text-red-600">Payment Error</CardTitle>
+            <CardTitle className="text-muted-foreground">Payment Error</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">

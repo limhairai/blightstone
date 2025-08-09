@@ -57,7 +57,7 @@ export default function OrganizationsPage() {
   }
   
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error.message}</div>
+    return <div className="flex items-center justify-center p-8 text-muted-foreground">Error: {error.message}</div>
   }
 
 

@@ -123,10 +123,10 @@ export function ApplicationsReviewTable() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { label: "Pending", variant: "secondary" as const, icon: Clock, color: "text-yellow-600" },
-      under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-orange-600" },
+      pending: { label: "Pending", variant: "secondary" as const, icon: Clock, color: "text-muted-foreground" },
+      under_review: { label: "Under Review", variant: "default" as const, icon: AlertTriangle, color: "text-muted-foreground" },
       approved: { label: "Approved", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
-      rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-red-600" },
+      rejected: { label: "Rejected", variant: "destructive" as const, icon: XCircle, color: "text-muted-foreground" },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -359,7 +359,7 @@ export function ApplicationsReviewTable() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleReviewApplication(application)}
-                          className="h-8 px-3 text-blue-600 hover:text-blue-700"
+                          className="h-8 px-3 text-foreground hover:text-foreground"
                         >
                           Review
                         </Button>

@@ -77,8 +77,8 @@ export function MagicLinkView() {
             
             {/* Success icon */}
             <div className="flex justify-center">
-              <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+              <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-foreground" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>

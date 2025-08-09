@@ -233,7 +233,7 @@ export function AdminTeamManagement() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem 
                           onSelect={() => revokeAdmin(admin.id, admin.email)} 
-                          className="text-red-500"
+                          className="text-muted-foreground"
                           disabled={revoking === admin.id}
                         >
                           {revoking === admin.id ? "Removing..." : "Remove admin access"}

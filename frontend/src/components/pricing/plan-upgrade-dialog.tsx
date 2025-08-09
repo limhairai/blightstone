@@ -282,7 +282,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                         + {plan.adSpendFee}% ad spend fee
                       </p>
                     ) : (
-                      <p className="text-sm text-green-600 dark:text-green-400">
+                      <p className="text-sm text-foreground dark:text-foreground">
                         No ad spend fee
                       </p>
                     )}
@@ -293,7 +293,7 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                     <ul className="space-y-2.5">
                       {getFeatures(plan).map((feature, index) => (
                         <li key={index} className="flex items-start">
-                          <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                          <Check className="h-4 w-4 text-foreground mr-3 mt-0.5 flex-shrink-0" />
                           <div className="flex items-center gap-1">
                             <span className="text-sm text-muted-foreground">{feature.text}</span>
                             {feature.hasTooltip && (
@@ -363,19 +363,19 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                   <h4 className="text-sm font-medium text-foreground mb-3">Enhanced Features</h4>
                   <ul className="space-y-2">
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Unlimited Active Business Managers</span>
                     </li>
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Unlimited Active Ad Accounts</span>
                     </li>
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Unlimited Pixels & Domains</span>
                     </li>
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">No monthly spend limits</span>
                     </li>
                   </ul>
@@ -384,19 +384,19 @@ export function PlanUpgradeDialog({ open, onOpenChange, redirectToPage = false }
                   <h4 className="text-sm font-medium text-foreground mb-3">Premium Support</h4>
                   <ul className="space-y-2">
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Connect your own credit card</span>
                     </li>
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">White glove services</span>
                     </li>
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Dedicated account manager</span>
                     </li>
                     <li className="flex items-start">
-                      <Check className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <Check className="h-4 w-4 text-foreground mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">Attach your BMs and ad accounts</span>
                     </li>
                   </ul>

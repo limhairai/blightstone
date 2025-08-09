@@ -22,21 +22,21 @@ export function ApplicationsStats() {
       label: "Total Applications",
       value: totalApplications,
       icon: FileText,
-      color: "text-blue-600",
+      color: "text-foreground",
       bgColor: "bg-blue-50",
     },
     {
       label: "Pending Review",
       value: pendingApplications,
       icon: Clock,
-      color: "text-yellow-600",
+      color: "text-muted-foreground",
       bgColor: "bg-yellow-50",
     },
     {
       label: "Under Review",
       value: underReviewApplications,
       icon: AlertTriangle,
-      color: "text-orange-600",
+      color: "text-muted-foreground",
       bgColor: "bg-orange-50",
     },
     {
@@ -50,7 +50,7 @@ export function ApplicationsStats() {
       label: "Rejected",
       value: rejectedApplications,
       icon: XCircle,
-      color: "text-red-600",
+      color: "text-muted-foreground",
       bgColor: "bg-red-50",
     },
   ];

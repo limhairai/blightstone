@@ -168,9 +168,9 @@ export function VirtualizedInfrastructureTable({
       width: 120,
       render: (profile) => (
         <span className={`px-2 py-1 rounded-full text-xs ${
-          profile?.status === 'active' ? 'bg-green-100 text-green-800' :
-          profile?.status === 'banned' ? 'bg-red-100 text-red-800' :
-          'bg-yellow-100 text-yellow-800'
+          profile?.status === 'active' ? 'bg-secondary text-foreground' :
+          profile?.status === 'banned' ? 'bg-muted text-muted-foreground' :
+          'bg-muted text-muted-foreground'
         }`}>
           {profile?.status || 'Unknown'}
         </span>
@@ -193,7 +193,7 @@ export function VirtualizedInfrastructureTable({
       header: 'Actions',
       width: 100,
       render: () => (
-        <button className="text-blue-600 hover:underline text-sm">
+        <button className="text-foreground hover:underline text-sm">
           View Details
         </button>
       )
@@ -243,8 +243,8 @@ export function VirtualizedTransactionsTable({
       width: 100,
       render: (txn) => (
         <span className={`px-2 py-1 rounded-full text-xs ${
-          txn?.type === 'top_up' ? 'bg-green-100 text-green-800' :
-          txn?.type === 'refund' ? 'bg-red-100 text-red-800' :
+          txn?.type === 'top_up' ? 'bg-secondary text-foreground' :
+          txn?.type === 'refund' ? 'bg-muted text-muted-foreground' :
           'bg-gray-100 text-gray-800'
         }`}>
           {txn?.type || 'Unknown'}
@@ -267,9 +267,9 @@ export function VirtualizedTransactionsTable({
       width: 120,
       render: (txn) => (
         <span className={`px-2 py-1 rounded-full text-xs ${
-          txn?.status === 'completed' ? 'bg-green-100 text-green-800' :
-          txn?.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-          'bg-red-100 text-red-800'
+          txn?.status === 'completed' ? 'bg-secondary text-foreground' :
+          txn?.status === 'processing' ? 'bg-muted text-muted-foreground' :
+          'bg-muted text-muted-foreground'
         }`}>
           {txn?.status || 'Unknown'}
         </span>

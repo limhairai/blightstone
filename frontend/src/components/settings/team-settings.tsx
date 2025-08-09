@@ -182,7 +182,7 @@ export function TeamSettings() {
       case "owner":
         return <Badge className="bg-emerald-950/50 text-emerald-400 border-emerald-700">Owner</Badge>
       case "admin":
-        return <Badge className="bg-blue-950/50 text-blue-400 border-blue-700">Admin</Badge>
+        return <Badge className="bg-secondary/50 text-foreground border-border">Admin</Badge>
       case "member":
         return <span>Member</span>
       default:
@@ -196,13 +196,13 @@ export function TeamSettings() {
         return null // No badge for active users
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-950/50 text-yellow-400 border-yellow-700">
+          <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border">
             Pending
           </Badge>
         )
       case "suspended":
         return (
-          <Badge variant="outline" className="bg-red-950/50 text-red-400 border-red-700">
+          <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border">
             Suspended
           </Badge>
         )
@@ -325,7 +325,7 @@ export function TeamSettings() {
             {isTeamLoading && Array.from({ length: 3 }).map((_, i) => (
               <tr key={i}><td colSpan={4}><Skeleton className="h-12 w-full" /></td></tr>
             ))}
-            {teamError && <tr><td colSpan={4} className="text-center text-red-500 p-4">Failed to load team members.</td></tr>}
+            {teamError && <tr><td colSpan={4} className="text-center text-muted-foreground p-4">Failed to load team members.</td></tr>}
             {!isTeamLoading && !teamError && filteredMembers.map((member: TeamMember) => (
               <tr key={member.id} className="hover:bg-muted/30 transition-colors">
                 <td className="py-3 px-4">
@@ -368,7 +368,7 @@ export function TeamSettings() {
                         <DropdownMenuItem onSelect={() => handleRoleChange(member.id, 'admin')}>Change role to Admin</DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleRoleChange(member.id, 'member')}>Change role to Member</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleRemoveMember(member)} className="text-red-500">
+                        <DropdownMenuItem onSelect={() => handleRemoveMember(member)} className="text-muted-foreground">
                           Remove from team
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -397,7 +397,7 @@ export function TeamSettings() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRemoveMember} disabled={loading} className="bg-red-500 hover:bg-red-600">
+            <AlertDialogAction onClick={confirmRemoveMember} disabled={loading} className="bg-muted hover:bg-muted">
               {loading ? "Removing..." : "Remove Member"}
             </AlertDialogAction>
           </AlertDialogFooter>

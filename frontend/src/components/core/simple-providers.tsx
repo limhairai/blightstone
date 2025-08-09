@@ -46,7 +46,7 @@ function FullScreenLoader() {
 
 function ErrorScreen({ message }: { message: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center text-red-500">
+    <div className="min-h-screen flex items-center justify-center text-muted-foreground">
       {message}
     </div>
   );

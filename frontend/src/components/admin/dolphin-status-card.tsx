@@ -68,9 +68,9 @@ export function DolphinStatusCard() {
 
     const config = {
       healthy: { label: 'Connected & Authenticated', variant: 'default' as const, icon: CheckCircle, color: 'text-[#34D197]' },
-      partial: { label: 'Connected (No Auth)', variant: 'secondary' as const, icon: AlertTriangle, color: 'text-yellow-600' },
-      unhealthy: { label: 'Authentication Failed', variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' },
-      error: { label: 'Connection Error', variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' }
+      partial: { label: 'Connected (No Auth)', variant: 'secondary' as const, icon: AlertTriangle, color: 'text-muted-foreground' },
+      unhealthy: { label: 'Authentication Failed', variant: 'destructive' as const, icon: AlertTriangle, color: 'text-muted-foreground' },
+      error: { label: 'Connection Error', variant: 'destructive' as const, icon: AlertTriangle, color: 'text-muted-foreground' }
     };
 
     const statusConfig = config[healthStatus.status];
@@ -143,12 +143,12 @@ export function DolphinStatusCard() {
             </div>
 
             {healthStatus.status !== 'healthy' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <div className="bg-yellow-50 border border-border rounded-lg p-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                  <AlertTriangle className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="text-sm">
-                    <div className="font-medium text-yellow-800">Setup Required</div>
-                    <div className="text-yellow-700 mt-1">
+                    <div className="font-medium text-muted-foreground">Setup Required</div>
+                    <div className="text-muted-foreground mt-1">
                       {healthStatus.auth_status === 'no_token' ? 
                         'Please ensure you are logged in as an admin user.' :
                         healthStatus.auth_status === 'auth_failed' ?

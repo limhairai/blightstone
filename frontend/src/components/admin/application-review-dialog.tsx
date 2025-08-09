@@ -92,12 +92,12 @@ export function ApplicationReviewDialog({
       reject: {
         label: "Reject Application",
         icon: XCircle,
-        className: "bg-red-600 hover:bg-red-700 text-white",
+        className: "bg-muted hover:bg-muted text-white",
       },
       "more-info": {
         label: "Request More Information",
         icon: MessageSquare,
-        className: "bg-orange-600 hover:bg-orange-700 text-white",
+        className: "bg-muted hover:bg-muted text-white",
       },
     };
 
@@ -157,7 +157,7 @@ export function ApplicationReviewDialog({
                         href={application.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline flex items-center gap-1"
+                        className="text-foreground hover:underline flex items-center gap-1"
                       >
                         {application.website}
                         <ExternalLink className="h-3 w-3" />
@@ -208,7 +208,7 @@ export function ApplicationReviewDialog({
               </h3>
               
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-border rounded-lg">
                   <span className="text-sm font-medium">Website Verification</span>
                   <Badge variant="default" className="bg-[#34D197]">
                     <CheckCircle className="h-3 w-3 mr-1" />
@@ -216,7 +216,7 @@ export function ApplicationReviewDialog({
                   </Badge>
                 </div>
                 
-                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-border rounded-lg">
                   <span className="text-sm font-medium">Industry Compliance</span>
                   <Badge variant="default" className="bg-[#34D197]">
                     <CheckCircle className="h-3 w-3 mr-1" />
@@ -224,9 +224,9 @@ export function ApplicationReviewDialog({
                   </Badge>
                 </div>
                 
-                <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center justify-between p-3 bg-yellow-50 border border-border rounded-lg">
                   <span className="text-sm font-medium">Documentation</span>
-                  <Badge variant="secondary" className="bg-yellow-600 text-white">
+                  <Badge variant="secondary" className="bg-muted text-white">
                     <AlertTriangle className="h-3 w-3 mr-1" />
                     Review Required
                   </Badge>
@@ -257,7 +257,7 @@ export function ApplicationReviewDialog({
                   onClick={() => setActiveTab("reject")}
                   className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                     activeTab === "reject"
-                      ? "bg-red-600 text-white"
+                      ? "bg-muted text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -268,7 +268,7 @@ export function ApplicationReviewDialog({
                   onClick={() => setActiveTab("more-info")}
                   className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                     activeTab === "more-info"
-                      ? "bg-orange-600 text-white"
+                      ? "bg-muted text-white"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >

@@ -60,10 +60,10 @@ export function AdAccountCard({
               variant={status === "active" ? "default" : "outline"}
               className={cn(
                 status === "active"
-                  ? "bg-green-500/20 text-green-500 border-green-500"
+                  ? "bg-secondary/20 text-foreground border-border"
                   : status === "pending"
-                    ? "bg-yellow-500/10 text-yellow-500 border-yellow-500"
-                    : "bg-red-500/10 text-red-500 border-red-500",
+                    ? "bg-muted/10 text-muted-foreground border-border"
+                    : "bg-muted/10 text-muted-foreground border-border",
               )}
             >
               {status.charAt(0).toUpperCase() + status.slice(1)}

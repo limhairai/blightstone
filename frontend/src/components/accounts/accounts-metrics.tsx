@@ -180,7 +180,7 @@ export default function AccountMetrics() {
               {metric.percentage !== undefined && (
                 <div className="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700 mt-1">
                   <div
-                    className="h-full rounded-full bg-blue-500 transition-all duration-500"
+                    className="h-full rounded-full bg-secondary transition-all duration-500"
                     style={{ width: `${metric.percentage}%` }}
                   />
                 </div>

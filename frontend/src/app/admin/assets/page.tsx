@@ -438,7 +438,7 @@ export default function AssetsPage() {
                       <div className="font-medium flex items-center gap-2">
                         {asset.name}
                         {type === 'facebook_page' && (asset.metadata as any)?.verification_status === 'verified' && (
-                          <Verified className="h-3 w-3 text-blue-500" />
+                          <Verified className="h-3 w-3 text-foreground" />
                         )}
                       </div>
                       <div className="text-sm text-muted-foreground">

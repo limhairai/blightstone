@@ -118,7 +118,7 @@ export function TagsCard({ tags, orgId, onTagsChange }: TagsCardProps) {
             </DialogHeader>
             <div className="space-y-4">
               {error && (
-                <div className="text-red-600 text-sm">{error}</div>
+                <div className="text-muted-foreground text-sm">{error}</div>
               )}
               <div>
                 <Label htmlFor="new-tag">Tag Name</Label>
@@ -151,7 +151,7 @@ export function TagsCard({ tags, orgId, onTagsChange }: TagsCardProps) {
             <div key={i} className="flex items-center gap-1">
               <Badge 
                 variant="outline" 
-                className="bg-blue-100 text-blue-800 border-blue-200 cursor-pointer hover:bg-blue-200"
+                className="bg-secondary text-foreground border-border cursor-pointer hover:bg-secondary"
                 onClick={() => handleEditTag(i)}
               >
                 {tag}
@@ -160,10 +160,10 @@ export function TagsCard({ tags, orgId, onTagsChange }: TagsCardProps) {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-5 w-5 p-0 hover:bg-red-100"
+                className="h-5 w-5 p-0 hover:bg-muted"
                 onClick={() => handleRemoveTag(i)}
               >
-                <X className="h-3 w-3 text-red-600" />
+                <X className="h-3 w-3 text-muted-foreground" />
               </Button>
             </div>
           ))
@@ -179,7 +179,7 @@ export function TagsCard({ tags, orgId, onTagsChange }: TagsCardProps) {
             </DialogHeader>
             <div className="space-y-4">
               {error && (
-                <div className="text-red-600 text-sm">{error}</div>
+                <div className="text-muted-foreground text-sm">{error}</div>
               )}
               <div>
                 <Label htmlFor="edit-tag">Tag Name</Label>

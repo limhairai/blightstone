@@ -489,7 +489,7 @@ export function ApplicationAssetBindingDialog({
                             <div className="text-xs text-muted-foreground">
                               {('dolphin_id' in bm && bm.dolphin_id) || bm.id}
                               {mode === 'additional-accounts-general' && (
-                                <span className="ml-2 text-blue-600">
+                                <span className="ml-2 text-foreground">
                                   {getCurrentAccountCount}/7 accounts
                                 </span>
                               )}
@@ -505,10 +505,10 @@ export function ApplicationAssetBindingDialog({
 
               {/* Pre-selected BM info for specific mode */}
               {mode === 'additional-accounts-specific' && selectedBM && (
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
+                <div className="bg-blue-50 border border-border rounded-md p-3">
                   <div className="text-sm">
-                    <div className="font-medium text-blue-900">{selectedBM.name}</div>
-                    <div className="text-xs text-blue-600">{('dolphin_id' in selectedBM && selectedBM.dolphin_id) || selectedBM.id}</div>
+                    <div className="font-medium text-foreground">{selectedBM.name}</div>
+                    <div className="text-xs text-foreground">{('dolphin_id' in selectedBM && selectedBM.dolphin_id) || selectedBM.id}</div>
                   </div>
                 </div>
               )}

@@ -318,12 +318,12 @@ export function OrganizationSelector() {
     return (
       <Button
         variant="outline"
-        className="w-full justify-between bg-background border-border text-red-600"
+        className="w-full justify-between bg-background border-border text-muted-foreground"
         disabled
       >
         <div className="flex items-center">
-          <div className="h-6 w-6 mr-2 rounded-full bg-red-100 flex items-center justify-center">
-            <span className="text-red-600 text-xs">!</span>
+          <div className="h-6 w-6 mr-2 rounded-full bg-muted flex items-center justify-center">
+            <span className="text-muted-foreground text-xs">!</span>
           </div>
           <div className="flex flex-col items-start">
             <span className="text-sm font-medium">Error loading organizations</span>
@@ -470,8 +470,8 @@ export function OrganizationSelector() {
                         <div className="flex items-center text-xs text-muted-foreground">
                           <span className={cn(
                             "inline-block w-2 h-2 rounded-full mr-2",
-                            bm.status === "active" ? "bg-green-500" : 
-                            bm.status === "pending" ? "bg-yellow-500" : "bg-red-500"
+                            bm.status === "active" ? "bg-secondary" : 
+                            bm.status === "pending" ? "bg-muted" : "bg-muted"
                           )} />
                           <span className="mr-2 capitalize">{bm.status}</span>
                           <span>{bm.accountCount} accounts</span>

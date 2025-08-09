@@ -44,13 +44,13 @@ interface PixelRequest {
 function getStatusBadge(status: string) {
   switch (status) {
     case 'pending':
-      return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
+      return <Badge variant="secondary" className="bg-muted text-muted-foreground border-border"><Clock className="w-3 h-3 mr-1" />Pending</Badge>
     case 'processing':
-      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200"><RefreshCw className="w-3 h-3 mr-1" />Processing</Badge>
+      return <Badge variant="secondary" className="bg-secondary text-foreground border-border"><RefreshCw className="w-3 h-3 mr-1" />Processing</Badge>
     case 'rejected':
       return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>
     case 'completed':
-      return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>
+      return <Badge variant="secondary" className="bg-secondary text-foreground border-border"><CheckCircle className="w-3 h-3 mr-1" />Completed</Badge>
     default:
       return <Badge variant="outline">{status}</Badge>
   }
@@ -209,10 +209,10 @@ export default function AdminPixelRequestsPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-1">
                       <div className={`h-2 w-2 rounded-full ${
-                        request.status === 'pending' ? 'bg-yellow-500' :
-                        request.status === 'processing' ? 'bg-blue-500' :
-                        request.status === 'completed' ? 'bg-green-500' :
-                        'bg-red-500'
+                        request.status === 'pending' ? 'bg-muted' :
+                        request.status === 'processing' ? 'bg-secondary' :
+                        request.status === 'completed' ? 'bg-secondary' :
+                        'bg-muted'
                       }`} />
                       <span className="text-xs font-medium capitalize">{request.status}</span>
                     </div>
@@ -273,7 +273,7 @@ export default function AdminPixelRequestsPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center p-8 text-red-600">
+      <div className="flex items-center justify-center p-8 text-muted-foreground">
         <AlertCircle className="h-6 w-6 mr-2" />
         Failed to load pixel requests
       </div>

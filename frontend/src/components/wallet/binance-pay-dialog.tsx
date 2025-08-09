@@ -166,11 +166,11 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending':
-        return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+        return 'bg-muted/10 text-muted-foreground border-border/20'
       case 'completed':
-        return 'bg-green-500/10 text-green-500 border-green-500/20'
+        return 'bg-secondary/10 text-foreground border-border/20'
       case 'failed':
-        return 'bg-red-500/10 text-red-500 border-red-500/20'
+        return 'bg-muted/10 text-muted-foreground border-border/20'
       case 'expired':
         return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
       default:
@@ -356,8 +356,8 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
                 {order.status === 'completed' && (
                   <Card>
                     <CardContent className="p-6 text-center">
-                      <CheckCircle className="h-16 w-16 mx-auto mb-4 text-green-500" />
-                      <div className="text-lg font-medium text-green-600 mb-2">Payment Completed!</div>
+                      <CheckCircle className="h-16 w-16 mx-auto mb-4 text-foreground" />
+                      <div className="text-lg font-medium text-foreground mb-2">Payment Completed!</div>
                       <div className="text-sm text-muted-foreground">
                         Your wallet has been credited with ${formatCurrency(amount)}
                       </div>
@@ -368,8 +368,8 @@ export function BinancePayDialog({ isOpen, onClose, amount, onSuccess }: Binance
                 {(order.status === 'failed' || order.status === 'expired') && (
                   <Card>
                     <CardContent className="p-6 text-center">
-                      <XCircle className="h-16 w-16 mx-auto mb-4 text-red-500" />
-                      <div className="text-lg font-medium text-red-600 mb-2">
+                      <XCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                      <div className="text-lg font-medium text-muted-foreground mb-2">
                         Payment {order.status === 'expired' ? 'Expired' : 'Failed'}
                       </div>
                       <div className="text-sm text-muted-foreground mb-4">

@@ -481,11 +481,11 @@ export function OrganizationSettings() {
           </Card>
 
           {/* Danger Zone */}
-          <Card className="bg-card border border-red-800/30">
+          <Card className="bg-card border border-border/30">
             <CardHeader className="py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base font-semibold text-red-400 flex items-center gap-2">
+                  <CardTitle className="text-base font-semibold text-muted-foreground flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" />
                     Danger Zone
                   </CardTitle>
@@ -631,7 +631,7 @@ export function OrganizationSettings() {
       <Dialog open={deleteOrgOpen} onOpenChange={setDeleteOrgOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-red-400 flex items-center gap-2">
+            <DialogTitle className="text-muted-foreground flex items-center gap-2">
               <AlertTriangle />
               Delete Organization
             </DialogTitle>
@@ -649,7 +649,7 @@ export function OrganizationSettings() {
               id="confirmDelete"
               value={confirmDeleteText}
               onChange={(e) => setConfirmDeleteText(e.target.value)}
-              className="border-border focus:border-red-500"
+              className="border-border focus:border-border"
               autoFocus
             />
           </div>
@@ -699,9 +699,9 @@ export function OrganizationSettings() {
                           <Badge 
                             className={
                               invoice.status === 'paid' 
-                                ? 'bg-green-100 text-green-800 border-green-200' 
+                                ? 'bg-secondary text-foreground border-border' 
                                 : invoice.status === 'open'
-                                ? 'bg-blue-100 text-blue-800 border-blue-200'
+                                ? 'bg-secondary text-foreground border-border'
                                 : gradientTokens.primary
                             }
                           >
@@ -756,7 +756,7 @@ export function OrganizationSettings() {
                   <div key={method.id} className="p-4 border border-border rounded-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-5 bg-blue-600 rounded flex items-center justify-center">
+                        <div className="w-8 h-5 bg-secondary rounded flex items-center justify-center">
                           <span className="text-white text-xs font-bold">
                             {method.card?.brand?.toUpperCase() || 'CARD'}
                           </span>

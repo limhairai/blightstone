@@ -24,9 +24,9 @@ export function AdminStats({ isSuperuser }: { isSuperuser: boolean }) {
       .finally(() => setLoading(false))
   }, [isSuperuser])
 
-  if (!isSuperuser) return <div className="p-4 text-center text-red-500">Not authorized</div>
+  if (!isSuperuser) return <div className="p-4 text-center text-muted-foreground">Not authorized</div>
   if (loading) return <div className="p-4 text-center">Loading stats...</div>
-  if (error) return <div className="p-4 text-center text-red-500">{error}</div>
+  if (error) return <div className="p-4 text-center text-muted-foreground">{error}</div>
 
   return (
     <Card>

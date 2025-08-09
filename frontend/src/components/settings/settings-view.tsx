@@ -171,7 +171,7 @@ export function SettingsView() {
               <CardContent className="space-y-3 p-3 pt-0">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="businessName" className="text-xs">Business Name <span className="text-red-500">*</span></Label>
+                    <Label htmlFor="businessName" className="text-xs">Business Name <span className="text-muted-foreground">*</span></Label>
                     {isEditing ? (
                       <Input id="businessName" value={formData.businessName} onChange={(e) => setFormData({ ...formData, businessName: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -179,7 +179,7 @@ export function SettingsView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="businessType" className="text-xs">Business Type <span className="text-red-500">*</span></Label>
+                    <Label htmlFor="businessType" className="text-xs">Business Type <span className="text-muted-foreground">*</span></Label>
                     {isEditing ? (
                       <Select value={formData.businessType} onValueChange={(value) => setFormData({ ...formData, businessType: value })}>
                         <SelectTrigger className="h-8 text-xs">
@@ -199,7 +199,7 @@ export function SettingsView() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label htmlFor="taxId" className="text-xs">Tax ID (EIN) <span className="text-red-500">*</span></Label>
+                    <Label htmlFor="taxId" className="text-xs">Tax ID (EIN) <span className="text-muted-foreground">*</span></Label>
                     {isEditing ? (
                       <Input id="taxId" value={formData.taxId} onChange={(e) => setFormData({ ...formData, taxId: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -224,7 +224,7 @@ export function SettingsView() {
               </CardHeader>
               <CardContent className="space-y-3 p-3 pt-0">
                 <div className="space-y-1">
-                  <Label htmlFor="address" className="text-xs">Street Address <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="address" className="text-xs">Street Address <span className="text-muted-foreground">*</span></Label>
                   {isEditing ? (
                     <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="h-8 text-xs" />
                   ) : (
@@ -233,7 +233,7 @@ export function SettingsView() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1">
-                                          <Label htmlFor="city" className="text-xs">City <span className="text-red-500">*</span></Label>
+                                          <Label htmlFor="city" className="text-xs">City <span className="text-muted-foreground">*</span></Label>
                     {isEditing ? (
                       <Input id="city" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -241,7 +241,7 @@ export function SettingsView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                                          <Label htmlFor="state" className="text-xs">State <span className="text-red-500">*</span></Label>
+                                          <Label htmlFor="state" className="text-xs">State <span className="text-muted-foreground">*</span></Label>
                     {isEditing ? (
                       <Input id="state" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -249,7 +249,7 @@ export function SettingsView() {
                     )}
                   </div>
                   <div className="space-y-1">
-                                          <Label htmlFor="zipCode" className="text-xs">ZIP Code <span className="text-red-500">*</span></Label>
+                                          <Label htmlFor="zipCode" className="text-xs">ZIP Code <span className="text-muted-foreground">*</span></Label>
                     {isEditing ? (
                       <Input id="zipCode" value={formData.zipCode} onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })} className="h-8 text-xs" />
                     ) : (
@@ -258,7 +258,7 @@ export function SettingsView() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="phoneNumber" className="text-xs">Phone Number <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="phoneNumber" className="text-xs">Phone Number <span className="text-muted-foreground">*</span></Label>
                   {isEditing ? (
                     <Input id="phoneNumber" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} className="h-8 text-xs" />
                   ) : (
@@ -267,9 +267,9 @@ export function SettingsView() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="md:col-span-2 bg-red-500/5 border-red-200/20">
+            <Card className="md:col-span-2 bg-muted/5 border-border/20">
               <CardHeader className="pb-2">
-                <CardTitle className="text-red-500 text-base">Danger Zone</CardTitle>
+                <CardTitle className="text-muted-foreground text-base">Danger Zone</CardTitle>
                 <CardDescription className="text-xs">These actions are irreversible and should be used with caution.</CardDescription>
               </CardHeader>
               <CardContent className="p-3 pt-0">

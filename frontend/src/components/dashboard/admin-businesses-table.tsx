@@ -271,7 +271,7 @@ export function BusinessesTable() {
 
       {error && (
         <div className="text-center py-12 bg-card border border-border rounded-lg">
-          <p className="text-red-500">Failed to load businesses.</p>
+          <p className="text-muted-foreground">Failed to load businesses.</p>
         </div>
       )}
 

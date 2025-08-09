@@ -316,25 +316,25 @@ export default function AdminApplicationsPage() {
     const configs = {
       pending: { 
         label: "Pending", 
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800", 
+        className: "bg-muted text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border", 
         icon: Clock, 
         color: "text-[#FFC857]" 
       },
       processing: { 
         label: "Processing", 
-        className: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800", 
+        className: "bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border", 
         icon: AlertCircle, 
-        color: "text-blue-500" 
+        color: "text-foreground" 
       },
       fulfilled: { 
         label: "Fulfilled", 
-        className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", 
+        className: "bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border", 
         icon: CheckCircle, 
         color: "text-[#34D197]" 
       },
       rejected: { 
         label: "Rejected", 
-        className: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", 
+        className: "bg-muted text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border", 
         icon: AlertCircle, 
         color: "text-[#F56565]" 
       },
@@ -427,7 +427,7 @@ export default function AdminApplicationsPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center p-8 text-red-600">
+      <div className="flex items-center justify-center p-8 text-muted-foreground">
         <AlertCircle className="h-6 w-6 mr-2" />
         Failed to load applications: {error.message}
       </div>
@@ -566,8 +566,8 @@ export default function AdminApplicationsPage() {
                                     <div className="mt-2 pt-2 border-t border-muted">
                                       <div className="text-xs text-muted-foreground mb-1">Pages to create:</div>
                                       {application.pagesToCreate.map((page: any, index: number) => (
-                                        <div key={index} className="flex items-center gap-1 text-xs text-blue-600">
-                                          <FileText className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                        <div key={index} className="flex items-center gap-1 text-xs text-foreground">
+                                          <FileText className="h-3 w-3 text-foreground flex-shrink-0" />
                                           <span className="truncate">{page.name}</span>
                                         </div>
                                       ))}
@@ -585,10 +585,10 @@ export default function AdminApplicationsPage() {
                             <div className="space-y-1">
                               <div className="flex items-center gap-1">
                                 <div className={`h-2 w-2 rounded-full ${
-                                  application.status === 'pending' ? 'bg-yellow-500' :
-                                  application.status === 'processing' ? 'bg-blue-500' :
-                                  application.status === 'fulfilled' ? 'bg-green-500' :
-                                  'bg-red-500'
+                                  application.status === 'pending' ? 'bg-muted' :
+                                  application.status === 'processing' ? 'bg-secondary' :
+                                  application.status === 'fulfilled' ? 'bg-secondary' :
+                                  'bg-muted'
                                 }`} />
                                 <span className="text-xs font-medium capitalize">{application.status}</span>
                               </div>

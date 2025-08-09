@@ -29,8 +29,8 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 space-y-4">
-      <div className="rounded-full p-3 bg-red-100 dark:bg-red-900/20">
-        <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+      <div className="rounded-full p-3 bg-muted dark:bg-muted/20">
+        <AlertCircle className="h-6 w-6 text-muted-foreground dark:text-muted-foreground" />
       </div>
       <div className="text-center space-y-2">
         <h3 className="text-lg font-medium text-foreground">{title}</h3>

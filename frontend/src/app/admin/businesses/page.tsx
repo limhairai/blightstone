@@ -199,11 +199,11 @@ export default function BusinessesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-secondary text-foreground">Active</Badge>;
       case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Pending</Badge>;
       case "suspended":
-        return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Suspended</Badge>;
       case "inactive":
         return <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>;
       default:
@@ -214,21 +214,21 @@ export default function BusinessesPage() {
   const getRiskBadge = (level: string) => {
     switch (level) {
       case "high":
-        return <Badge className="bg-red-100 text-red-800">High Risk</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">High Risk</Badge>;
       case "medium":
-        return <Badge className="bg-yellow-100 text-yellow-800">Medium Risk</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Medium Risk</Badge>;
       case "low":
-        return <Badge className="bg-green-100 text-green-800">Low Risk</Badge>;
+        return <Badge className="bg-secondary text-foreground">Low Risk</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
   const getHealthBadge = (score: number) => {
-    if (score >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
-    if (score >= 60) return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;
-    if (score >= 40) return <Badge className="bg-yellow-100 text-yellow-800">Fair</Badge>;
-    return <Badge className="bg-red-100 text-red-800">Poor</Badge>;
+    if (score >= 80) return <Badge className="bg-secondary text-foreground">Excellent</Badge>;
+    if (score >= 60) return <Badge className="bg-secondary text-foreground">Good</Badge>;
+    if (score >= 40) return <Badge className="bg-muted text-muted-foreground">Fair</Badge>;
+    return <Badge className="bg-muted text-muted-foreground">Poor</Badge>;
   };
 
   const formatCurrency = (amount: number) => {
@@ -273,8 +273,8 @@ export default function BusinessesPage() {
                 <p className="text-sm font-medium text-muted-foreground">Total Businesses</p>
                 <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-foreground" />
               </div>
             </div>
           </CardContent>
@@ -287,7 +287,7 @@ export default function BusinessesPage() {
                 <p className="text-sm font-medium text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold text-[#34D197]">{stats.active.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
                 <CheckCircle className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
@@ -301,8 +301,8 @@ export default function BusinessesPage() {
                 <p className="text-sm font-medium text-muted-foreground">Total Spend</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalSpend)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-purple-600" />
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                <DollarSign className="h-6 w-6 text-foreground" />
               </div>
             </div>
           </CardContent>
@@ -315,8 +315,8 @@ export default function BusinessesPage() {
                 <p className="text-sm font-medium text-muted-foreground">Ad Accounts</p>
                 <p className="text-2xl font-bold">{stats.totalAccounts.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
-                <Target className="h-6 w-6 text-orange-600" />
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <Target className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -327,10 +327,10 @@ export default function BusinessesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">High Risk</p>
-                <p className="text-2xl font-bold text-red-600">{stats.highRiskBusinesses}</p>
+                <p className="text-2xl font-bold text-muted-foreground">{stats.highRiskBusinesses}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
@@ -341,10 +341,10 @@ export default function BusinessesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Low Health</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.lowHealthBusinesses}</p>
+                <p className="text-2xl font-bold text-muted-foreground">{stats.lowHealthBusinesses}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                <Activity className="h-6 w-6 text-yellow-600" />
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <Activity className="h-6 w-6 text-muted-foreground" />
               </div>
             </div>
           </CardContent>

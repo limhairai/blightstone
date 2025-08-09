@@ -384,7 +384,7 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
                       {/* ⚡ INSTANT FEEDBACK: Sending/Failed indicators */}
                       {message.sending && (
                         <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-background rounded-full flex items-center justify-center border">
-                          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />
+                          <div className="w-1.5 h-1.5 bg-muted rounded-full animate-pulse" />
                         </div>
                       )}
                       

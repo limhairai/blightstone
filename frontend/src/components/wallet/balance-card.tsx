@@ -39,7 +39,7 @@ export function BalanceCard({ balance, growth }: BalanceCardProps) {
           <div className="space-y-1">
             <p className={typographyTokens.patterns.mutedMedium}>Available for ad account funding</p>
             {reservedBalance > 0 && (
-              <p className={`${typographyTokens.patterns.bodySmall} text-orange-600`}>
+              <p className={`${typographyTokens.patterns.bodySmall} text-muted-foreground`}>
                 {formatCurrency(reservedBalance)} processing for allocation
               </p>
             )}

@@ -364,11 +364,11 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
                           onChange={(e) => updateDomain(index, e.target.value)}
                           placeholder={index === 0 ? "example.com (primary domain)" : "additional-domain.com (optional)"}
                           className={`bg-background border-border text-foreground ${
-                            validation && !validation.isValid ? 'border-red-500' : ''
+                            validation && !validation.isValid ? 'border-border' : ''
                           }`}
                         />
                         {validation && !validation.isValid && (
-                          <p className="text-xs text-red-500 mt-1">{validation.error}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{validation.error}</p>
                         )}
                       </div>
                       {formData.domains.length > 1 && (
@@ -377,7 +377,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
                           variant="outline"
                           size="sm"
                           onClick={() => removeDomainField(index)}
-                          className="h-10 px-2 text-red-500 hover:text-red-600"
+                          className="h-10 px-2 text-muted-foreground hover:text-muted-foreground"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -432,7 +432,7 @@ export function ApplyForBmDialog({ children, onSuccess }: ApplyForBmDialogProps)
                       variant="ghost"
                       size="sm"
                       onClick={() => removePageField(index)}
-                      className="h-10 px-2 text-red-500 hover:text-red-600"
+                      className="h-10 px-2 text-muted-foreground hover:text-muted-foreground"
                     >
                       <X className="h-4 w-4" />
                     </Button>

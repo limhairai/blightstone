@@ -41,25 +41,25 @@ export function ProfessionalFeaturesSection() {
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <span className="text-white/60 text-xs sm:text-sm">Application Status</span>
-                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-400 shadow-lg shadow-green-400/50 animate-pulse"></div>
+                  <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-secondary shadow-lg shadow-green-400/50 animate-pulse"></div>
                 </div>
                 <div className="flex-1 space-y-2 sm:space-y-3">
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2.5 sm:p-3 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="text-white/80 text-xs sm:text-sm">Meta Ad Account #1</span>
-                      <span className="text-green-400 text-xs bg-green-400/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-green-400/30">Approved</span>
+                      <span className="text-foreground text-xs bg-secondary/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-border/30">Approved</span>
                     </div>
                   </div>
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2.5 sm:p-3 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="text-white/80 text-xs sm:text-sm">Meta Ad Account #2</span>
-                      <span className="text-yellow-400 text-xs bg-yellow-400/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-yellow-400/30">Processing</span>
+                      <span className="text-muted-foreground text-xs bg-muted/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-border/30">Processing</span>
                     </div>
                   </div>
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2.5 sm:p-3 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="text-white/80 text-xs sm:text-sm">Meta Ad Account #3</span>
-                      <span className="text-blue-400 text-xs bg-blue-400/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-blue-400/30">Submitted</span>
+                      <span className="text-foreground text-xs bg-secondary/20 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border border-border/30">Submitted</span>
                     </div>
                   </div>
                 </div>
@@ -78,9 +78,9 @@ export function ProfessionalFeaturesSection() {
               <div className="relative z-10">
                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <span className="text-white/60 text-xs sm:text-sm">Real-time Dashboard</span>
-                  <div className="flex items-center gap-1.5 sm:gap-2 bg-blue-500/20 px-2 sm:px-3 py-1 rounded-full border border-blue-500/30 backdrop-blur-sm">
-                    <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-blue-400" />
-                    <span className="text-blue-400 text-xs">Live Dashboard</span>
+                  <div className="flex items-center gap-1.5 sm:gap-2 bg-secondary/20 px-2 sm:px-3 py-1 rounded-full border border-border/30 backdrop-blur-sm">
+                    <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-foreground" />
+                    <span className="text-foreground text-xs">Live Dashboard</span>
                   </div>
                 </div>
                 <div className="flex-1 flex flex-col gap-2 sm:gap-3">
@@ -105,8 +105,8 @@ export function ProfessionalFeaturesSection() {
                     <div className="flex items-center justify-between">
                       <span className="text-white/80 text-xs sm:text-sm">Account Health</span>
                       <div className="flex items-center gap-1">
-                        <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-green-400" />
-                        <span className="text-green-400 text-xs">All Good</span>
+                        <CheckCircle className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-foreground" />
+                        <span className="text-foreground text-xs">All Good</span>
                       </div>
                     </div>
                   </div>
@@ -133,24 +133,24 @@ export function ProfessionalFeaturesSection() {
                 <div className="flex-1 space-y-2 sm:space-y-3">
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2.5 sm:p-3 border border-white/10 hover:border-white/20 transition-colors">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
-                        <span className="text-blue-400 text-xs font-bold">G</span>
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-secondary/20 flex items-center justify-center border border-border/30">
+                        <span className="text-foreground text-xs font-bold">G</span>
                       </div>
                       <span className="text-white/80 text-xs sm:text-sm">GrowthCo Marketing</span>
                     </div>
                   </div>
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2.5 sm:p-3 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-purple-500/20 flex items-center justify-center border border-purple-500/30">
-                        <span className="text-purple-400 text-xs font-bold">V</span>
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-secondary/20 flex items-center justify-center border border-border/30">
+                        <span className="text-foreground text-xs font-bold">V</span>
                       </div>
                       <span className="text-white/80 text-xs sm:text-sm">Velocity Ads LLC</span>
                     </div>
                   </div>
                   <div className="bg-gradient-to-r from-[#2a2a2a] to-[#3a3a3a] rounded-lg p-2.5 sm:p-3 border border-white/5 hover:border-white/10 transition-colors">
                     <div className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-green-500/20 flex items-center justify-center border border-green-500/30">
-                        <span className="text-green-400 text-xs font-bold">S</span>
+                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-secondary/20 flex items-center justify-center border border-border/30">
+                        <span className="text-foreground text-xs font-bold">S</span>
                       </div>
                       <span className="text-white/80 text-xs sm:text-sm">Scale Media Inc.</span>
                     </div>

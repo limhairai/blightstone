@@ -35,8 +35,8 @@ export function AccountsMetrics() {
       {/* Total Accounts */}
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className="h-8 w-8 rounded-md bg-blue-500/10 flex items-center justify-center">
-            <CreditCard className="h-4 w-4 text-blue-500" />
+          <div className="h-8 w-8 rounded-md bg-secondary/10 flex items-center justify-center">
+            <CreditCard className="h-4 w-4 text-foreground" />
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold">{totalAccounts}</div>
@@ -74,8 +74,8 @@ export function AccountsMetrics() {
       {/* Total Spent */}
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className="h-8 w-8 rounded-md bg-purple-500/10 flex items-center justify-center">
-            <TrendingUp className="h-4 w-4 text-purple-500" />
+          <div className="h-8 w-8 rounded-md bg-secondary/10 flex items-center justify-center">
+            <TrendingUp className="h-4 w-4 text-foreground" />
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold">${formatCurrency(totalSpent)}</div>
@@ -95,8 +95,8 @@ export function AccountsMetrics() {
       {/* Issues */}
       <div className="bg-card border border-border rounded-lg p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className="h-8 w-8 rounded-md bg-orange-500/10 flex items-center justify-center">
-            <AlertCircle className="h-4 w-4 text-orange-500" />
+          <div className="h-8 w-8 rounded-md bg-muted/10 flex items-center justify-center">
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold">2</div>

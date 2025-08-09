@@ -160,47 +160,47 @@
 
 @layer base {
   :root {
-    /* Blightstone Light Mode - White and Black */
+    /* Blightstone Pure Black & White Theme */
     --background: 0 0% 100%; /* Pure white background */
     --foreground: 0 0% 7%; /* #121212 text */
-    --card: 0 0% 98%; /* Slightly off-white */
+    --card: 0 0% 100%; /* Pure white cards */
     --card-foreground: 0 0% 7%;
-    --popover: 0 0% 100%;
+    --popover: 0 0% 100%; /* Pure white popover */
     --popover-foreground: 0 0% 7%;
-    --primary: 0 0% 7%; /* Black primary */
-    --primary-foreground: 0 0% 100%; /* White text on black */
-    --secondary: 0 0% 95%; /* Light gray */
+    --primary: 0 0% 7%; /* Pure black primary */
+    --primary-foreground: 0 0% 100%; /* Pure white text on black */
+    --secondary: 0 0% 95%; /* Very light gray for subtle contrast */
     --secondary-foreground: 0 0% 7%;
-    --muted: 0 0% 90%; /* Light gray */
-    --muted-foreground: 0 0% 40%; /* Dark gray text */
-    --accent: 0 0% 95%;
+    --muted: 0 0% 96%; /* Subtle gray for muted areas */
+    --muted-foreground: 0 0% 45%; /* Medium gray for muted text */
+    --accent: 0 0% 96%; /* Same as muted for consistency */
     --accent-foreground: 0 0% 7%;
-    --destructive: 0 70% 50%;
+    --destructive: 0 0% 20%; /* Dark gray for destructive (no red) */
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 85%; /* Light gray borders */
-    --input: 0 0% 95%; /* Light input backgrounds */
+    --border: 0 0% 90%; /* Light gray borders */
+    --input: 0 0% 98%; /* Very light gray input backgrounds */
     --ring: 0 0% 7%; /* Black focus rings */
 
-    /* Status Colors - Dark Mode */
-    --status-active-dot: 145 63% 55%;
-    --status-active-badge-background: 145 85% 15%;
-    --status-active-badge-foreground: 145 74% 65%;
+    /* Status Colors - Black & White Only */
+    --status-active-dot: 0 0% 7%; /* Black dot for active */
+    --status-active-badge-background: 0 0% 96%; /* Light gray background */
+    --status-active-badge-foreground: 0 0% 7%; /* Black text */
 
-    --status-pending-dot: 36 93% 60%;
-    --status-pending-badge-background: 45 100% 12%;
-    --status-pending-badge-foreground: 32 90% 55%;
+    --status-pending-dot: 0 0% 50%; /* Medium gray for pending */
+    --status-pending-badge-background: 0 0% 94%; /* Light gray background */
+    --status-pending-badge-foreground: 0 0% 30%; /* Dark gray text */
 
-    --status-failed-dot: 0 84% 65%;
-    --status-failed-badge-background: 0 80% 12%;
-    --status-failed-badge-foreground: 0 70% 60%;
+    --status-failed-dot: 0 0% 20%; /* Dark gray for failed */
+    --status-failed-badge-background: 0 0% 92%; /* Light gray background */
+    --status-failed-badge-foreground: 0 0% 15%; /* Very dark gray text */
 
-    --status-inactive-dot: 240 3% 60%;
-    --status-inactive-badge-background: 210 17% 12%;
-    --status-inactive-badge-foreground: 220 13% 70%;
+    --status-inactive-dot: 0 0% 70%; /* Light gray for inactive */
+    --status-inactive-badge-background: 0 0% 98%; /* Very light gray background */
+    --status-inactive-badge-foreground: 0 0% 60%; /* Medium gray text */
 
-    /* Blightstone Brand Colors - Black and White */
-    --brand-primary: #ffffff;
-    --brand-secondary: #121212;
+    /* Blightstone Brand Colors - Pure Black and White */
+    --brand-primary: #121212; /* Pure black */
+    --brand-secondary: #ffffff; /* Pure white */
 
     /* Radius */
     --radius-sm: 0.25rem;

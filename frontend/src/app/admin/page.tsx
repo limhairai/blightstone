@@ -141,7 +141,7 @@ export default function AdminDashboard() {
   }
   
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+    return <div className="flex items-center justify-center p-8 text-muted-foreground">Error: {error}</div>
   }
 
   const quickActions = [
@@ -232,10 +232,10 @@ export default function AdminDashboard() {
                       <div className="flex items-center justify-between py-2 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer rounded-sm px-2 -mx-2">
                         <div className="flex items-center gap-3">
                           <div className="flex-shrink-0">
-                            {activity.type === "application" && <FileText className="h-4 w-4 text-blue-500" />}
-                            {activity.type === "topup" && <CreditCard className="h-4 w-4 text-green-500" />}
-                            {activity.type === "team" && <Users className="h-4 w-4 text-purple-500" />}
-                            {activity.type === "asset" && <BarChart3 className="h-4 w-4 text-orange-500" />}
+                            {activity.type === "application" && <FileText className="h-4 w-4 text-foreground" />}
+                            {activity.type === "topup" && <CreditCard className="h-4 w-4 text-foreground" />}
+                            {activity.type === "team" && <Users className="h-4 w-4 text-foreground" />}
+                            {activity.type === "asset" && <BarChart3 className="h-4 w-4 text-muted-foreground" />}
                           </div>
                           <div>
                             <p className="text-sm font-medium">{activity.message}</p>

@@ -153,7 +153,7 @@ export function TransactionsHistory({ limit, showFilters = true }: TransactionHi
                       <Filter className="h-3 w-3 mr-1" />
                       Filter
                       {(statusFilter !== "all" || typeFilter !== "all") && (
-                        <div className="ml-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                        <div className="ml-1 w-1.5 h-1.5 bg-secondary rounded-full" />
                       )}
                     </Button>
                   </DropdownMenuTrigger>

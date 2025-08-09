@@ -13,7 +13,7 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
         return {
           label: "Active",
           className:
-            "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800",
+            "bg-green-50 text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border",
         }
       case "pending":
         return {
@@ -25,23 +25,23 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
         return {
           label: "Processing",
           className:
-            "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800",
+            "bg-blue-50 text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border",
         }
       case "completed":
         return {
           label: "Completed",
           className:
-            "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800",
+            "bg-green-50 text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border",
         }
       case "rejected":
         return {
           label: "Rejected",
-          className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
+          className: "bg-red-50 text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border",
         }
       case "error":
         return {
           label: "Error",
-          className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
+          className: "bg-red-50 text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border",
         }
       case "paused":
       case "inactive":
@@ -53,12 +53,12 @@ export function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
       case "suspended":
         return {
           label: "Suspended",
-          className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800",
+          className: "bg-red-50 text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border",
         }
       case "restricted":
         return {
           label: "Restricted",
-          className: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800",
+          className: "bg-orange-50 text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border",
         }
       default:
         return {

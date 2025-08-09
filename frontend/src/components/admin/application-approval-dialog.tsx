@@ -72,10 +72,10 @@ export function ApplicationApprovalDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="p-4 bg-green-100/50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="p-4 bg-secondary/50 dark:bg-secondary/20 rounded-lg border border-border dark:border-border">
             <div className="flex items-center gap-2 mb-2">
-              <Building2 className="h-4 w-4 text-[#34D197] dark:text-green-400" />
-              <span className="font-medium text-green-800 dark:text-green-200">Application Details</span>
+              <Building2 className="h-4 w-4 text-[#34D197] dark:text-foreground" />
+              <span className="font-medium text-foreground dark:text-foreground">Application Details</span>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -93,12 +93,12 @@ export function ApplicationApprovalDialog({
             </div>
           </div>
 
-          <div className="p-4 bg-blue-100/50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="p-4 bg-secondary/50 dark:bg-secondary/20 rounded-lg border border-border dark:border-border">
             <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <span className="font-medium text-blue-800 dark:text-blue-200">Next Steps</span>
+              <FileText className="h-4 w-4 text-foreground dark:text-foreground" />
+              <span className="font-medium text-foreground dark:text-foreground">Next Steps</span>
             </div>
-            <div className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="text-sm text-foreground dark:text-foreground">
               <p>After approval, this application will be:</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Submitted to BlueFocus for processing</li>

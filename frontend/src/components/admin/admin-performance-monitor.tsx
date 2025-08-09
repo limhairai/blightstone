@@ -122,9 +122,9 @@ export function AdminPerformanceMonitor({ className }: AdminPerformanceMonitorPr
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'good': return 'bg-green-500'
-      case 'warning': return 'bg-yellow-500'
-      case 'poor': return 'bg-red-500'
+      case 'good': return 'bg-secondary'
+      case 'warning': return 'bg-muted'
+      case 'poor': return 'bg-muted'
       default: return 'bg-gray-500'
     }
   }

@@ -224,7 +224,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
               size="sm"
               onClick={(e) => handleCancelApplication(manager, e)}
               disabled={isProcessing}
-              className="h-7 px-2 text-xs text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900/20"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-muted-foreground border-border hover:bg-red-50 dark:text-muted-foreground dark:border-border dark:hover:bg-muted/20"
             >
               {isProcessing ? (
                 <Loader2 className="h-3 w-3 animate-spin" />

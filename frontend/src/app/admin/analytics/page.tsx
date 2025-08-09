@@ -266,7 +266,7 @@ export default function BusinessAnalyticsPage() {
   }
 
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>;
+    return <div className="flex items-center justify-center p-8 text-muted-foreground">Error: {error}</div>;
   }
 
   return (

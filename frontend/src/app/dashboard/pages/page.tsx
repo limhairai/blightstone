@@ -64,9 +64,9 @@ interface PagesResponse {
 const getVerificationIcon = (status: string) => {
   switch (status) {
     case 'verified':
-      return <Verified className="h-4 w-4 text-blue-500" />
+      return <Verified className="h-4 w-4 text-foreground" />
     case 'pending':
-      return <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />
+      return <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
     default:
       return <AlertCircle className="h-4 w-4 text-gray-400" />
   }
@@ -74,9 +74,9 @@ const getVerificationIcon = (status: string) => {
 
 const getStatusBadge = (status: string) => {
   const variants = {
-    active: 'bg-green-100 text-green-800',
+    active: 'bg-secondary text-foreground',
     inactive: 'bg-gray-100 text-gray-800',
-    suspended: 'bg-red-100 text-red-800'
+    suspended: 'bg-muted text-muted-foreground'
   }
   
   return (
@@ -284,7 +284,7 @@ export default function PagesPage() {
               <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
                 Pending Requests
               </span>
-              <div className="text-yellow-600 font-semibold text-lg">
+              <div className="text-muted-foreground font-semibold text-lg">
                 {pendingRequests}
               </div>
             </div>
@@ -342,7 +342,7 @@ export default function PagesPage() {
               <DialogDescription>
                 Add a Facebook page that will be available for your ad account applications.
                 {!pagination.canAddMore && (
-                  <span className="text-red-600 block mt-2">
+                  <span className="text-muted-foreground block mt-2">
                     You've reached your plan limit. Upgrade to add more pages.
                   </span>
                 )}
@@ -504,8 +504,8 @@ export default function PagesPage() {
                         {page.page_name}
                       </span>
                       {page.is_request && (
-                        <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
-                          <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5 animate-pulse"></div>
+                        <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-foreground border border-border rounded-full dark:bg-secondary/20 dark:text-foreground dark:border-border flex-shrink-0">
+                          <div className="w-1.5 h-1.5 bg-secondary rounded-full mr-1.5 animate-pulse"></div>
                           Connection Pending
                         </span>
                       )}

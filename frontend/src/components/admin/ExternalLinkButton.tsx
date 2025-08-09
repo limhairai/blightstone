@@ -81,9 +81,9 @@ export function ExternalLinkButton({
   if (showSecurityWarning) {
     return (
       <div className="space-y-2">
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4 text-red-600" />
-          <AlertDescription className="text-red-800">
+        <Alert className="border-border bg-red-50">
+          <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          <AlertDescription className="text-muted-foreground">
             This external link is not allowed for security reasons.
           </AlertDescription>
         </Alert>

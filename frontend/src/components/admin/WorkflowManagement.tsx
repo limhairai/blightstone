@@ -87,21 +87,21 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
 
   const getStageIcon = (stage: string) => {
     switch (stage) {
-      case 'received': return <Clock className="h-3 w-3 text-blue-600" />;
-      case 'document_prep': return <User className="h-3 w-3 text-yellow-600" />;
-      case 'submitted': return <ArrowRight className="h-3 w-3 text-purple-600" />;
-      case 'under_review': return <Eye className="h-3 w-3 text-orange-600" />;
+      case 'received': return <Clock className="h-3 w-3 text-foreground" />;
+      case 'document_prep': return <User className="h-3 w-3 text-muted-foreground" />;
+      case 'submitted': return <ArrowRight className="h-3 w-3 text-foreground" />;
+      case 'under_review': return <Eye className="h-3 w-3 text-muted-foreground" />;
       case 'approved': return <CheckCircle className="h-3 w-3 text-[#34D197]" />;
-      case 'rejected': return <XCircle className="h-3 w-3 text-red-600" />;
+      case 'rejected': return <XCircle className="h-3 w-3 text-muted-foreground" />;
       default: return <Clock className="h-3 w-3 text-gray-400" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'bg-red-100 text-red-800';
-      case 'high': return 'bg-orange-100 text-orange-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'urgent': return 'bg-muted text-muted-foreground';
+      case 'high': return 'bg-muted text-muted-foreground';
+      case 'medium': return 'bg-muted text-muted-foreground';
       case 'low': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -112,9 +112,9 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
     const slaDate = new Date(deadline);
     const hoursRemaining = (slaDate.getTime() - now.getTime()) / (1000 * 60 * 60);
     
-    if (hoursRemaining < 0) return { status: 'overdue', color: 'text-red-600', text: 'Overdue' };
-    if (hoursRemaining < 2) return { status: 'urgent', color: 'text-orange-600', text: `${Math.ceil(hoursRemaining)}h left` };
-    if (hoursRemaining < 24) return { status: 'warning', color: 'text-yellow-600', text: `${Math.ceil(hoursRemaining)}h left` };
+    if (hoursRemaining < 0) return { status: 'overdue', color: 'text-muted-foreground', text: 'Overdue' };
+    if (hoursRemaining < 2) return { status: 'urgent', color: 'text-muted-foreground', text: `${Math.ceil(hoursRemaining)}h left` };
+    if (hoursRemaining < 24) return { status: 'warning', color: 'text-muted-foreground', text: `${Math.ceil(hoursRemaining)}h left` };
     return { status: 'ok', color: 'text-[#34D197]', text: `${Math.ceil(hoursRemaining / 24)}d left` };
   };
 
@@ -192,13 +192,13 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
         </Card>
         <Card className="p-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-blue-600">{metrics.inProgress}</div>
+            <div className="text-lg font-bold text-foreground">{metrics.inProgress}</div>
             <div className="text-muted-foreground">In Progress</div>
           </div>
         </Card>
         <Card className="p-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-red-600">{metrics.overdue}</div>
+            <div className="text-lg font-bold text-muted-foreground">{metrics.overdue}</div>
             <div className="text-muted-foreground">Overdue</div>
           </div>
         </Card>
@@ -221,8 +221,8 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
               <div key={rep.id} className="flex items-center justify-between p-2 border rounded-lg">
                 <div className="flex items-center gap-2">
                   <div className={`h-2 w-2 rounded-full ${
-                    rep.status === 'online' ? 'bg-green-500' :
-                    rep.status === 'busy' ? 'bg-yellow-500' : 'bg-gray-400'
+                    rep.status === 'online' ? 'bg-secondary' :
+                    rep.status === 'busy' ? 'bg-muted' : 'bg-gray-400'
                   }`} />
                   <div>
                     <div className="font-medium text-sm">{rep.name}</div>
@@ -306,7 +306,7 @@ export function WorkflowManagement({ applications, reps, loading = false }: Work
 
       {/* Bulk Actions */}
       {selectedApplications.size > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-2 p-2 bg-blue-50 border border-border rounded-lg">
           <span className="text-sm font-medium">{selectedApplications.size} selected</span>
           <Button size="sm" variant="outline" className="h-6 text-xs">
             Assign Rep

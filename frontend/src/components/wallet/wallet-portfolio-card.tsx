@@ -270,11 +270,11 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
               {hasRealData ? (
                 <>
                   {isPositive ? (
-                    <TrendingUp className="h-4 w-4 text-green-400" />
+                    <TrendingUp className="h-4 w-4 text-foreground" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 text-red-400" />
+                    <TrendingDown className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span className={`text-sm ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`text-sm ${isPositive ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {formatCurrency(Math.abs(changeAmount))} ({isPositive ? '+' : ''}{changePercentage.toFixed(1)}%) {timeFilter.toLowerCase()}
                   </span>
                 </>
@@ -457,7 +457,7 @@ export function WalletPortfolioCard({ onRefresh, isRefreshing = false }: WalletP
           {reservedBalance > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Processing</span>
-              <span className="text-sm font-medium text-orange-400">
+              <span className="text-sm font-medium text-muted-foreground">
                 -{formatCurrency(reservedBalance)}
               </span>
             </div>

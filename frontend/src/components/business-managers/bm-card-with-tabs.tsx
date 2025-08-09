@@ -90,7 +90,7 @@ export function BmCardWithTabs({
         )}
         <DropdownMenuItem
           onClick={(e) => onDeactivationClick?.(manager, e)}
-          className="text-muted-foreground hover:text-red-500"
+          className="text-muted-foreground hover:text-muted-foreground"
         >
           {manager.is_active === false ? (
             <>

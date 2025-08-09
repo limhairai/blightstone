@@ -174,7 +174,7 @@ export function BmDomainsTab({ bmId, bmName }: BmDomainsTabProps) {
             </Badge>
           )}
           {limits.max !== -1 && limits.canAddMore && limits.max - limits.current <= 2 && (
-            <Badge variant="outline" className="text-xs text-orange-600">
+            <Badge variant="outline" className="text-xs text-muted-foreground">
               {limits.max - limits.current} remaining
             </Badge>
           )}
@@ -246,12 +246,12 @@ export function BmDomainsTab({ bmId, bmName }: BmDomainsTabProps) {
 
       {/* Limit reached message */}
       {!limits.canAddMore && limits.max !== -1 && (
-        <div className="text-xs text-muted-foreground bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 p-3 rounded-lg">
+        <div className="text-xs text-muted-foreground bg-orange-50 dark:bg-muted/20 border border-border dark:border-border p-3 rounded-lg">
           <div className="flex items-center gap-2">
-            <Globe className="h-4 w-4 text-orange-600" />
+            <Globe className="h-4 w-4 text-muted-foreground" />
             <div>
-              <p className="font-medium text-orange-800 dark:text-orange-200">Domain limit reached</p>
-              <p className="text-orange-700 dark:text-orange-300">
+              <p className="font-medium text-muted-foreground dark:text-muted-foreground">Domain limit reached</p>
+              <p className="text-muted-foreground dark:text-muted-foreground">
                 You've used all {limits.max} domains allowed for your plan. Upgrade to add more domains per Business Manager.
               </p>
             </div>
@@ -299,7 +299,7 @@ export function BmDomainsTab({ bmId, bmName }: BmDomainsTabProps) {
                 variant="ghost"
                 onClick={() => handleDeleteDomain(domain.domain_id)}
                 disabled={deletingDomainId === domain.domain_id}
-                className="text-muted-foreground hover:text-red-500"
+                className="text-muted-foreground hover:text-muted-foreground"
               >
                 {deletingDomainId === domain.domain_id ? (
                   <Loader2 className="h-3 w-3 animate-spin" />

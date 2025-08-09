@@ -192,7 +192,7 @@ export function GlobalSearch({ trigger }: GlobalSearchProps) {
       case 'business_manager':
         return <Badge variant="secondary" className="text-xs">Business Manager</Badge>
       case 'ad_account':
-        return <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">Ad Account</Badge>
+        return <Badge variant="outline" className="text-xs bg-blue-50 text-foreground">Ad Account</Badge>
       default:
         return null
     }

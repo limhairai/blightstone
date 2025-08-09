@@ -182,7 +182,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
+                    className="h-6 w-6 p-0 hover:bg-secondary hover:text-foreground"
                     onClick={handleSaveName}
                     disabled={isSaving}
                   >
@@ -191,7 +191,7 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-600"
+                    className="h-6 w-6 p-0 hover:bg-muted hover:text-muted-foreground"
                     onClick={handleCancelEditing}
                     disabled={isSaving}
                   >

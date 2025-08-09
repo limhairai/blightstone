@@ -92,7 +92,7 @@ export default function TopupRequestsPage() {
   }
   
   if (error) {
-    return <div className="flex items-center justify-center p-8 text-red-500">Error: {error}</div>
+    return <div className="flex items-center justify-center p-8 text-muted-foreground">Error: {error}</div>
   }
 
   const handleProcessRequest = async (request: TopupRequest, status: TopupRequestStatus) => {
@@ -152,11 +152,11 @@ export default function TopupRequestsPage() {
       case 'pending':
         return { color: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800", icon: Clock }
       case 'processing':
-        return { color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800", icon: Clock }
+        return { color: "bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border", icon: Clock }
       case 'completed':
-        return { color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", icon: CheckCircle }
+        return { color: "bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border", icon: CheckCircle }
       case 'failed':
-        return { color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", icon: X }
+        return { color: "bg-muted text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border", icon: X }
       case 'cancelled':
         return { color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: X }
       default:
@@ -215,8 +215,8 @@ export default function TopupRequestsPage() {
           <Badge 
             className={`text-xs px-1 py-0.5 ${
               isBalanceReset 
-                ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' 
-                : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                ? 'bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border' 
+                : 'bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border'
             }`}
           >
             {isBalanceReset ? 'Reset' : 'Top-up'}
@@ -270,8 +270,8 @@ export default function TopupRequestsPage() {
         return (
           <div className={`font-medium text-xs ${
             isBalanceReset 
-              ? 'text-purple-600 dark:text-purple-400' 
-              : 'text-[#34D197] dark:text-green-400'
+              ? 'text-foreground dark:text-foreground' 
+              : 'text-[#34D197] dark:text-foreground'
           }`}>
             {formatCurrency(amountCents / 100)}
           </div>
@@ -390,7 +390,7 @@ export default function TopupRequestsPage() {
                 <Button
                   size="sm"
                   onClick={() => openProcessDialog(request, 'processing')}
-                  className="bg-blue-600 hover:bg-blue-700 h-6 text-xs px-2"
+                  className="bg-secondary hover:bg-secondary h-6 text-xs px-2"
                 >
                   <Clock className="h-3 w-3" />
                 </Button>
@@ -526,8 +526,8 @@ export default function TopupRequestsPage() {
                       <Badge 
                         className={`text-xs px-1 py-0.5 ${
                           isBalanceReset 
-                            ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800' 
-                            : 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'
+                            ? 'bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border' 
+                            : 'bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border'
                         }`}
                       >
                         {isBalanceReset ? 'Reset' : 'Top-up'}
@@ -546,8 +546,8 @@ export default function TopupRequestsPage() {
                     <TableCell className="w-20">
                       <div className={`font-medium text-xs ${
                         isBalanceReset 
-                          ? 'text-purple-600 dark:text-purple-400' 
-                          : 'text-[#34D197] dark:text-green-400'
+                          ? 'text-foreground dark:text-foreground' 
+                          : 'text-[#34D197] dark:text-foreground'
                       }`}>
                         {formatCurrency(request.amount_cents / 100)}
                       </div>
@@ -613,7 +613,7 @@ export default function TopupRequestsPage() {
                             <Button
                               size="sm"
                               onClick={() => openProcessDialog(request, 'processing')}
-                              className="bg-blue-600 hover:bg-blue-700 h-6 text-xs px-2"
+                              className="bg-secondary hover:bg-secondary h-6 text-xs px-2"
                             >
                               <Clock className="h-3 w-3" />
                             </Button>

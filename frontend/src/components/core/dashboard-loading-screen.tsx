@@ -171,7 +171,7 @@ export function DashboardLoadingScreen({ isLoading, onComplete }: DashboardLoadi
             >
               <div className="flex-shrink-0">
                 {step.completed ? (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-foreground" />
                 ) : index === currentStep ? (
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 ) : (

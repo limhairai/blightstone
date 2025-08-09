@@ -47,11 +47,11 @@ export function ProvisioningPipeline() {
   const getProvisioningStatusBadge = (status: string) => {
     const statusConfig = {
       not_started: { label: "Not Started", variant: "secondary" as const, icon: Clock, color: "text-gray-600" },
-      hk_provider_submitted: { label: "HK Provider Submitted", variant: "default" as const, icon: ExternalLink, color: "text-blue-600" },
+      hk_provider_submitted: { label: "HK Provider Submitted", variant: "default" as const, icon: ExternalLink, color: "text-foreground" },
       hk_provider_approved: { label: "HK Provider Approved", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
-      bm_assigned: { label: "BM Assigned", variant: "default" as const, icon: Building2, color: "text-purple-600" },
+      bm_assigned: { label: "BM Assigned", variant: "default" as const, icon: Building2, color: "text-foreground" },
       account_created: { label: "Account Created", variant: "default" as const, icon: CreditCard, color: "text-indigo-600" },
-      client_invited: { label: "Client Invited", variant: "default" as const, icon: Users, color: "text-orange-600" },
+      client_invited: { label: "Client Invited", variant: "default" as const, icon: Users, color: "text-muted-foreground" },
       completed: { label: "Completed", variant: "default" as const, icon: CheckCircle, color: "text-[#34D197]" },
     };
 
@@ -186,7 +186,7 @@ export function ProvisioningPipeline() {
             <CardTitle className="text-sm font-medium text-muted-foreground">HK Provider Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-foreground">
               {provisioningBusinesses.filter((b: any) => b.status === "under_review").length}
             </div>
           </CardContent>
@@ -197,7 +197,7 @@ export function ProvisioningPipeline() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Ready for Client</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-muted-foreground">
               {provisioningBusinesses.filter((b: any) => b.status === "ready").length}
             </div>
           </CardContent>

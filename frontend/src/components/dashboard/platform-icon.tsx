@@ -10,13 +10,13 @@ export function PlatformIcon({ platform, size = "md" }: PlatformIconProps) {
     switch (platform) {
       case "Meta":
         return {
-          bg: "bg-blue-600",
+          bg: "bg-secondary",
           text: "f",
           textColor: "text-white",
         }
       case "Google":
         return {
-          bg: "bg-red-500",
+          bg: "bg-muted",
           text: "G",
           textColor: "text-white",
         }
@@ -28,7 +28,7 @@ export function PlatformIcon({ platform, size = "md" }: PlatformIconProps) {
         }
       case "LinkedIn":
         return {
-          bg: "bg-blue-700",
+          bg: "bg-secondary",
           text: "in",
           textColor: "text-white",
         }

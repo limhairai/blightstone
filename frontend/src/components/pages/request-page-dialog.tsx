@@ -102,7 +102,7 @@ export function RequestPageDialog({ businessManagers = [] }: RequestPageDialogPr
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-primary to-primary hover:from-blue-700 hover:to-purple-700 text-white shadow-lg">
+        <Button className="bg-gradient-to-r from-primary to-primary hover:from-primary hover:to-primary text-white shadow-lg">
           <Plus className="w-4 h-4 mr-2" />
           Request Page
         </Button>
@@ -111,7 +111,7 @@ export function RequestPageDialog({ businessManagers = [] }: RequestPageDialogPr
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary rounded-lg flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -208,7 +208,7 @@ export function RequestPageDialog({ businessManagers = [] }: RequestPageDialogPr
             <Button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-primary to-primary hover:from-blue-700 hover:to-purple-700"
+              className="bg-gradient-to-r from-primary to-primary hover:from-primary hover:to-primary"
             >
               {loading ? (
                 <>

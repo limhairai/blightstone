@@ -300,7 +300,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
 
           {/* Auto-bind option for Business Managers */}
           {isBusinessManager && relatedAdAccounts.length > 0 && (
-            <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
+            <div className="space-y-3 p-4 bg-blue-50 dark:bg-secondary/20 rounded-lg border border-border dark:border-border/40">
               <div className="flex items-center space-x-2">
                 <Checkbox 
                   id="auto-bind" 
@@ -312,7 +312,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
                 </Label>
               </div>
               
-              <div className="text-sm text-blue-700 dark:text-blue-300">
+              <div className="text-sm text-foreground dark:text-foreground">
                 <div className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4" />
                   <span className="font-medium">Related Ad Accounts:</span>
@@ -324,7 +324,7 @@ export function BindAssetDialog({ asset, onSuccess }: BindAssetDialogProps) {
                     </div>
                   ))}
                   {relatedAdAccounts.length > 5 && (
-                    <div className="text-xs text-blue-600 dark:text-blue-400">
+                    <div className="text-xs text-foreground dark:text-foreground">
                       ... and {relatedAdAccounts.length - 5} more
                     </div>
                   )}

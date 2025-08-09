@@ -211,11 +211,11 @@ export default function WorkflowPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-secondary text-foreground">Active</Badge>;
       case "paused":
-        return <Badge className="bg-yellow-100 text-yellow-800">Paused</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Paused</Badge>;
       case "failed":
-        return <Badge className="bg-red-100 text-red-800">Failed</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Failed</Badge>;
       case "draft":
         return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
       default:
@@ -226,11 +226,11 @@ export default function WorkflowPage() {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "automation":
-        return <Badge className="bg-blue-100 text-blue-800">Automation</Badge>;
+        return <Badge className="bg-secondary text-foreground">Automation</Badge>;
       case "notification":
-        return <Badge className="bg-purple-100 text-purple-800">Notification</Badge>;
+        return <Badge className="bg-secondary text-foreground">Notification</Badge>;
       case "integration":
-        return <Badge className="bg-orange-100 text-orange-800">Integration</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">Integration</Badge>;
       case "maintenance":
         return <Badge className="bg-indigo-100 text-indigo-800">Maintenance</Badge>;
       default:
@@ -240,11 +240,11 @@ export default function WorkflowPage() {
 
   const getHealthBadge = (isHealthy: boolean, successRate: number) => {
     if (isHealthy) {
-      return <Badge className="bg-green-100 text-green-800">Healthy</Badge>;
+      return <Badge className="bg-secondary text-foreground">Healthy</Badge>;
     } else if (successRate >= 70) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>;
+      return <Badge className="bg-muted text-muted-foreground">Warning</Badge>;
     } else {
-      return <Badge className="bg-red-100 text-red-800">Critical</Badge>;
+      return <Badge className="bg-muted text-muted-foreground">Critical</Badge>;
     }
   };
 
@@ -290,8 +290,8 @@ export default function WorkflowPage() {
                 <p className="text-sm font-medium text-muted-foreground">Total Workflows</p>
                 <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <GitBranch className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                <GitBranch className="h-6 w-6 text-foreground" />
               </div>
             </div>
           </CardContent>
@@ -304,7 +304,7 @@ export default function WorkflowPage() {
                 <p className="text-sm font-medium text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold text-[#34D197]">{stats.active.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
                 <Play className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
@@ -318,7 +318,7 @@ export default function WorkflowPage() {
                 <p className="text-sm font-medium text-muted-foreground">Success Rate</p>
                 <p className="text-2xl font-bold">{stats.avgSuccessRate.toFixed(1)}%</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
                 <CheckCircle className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
@@ -332,8 +332,8 @@ export default function WorkflowPage() {
                 <p className="text-sm font-medium text-muted-foreground">Total Runs</p>
                 <p className="text-2xl font-bold">{stats.totalRuns.toLocaleString()}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <Activity className="h-6 w-6 text-purple-600" />
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                <Activity className="h-6 w-6 text-foreground" />
               </div>
             </div>
           </CardContent>
@@ -346,7 +346,7 @@ export default function WorkflowPage() {
                 <p className="text-sm font-medium text-muted-foreground">Healthy</p>
                 <p className="text-2xl font-bold text-[#34D197]">{stats.healthyWorkflows}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
                 <CheckCircle className="h-6 w-6 text-[#34D197]" />
               </div>
             </div>
@@ -360,8 +360,8 @@ export default function WorkflowPage() {
                 <p className="text-sm font-medium text-muted-foreground">Avg Duration</p>
                 <p className="text-2xl font-bold">{formatDuration(stats.avgExecutionTime)}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <Timer className="h-6 w-6 text-blue-600" />
+              <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center">
+                <Timer className="h-6 w-6 text-foreground" />
               </div>
             </div>
           </CardContent>

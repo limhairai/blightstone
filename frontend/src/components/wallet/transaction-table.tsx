@@ -41,10 +41,10 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
   // Updated status colors to match our brand colors
   const statusColors = {
     completed:
-      "bg-purple-100/80 text-purple-800 border-purple-300/50 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-700/50",
+      "bg-secondary/80 text-foreground border-border/50 dark:bg-secondary/30 dark:text-foreground dark:border-border/50",
     pending:
       "bg-amber-100/80 text-amber-800 border-amber-300/50 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-700/50",
-    failed: "bg-red-100/80 text-red-800 border-red-300/50 dark:bg-red-950/30 dark:text-red-300 dark:border-red-700/50",
+    failed: "bg-muted/80 text-muted-foreground border-border/50 dark:bg-muted/30 dark:text-muted-foreground dark:border-border/50",
   }
 
   const getTransactionColor = (type: string, amount: number) => {
@@ -62,7 +62,7 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
     return (
       <div className="rounded-md border border-gray-200 dark:border-[#1A1A1A] overflow-hidden bg-white dark:bg-[#0A0A0A]">
         <div className="p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-border mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Loading transactions...</p>
         </div>
       </div>
@@ -126,7 +126,7 @@ export function TransactionTable({ transactions: propTransactions, showFilters =
                   {transaction.amount}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={transaction.status === 'completed' ? 'text-[#34D197]' : transaction.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}>
+                  <Badge variant="outline" className={transaction.status === 'completed' ? 'text-[#34D197]' : transaction.status === 'pending' ? 'text-muted-foreground' : 'text-muted-foreground'}>
                     {transaction.status}
                   </Badge>
                 </TableCell>

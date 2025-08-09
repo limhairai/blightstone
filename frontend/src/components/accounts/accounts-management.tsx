@@ -377,10 +377,10 @@ export function AccountsManagement() {
                             <div
                               className={`h-1 rounded-full ${
                                 account.usagePercent > 75
-                                  ? "bg-red-500"
+                                  ? "bg-muted"
                                   : account.usagePercent > 50
-                                    ? "bg-yellow-500"
-                                    : "bg-green-500"
+                                    ? "bg-muted"
+                                    : "bg-secondary"
                               }`}
                               style={{ width: `${account.usagePercent}%` }}
                             ></div>
@@ -392,13 +392,13 @@ export function AccountsManagement() {
                           variant="outline"
                           className={`
                             rounded-full px-2 py-1 text-xs font-medium
-                            ${account.status === "active" ? "bg-green-950/30 text-green-400 border-green-900/50" : ""}
+                            ${account.status === "active" ? "bg-secondary/30 text-foreground border-border/50" : ""}
                             ${
                               account.status === "paused" || account.status === "under_review"
-                                ? "bg-yellow-950/30 text-yellow-400 border-yellow-900/50"
+                                ? "bg-muted/30 text-muted-foreground border-border/50"
                                 : ""
                             }
-                            ${account.status === "suspended" || account.status === "disabled" ? "bg-red-950/30 text-red-400 border-red-900/50" : ""}
+                            ${account.status === "suspended" || account.status === "disabled" ? "bg-muted/30 text-muted-foreground border-border/50" : ""}
                           `}
                         >
                           {account.status.charAt(0).toUpperCase() + account.status.slice(1)}

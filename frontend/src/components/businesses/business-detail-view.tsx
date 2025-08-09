@@ -271,7 +271,7 @@ export function BusinessDetailView({ businessId }: BusinessDetailViewProps) {
                             <DropdownMenuItem>Top-up Balance</DropdownMenuItem>
                             <DropdownMenuItem>View Transactions</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-500">
+                            <DropdownMenuItem className="text-muted-foreground">
                               Remove from Business
                             </DropdownMenuItem>
                           </DropdownMenuContent>

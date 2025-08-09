@@ -72,7 +72,7 @@ export default function AdminSetupPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-6">
         <div className="w-full max-w-md space-y-8 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+          <div className="mx-auto w-16 h-16 rounded-full bg-secondary flex items-center justify-center">
             <CheckCircle className="h-8 w-8 text-[#34D197]" />
           </div>
           <div>

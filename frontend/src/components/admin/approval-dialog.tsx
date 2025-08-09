@@ -92,7 +92,7 @@ export function ApprovalDialog({
 
           <div className="space-y-2">
             <Label htmlFor="accountId" className="text-right">
-              Ad Account ID <span className="text-red-500">*</span>
+              Ad Account ID <span className="text-muted-foreground">*</span>
             </Label>
             <Input
               id="accountId"
@@ -101,7 +101,7 @@ export function ApprovalDialog({
               placeholder="Enter ad account ID (e.g., AD-12345)"
             />
             {error && (
-              <div className="text-xs text-red-500 flex items-center gap-1">
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
                 <AlertCircle className="h-3 w-3" /> {error}
               </div>
             )}

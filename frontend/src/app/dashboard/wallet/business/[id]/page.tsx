@@ -196,7 +196,7 @@ export default function BusinessDetailPage() {
           <div>
             <div className="flex items-center gap-1">
               <span
-                className={`text-base font-medium ${businessAnalytics.change24h >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                className={`text-base font-medium ${businessAnalytics.change24h >= 0 ? "text-emerald-400" : "text-muted-foreground"}`}
               >
                 {businessAnalytics.change24h >= 0 ? "+" : ""}
                 {businessAnalytics.change24h}%
@@ -204,7 +204,7 @@ export default function BusinessDetailPage() {
               {businessAnalytics.change24h >= 0 ? (
                 <TrendingUp className="h-3 w-3 text-emerald-400" />
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-400" />
+                <TrendingDown className="h-3 w-3 text-muted-foreground" />
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1">24h change</div>
@@ -212,7 +212,7 @@ export default function BusinessDetailPage() {
           <div>
             <div className="flex items-center gap-1">
               <span
-                className={`text-base font-medium ${businessAnalytics.change7d >= 0 ? "text-emerald-400" : "text-red-400"}`}
+                className={`text-base font-medium ${businessAnalytics.change7d >= 0 ? "text-emerald-400" : "text-muted-foreground"}`}
               >
                 {businessAnalytics.change7d >= 0 ? "+" : ""}
                 {businessAnalytics.change7d}%
@@ -220,7 +220,7 @@ export default function BusinessDetailPage() {
               {businessAnalytics.change7d >= 0 ? (
                 <TrendingUp className="h-3 w-3 text-emerald-400" />
               ) : (
-                <TrendingDown className="h-3 w-3 text-red-400" />
+                <TrendingDown className="h-3 w-3 text-muted-foreground" />
               )}
             </div>
             <div className="text-xs text-muted-foreground mt-1">7d change</div>

@@ -164,7 +164,7 @@ export function DolphinIntegrationTest() {
       case 'success':
         return <CheckCircle className="h-4 w-4 text-[#34D197]" />;
       case 'error':
-        return <AlertTriangle className="h-4 w-4 text-red-600" />;
+        return <AlertTriangle className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -219,7 +219,7 @@ export function DolphinIntegrationTest() {
                     <div className="text-sm text-muted-foreground">{result.message}</div>
                     {result.data && (
                       <details className="mt-1">
-                        <summary className="text-xs cursor-pointer text-blue-600">View Data</summary>
+                        <summary className="text-xs cursor-pointer text-foreground">View Data</summary>
                         <pre className="text-xs mt-1 p-2 bg-muted rounded max-h-32 overflow-auto">
                           {JSON.stringify(result.data, null, 2)}
                         </pre>
@@ -234,8 +234,8 @@ export function DolphinIntegrationTest() {
         )}
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">What This Tests:</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
+          <h4 className="font-medium text-foreground mb-2">What This Tests:</h4>
+          <ul className="text-sm text-foreground space-y-1">
             <li>• <strong>Asset Discovery:</strong> Fetching and syncing Facebook assets from Dolphin Cloud</li>
             <li>• <strong>Asset Binding:</strong> Organizations API for binding assets to clients</li>
             <li>• <strong>Top-Up Management:</strong> Funding requests API for processing client payments</li>

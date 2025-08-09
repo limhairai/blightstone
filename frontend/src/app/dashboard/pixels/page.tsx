@@ -221,7 +221,7 @@ export default function PixelsPage() {
             <span className="text-muted-foreground uppercase tracking-wide text-xs font-medium mb-1">
               Pending Requests
             </span>
-            <div className="text-yellow-600 font-semibold text-lg">
+            <div className="text-muted-foreground font-semibold text-lg">
               {pendingRequests}
             </div>
           </div>
@@ -404,8 +404,8 @@ export default function PixelsPage() {
                           {(pixel as any).pixel_name || pixel.pixel_name || `Pixel ${pixel.pixel_id}`}
                         </span>
                         {isPendingApplication && (
-                          <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 rounded-full dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800 flex-shrink-0">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full mr-1.5 animate-pulse"></div>
+                          <span className="ml-2 inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-50 text-foreground border border-border rounded-full dark:bg-secondary/20 dark:text-foreground dark:border-border flex-shrink-0">
+                            <div className="w-1.5 h-1.5 bg-secondary rounded-full mr-1.5 animate-pulse"></div>
                             Connection Pending
                           </span>
                         )}

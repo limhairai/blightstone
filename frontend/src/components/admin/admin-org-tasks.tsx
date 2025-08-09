@@ -135,9 +135,9 @@ export function AdminOrgTasks({ orgId, isSuperuser }: { orgId: string, isSuperus
       .finally(() => setLoading(false))
   }
 
-  if (!isSuperuser) return <div className="p-4 text-center text-red-500">Not authorized</div>
+  if (!isSuperuser) return <div className="p-4 text-center text-muted-foreground">Not authorized</div>
   if (loading) return <div className="p-4 text-center">Loading tasks...</div>
-  if (error) return <div className="p-4 text-center text-red-500">{error}</div>
+  if (error) return <div className="p-4 text-center text-muted-foreground">{error}</div>
 
   return (
     <Card>
@@ -187,7 +187,7 @@ export function AdminOrgTasks({ orgId, isSuperuser }: { orgId: string, isSuperus
                   )}
                 </div>
                 <div className="flex gap-2 items-center">
-                  <span className={task.status === "completed" ? "text-[#34D197] text-xs" : "text-yellow-600 text-xs"}>{task.status}</span>
+                  <span className={task.status === "completed" ? "text-[#34D197] text-xs" : "text-muted-foreground text-xs"}>{task.status}</span>
                   {editingTaskId !== task.id && (
                     <>
                       {task.status !== "completed" && (

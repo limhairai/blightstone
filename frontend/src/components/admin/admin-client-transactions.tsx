@@ -77,7 +77,7 @@ export function AdminClientTransactions({ clientId }: { clientId: string }) {
     switch (type) {
       case "deposit":
         return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+          <Badge variant="outline" className="bg-secondary text-foreground border-border">
             Deposit
           </Badge>
         )
@@ -89,13 +89,13 @@ export function AdminClientTransactions({ clientId }: { clientId: string }) {
         )
       case "transfer":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+          <Badge variant="outline" className="bg-secondary text-foreground border-border">
             Transfer
           </Badge>
         )
       case "fee":
         return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+          <Badge variant="outline" className="bg-secondary text-foreground border-border">
             Fee
           </Badge>
         )
@@ -107,19 +107,19 @@ export function AdminClientTransactions({ clientId }: { clientId: string }) {
     switch (status) {
       case "completed":
         return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+          <Badge variant="outline" className="bg-secondary text-foreground border-border">
             Completed
           </Badge>
         )
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+          <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
             Pending
           </Badge>
         )
       case "failed":
         return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+          <Badge variant="outline" className="bg-muted text-muted-foreground border-border">
             Failed
           </Badge>
         )
@@ -134,9 +134,9 @@ export function AdminClientTransactions({ clientId }: { clientId: string }) {
       case "withdrawal":
         return <ArrowUpFromLine className="h-4 w-4 text-amber-600" />
       case "transfer":
-        return <RefreshCw className="h-4 w-4 text-blue-600" />
+        return <RefreshCw className="h-4 w-4 text-foreground" />
       case "fee":
-        return <DollarSign className="h-4 w-4 text-purple-600" />
+        return <DollarSign className="h-4 w-4 text-foreground" />
     }
   }
 

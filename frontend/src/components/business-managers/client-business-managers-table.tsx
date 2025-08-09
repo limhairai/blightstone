@@ -171,7 +171,7 @@ export function BusinessManagersTable({ businessManagers, loading, onRefresh }: 
                       {manager.is_active === false && (
                         <>
                           <span>•</span>
-                          <span className="text-orange-600 font-medium">Deactivated</span>
+                          <span className="text-muted-foreground font-medium">Deactivated</span>
                         </>
                       )}
                       <span>•</span>

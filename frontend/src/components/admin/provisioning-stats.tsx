@@ -26,14 +26,14 @@ export function ProvisioningStats() {
       label: "Approved Businesses",
       value: approvedBusinesses,
       icon: Users,
-      color: "text-blue-600",
+      color: "text-foreground",
       bgColor: "bg-blue-50",
     },
     {
       label: "Total Ad Accounts",
       value: totalAccounts,
       icon: CreditCard,
-      color: "text-purple-600",
+      color: "text-foreground",
       bgColor: "bg-purple-50",
     },
     {
@@ -47,14 +47,14 @@ export function ProvisioningStats() {
       label: "Pending Setup",
       value: pendingAccounts,
       icon: Clock,
-      color: "text-yellow-600",
+      color: "text-muted-foreground",
       bgColor: "bg-yellow-50",
     },
     {
       label: "Total Spend",
       value: `${(totalSpend / 1000).toFixed(1)}k`,
       icon: AlertTriangle,
-      color: "text-orange-600",
+      color: "text-muted-foreground",
       bgColor: "bg-orange-50",
     },
   ];

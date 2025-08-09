@@ -70,7 +70,7 @@ export default function PaymentSuccessPage() {
         <Card>
           <CardHeader className="text-center pb-4">
             <div className="mx-auto mb-4">
-              <CheckCircle className="h-16 w-16 text-green-500" />
+              <CheckCircle className="h-16 w-16 text-foreground" />
             </div>
             <CardTitle className="text-2xl text-[#34D197]">
               Payment Successful!
@@ -104,14 +104,14 @@ export default function PaymentSuccessPage() {
                   </div>
                 </div>
 
-                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="bg-blue-50 dark:bg-secondary p-4 rounded-lg border border-border dark:border-border">
                   <div className="flex items-start gap-3">
-                    <Wallet className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <Wallet className="h-5 w-5 text-foreground mt-0.5" />
                     <div>
-                      <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      <p className="text-sm font-medium text-foreground dark:text-foreground">
                         Funds Available Now
                       </p>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      <p className="text-xs text-foreground dark:text-foreground mt-1">
                         Your wallet balance has been updated and is ready to use for ad account top-ups.
                       </p>
                     </div>

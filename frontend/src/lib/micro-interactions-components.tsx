@@ -31,10 +31,10 @@ export function InteractiveButton({
 
   const baseClasses = "relative overflow-hidden transition-all duration-150 ease-out transform-gpu"
   const variantClasses = {
-    default: "bg-gray-100 hover:bg-gray-200 text-gray-900",
-    primary: "bg-blue-600 hover:bg-blue-700 text-white",
-    secondary: "bg-gray-200 hover:bg-gray-300 text-gray-900",
-    destructive: "bg-red-600 hover:bg-red-700 text-white"
+    default: "bg-secondary hover:bg-muted text-foreground",
+    primary: "bg-primary hover:bg-primary/90 text-primary-foreground",
+    secondary: "bg-secondary hover:bg-secondary/80 text-secondary-foreground",
+    destructive: "bg-muted hover:bg-muted/90 text-foreground"
   }
 
   const hoverScale = isHovered && !disabled ? "scale-105" : "scale-100"
@@ -58,7 +58,7 @@ export function InteractiveButton({
 export function LoadingBar({ 
   progress, 
   className = "",
-  color = "bg-blue-500" 
+        color = "bg-primary" 
 }: { 
   progress: number
   className?: string

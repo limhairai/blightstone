@@ -295,7 +295,7 @@ export default function PricingPage() {
                         <ul className="space-y-3">
                           {formatFeatures(plan).map((feature, index) => (
                             <li key={index} className="flex items-start">
-                              <Check className="h-4 w-4 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                              <Check className="h-4 w-4 text-foreground mr-3 mt-0.5 flex-shrink-0" />
                               <span className="text-sm text-muted-foreground">{feature}</span>
                             </li>
                           ))}
@@ -308,7 +308,7 @@ export default function PricingPage() {
                         disabled={isCurrent || isUpgrading || plan.isComingSoon}
                         className={`w-full h-12 font-medium ${
                           isCurrent
-                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                            ? 'bg-secondary hover:bg-secondary text-white'
                             : isPopular
                             ? 'bg-primary hover:bg-primary/90 text-primary-foreground border-0'
                             : 'bg-background hover:bg-accent text-foreground border border-border'
@@ -332,7 +332,7 @@ export default function PricingPage() {
           <div className="max-w-3xl mx-auto">
             <div className="flex items-center justify-center mb-6">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
+                <Star key={i} className="h-5 w-5 text-muted-foreground fill-current" />
               ))}
             </div>
             <blockquote className="text-xl text-muted-foreground italic mb-8">

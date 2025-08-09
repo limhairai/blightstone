@@ -355,8 +355,8 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
         <DialogTrigger asChild>{trigger}</DialogTrigger>
         <DialogContent className="sm:max-w-xl bg-card border-border">
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
-              <Check className="w-8 h-8 text-green-400" />
+            <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mb-6">
+              <Check className="w-8 h-8 text-foreground" />
             </div>
             <h3 className="text-xl font-semibold text-foreground mb-3">Request Submitted</h3>
             <p className="text-sm text-muted-foreground max-w-md">
@@ -382,12 +382,12 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
 
         {/* Free Plan Upgrade Warning */}
         {isOnFreePlan && (
-          <div className="mx-6 mt-4 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-blue-400">
+          <div className="mx-6 mt-4 bg-secondary/10 border border-border/20 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-foreground">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-sm font-medium">Upgrade Required</span>
             </div>
-            <p className="text-sm text-blue-300 mt-1">
+            <p className="text-sm text-foreground mt-1">
               {subscriptionMessage || "You're on the free plan. Upgrade to access topup functionality and all features."}
             </p>
           </div>
@@ -466,13 +466,13 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                       </div>
                       <div className="flex justify-between items-center text-sm">
                         <p className="text-muted-foreground">Available:</p>
-                        <p className={`font-medium ${limitInfo.available > 0 || limitInfo.limit === -1 ? 'text-green-500' : 'text-red-500'}`}>
+                        <p className={`font-medium ${limitInfo.available > 0 || limitInfo.limit === -1 ? 'text-foreground' : 'text-muted-foreground'}`}>
                           {limitInfo.limit === -1 ? 'Unlimited' : formatCurrency(limitInfo.available)}
                         </p>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-2 text-green-400">
+                    <div className="flex items-center gap-2 text-foreground">
                       <Check className="h-4 w-4" />
                       <span className="text-sm">Unlimited top-ups ({limitInfo.planName})</span>
                     </div>
@@ -505,12 +505,12 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                       required
                       disabled={isOnFreePlan}
                       className={`pl-12 h-12 text-lg bg-background border-border text-foreground ${
-                        amountError ? 'border-red-500' : ''
+                        amountError ? 'border-border' : ''
                       } ${isOnFreePlan ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                   </div>
                   {amountError && (
-                    <p className="text-xs text-red-400 mt-2">{amountError}</p>
+                    <p className="text-xs text-muted-foreground mt-2">{amountError}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
                     Minimum: $100. {isMultipleAccounts 
@@ -544,7 +544,7 @@ export function TopUpDialog({ trigger, account, accounts, onSuccess }: TopUpDial
                       {feeCalculation.fee_amount > 0 && (
                         <div className="flex justify-between">
                           <span className="text-sm text-muted-foreground">Platform fee ({feeCalculation.fee_percentage}%):</span>
-                          <span className="text-sm font-medium text-orange-400">+${formatCurrency(feeCalculation.fee_amount)}</span>
+                          <span className="text-sm font-medium text-muted-foreground">+${formatCurrency(feeCalculation.fee_amount)}</span>
                         </div>
                       )}
                       <div className="border-t border-muted/40 pt-2 mt-2">

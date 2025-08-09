@@ -170,7 +170,7 @@ export function BmApplicationFeeDialog({
               </div>
               <div className="flex justify-between">
                 <span>Application cost:</span>
-                <span className={actualFee === 0 ? "text-green-600 font-medium" : "text-amber-600 font-medium"}>
+                <span className={actualFee === 0 ? "text-foreground font-medium" : "text-amber-600 font-medium"}>
                   {actualFee === 0 ? 'Free' : `$${actualFee}`}
                 </span>
               </div>
@@ -183,10 +183,10 @@ export function BmApplicationFeeDialog({
             
             {!isAtLimit ? (
               <div className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-green-600" />
+                <Check className="h-4 w-4 text-foreground" />
                 <span className="font-medium">
                   {actualFee === 0 ? (
-                    <span className="text-green-600">
+                    <span className="text-foreground">
                       {isFirstBm ? 'First BM - Free!' : 'Free Business Manager Application'}
                     </span>
                   ) : (

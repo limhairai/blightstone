@@ -73,12 +73,12 @@ export function OptimizedBillingView({
       case 'active': 
         return <CheckCircle className="h-3 w-3 text-[#34D197]" />;
       case 'pending': 
-        return <AlertTriangle className="h-3 w-3 text-yellow-600" />;
+        return <AlertTriangle className="h-3 w-3 text-muted-foreground" />;
       case 'failed':
       case 'cancelled':
       case 'suspended':
       case 'overdue': 
-        return <XCircle className="h-3 w-3 text-red-600" />;
+        return <XCircle className="h-3 w-3 text-muted-foreground" />;
       default: 
         return <div className="h-3 w-3 rounded-full bg-gray-400" />;
     }
@@ -107,7 +107,7 @@ export function OptimizedBillingView({
       
       <div className="flex items-center gap-4 text-xs">
         <div className="text-right">
-                          <div className={`font-medium ${tx.type === 'deposit' || tx.type === 'refund' ? 'text-[#34D197] dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          <div className={`font-medium ${tx.type === 'deposit' || tx.type === 'refund' ? 'text-[#34D197] dark:text-foreground' : 'text-muted-foreground dark:text-muted-foreground'}`}>
             {tx.type === 'deposit' || tx.type === 'refund' ? '+' : '-'}{formatCurrency(tx.amount)}
           </div>
           <div className="text-muted-foreground text-xs">
@@ -200,7 +200,7 @@ export function OptimizedBillingView({
       <div className="grid grid-cols-6 gap-2 text-xs">
         <Card className="p-2">
           <div className="text-center">
-                            <div className="text-sm font-bold text-[#34D197] dark:text-green-400">$2.4M</div>
+                            <div className="text-sm font-bold text-[#34D197] dark:text-foreground">$2.4M</div>
             <div className="text-muted-foreground text-xs">Balance</div>
           </div>
         </Card>
@@ -224,7 +224,7 @@ export function OptimizedBillingView({
         </Card>
         <Card className="p-2">
           <div className="text-center">
-            <div className="text-sm font-bold text-red-600">23</div>
+            <div className="text-sm font-bold text-muted-foreground">23</div>
             <div className="text-muted-foreground text-xs">Overdue</div>
           </div>
         </Card>

@@ -90,7 +90,7 @@ export function AccountTransactionsDialog({ account, open, onOpenChange }: Accou
     return type === "top_up" ? (
       <ArrowDownLeft className="h-4 w-4 text-[#00c853]" />
     ) : (
-      <ArrowUpRight className="h-4 w-4 text-blue-500" />
+      <ArrowUpRight className="h-4 w-4 text-foreground" />
     )
   }
 
@@ -104,13 +104,13 @@ export function AccountTransactionsDialog({ account, open, onOpenChange }: Accou
         )
       case "pending":
         return (
-          <Badge variant="outline" className="text-yellow-600 border-yellow-600">
+          <Badge variant="outline" className="text-muted-foreground border-border">
             Pending
           </Badge>
         )
       case "failed":
         return (
-          <Badge variant="outline" className="text-red-600 border-red-600">
+          <Badge variant="outline" className="text-muted-foreground border-border">
             Failed
           </Badge>
         )
@@ -153,7 +153,7 @@ export function AccountTransactionsDialog({ account, open, onOpenChange }: Accou
             </div>
             <div className="p-3 bg-muted/50 rounded-lg border border-border">
               <div className="text-xs text-muted-foreground uppercase tracking-wide">Total Withdrawals</div>
-              <div className="text-lg font-semibold text-blue-600">${formatCurrency(totalWithdrawals)}</div>
+              <div className="text-lg font-semibold text-foreground">${formatCurrency(totalWithdrawals)}</div>
             </div>
           </div>
 
@@ -189,7 +189,7 @@ export function AccountTransactionsDialog({ account, open, onOpenChange }: Accou
                   <div className="text-right">
                     <div
                       className={`text-sm font-semibold ${
-                        transaction.type === "top_up" ? "text-[#00c853]" : "text-blue-600"
+                        transaction.type === "top_up" ? "text-[#00c853]" : "text-foreground"
                       }`}
                     >
                       {transaction.type === "top_up" ? "+" : "-"}${formatCurrency(transaction.amount)}

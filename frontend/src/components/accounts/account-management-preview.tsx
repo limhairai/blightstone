@@ -53,9 +53,9 @@ export function AccountManagementPreview() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-400";
-      case "warning": return "bg-yellow-400";
-      case "error": return "bg-red-400";
+      case "active": return "bg-secondary";
+      case "warning": return "bg-muted";
+      case "error": return "bg-muted";
       default: return "bg-gray-400";
     }
   };
@@ -66,7 +66,7 @@ export function AccountManagementPreview() {
       <div className="relative z-10 p-8">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-lg font-semibold text-white">Account Management</h3>
-          <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div><span className="text-sm text-white/60">Live</span></div>
+          <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-secondary animate-pulse"></div><span className="text-sm text-white/60">Live</span></div>
         </div>
         <div className="grid grid-cols-2 gap-4 mb-8">
           {accountsData.map((account, index) => (
@@ -90,7 +90,7 @@ export function AccountManagementPreview() {
             </div>
             <div className="bg-black/50 rounded-lg p-6">
               <div className="text-sm text-white/70 mb-2">Total Spend</div>
-              <div className="text-3xl font-bold text-green-400">${accountsData[selectedAccount]?.spend.toLocaleString() || '0'}</div>
+              <div className="text-3xl font-bold text-foreground">${accountsData[selectedAccount]?.spend.toLocaleString() || '0'}</div>
             </div>
           </div>
           <div className="flex gap-4 pt-2">

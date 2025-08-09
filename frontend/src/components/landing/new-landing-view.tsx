@@ -107,7 +107,7 @@ export function NewLandingView() {
                 <span className="text-4xl font-bold mr-2">4,9</span>
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                    <svg key={i} className="w-6 h-6 text-muted-foreground fill-current" viewBox="0 0 24 24">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
                   ))}
@@ -125,7 +125,7 @@ export function NewLandingView() {
             <h2 className="text-4xl md:text-5xl font-bold mb-6 font-inter">
               Monitor performance, track spending, and manage multiple Meta ad accounts from a unified dashboard.
             </h2>
-            <h3 className="text-3xl md:text-4xl font-bold text-blue-400 mb-8 font-inter">
+            <h3 className="text-3xl md:text-4xl font-bold text-foreground mb-8 font-inter">
               Agency accounts made simple.
             </h3>
             <p className="text-lg text-white/80 max-w-4xl mx-auto font-inter">

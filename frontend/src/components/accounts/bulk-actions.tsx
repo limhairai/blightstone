@@ -25,7 +25,7 @@ export function BulkActions({ selectedCount, onClearSelection: _onClearSelection
           <Archive className="mr-2 h-4 w-4" />
           Archive
         </Button>
-        <Button variant="ghost" size="sm" className="h-9 px-3 text-red-400 hover:text-red-300 hover:bg-[#222222]">
+        <Button variant="ghost" size="sm" className="h-9 px-3 text-muted-foreground hover:text-muted-foreground hover:bg-[#222222]">
           <Trash2 className="mr-2 h-4 w-4" />
           Delete
         </Button>

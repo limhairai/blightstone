@@ -90,8 +90,8 @@ export function AccountTypeSelector({
                 : 'border-border hover:border-border/60'
             }`}>
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-green-500/20">
-                  <Wallet className="h-5 w-5 text-blue-500" />
+                <div className="p-2 rounded-lg bg-gradient-to-r from-primary/20 to-green-500/20">
+                  <Wallet className="h-5 w-5 text-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -125,7 +125,7 @@ export function AccountTypeSelector({
       )}
 
       {selectedType === 'prepay' && (
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/30">
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-secondary/20 rounded-lg border border-border dark:border-border/30">
           <p className="text-sm text-foreground">
             <strong>Prepay accounts:</strong> These come with a BlueFocus Business Manager and require 
             upfront funding before ad spend. Standard processing applies.

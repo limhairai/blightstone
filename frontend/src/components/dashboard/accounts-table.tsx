@@ -308,7 +308,7 @@ export const AccountsTable = React.memo(function AccountsTable() {
                     <div className={`font-medium ${isPendingApplication ? 'text-muted-foreground' : ''}`}>
                       {account.name}
                       {isPendingApplication && (
-                        <span className="ml-2 text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded">
+                        <span className="ml-2 text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
                           Application Pending
                         </span>
                       )}
@@ -372,7 +372,7 @@ export const AccountsTable = React.memo(function AccountsTable() {
                           <DropdownMenuItem>Top-up Balance</DropdownMenuItem>
                           <DropdownMenuItem>View Transactions</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500">
+                          <DropdownMenuItem className="text-muted-foreground">
                             Remove from Business
                           </DropdownMenuItem>
                           <DropdownMenuItem 

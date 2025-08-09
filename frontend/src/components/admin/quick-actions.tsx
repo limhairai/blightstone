@@ -117,7 +117,7 @@ export function QuickActions({ org }: { org: Organization }) {
           </DialogHeader>
           <div className="space-y-4">
             {error && (
-              <div className="text-red-600 text-sm">{error}</div>
+              <div className="text-muted-foreground text-sm">{error}</div>
             )}
             <div>
               <Label htmlFor="edit-org-name">Organization Name</Label>
@@ -153,7 +153,7 @@ export function QuickActions({ org }: { org: Organization }) {
       {/* Archive Button */}
       <Button 
         variant="outline" 
-        className="bg-red-100 text-red-700 border-red-200 hover:bg-red-200"
+        className="bg-muted text-muted-foreground border-border hover:bg-muted"
         onClick={handleArchive}
         disabled={loading}
       >
@@ -164,7 +164,7 @@ export function QuickActions({ org }: { org: Organization }) {
       {/* Invite User Dialog */}
       <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="bg-green-100 text-green-700 border-green-200 hover:bg-green-200">
+          <Button variant="outline" className="bg-secondary text-foreground border-border hover:bg-secondary">
             <UserPlus className="h-4 w-4 mr-2" />
             Invite User
           </Button>
@@ -175,7 +175,7 @@ export function QuickActions({ org }: { org: Organization }) {
           </DialogHeader>
           <div className="space-y-4">
             {error && (
-              <div className="text-red-600 text-sm">{error}</div>
+              <div className="text-muted-foreground text-sm">{error}</div>
             )}
             <div>
               <Label htmlFor="invite-user-email">Email Address</Label>

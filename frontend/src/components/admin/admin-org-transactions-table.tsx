@@ -39,8 +39,8 @@ export function AdminOrgTransactionsTable({ orgId, isSuperuser }: { orgId: strin
       .finally(() => setLoading(false))
   }, [orgId, isSuperuser, page, pageSize])
 
-  if (!isSuperuser) return <div className="p-4 text-center text-red-500">Not authorized</div>
-  if (error) return <div className="p-4 text-center text-red-500">{error}</div>
+  if (!isSuperuser) return <div className="p-4 text-center text-muted-foreground">Not authorized</div>
+  if (error) return <div className="p-4 text-center text-muted-foreground">{error}</div>
   if (loading) return <div className="p-4 text-center">Loading org transactions...</div>
 
   return (

@@ -93,8 +93,8 @@ export function DenseInfrastructureView({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <CheckCircle className="h-3 w-3 text-[#34D197]" />;
-      case 'restricted': return <AlertTriangle className="h-3 w-3 text-yellow-600" />;
-      case 'suspended': return <XCircle className="h-3 w-3 text-red-600" />;
+      case 'restricted': return <AlertTriangle className="h-3 w-3 text-muted-foreground" />;
+      case 'suspended': return <XCircle className="h-3 w-3 text-muted-foreground" />;
       default: return <Minus className="h-3 w-3 text-gray-400" />;
     }
   };
@@ -243,7 +243,7 @@ export function DenseInfrastructureView({
 
       {/* Bulk Actions */}
       {selectedItems.size > 0 && (
-        <div className="flex items-center gap-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center gap-2 p-2 bg-blue-50 border border-border rounded-lg">
           <span className="text-sm font-medium">{selectedItems.size} selected</span>
           <Button size="sm" variant="outline" className="h-6 text-xs">
             Bulk Update Status
@@ -310,7 +310,7 @@ export function DenseInfrastructureView({
         </Card>
         <Card className="p-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-red-600">
+            <div className="text-lg font-bold text-muted-foreground">
               {businessManagers.filter(bm => bm.alerts > 0).length}
             </div>
             <div className="text-muted-foreground">With Alerts</div>

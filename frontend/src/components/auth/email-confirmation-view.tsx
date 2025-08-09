@@ -71,8 +71,8 @@ export function EmailConfirmationView() {
 
           {/* Success icon */}
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-green-400" />
+            <div className="w-16 h-16 bg-secondary/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-foreground" />
                   </div>
                 </div>
                 

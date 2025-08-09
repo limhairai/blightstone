@@ -98,13 +98,13 @@ export default function ApplicationsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
-        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+        return <Badge variant="secondary" className="bg-muted text-muted-foreground border-border"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
       case "under_review":
-        return <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200"><AlertTriangle className="h-3 w-3 mr-1" />Under Review</Badge>;
+        return <Badge variant="secondary" className="bg-secondary text-foreground border-border"><AlertTriangle className="h-3 w-3 mr-1" />Under Review</Badge>;
       case "approved":
-        return <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
+        return <Badge variant="secondary" className="bg-secondary text-foreground border-border"><CheckCircle className="h-3 w-3 mr-1" />Approved</Badge>;
       case "rejected":
-        return <Badge variant="secondary" className="bg-red-100 text-red-800 border-red-200"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
+        return <Badge variant="secondary" className="bg-muted text-muted-foreground border-border"><XCircle className="h-3 w-3 mr-1" />Rejected</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -312,7 +312,7 @@ export default function ApplicationsPage() {
                           href={application.website_url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                          className="text-foreground hover:text-foreground hover:underline"
                         >
                           {application.website_url}
                         </a>
@@ -321,8 +321,8 @@ export default function ApplicationsPage() {
 
 
                       {application.rejection_reason && (
-                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
-                          <p className="text-sm text-red-800">
+                        <div className="mt-3 p-3 bg-red-50 border border-border rounded-md">
+                          <p className="text-sm text-muted-foreground">
                             <strong>Rejection Reason:</strong> {application.rejection_reason}
                           </p>
                         </div>

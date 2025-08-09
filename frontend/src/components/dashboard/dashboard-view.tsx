@@ -723,7 +723,7 @@ export function DashboardView() {
         )
       case 'transfer':
         return (
-          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-950/30 text-blue-400">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-secondary/30 text-foreground">
             <ArrowRight className="h-3 w-3" />
           </div>
         )

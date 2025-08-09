@@ -88,13 +88,13 @@ export function AdminClientsList() {
         )
       case "premium":
         return (
-          <Badge variant="outline" className="bg-purple-900/20 text-purple-400 border-purple-900/50">
+          <Badge variant="outline" className="bg-secondary/20 text-foreground border-border/50">
             Premium
           </Badge>
         )
       case "enterprise":
         return (
-          <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900/50">
+          <Badge variant="outline" className="bg-secondary/20 text-foreground border-border/50">
             Enterprise
           </Badge>
         )
@@ -106,19 +106,19 @@ export function AdminClientsList() {
     switch (status) {
       case "active":
         return (
-          <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-900/50">
+          <Badge variant="outline" className="bg-secondary/20 text-foreground border-border/50">
             Active
           </Badge>
         )
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-900/20 text-yellow-400 border-yellow-900/50">
+          <Badge variant="outline" className="bg-muted/20 text-muted-foreground border-border/50">
             Pending
           </Badge>
         )
       case "suspended":
         return (
-          <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-900/50">
+          <Badge variant="outline" className="bg-muted/20 text-muted-foreground border-border/50">
             Suspended
           </Badge>
         )

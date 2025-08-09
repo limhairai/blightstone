@@ -139,7 +139,7 @@ export function AdminOrgTeamTable({ orgId }: { orgId: string }) {
   }
 
   if (loading) return <div className="p-4 text-center">Loading team...</div>
-  if (error) return <div className="p-4 text-center text-red-500">{error}</div>
+  if (error) return <div className="p-4 text-center text-muted-foreground">{error}</div>
 
   return (
     <Card>
@@ -166,8 +166,8 @@ export function AdminOrgTeamTable({ orgId }: { orgId: string }) {
                 <td className="py-2">
                   <Badge variant="outline" className={
                     member.status === "active"
-                      ? "bg-green-100 text-green-800 border-green-200"
-                      : "bg-yellow-100 text-yellow-800 border-yellow-200"
+                      ? "bg-secondary text-foreground border-border"
+                      : "bg-muted text-muted-foreground border-border"
                   }>{member.status}</Badge>
                 </td>
                 <td className="py-2 text-right flex gap-2 justify-end">
@@ -190,7 +190,7 @@ export function AdminOrgTeamTable({ orgId }: { orgId: string }) {
         <div className="mt-4">
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="bg-green-100 text-green-700 border-green-200 hover:bg-green-200">
+              <Button variant="outline" className="bg-secondary text-foreground border-border hover:bg-secondary">
                 <UserPlus className="h-4 w-4 mr-2" />
                 Invite User
               </Button>

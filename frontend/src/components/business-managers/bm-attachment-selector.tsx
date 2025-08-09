@@ -70,7 +70,7 @@ export function BmAttachmentSelector({
             }`}>
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-r from-green-500/20 to-blue-500/20">
-                  <Building2 className="h-5 w-5 text-green-500" />
+                  <Building2 className="h-5 w-5 text-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -160,7 +160,7 @@ export function BmAttachmentSelector({
 
       {/* Additional info based on selection */}
       {selectedData.type === 'own' && (
-        <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/30">
+        <div className="mt-4 p-3 bg-green-50 dark:bg-secondary/20 rounded-lg border border-border dark:border-border/30">
           <p className="text-sm text-foreground">
             <strong>Attach existing BM:</strong> You'll need to provide admin access to our team 
             for account setup and management. We'll guide you through the process.

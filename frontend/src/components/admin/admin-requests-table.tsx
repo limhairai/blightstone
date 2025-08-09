@@ -68,25 +68,25 @@ export function AdminRequestsTable() {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-900/20 text-yellow-400 border-yellow-900/50">
+          <Badge variant="outline" className="bg-muted/20 text-muted-foreground border-border/50">
             Pending
           </Badge>
         )
       case "in_review":
         return (
-          <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900/50">
+          <Badge variant="outline" className="bg-secondary/20 text-foreground border-border/50">
             In Review
           </Badge>
         )
       case "approved":
         return (
-          <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-900/50">
+          <Badge variant="outline" className="bg-secondary/20 text-foreground border-border/50">
             Approved
           </Badge>
         )
       case "rejected":
         return (
-          <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-900/50">
+          <Badge variant="outline" className="bg-muted/20 text-muted-foreground border-border/50">
             Rejected
           </Badge>
         )
@@ -152,7 +152,7 @@ export function AdminRequestsTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-2 text-green-400 hover:text-green-300 border-green-900/30 hover:border-green-900/50 hover:bg-green-900/20"
+                    className="h-8 px-2 text-foreground hover:text-foreground border-border/30 hover:border-border/50 hover:bg-secondary/20"
                     onClick={() => handleApprove(request.id)}
                     disabled={request.status === "approved" || request.status === "rejected"}
                   >
@@ -162,7 +162,7 @@ export function AdminRequestsTable() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 px-2 text-red-400 hover:text-red-300 border-red-900/30 hover:border-red-900/50 hover:bg-red-900/20"
+                    className="h-8 px-2 text-muted-foreground hover:text-muted-foreground border-border/30 hover:border-border/50 hover:bg-muted/20"
                     onClick={() => handleReject(request.id)}
                     disabled={request.status === "approved" || request.status === "rejected"}
                   >

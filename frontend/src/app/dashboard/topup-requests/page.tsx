@@ -167,13 +167,13 @@ export default function ClientTopupRequestsPage() {
   const getStatusConfig = (status: TopupRequestStatus) => {
     switch (status) {
       case 'pending':
-        return { color: "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800", icon: Clock }
+        return { color: "bg-muted text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border", icon: Clock }
       case 'processing':
-        return { color: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800", icon: Clock }
+        return { color: "bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border", icon: Clock }
       case 'completed':
-        return { color: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800", icon: CheckCircle }
+        return { color: "bg-secondary text-foreground border-border dark:bg-secondary/20 dark:text-foreground dark:border-border", icon: CheckCircle }
       case 'failed':
-        return { color: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800", icon: X }
+        return { color: "bg-muted text-muted-foreground border-border dark:bg-muted/20 dark:text-muted-foreground dark:border-border", icon: X }
       case 'cancelled':
         return { color: "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-400 dark:border-gray-800", icon: X }
       default:
@@ -355,7 +355,7 @@ export default function ClientTopupRequestsPage() {
     // Check if this is a top-up request (transfer with request_type metadata)
     if (type === 'transfer' && metadata?.request_type === 'topup') {
       return (
-        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-orange-950/30 text-orange-400">
+        <div className="flex items-center justify-center w-6 h-6 rounded-full bg-muted/30 text-muted-foreground">
           <Clock className="h-3 w-3" />
         </div>
       )
@@ -377,7 +377,7 @@ export default function ClientTopupRequestsPage() {
         )
       case "transfer":
         return (
-          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-950/30 text-blue-400">
+          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-secondary/30 text-foreground">
             {amount > 0 ? <ArrowDownIcon className="h-3 w-3" /> : <ArrowUpIcon className="h-3 w-3" />}
           </div>
         )
@@ -681,7 +681,7 @@ export default function ClientTopupRequestsPage() {
           </div>
         ) : transactionsError ? (
           <div className="flex items-center justify-center py-8">
-            <div className="text-red-500">Error loading transactions: {transactionsError.message}</div>
+            <div className="text-muted-foreground">Error loading transactions: {transactionsError.message}</div>
           </div>
         ) : (
           <>
