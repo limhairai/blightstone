@@ -130,13 +130,10 @@ export function AppShell({ children }: AppShellProps) {
             hasNotifications={false} 
             setupWidgetState={setupWidgetState}
             onSetupWidgetStateChange={setSetupWidgetState}
-            showEmptyStateElements={progressData ? progressData.completionPercentage < 100 : true}
+            showEmptyStateElements={true}
           />
           <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>
-            {/* Blocking overlay for new users until they see welcome */}
-            {showWelcomeOverlay && (
-              <div className="absolute inset-0 bg-black/50 z-30 backdrop-blur-sm" />
-            )}
+            {/* Welcome overlay removed for internal CRM */}
             {children}
           </main>
         </div>
