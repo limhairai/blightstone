@@ -136,16 +136,16 @@ export function RegisterView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black relative overflow-hidden">
+      <div className="min-h-screen bg-background relative overflow-hidden">
         {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
         
         {/* Main content */}
         <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
           <div className="w-full max-w-md text-center space-y-4">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-gray-400">Creating your account...</p>
+            <p className="text-muted-foreground">Creating your account...</p>
           </div>
         </div>
       </div>
@@ -153,16 +153,16 @@ export function RegisterView() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
       
       {/* Home button */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://blightstone.com"
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Home
@@ -180,10 +180,10 @@ export function RegisterView() {
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Create a Blightstone Account</h1>
-            <p className="text-gray-400">
+            <h1 className="text-2xl font-semibold text-foreground">Create a Blightstone Account</h1>
+            <p className="text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="text-white underline hover:no-underline">
+              <Link href="/login" className="text-foreground underline hover:no-underline">
                 Log in
               </Link>
               .
@@ -196,7 +196,7 @@ export function RegisterView() {
               type="button"
               onClick={handleGoogleSignUp}
               disabled={loading}
-              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
+              className="h-11 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-md font-normal"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
@@ -223,7 +223,7 @@ export function RegisterView() {
               <Button
                 type="button"
                 disabled={loading}
-                className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal w-full"
+                className="h-11 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-md font-normal w-full"
               >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -237,10 +237,10 @@ export function RegisterView() {
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-black px-4 text-gray-400">or</span>
+              <span className="bg-background px-4 text-muted-foreground">or</span>
             </div>
           </div>
 
@@ -258,7 +258,7 @@ export function RegisterView() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
+                className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0"
               />
             </div>
 
@@ -274,7 +274,7 @@ export function RegisterView() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
+                className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0"
               />
             </div>
 
@@ -293,17 +293,17 @@ export function RegisterView() {
 
           {/* Terms */}
           <div className="text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               By signing up, you agree to our{" "}
-              <Link href="/terms" className="text-gray-400 underline hover:no-underline">
+              <Link href="/terms" className="text-muted-foreground underline hover:no-underline">
                 Terms
               </Link>
               ,{" "}
-              <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
+              <Link href="/privacy" className="text-muted-foreground underline hover:no-underline">
                 Acceptable Use
               </Link>
               , and{" "}
-              <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
+              <Link href="/privacy" className="text-muted-foreground underline hover:no-underline">
                 Privacy Policy
               </Link>
               .

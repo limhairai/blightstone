@@ -46,16 +46,16 @@ export function ForgotPasswordView() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-black relative overflow-hidden">
+      <div className="min-h-screen bg-background relative overflow-hidden">
         {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
         
         {/* Home button */}
         <div className="absolute top-6 left-6 z-50">
           <Link 
             href="https://blightstone.com" 
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
           >
             <ArrowLeft className="h-4 w-4" />
             Home
@@ -75,15 +75,15 @@ export function ForgotPasswordView() {
 
             {/* Header */}
             <div className="text-center space-y-2">
-              <h1 className="text-2xl font-semibold text-white">Check Your Email</h1>
-              <p className="text-gray-400">
+              <h1 className="text-2xl font-semibold text-foreground">Check Your Email</h1>
+              <p className="text-muted-foreground">
                 We've sent password reset instructions to {email}
               </p>
                 </div>
 
             {/* Instructions */}
             <div className="text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                     Click the link in the email to reset your password. 
                 If you don't see it, check your spam folder.
                   </p>
@@ -103,7 +103,7 @@ export function ForgotPasswordView() {
                   setSent(false)
                   setEmail("")
                 }}
-                className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
+                className="w-full h-11 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-md font-normal"
                   >
                     Try Different Email
                   </Button>
@@ -115,16 +115,16 @@ export function ForgotPasswordView() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
       
       {/* Home button */}
         <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://blightstone.com" 
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Home
@@ -142,10 +142,10 @@ export function ForgotPasswordView() {
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Reset Your Password</h1>
-            <p className="text-gray-400">
+            <h1 className="text-2xl font-semibold text-foreground">Reset Your Password</h1>
+            <p className="text-muted-foreground">
               Remember your password?{" "}
-              <Link href="/login" className="text-white underline hover:no-underline">
+              <Link href="/login" className="text-foreground underline hover:no-underline">
                 Sign in
               </Link>
               .
@@ -166,7 +166,7 @@ export function ForgotPasswordView() {
                     onChange={(e) => setEmail(e.target.value)}
                 required
                     disabled={loading}
-                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
+                className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0"
                   />
                 </div>
 
@@ -181,7 +181,7 @@ export function ForgotPasswordView() {
 
           {/* Back link */}
           <div className="text-center">
-            <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               ← Back to Sign In
                   </Link>
               </div>

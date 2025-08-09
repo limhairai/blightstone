@@ -44,16 +44,16 @@ export function EmailConfirmationView() {
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
       
       {/* Home button */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://blightstone.com"
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Home
@@ -78,16 +78,16 @@ export function EmailConfirmationView() {
                 
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Check Your Email</h1>
-            <p className="text-gray-400">
+            <h1 className="text-2xl font-semibold text-foreground">Check Your Email</h1>
+            <p className="text-muted-foreground">
               We've sent a confirmation email to{" "}
-              <span className="font-medium text-white break-all">{email}</span>
+              <span className="font-medium text-foreground break-all">{email}</span>
             </p>
               </div>
 
           {/* Instructions */}
           <div className="text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Click the link in the email to confirm your account. 
               If you don't see it, check your spam folder.
             </p>
@@ -98,7 +98,7 @@ export function EmailConfirmationView() {
                 <Button
                   onClick={handleResendEmail}
                   disabled={isResending || !email}
-              className="w-full h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
+              className="w-full h-11 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-md font-normal"
                 >
                   {isResending ? (
                     <>
@@ -123,9 +123,9 @@ export function EmailConfirmationView() {
 
           {/* Terms */}
           <div className="text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
                   Need help?{" "}
-              <a href="mailto:support@blightstone.com" className="text-gray-400 underline hover:no-underline">
+              <a href="mailto:support@blightstone.com" className="text-muted-foreground underline hover:no-underline">
                     Contact support
                   </a>
                 </p>

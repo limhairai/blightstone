@@ -108,16 +108,16 @@ export function LoginView() {
   // Magic link handler removed - now handled by dedicated /magic-link page
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Clean light background */}
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
       
       {/* Home button - now clickable */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://blightstone.com"
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Home
@@ -135,10 +135,10 @@ export function LoginView() {
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Welcome back</h1>
-            <p className="text-gray-400">
+            <h1 className="text-2xl font-semibold text-foreground">Welcome back</h1>
+            <p className="text-muted-foreground">
               Don't have an account?{" "}
-              <Link href="/register" className="text-white underline hover:no-underline">
+              <Link href="/register" className="text-foreground underline hover:no-underline">
                 Sign up
               </Link>
               .
@@ -151,7 +151,7 @@ export function LoginView() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={authIsLoading}
-              className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal"
+                              className="h-11 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-md font-normal"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path
@@ -178,7 +178,7 @@ export function LoginView() {
             <Button
               type="button"
               disabled={authIsLoading}
-                className="h-11 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white rounded-md font-normal w-full"
+                                 className="h-11 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-md font-normal w-full"
             >
                 <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -192,10 +192,10 @@ export function LoginView() {
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-700" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="bg-black px-4 text-gray-400">or</span>
+              <span className="bg-background px-4 text-muted-foreground">or</span>
             </div>
           </div>
 
@@ -213,7 +213,7 @@ export function LoginView() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={authIsLoading}
-                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
+                                  className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0"
               />
             </div>
 
@@ -222,7 +222,7 @@ export function LoginView() {
                 <label htmlFor="password" className="block text-sm text-gray-300">
                   Password
                 </label>
-                <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white transition-colors">
+                <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   Forgot Password?
                 </Link>
               </div>
@@ -234,7 +234,7 @@ export function LoginView() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={authIsLoading}
-                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
+                                  className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0"
               />
             </div>
 
@@ -253,13 +253,13 @@ export function LoginView() {
 
           {/* Terms */}
           <div className="text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               By continuing, you agree to Blightstone's{" "}
-              <Link href="/terms" className="text-gray-400 underline hover:no-underline">
+              <Link href="/terms" className="text-muted-foreground underline hover:no-underline">
                 Terms of Service
                 </Link>
               {" "}and{" "}
-              <Link href="/privacy" className="text-gray-400 underline hover:no-underline">
+              <Link href="/privacy" className="text-muted-foreground underline hover:no-underline">
               Privacy Policy
             </Link>
             , and to receive periodic emails with updates.

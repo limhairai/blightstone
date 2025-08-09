@@ -56,7 +56,7 @@ export default function OnboardingPage() {
               value={orgName}
               onChange={(e) => setOrgName(e.target.value)}
               placeholder="Your Team Name"
-              className="h-12 bg-gray-900 border-gray-700 text-white rounded-md w-full"
+              className="h-12 bg-input border-border text-foreground rounded-md w-full"
               autoFocus
             />
           </div>
@@ -76,10 +76,10 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={industry} onValueChange={setIndustry}>
-            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
+            <SelectTrigger className="h-12 bg-input border-border text-foreground rounded-md">
               <SelectValue placeholder="Select your industry" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-popover border-border text-foreground">
               <SelectItem value="ecommerce" className="cursor-pointer hover:bg-gray-800 transition-colors">E-commerce</SelectItem>
               <SelectItem value="saas" className="cursor-pointer hover:bg-accent/50 transition-colors">SaaS</SelectItem>
               <SelectItem value="agency" className="cursor-pointer hover:bg-accent/50 transition-colors">Marketing Agency</SelectItem>
@@ -104,10 +104,10 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={monthlySpend} onValueChange={setMonthlySpend}>
-            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
+            <SelectTrigger className="h-12 bg-input border-border text-foreground rounded-md">
               <SelectValue placeholder="Select your monthly ad spend" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-popover border-border text-foreground">
               <SelectItem value="1000-10000" className="cursor-pointer hover:bg-gray-800 transition-colors">$1K - $10K</SelectItem>
               <SelectItem value="10000-100000" className="cursor-pointer hover:bg-accent/50 transition-colors">$10K - $100K</SelectItem>
               <SelectItem value="100000-500000" className="cursor-pointer hover:bg-accent/50 transition-colors">$100K - $500K</SelectItem>
@@ -126,10 +126,10 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
+            <SelectTrigger className="h-12 bg-input border-border text-foreground rounded-md">
               <SelectValue placeholder="Select your timezone" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-popover border-border text-foreground">
               <SelectItem value="UTC-12" className="cursor-pointer hover:bg-gray-800 transition-colors">UTC-12 (Baker Island)</SelectItem>
               <SelectItem value="UTC-11" className="cursor-pointer hover:bg-accent/50 transition-colors">UTC-11 (American Samoa)</SelectItem>
               <SelectItem value="UTC-10" className="cursor-pointer hover:bg-accent/50 transition-colors">UTC-10 (Hawaii)</SelectItem>
@@ -168,10 +168,10 @@ export default function OnboardingPage() {
       component: (
         <div className="space-y-4">
           <Select value={howHeardAboutUs} onValueChange={setHowHeardAboutUs}>
-            <SelectTrigger className="h-12 bg-gray-900 border-gray-700 text-white rounded-md">
+            <SelectTrigger className="h-12 bg-input border-border text-foreground rounded-md">
               <SelectValue placeholder="Select how you found us" />
             </SelectTrigger>
-            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-gray-900 border-gray-700 text-white">
+            <SelectContent side="bottom" align="start" className="max-h-[300px] overflow-y-auto bg-popover border-border text-foreground">
               <SelectItem value="google" className="cursor-pointer hover:bg-gray-800 transition-colors">Google Search</SelectItem>
               <SelectItem value="social-media" className="cursor-pointer hover:bg-accent/50 transition-colors">Social Media</SelectItem>
               <SelectItem value="referral" className="cursor-pointer hover:bg-accent/50 transition-colors">Referral from Friend/Colleague</SelectItem>
@@ -258,9 +258,9 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+          <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
       
       <div className="absolute top-6 left-6 z-10">
         <BlightstoneLogo size="sm" />

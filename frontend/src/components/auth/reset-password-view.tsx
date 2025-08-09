@@ -112,10 +112,10 @@ export function ResetPasswordView() {
 
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <BlightstoneLogo size="sm" className="mb-6" />
-          <div className="text-white">Validating reset link...</div>
+          <div className="text-foreground">Validating reset link...</div>
         </div>
       </div>
     )
@@ -123,26 +123,26 @@ export function ResetPasswordView() {
 
   if (!isValidSession) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <BlightstoneLogo size="sm" className="mb-6" />
-          <div className="text-white">Invalid reset link. Redirecting...</div>
+          <div className="text-foreground">Invalid reset link. Redirecting...</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
+    <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900/50 via-black to-gray-900/30" />
-      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
+      <div className="absolute inset-0 bg-background" />
+      <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-muted/10 rounded-full blur-3xl" />
       
       {/* Home button */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
           href="https://blightstone.com"
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
+          className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Home
@@ -160,8 +160,8 @@ export function ResetPasswordView() {
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Reset Your Password</h1>
-            <p className="text-gray-400">
+            <h1 className="text-2xl font-semibold text-foreground">Reset Your Password</h1>
+            <p className="text-muted-foreground">
               Enter your new password below
             </p>
           </div>
@@ -181,12 +181,12 @@ export function ResetPasswordView() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={loading}
-                  className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0 pr-10"
+                  className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0 pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -205,7 +205,7 @@ export function ResetPasswordView() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="h-11 bg-gray-900 border-gray-700 text-white placeholder-gray-500 rounded-md focus:border-gray-500 focus:ring-0"
+                className="h-11 bg-input border-border text-foreground placeholder-muted-foreground rounded-md focus:border-ring focus:ring-0"
               />
             </div>
 
@@ -220,7 +220,7 @@ export function ResetPasswordView() {
 
           {/* Back link */}
           <div className="text-center">
-            <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               ← Back to Sign In
             </Link>
           </div>
