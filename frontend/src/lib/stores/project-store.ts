@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient } from '@supabase/ssr'
 
 // Performance optimization: Debounce function for search/filter operations
 export const debounce = <T extends (...args: any[]) => any>(
@@ -15,7 +15,10 @@ export const debounce = <T extends (...args: any[]) => any>(
 }
 
 // API client
-const supabase = createClientComponentClient()
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export interface TaskAttachment {
   id: string
