@@ -12,6 +12,7 @@ import { Plus, Eye, Edit3 } from "lucide-react"
 const CreativeBriefPage = React.lazy(() => import("@/components/creative/creative-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
 import { useState, useEffect } from "react"
+import { creativesApi } from "@/lib/api"
 
 // Define the interface for a Creative entry
 interface Creative {
@@ -62,130 +63,38 @@ const NEW_CREATIVE_ID = "new-creative-temp-id"
 export default function CreativeTrackerPage() {
   const { currentProjectId } = useProjectStore()
   
-  // Project-specific mock data
-  const getCreativesForCurrentProject = () => {
-    if (currentProjectId === "1") {
-      // Grounding.co Campaign creatives
-      return [
-        {
-          id: "c1",
-          batch: "Batch #001",
-          status: "live" as Creative["status"],
-          launchDate: "2025-07-15",
-          adConcept: "Grounding Sheets - Sleep Improvement",
-          testHypothesis: "Creating a video ad focusing on sleep improvement benefits for problem-aware customers. Confidence comes from high search volume for 'sleep problems' and positive testimonials.",
-          adType: "Video Ad",
-          adVariable: "Hook (Problem-Solution)",
-          desire: "Better sleep, reduced stress, improved well-being.",
-          objections: "Skepticism about 'grounding', cost, effectiveness.",
-          benefit: "Transform your sleep quality with proven grounding technology",
-          persona: "Catherine (Mom)",
-          hookPattern: "Problem-agitation-solution with emotional appeal",
-          results: "3.2% CTR, $1.85 CPC, 12% conversion rate",
-          winningAdLink: "https://example.com/winning-ad-1",
-          briefLink: "https://example.com/brief-1",
-          driveLink: "https://drive.google.com/drive/folders/1a2b3c4d5e6f7g8h9i0j",
-          createdAt: "2025-01-08",
-          notes: "High performing hook, test more variations"
-        }
-      ]
-    } else if (currentProjectId === "2") {
-      // Brand X Product Launch creatives
-      return [
-        {
-          id: "c2",
-          batch: "Batch #002", 
-          status: "in-review" as Creative["status"],
-          launchDate: "2025-08-01",
-          adConcept: "Professional Wellness - Work-Life Balance",
-          testHypothesis: "Targeting busy professionals with wellness solutions. Confidence from market research showing high demand for professional wellness products.",
-          adType: "Carousel Ad",
-          adVariable: "Audience (Professional vs General)",
-          desire: "Peak performance without sacrificing health.",
-          objections: "Time constraints, another wellness trend.",
-          benefit: "Achieve peak performance with proven wellness solutions",
-          persona: "Alex (Professional)",
-          hookPattern: "Authority-based with social proof",
-          results: "Pending launch",
-          winningAdLink: "https://example.com/winning-ad-2",
-          briefLink: "https://example.com/brief-2",
-          driveLink: "https://drive.google.com/drive/folders/9z8y7x6w5v4u3t2s1r0q",
-          createdAt: "2025-01-10",
-          notes: "Pending review, targeting professionals"
-        }
-      ]
-    }
-    return [] // Default empty for other projects
-  }
-
-  const [creatives, setCreatives] = useState<Creative[]>(getCreativesForCurrentProject())
+  // State for real data
+  const [creatives, setCreatives] = useState<Creative[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
-  // Add effect to update creatives when project changes
+  // Fetch real creatives from API
   useEffect(() => {
-    setCreatives(getCreativesForCurrentProject())
+    if (!currentProjectId) {
+      setCreatives([])
+      return
+    }
+
+    const fetchCreatives = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const fetchedCreatives = await creativesApi.getByProject(currentProjectId)
+        setCreatives(fetchedCreatives)
+      } catch (err) {
+        setError('Failed to fetch creatives')
+        console.error('Error fetching creatives:', err)
+        // Production: No fallback, show error to user
+        setCreatives([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchCreatives()
   }, [currentProjectId])
 
-  /* Old mock data removed - now using project-specific data
-    {
-      id: "c1",
-      batch: "Batch #001",
-      status: "live",
-      launchDate: "2025-07-15",
-      adConcept: "Grounding Sheets - Sleep Improvement",
-      testHypothesis:
-        "Creating a video ad focusing on sleep improvement benefits for problem-aware customers. Confidence comes from high search volume for 'sleep problems' and positive testimonials.",
-      adType: "Video Ad",
-      adVariable: "Hook (Problem-Solution)",
-      desire: "Better sleep, reduced stress, improved well-being.",
-      objections: "Skepticism about 'grounding', cost, effectiveness.",
-      persona: "Catherine (Mom, 35-50, stressed, sleep-deprived)",
-      hookPattern: "Start with a common sleep problem, introduce grounding sheets as a natural solution.",
-      results: "Initial positive CTR, monitoring conversion rates.",
-      winningAdLink: "https://example.com/ad-001-video",
-      briefLink: "https://example.com/brief-001",
-      benefit:
-        "Emphasize deep, restorative sleep, natural stress reduction, and waking up refreshed without medication.",
-    },
-    {
-      id: "c2",
-      batch: "Batch #002",
-      status: "draft",
-      launchDate: "2025-08-01",
-      adConcept: "Grounding Mats - Desk Setup",
-      testHypothesis:
-        "Testing static image ads showcasing grounding mats in a home office setting to target remote workers experiencing fatigue. Confidence from increasing remote work trends.",
-      adType: "Image Ad",
-      adVariable: "Visual (Home Office)",
-      desire: "Increased focus, reduced fatigue, better energy during work.",
-      objections: "Clutter, aesthetics, perceived necessity.",
-      persona: "David (Remote Worker, 28-45, tech-savvy, health-conscious)",
-      hookPattern: "Show a sleek desk setup with the mat, pose a question about workday fatigue.",
-      results: "N/A",
-      winningAdLink: "",
-      briefLink: "https://example.com/brief-002",
-      benefit: "Highlight improved concentration, reduced eye strain, and sustained energy throughout the workday.",
-    },
-    {
-      id: "c3",
-      batch: "Batch #001",
-      status: "completed",
-      launchDate: "2025-07-01",
-      adConcept: "Grounding Pillowcases - Anxiety Relief",
-      testHypothesis:
-        "Short-form video ad targeting individuals with mild anxiety, focusing on the calming effects of grounding. Confidence from anecdotal evidence and mental wellness trends.",
-      adType: "Short Video",
-      adVariable: "Benefit (Calmness)",
-      desire: "Reduced anxiety, feeling more grounded, peaceful sleep.",
-      objections: "Effectiveness, scientific backing, 'woo-woo' perception.",
-      persona: "Sarah (Young Professional, 25-35, struggles with mild anxiety)",
-      hookPattern:
-        "Quick cuts showing a person unwinding, then a serene sleep, with text overlays about anxiety relief.",
-      results: "High engagement, good conversion rate. Winning ad.",
-      winningAdLink: "https://example.com/ad-003-video",
-      briefLink: "https://example.com/brief-003",
-      benefit: "Emphasize a sense of calm, reduced nighttime restlessness, and a peaceful start to the day.",
-    },
-  ] */
+  // Production ready - using only real API data
 
   // Mock personas for the dropdown
   const [personas] = useState<Persona[]>([
@@ -258,20 +167,39 @@ export default function CreativeTrackerPage() {
     }
   }
 
-  const handleUpdateCreative = (updatedCreative: Creative) => {
-    if (updatedCreative.id === NEW_CREATIVE_ID) {
-      const newCreativeWithId = { ...updatedCreative, id: Date.now().toString() }
-      setCreatives([...creatives, newCreativeWithId])
-      setSelectedCreative(null)
-    } else {
-      setCreatives(creatives.map((c) => (c.id === updatedCreative.id ? updatedCreative : c)))
-      setSelectedCreative(updatedCreative)
+  const handleUpdateCreative = async (updatedCreative: Creative) => {
+    if (!currentProjectId) return
+    
+    try {
+      if (updatedCreative.id === NEW_CREATIVE_ID) {
+        // Create new creative
+        const newCreative = await creativesApi.create({
+          ...updatedCreative,
+          projectId: currentProjectId
+        })
+        setCreatives([...creatives, newCreative])
+        setSelectedCreative(null)
+      } else {
+        // Update existing creative
+        const updated = await creativesApi.update(updatedCreative.id, updatedCreative)
+        setCreatives(creatives.map((c) => (c.id === updatedCreative.id ? updated : c)))
+        setSelectedCreative(updated)
+      }
+    } catch (err) {
+      console.error('Error updating creative:', err)
+      // You could add toast notification here
     }
   }
 
-  const handleDeleteCreative = (creativeId: string) => {
-    setCreatives(creatives.filter((c) => c.id !== creativeId))
-    setSelectedCreative(null)
+  const handleDeleteCreative = async (creativeId: string) => {
+    try {
+      await creativesApi.delete(creativeId)
+      setCreatives(creatives.filter((c) => c.id !== creativeId))
+      setSelectedCreative(null)
+    } catch (err) {
+      console.error('Error deleting creative:', err)
+      // You could add toast notification here
+    }
   }
 
   const handleNewCreativeClick = () => {
@@ -343,7 +271,25 @@ export default function CreativeTrackerPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {creatives.map((creative) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8">
+                  Loading creatives...
+                </TableCell>
+              </TableRow>
+            ) : error ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-red-500">
+                  {error}
+                </TableCell>
+              </TableRow>
+            ) : creatives.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  No creatives found. Create your first creative to get started.
+                </TableCell>
+              </TableRow>
+            ) : creatives.map((creative) => (
               <TableRow key={creative.id}>
                 <TableCell className="font-medium">{creative.batch}</TableCell>
                 <TableCell>

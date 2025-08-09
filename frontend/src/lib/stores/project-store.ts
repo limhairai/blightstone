@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createBrowserClient } from '@supabase/ssr'
+import { projectsApi, personasApi, competitorsApi, creativesApi } from '@/lib/api'
 
 // Performance optimization: Debounce function for search/filter operations
 export const debounce = <T extends (...args: any[]) => any>(
@@ -168,39 +169,7 @@ interface ProjectStore {
   addCreativeTracker: (tracker: CreativeTracker) => void
 }
 
-// Mock projects data
-const mockProjects: Project[] = [
-  {
-    id: "1",
-    name: "Grounding.co Campaign",
-    description: "Complete marketing campaign for grounding products including creative assets, customer research, and competitor analysis",
-    status: "active",
-    tasksCount: 12,
-    completedTasks: 8,
-    createdAt: "2025-01-08",
-    lastActivity: "2 hours ago"
-  },
-  {
-    id: "2", 
-    name: "Brand X Product Launch",
-    description: "New product launch campaign with full market research and creative development",
-    status: "active",
-    tasksCount: 8,
-    completedTasks: 3,
-    createdAt: "2025-01-07",
-    lastActivity: "1 day ago"
-  },
-  {
-    id: "3",
-    name: "Wellness Blog Content",
-    description: "Content marketing strategy and blog post creation",
-    status: "paused",
-    tasksCount: 5,
-    completedTasks: 2,
-    createdAt: "2025-01-05",
-    lastActivity: "3 days ago"
-  }
-]
+// Production ready - no mock data, will load from API
 
 // Mock project-specific data
 const mockTasks: Task[] = [
@@ -438,12 +407,12 @@ const mockCreativeTrackers: CreativeTracker[] = [
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set, get) => ({
-      currentProjectId: "1", // Default to first project
-      projects: mockProjects,
-      tasks: mockTasks,
-      customerAvatars: mockCustomerAvatars,
-      competitors: mockCompetitors,
-      creativeTrackers: mockCreativeTrackers,
+      currentProjectId: null, // No default project - will load from API
+      projects: [],
+      tasks: [],
+      customerAvatars: [],
+      competitors: [],
+      creativeTrackers: [],
       
       setCurrentProjectId: (id: string) => {
         set({ currentProjectId: id })

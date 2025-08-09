@@ -50,8 +50,8 @@ export default function TasksPage() {
       } catch (err) {
         setError('Failed to fetch tasks')
         console.error('Error fetching tasks:', err)
-        // Fallback to mock data for development
-        setTasks(getMockTasksForCurrentProject())
+        // Production: No fallback, show error to user
+        setTasks([])
       } finally {
         setLoading(false)
       }
@@ -60,98 +60,7 @@ export default function TasksPage() {
     fetchTasks()
   }, [currentProjectId])
   
-  // Fallback mock data for development
-  const getMockTasksForCurrentProject = () => {
-    if (currentProjectId === "1") {
-      // Grounding.co Campaign tasks
-      return [
-        {
-          id: "1",
-          title: "Create customer avatar for Persona 1 (Catherine)",
-          description: "Develop detailed customer avatar including pain points, desires, and objections for the mom persona. This will involve interviewing existing customers and analyzing market research data. The final output should be a comprehensive document.",
-          status: "in-progress" as Task["status"],
-          priority: "high" as Task["priority"],
-          assignee: "You",
-          dueDate: "2025-01-10",
-          createdAt: "2025-01-08",
-          category: "Research",
-          projectId: currentProjectId || "1",
-          notes: "Need to interview 3 more customers before finalizing",
-          attachments: [
-            {
-              id: "att1",
-              name: "customer-interview-template.pdf",
-              url: "/files/customer-interview-template.pdf",
-              type: "application/pdf",
-              size: 245760,
-              uploadedAt: "2025-01-08T10:30:00Z"
-            }
-          ],
-          links: [
-            {
-              id: "link1",
-              title: "Customer Research Best Practices",
-              url: "https://example.com/research-guide",
-              description: "Comprehensive guide on conducting customer interviews",
-              addedAt: "2025-01-08T11:00:00Z"
-            }
-          ]
-        },
-        {
-          id: "2", 
-          title: "Design video ad creative for grounding sheets",
-          description: "Create engaging video content that demonstrates the benefits of grounding sheets for better sleep. Include testimonials and scientific backing.",
-          status: "todo" as Task["status"],
-          priority: "medium" as Task["priority"],
-          assignee: "You",
-          dueDate: "2025-01-15",
-          createdAt: "2025-01-08",
-          category: "Creative",
-          projectId: currentProjectId || "1",
-          notes: "Focus on before/after sleep quality testimonials",
-          attachments: [],
-          links: [],
-        }
-      ]
-    } else if (currentProjectId === "2") {
-      // Brand X Product Launch tasks
-      return [
-        {
-          id: "3",
-          title: "Market research for professional wellness products",
-          description: "Analyze competitor landscape and identify positioning opportunities for our professional wellness line.",
-          status: "completed" as Task["status"],
-          priority: "high" as Task["priority"],
-          assignee: "You",
-          dueDate: "2025-01-05",
-          createdAt: "2025-01-01",
-          category: "Research",
-          projectId: currentProjectId || "2",
-          notes: "Found 12 key competitors, analysis complete",
-          attachments: [],
-          links: [],
-        },
-        {
-          id: "4",
-          title: "Develop brand messaging for urban professionals",
-          description: "Create compelling brand narrative that resonates with busy professionals seeking work-life balance.",
-          status: "in-progress" as Task["status"],
-          priority: "medium" as Task["priority"],
-          assignee: "You",
-          dueDate: "2025-01-20",
-          createdAt: "2025-01-10",
-          category: "Strategy",
-          projectId: currentProjectId || "2",
-          notes: "Draft messaging framework ready for review",
-          attachments: [],
-          links: [],
-        }
-      ]
-    }
-    return [] // Default empty for other projects
-  }
-
-  // Remove old mock data state - now using real data from above
+  // Production ready - using only real API data
 
 
 
