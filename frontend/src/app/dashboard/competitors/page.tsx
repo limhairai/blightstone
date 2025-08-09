@@ -18,7 +18,7 @@ import { Competitor } from "@/lib/stores/project-store"
 interface CompetitorBrief {
   id: string
   name: string
-  websiteUrl: string
+  website: string
   adLibraryLink: string
   market: string // e.g., "USA"
   offerUrl: string
@@ -50,7 +50,7 @@ export default function CompetitorsPage() {
       const competitorData = {
         id: newCompetitorWithId.id,
         name: newCompetitorWithId.name,
-        website: newCompetitorWithId.websiteUrl || "",
+        website: newCompetitorWithId.website || "",
         market: newCompetitorWithId.market || "USA",
         level: newCompetitorWithId.level as "Poor" | "Medium" | "High",
         pricing: "Unknown",
@@ -81,7 +81,7 @@ export default function CompetitorsPage() {
     setSelectedCompetitor({
       id: "new-competitor-temp-id",
       name: "",
-      websiteUrl: "",
+      website: "",
       adLibraryLink: "",
       market: "USA",
       offerUrl: "",
@@ -173,7 +173,7 @@ export default function CompetitorsPage() {
                         handleNotesEdit({
                           id: competitor.id,
                           name: competitor.name,
-                          websiteUrl: competitor.website,
+                          website: competitor.website,
                           adLibraryLink: "",
                           market: competitor.market || 'USA',
                           offerUrl: "",
@@ -195,7 +195,7 @@ export default function CompetitorsPage() {
                     setSelectedCompetitor({
                       id: competitor.id,
                       name: competitor.name,
-                      websiteUrl: competitor.website,
+                      website: competitor.website,
                       adLibraryLink: "",
                       market: competitor.market || 'USA',
                       offerUrl: "",
