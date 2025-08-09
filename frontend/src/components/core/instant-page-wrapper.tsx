@@ -30,7 +30,7 @@ export function InstantPageWrapper({
     const checkPrefetchStatus = () => {
       if (prefetchKey) {
         // Check if this specific data type was prefetched
-        const prefetchTimestamp = localStorage.getItem(`adhub_prefetch_${prefetchKey}`)
+        const prefetchTimestamp = localStorage.getItem(`blightstone_prefetch_${prefetchKey}`)
         const fiveMinutesAgo = Date.now() - (5 * 60 * 1000)
         
         if (prefetchTimestamp && parseInt(prefetchTimestamp) > fiveMinutesAgo) {
@@ -39,7 +39,7 @@ export function InstantPageWrapper({
         }
       } else {
         // No specific prefetch key, check general prefetch status
-        const generalPrefetch = localStorage.getItem('adhub_global_prefetch_complete')
+        const generalPrefetch = localStorage.getItem('blightstone_global_prefetch_complete')
         if (generalPrefetch) {
           setShowInstantContent(true)
         }
@@ -58,7 +58,7 @@ export function InstantPageWrapper({
     if (!isLoading && hasCheckedPrefetch) {
       // Mark this data as available
       if (prefetchKey) {
-        localStorage.setItem(`adhub_prefetch_${prefetchKey}`, Date.now().toString())
+        localStorage.setItem(`blightstone_prefetch_${prefetchKey}`, Date.now().toString())
       }
     }
   }, [isLoading, hasCheckedPrefetch, prefetchKey])
@@ -123,7 +123,7 @@ function InstantPageSkeleton() {
  */
 export function useMarkPrefetchComplete() {
   const markComplete = () => {
-    localStorage.setItem('adhub_global_prefetch_complete', Date.now().toString())
+    localStorage.setItem('blightstone_global_prefetch_complete', Date.now().toString())
     console.log('🎯 Global prefetch marked as complete - future page loads will be instant!')
   }
 

@@ -9,7 +9,7 @@ import { ArrowRight, ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../../contexts/AuthContext"
 import { toast } from "sonner"
-import { AdHubLogo } from "../../components/core/AdHubLogo"
+import { BlightstoneLogo } from "../../components/core/BlightstoneLogo"
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -163,7 +163,7 @@ export default function OnboardingPage() {
     },
     {
       id: 6,
-      title: "How did you hear about AdHub?",
+      title: "How did you hear about Blightstone?",
       subtitle: "This helps us understand which channels work best so we can improve our service.",
       component: (
         <div className="space-y-4">
@@ -238,7 +238,7 @@ export default function OnboardingPage() {
         throw new Error(errorData.error || 'Failed to update organization')
       }
 
-      toast.success("Welcome to AdHub! Explore your dashboard and upgrade when ready.")
+      toast.success("Welcome to Blightstone! Explore your dashboard and upgrade when ready.")
       router.push('/dashboard?welcome=true')
       
     } catch (error) {
@@ -263,7 +263,7 @@ export default function OnboardingPage() {
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-gradient-to-bl from-gray-800/20 via-transparent to-transparent rounded-full blur-3xl" />
       
       <div className="absolute top-6 left-6 z-10">
-        <AdHubLogo size="sm" />
+        <BlightstoneLogo size="sm" />
       </div>
       <div className="relative flex min-h-screen items-center justify-center">
         <div className="w-full max-w-2xl px-6">

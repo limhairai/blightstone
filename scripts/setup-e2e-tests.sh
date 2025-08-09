@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# AdHub E2E Testing Setup Script
+# Blightstone E2E Testing Setup Script
 # This script sets up the complete E2E testing environment
 
 set -e
 
-echo "🚀 Setting up AdHub E2E Testing Environment..."
+echo "🚀 Setting up Blightstone E2E Testing Environment..."
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ]; then
@@ -142,4 +142,4 @@ echo "📖 Documentation:"
 echo "   - Read tests/README.md for detailed instructions"
 echo "   - Check playwright.config.ts for configuration options"
 echo ""
-echo "🚀 Your AdHub application is now ready for production with comprehensive E2E testing!" 
+echo "🚀 Your Blightstone application is now ready for production with comprehensive E2E testing!" 

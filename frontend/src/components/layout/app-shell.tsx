@@ -13,7 +13,7 @@ import { useAuth } from "../../contexts/AuthContext"
 import { getGreeting } from "../../lib/utils"
 import { layoutTokens } from "../../lib/design-tokens"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { Loader2 } from "lucide-react"
 
 interface AppShellProps {
@@ -60,10 +60,10 @@ export function AppShell({ children }: AppShellProps) {
     return (
       <div className="fixed inset-0 bg-background z-50 flex items-center justify-center">
         <div className="text-center">
-          <AdHubLogo size="lg" className="mb-6" />
+          <BlightstoneLogo size="lg" className="mb-6" />
           <div className="flex items-center justify-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">Loading AdHub...</span>
+            <span className="text-sm text-muted-foreground">Loading Blightstone...</span>
           </div>
         </div>
       </div>
@@ -92,7 +92,7 @@ export function AppShell({ children }: AppShellProps) {
     if (!user) return // Remove isLoading dependency
     
     // Check if user is new (hasn't seen welcome overlay before)
-    const hasSeenWelcome = localStorage.getItem(`adhub_welcome_seen_${user.id}`)
+    const hasSeenWelcome = localStorage.getItem(`blightstone_welcome_seen_${user.id}`)
     
     // Show welcome overlay IMMEDIATELY for:
     // 1. Any user who hasn't seen it before
@@ -114,7 +114,7 @@ export function AppShell({ children }: AppShellProps) {
 
   const handleWelcomeOverlayDismiss = () => {
     if (user) {
-      localStorage.setItem(`adhub_welcome_seen_${user.id}`, 'true')
+      localStorage.setItem(`blightstone_welcome_seen_${user.id}`, 'true')
     }
     setShowWelcomeOverlay(false)
     

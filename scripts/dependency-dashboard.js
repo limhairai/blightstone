@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 
-console.log('📦 AdHub Dependency Dashboard');
+console.log('📦 Blightstone Dependency Dashboard');
 console.log('=============================\n');
 
 const packagePath = 'frontend/package.json';

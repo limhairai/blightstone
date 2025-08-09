@@ -56,7 +56,7 @@ export class GlobalDataPrefetcher {
     // Global prefetch completed
     
     // Mark global prefetch as complete for instant page wrapper
-    localStorage.setItem('adhub_global_prefetch_complete', Date.now().toString())
+    localStorage.setItem('blightstone_global_prefetch_complete', Date.now().toString())
     // Future navigation optimized
   }
 

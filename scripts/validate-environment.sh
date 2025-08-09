@@ -5,12 +5,12 @@
 
 set -e
 
-echo "🔍 AdHub Environment Validation"
+echo "🔍 Blightstone Environment Validation"
 echo "==============================="
 
 # Check current directory
 if [ ! -f "package.json" ] && [ ! -f "frontend/package.json" ]; then
-    echo "❌ Please run this script from the AdHub root directory"
+    echo "❌ Please run this script from the Blightstone root directory"
     exit 1
 fi
 

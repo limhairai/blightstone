@@ -3,12 +3,12 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 async function createStripeProducts() {
-  console.log('Creating Stripe products for AdHub NEW PRICING...');
+  console.log('Creating Stripe products for Blightstone NEW PRICING...');
 
   try {
     // 1. Create Starter Plan - $79/month
     const starterProduct = await stripe.products.create({
-      name: 'AdHub Starter',
+      name: 'Blightstone Starter',
       description: 'Perfect for small businesses getting started with Facebook advertising',
       metadata: {
         plan_id: 'starter',
@@ -35,7 +35,7 @@ async function createStripeProducts() {
 
     // 2. Create Growth Plan - $299/month
     const growthProduct = await stripe.products.create({
-      name: 'AdHub Growth',
+      name: 'Blightstone Growth',
       description: 'For growing businesses that need more ad accounts and pixels',
       metadata: {
         plan_id: 'growth',
@@ -62,7 +62,7 @@ async function createStripeProducts() {
 
     // 3. Create Scale Plan - $799/month
     const scaleProduct = await stripe.products.create({
-      name: 'AdHub Scale',
+      name: 'Blightstone Scale',
       description: 'For scaling businesses with multiple teams and high ad spend',
       metadata: {
         plan_id: 'scale',

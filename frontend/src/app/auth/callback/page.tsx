@@ -213,15 +213,15 @@ export default function AuthCallbackPage() {
                 router.push('/dashboard')
               } else {
                 // User without organization - go to onboarding (truly new user)
-                let message = "🎉 Welcome to AdHub! Let's get you set up.";
+                let message = "🎉 Welcome to Blightstone! Let's get you set up.";
                 if (isGoogleOAuth) {
-                  message = "🎉 Welcome to AdHub! Account created successfully.";
+                  message = "🎉 Welcome to Blightstone! Account created successfully.";
                 } else if (authType === 'signup' || isMagicLink) {
-                  message = "🎉 Welcome to AdHub! Let's get you set up.";
+                  message = "🎉 Welcome to Blightstone! Let's get you set up.";
                 } else if (authType === 'magiclink') {
-                  message = "🎉 Magic link sign in successful! Welcome to AdHub!";
+                  message = "🎉 Magic link sign in successful! Welcome to Blightstone!";
                 } else {
-                  message = "🎉 Email confirmed successfully! Welcome to AdHub!";
+                  message = "🎉 Email confirmed successfully! Welcome to Blightstone!";
                 }
                 toast.success(message, {
                   description: "Let's get your account set up"

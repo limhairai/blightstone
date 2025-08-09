@@ -5,7 +5,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function createFullDemoData() {
-    console.log('🚀 Creating Full AdHub Demo Data...\n');
+    console.log('🚀 Creating Full Blightstone Demo Data...\n');
     
     try {
         // Get demo user and org
@@ -265,7 +265,7 @@ async function createFullDemoData() {
         }
         console.log('✅ Added 4 topup-related transactions');
         
-        console.log('\n🎉 Full AdHub Demo Data Created!\n');
+        console.log('\n🎉 Full Blightstone Demo Data Created!\n');
         console.log('📊 Demo now includes:');
         console.log('• 3 Business Manager applications (2 fulfilled, 1 approved)');
         console.log('• 2 Business Managers with 3 Ad Accounts total');

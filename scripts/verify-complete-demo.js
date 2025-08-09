@@ -114,7 +114,7 @@ async function verifyCompleteDemo() {
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('✅ Login: yc-demo@adhub.com / YC2025Demo!');
         console.log('✅ URL: https://staging.adhub.tech');
-        console.log('✅ Shows complete AdHub workflow');
+        console.log('✅ Shows complete Blightstone workflow');
         console.log('✅ Demonstrates real business model');
         console.log('✅ Proves customer value and retention');
         

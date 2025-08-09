@@ -20,7 +20,7 @@ export function EmailVerificationBanner({ onResendEmail }: EmailVerificationBann
         <div>
           <div className="font-semibold text-red-300">Verify your email address</div>
           <div className="text-sm text-red-400/80">
-            Please check your email and click the verification link to activate your AdHub account.
+            Please check your email and click the verification link to activate your Blightstone account.
           </div>
         </div>
       </div>

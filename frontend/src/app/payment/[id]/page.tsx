@@ -62,7 +62,7 @@ function PaymentForm({ paymentIntent }: { paymentIntent: PaymentIntent }) {
         payment_method: {
           card: cardElement,
           billing_details: {
-            name: "AdHub Customer",
+            name: "Blightstone Customer",
           },
         },
       }
@@ -246,7 +246,7 @@ export default function PaymentPage() {
               Complete Payment
             </CardTitle>
             <CardDescription className="text-center">
-              Add funds to your AdHub wallet
+              Add funds to your Blightstone wallet
             </CardDescription>
           </CardHeader>
           

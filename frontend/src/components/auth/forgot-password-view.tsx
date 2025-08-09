@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useState } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import { toast } from "sonner"
@@ -54,7 +54,7 @@ export function ForgotPasswordView() {
         {/* Home button */}
         <div className="absolute top-6 left-6 z-50">
           <Link 
-            href="https://adhub.tech" 
+            href="https://blightstone.com" 
             className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -123,7 +123,7 @@ export function ForgotPasswordView() {
       {/* Home button */}
         <div className="absolute top-6 left-6 z-50">
         <Link 
-          href="https://adhub.tech" 
+          href="https://blightstone.com" 
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -137,7 +137,7 @@ export function ForgotPasswordView() {
           
           {/* Logo */}
           <div className="flex justify-center">
-            <AdHubLogo size="sm" />
+            <BlightstoneLogo size="sm" />
           </div>
 
           {/* Header */}

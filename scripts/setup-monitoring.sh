@@ -3,7 +3,7 @@
 # Setup Monitoring (Stripe + Sentry) Script
 # This script helps configure Stripe test keys and Sentry monitoring
 
-echo "🔧 AdHub Monitoring Setup"
+echo "🔧 Blightstone Monitoring Setup"
 echo "========================"
 echo ""
 

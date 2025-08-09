@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { AdHubLogo } from './AdHubLogo'
+import { BlightstoneLogo } from './BlightstoneLogo'
 import { Progress } from '../ui/progress'
 import { CheckCircle, Loader2 } from 'lucide-react'
 
@@ -135,7 +135,7 @@ export function DashboardLoadingScreen({ isLoading, onComplete }: DashboardLoadi
       <div className="w-full max-w-md mx-auto px-8">
         {/* Logo */}
         <div className="flex justify-center mb-12">
-          <AdHubLogo size="xl" />
+          <BlightstoneLogo size="xl" />
         </div>
 
         {/* Progress Bar */}

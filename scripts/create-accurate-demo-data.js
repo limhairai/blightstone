@@ -5,7 +5,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function createAccurateDemoData() {
-    console.log('🚀 Creating Accurate AdHub Demo Data...\n');
+    console.log('🚀 Creating Accurate Blightstone Demo Data...\n');
     
     try {
         // Get demo user and org
@@ -33,7 +33,7 @@ async function createAccurateDemoData() {
             .eq('organization_id', org.organization_id);
         console.log('✅ Wallet balance set to $25,000');
         
-        // 3. Create ONLY wallet top-ups (what AdHub actually tracks)
+        // 3. Create ONLY wallet top-ups (what Blightstone actually tracks)
         console.log('\n3️⃣ Creating wallet top-up transactions...');
         const walletTopups = [
             {
@@ -120,7 +120,7 @@ async function createAccurateDemoData() {
         }
         console.log('✅ Created 3 business manager applications');
         
-        // 5. Create topup requests (ad account funding - what AdHub tracks)
+        // 5. Create topup requests (ad account funding - what Blightstone tracks)
         console.log('\n5️⃣ Creating ad account topup requests...');
         const topupRequests = [
             {
@@ -185,7 +185,7 @@ async function createAccurateDemoData() {
         }
         console.log('✅ Created 3 ad account topup requests');
         
-        console.log('\n🎉 Accurate AdHub Demo Data Created!\n');
+        console.log('\n🎉 Accurate Blightstone Demo Data Created!\n');
         console.log('📊 Demo Summary:');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('👤 User: yc-demo@adhub.com');

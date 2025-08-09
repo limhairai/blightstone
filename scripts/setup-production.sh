@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# AdHub Production Setup Script
+# Blightstone Production Setup Script
 # This script helps configure the production environment and CI/CD pipeline
 
 set -e
 
-echo "🚀 AdHub Production Setup"
+echo "🚀 Blightstone Production Setup"
 echo "=========================="
 
 # Colors for output
@@ -49,7 +49,7 @@ check_project_structure() {
     print_step "Checking project structure..."
     
     if [ ! -f "package.json" ] && [ ! -d "frontend" ]; then
-        print_error "This doesn't appear to be the AdHub project root. Please run from the project root."
+        print_error "This doesn't appear to be the Blightstone project root. Please run from the project root."
         exit 1
     fi
     

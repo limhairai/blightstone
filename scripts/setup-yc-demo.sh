@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# YC Demo Account Setup for AdHub
-echo "🚀 Setting up YC Demo Account for AdHub Staging"
+# YC Demo Account Setup for Blightstone
+echo "🚀 Setting up YC Demo Account for Blightstone Staging"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # Colors for output

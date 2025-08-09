@@ -217,7 +217,7 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
     if (isAdminMessage) {
       return (
         <Avatar className="h-8 w-8">
-          <AvatarImage src="/adhub-icon.png" alt="AdHub Support" />
+          <AvatarImage src="/adhub-icon.png" alt="Blightstone Support" />
           <AvatarFallback className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] text-white text-xs font-semibold">
             AH
           </AvatarFallback>
@@ -245,7 +245,7 @@ export function TicketConversation({ ticket, onTicketUpdate, onClose, isAdminPan
     
     if (isAdminMessage) {
       return {
-        displayName: 'AdHub Support',
+        displayName: 'Blightstone Support',
         isAdmin: true,
         alignRight: false // Admin messages always align left
       }

@@ -196,7 +196,7 @@ export default function PricingPage() {
       <nav className="border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="https://adhub.tech" className="flex items-center space-x-2">
+            <Link href="https://blightstone.com" className="flex items-center space-x-2">
               <div className="text-xl font-bold">
                 <span className="text-foreground">Ad</span>
                 <span className="bg-gradient-to-r from-[#b4a0ff] to-[#ffb4a0] bg-clip-text text-transparent">
@@ -336,7 +336,7 @@ export default function PricingPage() {
               ))}
             </div>
             <blockquote className="text-xl text-muted-foreground italic mb-8">
-              "AdHub has completely transformed how we manage our Facebook campaigns. 
+              "Blightstone has completely transformed how we manage our Facebook campaigns. 
               The platform is intuitive, reliable, and their support team is incredible."
             </blockquote>
             <div className="flex items-center justify-center space-x-4">
@@ -359,7 +359,7 @@ export default function PricingPage() {
             Ready to get started?
           </h2>
           <p className="text-muted-foreground mb-8">
-            Join thousands of businesses scaling their Facebook advertising with AdHub.
+            Join thousands of businesses scaling their Facebook advertising with Blightstone.
           </p>
           {!currentOrganizationId && (
             <Link href="/register">
@@ -375,7 +375,7 @@ export default function PricingPage() {
       <footer className="border-t border-border/40 py-8">
         <div className="container mx-auto px-6 text-center">
           <p className="text-sm text-muted-foreground">
-            &copy; 2024 AdHub. All rights reserved.
+            &copy; 2024 Blightstone. All rights reserved.
           </p>
         </div>
       </footer>

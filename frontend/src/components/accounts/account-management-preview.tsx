@@ -5,10 +5,10 @@ import { Button } from "../ui/button"
 
 // Define accounts outside the component so it's a stable reference
 const accountsData = [
-    { id: 1, name: "AdHub-Account-01", status: "active", balance: 12450, spend: 8920 },
-    { id: 2, name: "AdHub-Account-02", status: "active", balance: 8920, spend: 5680 },
-    { id: 3, name: "AdHub-Account-03", status: "warning", balance: 2450, spend: 1200 },
-    { id: 4, name: "AdHub-Account-04", status: "active", balance: 15750, spend: 12300 },
+      { id: 1, name: "Client-Account-01", status: "active", balance: 12450, spend: 8920 },
+  { id: 2, name: "Client-Account-02", status: "active", balance: 8920, spend: 5680 },
+  { id: 3, name: "Client-Account-03", status: "warning", balance: 2450, spend: 1200 },
+  { id: 4, name: "Client-Account-04", status: "active", balance: 15750, spend: 12300 },
 ];
 
 export function AccountManagementPreview() {

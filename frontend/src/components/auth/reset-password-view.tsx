@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../../contexts/AuthContext"
@@ -114,7 +114,7 @@ export function ResetPasswordView() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <AdHubLogo size="sm" className="mb-6" />
+          <BlightstoneLogo size="sm" className="mb-6" />
           <div className="text-white">Validating reset link...</div>
         </div>
       </div>
@@ -125,7 +125,7 @@ export function ResetPasswordView() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <AdHubLogo size="sm" className="mb-6" />
+          <BlightstoneLogo size="sm" className="mb-6" />
           <div className="text-white">Invalid reset link. Redirecting...</div>
         </div>
       </div>
@@ -141,7 +141,7 @@ export function ResetPasswordView() {
       {/* Home button */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
-          href="https://adhub.tech"
+          href="https://blightstone.com"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -155,7 +155,7 @@ export function ResetPasswordView() {
           
           {/* Logo */}
           <div className="flex justify-center">
-            <AdHubLogo size="sm" />
+            <BlightstoneLogo size="sm" />
           </div>
 
           {/* Header */}

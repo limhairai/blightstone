@@ -18,7 +18,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 async function createYCDemoAccount() {
-    console.log('🚀 Creating YC Demo Account for AdHub...\n');
+    console.log('🚀 Creating YC Demo Account for Blightstone...\n');
     
     try {
         // 1. Get or Create YC Demo User

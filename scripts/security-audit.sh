@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# 🔐 AdHub Security Audit Script
+# 🔐 Blightstone Security Audit Script
 # Comprehensive security checks for production deployment
 
 set -e
 
-echo "🔐 AdHub Security Audit"
+echo "🔐 Blightstone Security Audit"
 echo "======================="
 echo ""
 

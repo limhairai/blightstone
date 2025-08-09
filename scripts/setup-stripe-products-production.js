@@ -3,7 +3,7 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 async function createStripeProductsProduction() {
-  console.log('🚀 Creating Stripe products for AdHub PRODUCTION (LIVE MODE)...');
+  console.log('🚀 Creating Stripe products for Blightstone PRODUCTION (LIVE MODE)...');
   
   // Verify we're using live mode keys
   if (!process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')) {
@@ -15,7 +15,7 @@ async function createStripeProductsProduction() {
   try {
     // 1. Create Starter Plan - $29/month + 5% ad spend fee (LIVE MODE)
     const starterProduct = await stripe.products.create({
-      name: 'AdHub Starter',
+      name: 'Blightstone Starter',
       description: '1 Active Ad Account, 1 BM, 1 Domain Per BM, $1000 Spend Limit',
       metadata: {
         plan_id: 'starter',
@@ -44,7 +44,7 @@ async function createStripeProductsProduction() {
 
     // 2. Create Growth Plan - $299/month, no ad spend fee (LIVE MODE)
     const growthProduct = await stripe.products.create({
-      name: 'AdHub Growth',
+      name: 'Blightstone Growth',
       description: '3 Active Ad Accounts, 2 BMs, 3 Domains Per BM, $3000 Spend Limit',
       metadata: {
         plan_id: 'growth',
@@ -73,7 +73,7 @@ async function createStripeProductsProduction() {
 
     // 3. Create Scale Plan - $699/month, no ad spend fee, no spend limit (LIVE MODE)
     const scaleProduct = await stripe.products.create({
-      name: 'AdHub Scale',
+      name: 'Blightstone Scale',
       description: '5 Active Ad Accounts, 3 BMs, 5 Domains Per BM, No Spend Limit',
       metadata: {
         plan_id: 'scale',

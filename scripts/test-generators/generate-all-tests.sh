@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🎯 AdHub Mass Test Generator"
+echo "🎯 Blightstone Mass Test Generator"
 echo "=========================================="
 echo "Target: Generate tests for ALL 352 files"
 echo "=========================================="

@@ -3,7 +3,7 @@
 # Start Development Environment Servers Script
 # This script starts servers using DEVELOPMENT environment (remote Supabase)
 
-echo "🚀 Starting AdHub Development Environment"
+echo "🚀 Starting Blightstone Development Environment"
 echo "========================================"
 echo "📊 Environment: DEVELOPMENT (Remote Supabase)"
 echo "🗄️ Database: Remote Supabase"

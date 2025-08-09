@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useState, useEffect } from "react"
 import { useAuth } from "../../contexts/AuthContext"
 import { useRouter, useSearchParams } from "next/navigation"
@@ -116,7 +116,7 @@ export function LoginView() {
       {/* Home button - now clickable */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
-          href="https://adhub.tech"
+          href="https://blightstone.com"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -130,7 +130,7 @@ export function LoginView() {
           
           {/* Logo */}
           <div className="flex justify-center">
-            <AdHubLogo size="sm" />
+            <BlightstoneLogo size="sm" />
           </div>
 
           {/* Header */}
@@ -254,7 +254,7 @@ export function LoginView() {
           {/* Terms */}
           <div className="text-center">
             <p className="text-xs text-gray-500">
-              By continuing, you agree to AdHub's{" "}
+              By continuing, you agree to Blightstone's{" "}
               <Link href="/terms" className="text-gray-400 underline hover:no-underline">
                 Terms of Service
                 </Link>

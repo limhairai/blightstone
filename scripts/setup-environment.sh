@@ -5,7 +5,7 @@
 
 set -e
 
-echo "🌍 AdHub Environment Setup"
+echo "🌍 Blightstone Environment Setup"
 echo "=========================="
 
 # Check if environment argument is provided

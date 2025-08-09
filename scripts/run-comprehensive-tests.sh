@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# AdHub Comprehensive Test Runner
+# Blightstone Comprehensive Test Runner
 # This script runs the comprehensive authentication and wallet tests
 
 set -e
 
-echo "🚀 Starting AdHub Comprehensive Test Suite"
+echo "🚀 Starting Blightstone Comprehensive Test Suite"
 echo "=========================================="
 
 # Check if we're in the right directory

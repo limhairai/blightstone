@@ -7,7 +7,7 @@ import { ProfessionalFeaturesSection } from "./professional-features-section"
 import { FAQSection } from "./faq-section"
 import { AccountManagementSection } from "../accounts/account-management-section"
 
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useInView } from 'react-intersection-observer'
 import { useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
@@ -73,7 +73,7 @@ export function LandingView() {
       <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0A0A0A]/95 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 relative">
           <div className="flex items-center">
-            <AdHubLogo size="lg" />
+            <BlightstoneLogo size="lg" />
           </div>
           
           {/* Desktop Navigation */}
@@ -138,7 +138,7 @@ export function LandingView() {
             <div className="flex flex-col h-full">
               {/* Mobile Header */}
               <div className="flex items-center justify-between p-4 border-b border-white/10">
-                <AdHubLogo size="lg" />
+                <BlightstoneLogo size="lg" />
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-2 rounded-lg hover:bg-white/10 transition-colors"
@@ -278,12 +278,12 @@ export function LandingView() {
                     <>
                       <div className="hidden lg:block relative z-10">
                         <div className="h-[300px] sm:h-[400px] md:h-[500px] overflow-hidden rounded-xl sm:rounded-2xl">
-                          <Image src="/dashboard-wide.png" alt="AdHub Dashboard Interface" width={1920} height={1080} style={{ width: '100%', height: 'auto' }} priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
+                          <Image src="/dashboard-wide.png" alt="Blightstone Dashboard Interface" width={1920} height={1080} style={{ width: '100%', height: 'auto' }} priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                       </div>
                       <div className="lg:hidden relative z-10">
                         <div className="h-[250px] sm:h-[300px] md:h-[400px] overflow-hidden rounded-xl sm:rounded-2xl">
-                          <Image src="/dashboard-compact.png" alt="AdHub Dashboard Interface" width={800} height={600} style={{ width: '100%', height: 'auto' }} priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
+                          <Image src="/dashboard-compact.png" alt="Blightstone Dashboard Interface" width={800} height={600} style={{ width: '100%', height: 'auto' }} priority className="rounded-xl sm:rounded-2xl transition-transform duration-500 group-hover:scale-[1.02]" />
                         </div>
                       </div>
                     </>
@@ -379,7 +379,7 @@ export function LandingView() {
                 Ready to <span className="text-gradient">scale</span>?
               </h2>
               <p className="text-lg sm:text-xl md:text-2xl text-white/70 mb-8 sm:mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-                Join thousands of advertisers who trust AdHub for their Meta advertising needs.
+                Join thousands of advertisers who trust Blightstone for their Meta advertising needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-12 sm:mb-16 max-w-md sm:max-w-none mx-auto">
                 {loading ? (
@@ -474,7 +474,7 @@ export function LandingView() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div className="col-span-1 sm:col-span-2 md:col-span-2">
-              <AdHubLogo size="lg" />
+              <BlightstoneLogo size="lg" />
               <p className="mt-3 sm:mt-4 text-white/60 max-w-md text-sm sm:text-base">
                 The fastest way to access Meta ad accounts on demand. Scale your advertising without limits.
               </p>
@@ -499,7 +499,7 @@ export function LandingView() {
           </div>
           <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-white/10">
             <p className="text-white/40 text-xs sm:text-sm text-center">
-              © 2025 AdHub. All rights reserved.
+              © 2025 Blightstone. All rights reserved.
             </p>
           </div>
         </div>

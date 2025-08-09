@@ -11,7 +11,7 @@ export function AdminStats({ isSuperuser }: { isSuperuser: boolean }) {
     if (!isSuperuser) return;
     setLoading(true)
     setError("")
-    const token = typeof window !== 'undefined' ? localStorage.getItem('adhub_token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('blightstone_token') : null;
     fetch("/api/v1/admin/stats", {
       headers: token ? { Authorization: `Bearer ${token}` } : {}
     })

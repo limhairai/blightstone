@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# AdHub Service Monitor
+# Blightstone Service Monitor
 # Quick health check for both frontend and backend
 
-echo "🔍 AdHub Service Health Check"
+echo "🔍 Blightstone Service Health Check"
 echo "=================================="
 
 # Backend Health Check

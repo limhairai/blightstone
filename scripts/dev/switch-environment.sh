@@ -5,7 +5,7 @@
 # Handles BOTH frontend and backend consistently
 
 show_usage() {
-    echo "🔄 AdHub Environment Switcher"
+    echo "🔄 Blightstone Environment Switcher"
     echo "============================"
     echo ""
     echo "Usage: $0 [local|development|production|restore]"

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Complete Your Setup - AdHub',
-  description: 'Complete your AdHub setup to start managing your Facebook advertising accounts',
+  title: 'Complete Your Setup - Blightstone',
+  description: 'Complete your Blightstone setup to start managing your Facebook advertising accounts',
 };
 
 export default function OnboardingLayout({

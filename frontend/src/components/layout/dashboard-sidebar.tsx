@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "../ui/button"
 import { OrganizationSelector } from "../organization/organization-selector"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { cn } from "../../lib/utils"
 import { Home, Building2, Wallet, Receipt, Settings, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
@@ -339,7 +339,7 @@ export function DashboardSidebar() {
 
             {!collapsed && (
               <div className="flex items-center">
-                <AdHubLogo size="sm" />
+                <BlightstoneLogo size="sm" />
               </div>
             )}
           </div>

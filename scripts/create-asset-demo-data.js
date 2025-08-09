@@ -5,7 +5,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 async function createAssetDemoData() {
-    console.log('🚀 Creating Asset-Based Demo Data for AdHub...\n');
+    console.log('🚀 Creating Asset-Based Demo Data for Blightstone...\n');
     
     try {
         // Get demo user and org
@@ -185,7 +185,7 @@ async function createAssetDemoData() {
         console.log('💸 Your Revenue: $270 in fees (3% of topups)');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         
-        console.log('\n✅ This shows AdHub\'s actual asset system:');
+        console.log('\n✅ This shows Blightstone\'s actual asset system:');
         console.log('• Unified asset table for BMs, Ad Accounts, and Pixels');
         console.log('• Asset bindings linking assets to organizations');
         console.log('• Realistic naming (org + date)');

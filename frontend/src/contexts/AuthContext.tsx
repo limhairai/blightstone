@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setSession(null);
     orgInitialized.current = false; // Reset organization initialization flag
-    localStorage.removeItem("adhub_current_org");
+    localStorage.removeItem("blightstone_current_org");
     
     // Navigate immediately for better UX
     router.push('/login');

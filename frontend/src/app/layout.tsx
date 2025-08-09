@@ -30,8 +30,8 @@ const dmSans = DM_Sans({
 // Add or edit your "generateMetadata" to include the Sentry trace data:
 export function generateMetadata(): Metadata {
   const baseMetadata = {
-    title: "AdHub - Ad Account Management Platform",
-    description: "Manage your advertising accounts across multiple platforms",
+    title: "Blightstone - Internal CRM Platform",
+    description: "Internal CRM platform for managing clients and business operations",
     generator: 'v0.dev',
   };
 

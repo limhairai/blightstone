@@ -1,9 +1,9 @@
 #!/bin/bash
-# AdHub Comprehensive Test Runner
+# Blightstone Comprehensive Test Runner
 
 set -e
 
-echo "🧪 Starting AdHub Test Suite..."
+echo "🧪 Starting Blightstone Test Suite..."
 cd frontend
 
 echo "📝 Running TypeScript & Lint checks..."

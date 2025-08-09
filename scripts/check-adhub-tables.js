@@ -4,18 +4,18 @@ const supabaseUrl = 'https://xewhfrwuzkfbnpwtdxuf.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-async function checkAdHubTables() {
-    console.log('🔍 Checking AdHub Core Tables...\n');
+async function checkBlightstoneTables() {
+    console.log('🔍 Checking Blightstone Core Tables...\n');
     
-    const coreAdHubTables = [
+    const coreBlightstoneTables = [
         'business_managers', 'ad_accounts', 'pixels', 
         'topup_requests', 'application', 'asset',
         'businesses', 'bm_applications'
     ];
     
-    console.log('🔍 Checking tables for full AdHub demo:');
+    console.log('🔍 Checking tables for full Blightstone demo:');
     
-    for (const tableName of coreAdHubTables) {
+    for (const tableName of coreBlightstoneTables) {
         try {
             const { data, error } = await supabase
                 .from(tableName)
@@ -44,4 +44,4 @@ async function checkAdHubTables() {
     console.log('• Applications - Show client request flow');
 }
 
-checkAdHubTables(); 
+checkBlightstoneTables(); 

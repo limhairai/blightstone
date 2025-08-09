@@ -102,7 +102,7 @@ export default function AccessCodeManager({ organizationId, organizationName }: 
   };
 
   const copyInviteMessage = (code: string) => {
-    const message = `🎯 Welcome to AdHub!
+    const message = `🎯 Welcome to Blightstone!
 
 Your access code: ${code}
 

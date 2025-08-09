@@ -45,11 +45,11 @@ export default function BusinessDetailPage() {
 
   // Set document title dynamically
   useEffect(() => {
-    document.title = `${business.name} - Business Details | AdHub`
+    document.title = `${business.name} - Business Details | Blightstone`
     
     // Cleanup function to reset title when component unmounts
     return () => {
-      document.title = "AdHub - Ad Account Management Platform"
+      document.title = "Blightstone - Ad Account Management Platform"
     }
   }, [business.name])
 

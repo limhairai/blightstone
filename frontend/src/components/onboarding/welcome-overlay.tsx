@@ -119,7 +119,7 @@ export function WelcomeOverlay({ onDismiss }: WelcomeOverlayProps) {
         <div className="space-y-3">
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold text-white">
-              {hasActivePlan ? 'Welcome to AdHub!' : 'Next, choose a plan'}
+              {hasActivePlan ? 'Welcome to Blightstone!' : 'Next, choose a plan'}
             </h2>
             <p className="text-sm text-white/90 leading-relaxed">
               {hasActivePlan 

@@ -30,7 +30,7 @@ export function AdminTopbar({ pageTitle }: AdminTopbarProps) {
   const { theme, setTheme } = useTheme();
   const [lastSyncTime, setLastSyncTime] = useState<string | null>(null);
   
-  const userEmail = user?.email || 'admin@adhub.com';
+  const userEmail = user?.email || 'admin@blightstone.com';
   const userInitial = user?.email?.charAt(0).toUpperCase() || "A";
 
   // Get last sync time from localStorage and check for recent sync activity

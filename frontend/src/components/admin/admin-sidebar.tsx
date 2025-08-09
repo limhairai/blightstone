@@ -236,7 +236,7 @@ export function AdminSidebar({ className }: { className?: string }) {
           </button>
           {!collapsed && (
             <span className="bg-gradient-to-r from-[#c4b5fd] to-[#ffc4b5] bg-clip-text text-sm font-semibold text-transparent">
-              AdHub Admin
+              Blightstone CRM Admin
             </span>
           )}
         </div>

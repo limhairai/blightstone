@@ -3,7 +3,7 @@
 # Start Production Environment Servers Script
 # This script starts servers using PRODUCTION environment (live deployment)
 
-echo "🚀 Starting AdHub Production Environment"
+echo "🚀 Starting Blightstone Production Environment"
 echo "======================================="
 echo "📊 Environment: PRODUCTION (Live Deployment)"
 echo "🗄️ Database: Production Supabase"

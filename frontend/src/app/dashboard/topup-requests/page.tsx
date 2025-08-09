@@ -161,7 +161,7 @@ export default function ClientTopupRequestsPage() {
 
   // Set the page title
   useEffect(() => {
-    document.title = "Transactions | AdHub"
+    document.title = "Transactions | Blightstone"
   }, [])
 
   const getStatusConfig = (status: TopupRequestStatus) => {

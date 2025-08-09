@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "../ui/button"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { Menu, X } from "lucide-react"
 
 export function NewLandingView() {
@@ -15,12 +15,12 @@ export function NewLandingView() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <AdHubLogo size="md" />
+            <BlightstoneLogo size="md" />
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <Link href="#why" className="text-white/80 hover:text-white transition-colors font-medium">
-                Why AdHub?
+                Why Blightstone?
               </Link>
               <Link href="#how-it-works" className="text-white/80 hover:text-white transition-colors font-medium">
                 How it works
@@ -51,7 +51,7 @@ export function NewLandingView() {
           <div className="md:hidden bg-black/95 backdrop-blur-md border-t border-white/10">
             <div className="px-4 py-6 space-y-4">
               <Link href="#why" className="block text-white/80 hover:text-white transition-colors font-medium">
-                Why AdHub?
+                Why Blightstone?
               </Link>
               <Link href="#how-it-works" className="block text-white/80 hover:text-white transition-colors font-medium">
                 How it works
@@ -76,12 +76,12 @@ export function NewLandingView() {
           <div className="text-center">
             {/* Main Heading - DM Sans 82px */}
             <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight font-dm-sans">
-              Ad Accounts <span className="text-blue-400">On Demand</span>
+              Client Management <span className="text-blue-400">Simplified</span>
             </h1>
             
             {/* Subheading - Inter Display 18px */}
             <p className="text-lg text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed font-inter">
-              AdHub offers a seamless, secure experience for managing your advertising assets. Instant access. Instant top ups. Scale uninterrupted.
+              Blightstone offers a comprehensive CRM solution for managing your clients and business operations. Streamlined workflows. Real-time insights. Scale efficiently.
             </p>
 
             {/* CTA Button */}

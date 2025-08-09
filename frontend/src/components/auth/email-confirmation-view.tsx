@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "../ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useAuth } from "../../contexts/AuthContext"
 import { toast } from "sonner"
 import { Mail, CheckCircle, RefreshCw, ArrowLeft } from "lucide-react"
@@ -52,7 +52,7 @@ export function EmailConfirmationView() {
       {/* Home button */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
-          href="https://adhub.tech"
+          href="https://blightstone.com"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -66,7 +66,7 @@ export function EmailConfirmationView() {
           
           {/* Logo */}
           <div className="flex justify-center">
-            <AdHubLogo size="sm" />
+            <BlightstoneLogo size="sm" />
               </div>
 
           {/* Success icon */}
@@ -125,7 +125,7 @@ export function EmailConfirmationView() {
           <div className="text-center">
             <p className="text-xs text-gray-500">
                   Need help?{" "}
-              <a href="mailto:support@adhub.com" className="text-gray-400 underline hover:no-underline">
+              <a href="mailto:support@blightstone.com" className="text-gray-400 underline hover:no-underline">
                     Contact support
                   </a>
                 </p>

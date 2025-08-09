@@ -65,7 +65,7 @@ export function FAQSection() {
           Frequently Asked <span className="text-gradient">Questions</span>
         </h2>
         <p className="text-white/70 text-lg sm:text-xl leading-relaxed">
-          Everything you need to know about AdHub and our services.
+          Everything you need to know about Blightstone and our services.
         </p>
       </div>
 

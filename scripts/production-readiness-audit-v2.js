@@ -388,7 +388,7 @@ class ProductionAudit {
     }
     
     this.log('\n' + '='.repeat(60), 'info');
-    this.log('🎯 AdHub Production Audit Complete!', 'info');
+    this.log('🎯 Blightstone Production Audit Complete!', 'info');
     this.log('='.repeat(60), 'info');
     
     // Exit with appropriate code
@@ -396,7 +396,7 @@ class ProductionAudit {
   }
 
   run() {
-    this.log('🔍 Starting AdHub Production Readiness Audit...', 'info');
+    this.log('🔍 Starting Blightstone Production Readiness Audit...', 'info');
     
     this.checkEnvironmentFiles();
     this.checkDatabaseSetup();

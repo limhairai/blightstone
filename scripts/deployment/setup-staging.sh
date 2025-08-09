@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# AdHub Staging Environment Setup Script
-echo "🚀 Setting up AdHub Staging Environment..."
+# Blightstone Staging Environment Setup Script
+echo "🚀 Setting up Blightstone Staging Environment..."
 
 # Colors for output
 RED='\033[0;31m'

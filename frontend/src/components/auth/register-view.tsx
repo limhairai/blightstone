@@ -5,7 +5,7 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
-import { AdHubLogo } from "../core/AdHubLogo"
+import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from '../../contexts/AuthContext'
@@ -123,7 +123,7 @@ export function RegisterView() {
       }
       
       toast.success("Account created!", {
-        description: "Welcome to AdHub."
+        description: "Welcome to Blightstone."
       });
     } catch (err: any) {
       const errorMessage = err?.message || "An unexpected error occurred during Google sign up.";
@@ -161,7 +161,7 @@ export function RegisterView() {
       {/* Home button */}
       <div className="absolute top-6 left-6 z-50">
         <Link 
-          href="https://adhub.tech"
+          href="https://blightstone.com"
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -175,12 +175,12 @@ export function RegisterView() {
           
           {/* Logo */}
           <div className="flex justify-center">
-            <AdHubLogo size="sm" />
+            <BlightstoneLogo size="sm" />
           </div>
 
           {/* Header */}
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-white">Create a AdHub Account</h1>
+            <h1 className="text-2xl font-semibold text-white">Create a Blightstone Account</h1>
             <p className="text-gray-400">
               Already have an account?{" "}
               <Link href="/login" className="text-white underline hover:no-underline">
