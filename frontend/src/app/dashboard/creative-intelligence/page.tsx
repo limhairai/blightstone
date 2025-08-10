@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Brain, Eye, ExternalLink, Edit3, Image, Video, FileText } from "lucide-react"
+import { Plus, Brain, Eye, ExternalLink, Edit3, Image, Video, FileText, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const CreativeIntelligenceBriefPage = React.lazy(() => import("@/components/creative-intelligence/creative-intelligence-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
@@ -107,6 +107,20 @@ export default function CreativeIntelligencePage() {
     } catch (error) {
       console.error('Error updating creative:', error)
       alert('Failed to save creative. Please try again.')
+    }
+  }
+
+  const handleDeleteCreative = async (creativeId: string) => {
+    if (!confirm('Are you sure you want to delete this creative? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await creativeIntelligenceApi.delete(creativeId)
+      setCreatives(prev => prev.filter(creative => creative.id !== creativeId))
+    } catch (error) {
+      console.error('Error deleting creative:', error)
+      alert('Failed to delete creative. Please try again.')
     }
   }
 
@@ -227,7 +241,7 @@ export default function CreativeIntelligencePage() {
                 <TableHead>Psychology Trigger</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Notes</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -294,16 +308,31 @@ export default function CreativeIntelligencePage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleViewCreative(creative)
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleViewCreative(creative)
+                          }}
+                          title="View creative"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteCreative(creative.id)
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          title="Delete creative"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

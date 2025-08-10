@@ -39,6 +39,40 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from('creative_intelligence')
+      .delete()
+      .eq('id', id)
+      .eq('created_by', user.email) // Ensure user can only delete their own creatives
+
+    if (error) {
+      console.error('Error deleting creative:', error)
+      return NextResponse.json({ error: 'Failed to delete creative' }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: 'Creative deleted successfully' })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createSupabaseServerClient()
@@ -146,6 +180,40 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from('creative_intelligence')
+      .delete()
+      .eq('id', id)
+      .eq('created_by', user.email) // Ensure user can only delete their own creatives
+
+    if (error) {
+      console.error('Error deleting creative:', error)
+      return NextResponse.json({ error: 'Failed to delete creative' }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: 'Creative deleted successfully' })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
 export async function PUT(request: NextRequest) {
   try {
     const supabase = createSupabaseServerClient()
@@ -228,6 +296,40 @@ export async function PUT(request: NextRequest) {
     // Convert database snake_case to frontend camelCase
     const camelCaseCreative = mapFieldsToFrontend(creative)
     return NextResponse.json({ creative: camelCaseCreative })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from('creative_intelligence')
+      .delete()
+      .eq('id', id)
+      .eq('created_by', user.email) // Ensure user can only delete their own creatives
+
+    if (error) {
+      console.error('Error deleting creative:', error)
+      return NextResponse.json({ error: 'Failed to delete creative' }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: 'Creative deleted successfully' })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
