@@ -26,7 +26,12 @@ DROP POLICY IF EXISTS "Users can view all projects" ON projects;
 DROP POLICY IF EXISTS "Users can update projects they created" ON projects;
 DROP POLICY IF EXISTS "Users can delete projects they created" ON projects;
 
--- Create new RLS policies using user_id
+-- Create new RLS policies using user_id (drop first if they exist)
+DROP POLICY IF EXISTS "Users can view their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can insert their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can update their own projects" ON projects;
+DROP POLICY IF EXISTS "Users can delete their own projects" ON projects;
+
 CREATE POLICY "Users can view their own projects" ON projects
     FOR SELECT USING (auth.uid() = user_id);
 

@@ -131,7 +131,7 @@ export default function TasksPage() {
         // Creating a new task
         const newTask = await tasksApi.create({
           ...updatedTask,
-          projectId: currentProjectId!
+          project_id: currentProjectId!
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
@@ -195,10 +195,10 @@ export default function TasksPage() {
       status: "todo",
       priority: "medium",
       assignee: "You",
-      dueDate: "",
-      createdAt: new Date().toISOString().split("T")[0],
+      due_date: "",
+      created_at: new Date().toISOString().split("T")[0],
       category: "General",
-      projectId: currentProjectId || "",
+      project_id: currentProjectId || "",
       notes: "",
       attachments: [],
       links: [],
@@ -350,7 +350,7 @@ export default function TasksPage() {
                       <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
                     </TableCell>
                     <TableCell>{task.assignee}</TableCell>
-                    <TableCell>{task.dueDate}</TableCell>
+                    <TableCell>{task.due_date}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{task.category}</Badge>
                     </TableCell>
@@ -429,7 +429,7 @@ export default function TasksPage() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                <span>{task.dueDate}</span>
+                                <span>{task.due_date}</span>
                               </div>
                             </div>
                             <Badge variant="outline" className="text-xs w-fit">

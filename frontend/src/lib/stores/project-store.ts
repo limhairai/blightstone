@@ -45,11 +45,11 @@ export interface Task {
   status: "todo" | "in-progress" | "completed" | "blocked"
   priority: "low" | "medium" | "high" | "urgent"
   assignee: string
-  dueDate: string
-  createdAt: string
+  due_date: string
+  created_at: string
   category: string
-  projectId: string
-  createdBy?: string
+  project_id: string
+  created_by?: string
   notes?: string
   attachments?: TaskAttachment[]
   links?: TaskLink[]
