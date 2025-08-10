@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { mapFieldsToDatabase, mapFieldsToFrontend, mapArrayToFrontend } from '@/lib/field-mapping'
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 })
     }
 
-    return NextResponse.json({ projects })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseProjects = mapArrayToFrontend(projects || [])
+    return NextResponse.json({ projects: camelCaseProjects })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -38,7 +41,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, status = 'active' } = body
+    // Convert frontend camelCase to database snake_case
+    const dbData = mapFieldsToDatabase(body)
+    const { name, description, status = 'active' } = dbData
 
     if (!name) {
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
@@ -61,7 +66,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create project' }, { status: 500 })
     }
 
-    return NextResponse.json({ project })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseProject = mapFieldsToFrontend(project)
+    return NextResponse.json({ project: camelCaseProject })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
