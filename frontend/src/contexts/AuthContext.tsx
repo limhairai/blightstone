@@ -406,40 +406,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Add a small delay to prevent rapid successive calls
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Always fetch user's organizations to ensure we have access
+      // Organizations logic removed - using projects instead
       try {
-        const response = await fetch('/api/organizations', {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
-        });
+        // const response = await fetch('/api/organizations', {
+        //   headers: {
+        //     'Authorization': `Bearer ${session.access_token}`
+        //   }
+        // });
         
-        if (response.ok) {
-          const data = await response.json();
-          const organizations = data.organizations || [];
+        // if (response.ok) {
+        //   const data = await response.json();
+        //   const organizations = data.organizations || [];
           
-          if (organizations.length > 0) {
-            // If we already have a current org ID and it's in the list, keep it
-            if (currentOrganizationId && organizations.find((o: any) => o.id === currentOrganizationId)) {
-              orgInitialized.current = true;
-              return;
-            }
-            
-            // If the profile organization is in the list, use it
-            // Note: profile.organization_id matches the database organization_id field
-            // but API returns organizations with id field (mapped from organization_id)
-            if (profile?.organization_id && organizations.find((o: any) => o.id === profile.organization_id)) {
-              const profileOrg = organizations.find((o: any) => o.id === profile.organization_id);
-              setOrganization(profileOrg!.id, profileOrg!.name);
-              orgInitialized.current = true;
-              return;
-            }
-            
-            // Otherwise, use the first available organization
-            const firstOrg = organizations[0];
-            setOrganization(firstOrg.id, firstOrg.name);
-            orgInitialized.current = true;
-          } else {
+          // if (organizations.length > 0) {
+          //   // If we already have a current org ID and it's in the list, keep it
+          //   if (currentOrganizationId && organizations.find((o: any) => o.id === currentOrganizationId)) {
+          //     orgInitialized.current = true;
+          //     return;
+          //   }
+          //   
+          //   // If the profile organization is in the list, use it
+          //   // Note: profile.organization_id matches the database organization_id field
+          //   // but API returns organizations with id field (mapped from organization_id)
+          //   if (profile?.organization_id && organizations.find((o: any) => o.id === profile.organization_id)) {
+          //     const profileOrg = organizations.find((o: any) => o.id === profile.organization_id);
+          //     setOrganization(profileOrg!.id, profileOrg!.name);
+          //     orgInitialized.current = true;
+          //     return;
+          //   }
+          //   
+          //   // Otherwise, use the first available organization
+          //   const firstOrg = organizations[0];
+          //   setOrganization(firstOrg.id, firstOrg.name);
+          //   orgInitialized.current = true;
+          // } else {
             
             // Check for database inconsistency: profile has org_id but user has no accessible orgs
             if (profile?.organization_id) {

@@ -198,9 +198,15 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                   {isEditMode ? (
                     <Select
                       value={editingTask?.status}
-                      onValueChange={(value) => setEditingTask({ ...editingTask!, status: value as Task["status"] })}
+                      onValueChange={(value) => {
+                        console.log('Status changed:', value)
+                        setEditingTask({ ...editingTask!, status: value as Task["status"] })
+                      }}
                     >
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger 
+                        className="w-48"
+                        onClick={() => console.log('SelectTrigger clicked')}
+                      >
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>

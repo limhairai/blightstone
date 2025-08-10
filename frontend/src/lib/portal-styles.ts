@@ -54,15 +54,40 @@ export function ensurePortalStyles() {
 
     /* Force visibility and proper styling for dropdown content */
     [data-radix-select-content] {
-      background: hsl(var(--popover)) !important;
-      color: hsl(var(--popover-foreground)) !important;
-      border: 1px solid hsl(var(--border)) !important;
+      background: white !important;
+      color: black !important;
+      border: 1px solid #e5e5e5 !important;
       z-index: 99999 !important; /* Higher than brief page z-[9999] */
+      pointer-events: auto !important; /* Ensure clicks work */
+      opacity: 1 !important; /* Ensure it's visible */
+      visibility: visible !important;
     }
 
-    /* Also ensure other Radix portals have high z-index */
+    /* Also ensure other Radix portals have high z-index and can receive events */
     [data-radix-portal] {
       z-index: 99999 !important;
+      pointer-events: auto !important;
+    }
+
+    /* Ensure SelectTrigger is clickable */
+    [data-radix-select-trigger] {
+      pointer-events: auto !important;
+      cursor: pointer !important;
+    }
+
+    /* Force SelectItem visibility */
+    [data-radix-select-item] {
+      background: white !important;
+      color: black !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    /* SelectItem hover state */
+    [data-radix-select-item]:hover,
+    [data-radix-select-item][data-highlighted] {
+      background: #f5f5f5 !important;
+      color: black !important;
     }
   `
 
