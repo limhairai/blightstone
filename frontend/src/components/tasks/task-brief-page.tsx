@@ -196,19 +196,16 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                 <div className="flex items-center justify-between py-2 border-b">
                   <span className="font-medium">Status</span>
                   {isEditMode ? (
-                    <Select
+                    <select
                       value={editingTask?.status}
-                      onValueChange={(value) => setEditingTask({ ...editingTask!, status: value as Task["status"] })}
+                      onChange={(e) => setEditingTask({ ...editingTask!, status: e.target.value as Task["status"] })}
+                      className="w-48 px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todo">To Do</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="">Select status</option>
+                      <option value="todo">To Do</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
                   ) : (
                     <Badge className={getStatusColor(task.status)} variant="secondary">
                       {task.status.replace("-", " ")}
@@ -218,22 +215,17 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                 <div className="flex items-center justify-between py-2 border-b">
                   <span className="font-medium">Priority</span>
                   {isEditMode ? (
-                    <Select
+                    <select
                       value={editingTask?.priority}
-                      onValueChange={(value) =>
-                        setEditingTask({ ...editingTask!, priority: value as Task["priority"] })
-                      }
+                      onChange={(e) => setEditingTask({ ...editingTask!, priority: e.target.value as Task["priority"] })}
+                      className="w-48 px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="">Select priority</option>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
                   ) : (
                     <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
                   )}
@@ -244,21 +236,18 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                     <span className="font-medium">Category</span>
                   </div>
                   {isEditMode ? (
-                    <Select
+                    <select
                       value={editingTask?.category}
-                      onValueChange={(value) => setEditingTask({ ...editingTask!, category: value })}
+                      onChange={(e) => setEditingTask({ ...editingTask!, category: e.target.value })}
+                      className="w-48 px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Research">Research</SelectItem>
-                        <SelectItem value="Creative">Creative</SelectItem>
-                        <SelectItem value="Content">Content</SelectItem>
-                        <SelectItem value="Development">Development</SelectItem>
-                        <SelectItem value="General">General</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="">Select category</option>
+                      <option value="Research">Research</option>
+                      <option value="Creative">Creative</option>
+                      <option value="Content">Content</option>
+                      <option value="Development">Development</option>
+                      <option value="General">General</option>
+                    </select>
                   ) : (
                     <Badge variant="outline">{task.category || "No Category"}</Badge>
                   )}
