@@ -173,6 +173,7 @@ export default function CreativeIntelligencePage() {
   }
 
   const formatCategoryName = (category: string) => {
+    if (!category) return 'Unknown Category'
     return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 

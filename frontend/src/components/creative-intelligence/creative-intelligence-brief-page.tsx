@@ -152,6 +152,7 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
   }
 
   const formatCategoryName = (category: string) => {
+    if (!category) return 'Unknown Category'
     return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
