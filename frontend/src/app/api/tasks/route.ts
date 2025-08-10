@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         status,
         priority,
         assignee,
-        due_date,
+        due_date: due_date || null, // Convert empty string to null
         category,
         project_id,
         notes,

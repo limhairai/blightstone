@@ -133,6 +133,22 @@ export const personasApi = {
       console.error('Error creating persona:', error)
       throw error
     }
+  },
+
+  async update(id: string, persona: any) {
+    try {
+      const response = await fetch(`${API_BASE}/personas`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...persona })
+      })
+      if (!response.ok) throw new Error('Failed to update persona')
+      const data = await response.json()
+      return data.persona
+    } catch (error) {
+      console.error('Error updating persona:', error)
+      throw error
+    }
   }
 }
 
@@ -162,6 +178,22 @@ export const competitorsApi = {
       return data.competitor
     } catch (error) {
       console.error('Error creating competitor:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, competitor: any) {
+    try {
+      const response = await fetch(`${API_BASE}/competitors`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...competitor })
+      })
+      if (!response.ok) throw new Error('Failed to update competitor')
+      const data = await response.json()
+      return data.competitor
+    } catch (error) {
+      console.error('Error updating competitor:', error)
       throw error
     }
   }

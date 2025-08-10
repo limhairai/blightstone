@@ -384,5 +384,15 @@ export default function PersonaBriefPage({
   )
 
   // Render the brief page as a portal to document.body to ensure it's above everything
-  return createPortal(briefPageContent, document.body)
+  // Wrap in a div with proper CSS class inheritance
+  return createPortal(
+    <div className="font-sans antialiased" style={{ 
+      '--background': '0 0% 100%',
+      '--foreground': '0 0% 9%',
+      '--popover': '0 0% 100%',
+      '--popover-foreground': '0 0% 9%',
+      '--border': '0 0% 90%'
+    } as React.CSSProperties}>{briefPageContent}</div>, 
+    document.body
+  )
 }

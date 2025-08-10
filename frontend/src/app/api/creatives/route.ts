@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       .insert({
         batch,
         status,
-        launch_date,
+        launch_date: launch_date || null, // Convert empty string to null
         ad_concept,
         test_hypothesis,
         ad_type,

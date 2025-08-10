@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Eye, Edit3, ExternalLink } from "lucide-react"
 import { useProjectStore } from "@/lib/stores/project-store"
+import { competitorsApi } from "@/lib/api"
 // Lazy load the brief page for better performance
 const CompetitorBriefPage = React.lazy(() => import("@/components/competitors/competitor-brief-page"))
 
@@ -23,55 +24,92 @@ interface CompetitorBrief {
   market: string // e.g., "USA"
   offerUrl: string
   trafficVolume: string // e.g., "100K-500K", "50K"
-  level: "Poor" | "Medium" | "High"
+  level: "poor" | "medium" | "high"
   projectId: string // Add project association
   notes?: string // Quick notes about the competitor
 }
 
 export default function CompetitorsPage() {
-  const { currentProjectId, getCompetitorsForProject, addCompetitor } = useProjectStore()
-  const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
-
+  const { currentProjectId } = useProjectStore()
+  
+  const [competitors, setCompetitors] = useState<CompetitorBrief[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorBrief | null>(null)
   const [notesEditingCompetitor, setNotesEditingCompetitor] = useState<CompetitorBrief | null>(null)
   const [tempNotes, setTempNotes] = useState("")
 
-  const handleUpdateCompetitor = (updatedCompetitor: CompetitorBrief) => {
+  // Fetch competitors from API
+  useEffect(() => {
+    if (!currentProjectId) {
+      setCompetitors([])
+      return
+    }
+
+    const fetchCompetitors = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const fetchedCompetitors = await competitorsApi.getByProject(currentProjectId)
+        // Convert API data to local CompetitorBrief format
+        const convertedCompetitors: CompetitorBrief[] = fetchedCompetitors.map((competitor: any) => ({
+          id: competitor.id,
+          name: competitor.name,
+          website: competitor.websiteUrl || competitor.website_url || "",
+          adLibraryLink: competitor.adLibraryLink || competitor.ad_library_link || "",
+          market: competitor.market || "",
+          offerUrl: competitor.offerUrl || competitor.offer_url || "",
+          trafficVolume: competitor.trafficVolume || competitor.traffic_volume || "",
+          level: (competitor.level || "medium") as "poor" | "medium" | "high",
+          projectId: competitor.projectId || competitor.project_id || currentProjectId,
+          notes: competitor.notes || ""
+        }))
+        setCompetitors(convertedCompetitors)
+      } catch (err) {
+        setError('Failed to fetch competitors')
+        console.error('Error fetching competitors:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCompetitors()
+  }, [currentProjectId])
+
+  const handleUpdateCompetitor = async (updatedCompetitor: CompetitorBrief) => {
     if (!currentProjectId) return
     
-    if (updatedCompetitor.id === "new-competitor-temp-id") {
-      const newCompetitorWithId = { 
-        ...updatedCompetitor, 
-        id: "", // Let API generate ID
-        projectId: currentProjectId
+    try {
+      if (updatedCompetitor.id === "new-competitor-temp-id") {
+        // Creating a new competitor
+        const { id, ...competitorData } = updatedCompetitor
+        const newCompetitor = await competitorsApi.create({
+          ...competitorData,
+          projectId: currentProjectId
+        })
+        // Convert back to local format and add to state
+        const convertedCompetitor: CompetitorBrief = {
+          id: newCompetitor.id,
+          name: newCompetitor.name,
+          website: newCompetitor.websiteUrl || newCompetitor.website_url || "",
+          adLibraryLink: newCompetitor.adLibraryLink || newCompetitor.ad_library_link || "",
+          market: newCompetitor.market || "",
+          offerUrl: newCompetitor.offerUrl || newCompetitor.offer_url || "",
+          trafficVolume: newCompetitor.trafficVolume || newCompetitor.traffic_volume || "",
+          level: (newCompetitor.level || "medium") as "poor" | "medium" | "high",
+          projectId: newCompetitor.projectId || currentProjectId,
+          notes: newCompetitor.notes || ""
+        }
+        setCompetitors(prev => [...prev, convertedCompetitor])
+      } else {
+        // Updating existing competitor
+        const updated = await competitorsApi.update(updatedCompetitor.id, updatedCompetitor)
+        setCompetitors(prev => prev.map(competitor => competitor.id === updated.id ? { ...competitor, ...updatedCompetitor } : competitor))
       }
-      
-      // Convert to store format
-      const competitorData: Competitor = {
-        id: newCompetitorWithId.id,
-        name: newCompetitorWithId.name,
-        website: newCompetitorWithId.website || "",
-        market: newCompetitorWithId.market || "USA",
-        level: newCompetitorWithId.level as "Poor" | "Medium" | "High",
-        pricing: "Unknown",
-        strengths: ["To be analyzed"],
-        weaknesses: ["To be analyzed"],
-        positioning: "Unknown",
-        targetAudience: "Unknown",
-        marketShare: "Unknown",
-        notes: "",
-        projectId: currentProjectId || "",
-        createdBy: "You",
-        adLibraryLink: newCompetitorWithId.adLibraryLink || "",
-        offerUrl: newCompetitorWithId.offerUrl || "",
-        trafficVolume: newCompetitorWithId.trafficVolume || ""
-      }
-      
-      addCompetitor(competitorData)
       setSelectedCompetitor(null)
-    } else {
-      // TODO: Implement update functionality in the store
-      setSelectedCompetitor(null)
+    } catch (error) {
+      console.error('Error updating competitor:', error)
+      alert('Failed to save competitor. Please try again.')
     }
   }
 
@@ -89,7 +127,7 @@ export default function CompetitorsPage() {
       market: "USA",
       offerUrl: "",
       trafficVolume: "",
-      level: "Medium", // Default level
+      level: "medium", // Default level
       projectId: currentProjectId || "",
       notes: ""
     })
@@ -136,7 +174,7 @@ export default function CompetitorsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectCompetitors.map((competitor) => (
+                          {competitors.map((competitor) => (
               <TableRow key={competitor.id}>
                 <TableCell className="font-medium">{competitor.name}</TableCell>
                 <TableCell>{competitor.website}</TableCell>

@@ -19,7 +19,12 @@ export function objectToSnakeCase<T extends Record<string, any>>(obj: T): Record
   
   for (const [key, value] of Object.entries(obj)) {
     const snakeKey = toSnakeCase(key)
-    result[snakeKey] = value
+    // Special handling for competitor level field
+    if (snakeKey === 'level' && typeof value === 'string') {
+      result[snakeKey] = value.toLowerCase()
+    } else {
+      result[snakeKey] = value
+    }
   }
   
   return result
@@ -31,7 +36,12 @@ export function objectToCamelCase<T extends Record<string, any>>(obj: T): Record
   
   for (const [key, value] of Object.entries(obj)) {
     const camelKey = toCamelCase(key)
-    result[camelKey] = value
+    // Special handling for competitor level field - convert back to title case
+    if (key === 'level' && typeof value === 'string') {
+      result[camelKey] = value.charAt(0).toUpperCase() + value.slice(1)
+    } else {
+      result[camelKey] = value
+    }
   }
   
   return result

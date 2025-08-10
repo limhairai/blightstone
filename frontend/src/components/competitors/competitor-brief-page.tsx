@@ -21,7 +21,7 @@ interface CompetitorBrief {
   market: string
   offerUrl: string
   trafficVolume: string
-  level: "Poor" | "Medium" | "High"
+  level: "poor" | "medium" | "high"
   projectId: string
   notes?: string
 }
@@ -219,14 +219,14 @@ export default function CompetitorBriefPage({
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Poor">Poor</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="poor">Poor</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <p className="text-foreground whitespace-pre-wrap leading-relaxed">
-                  {competitor.level || "No level specified."}
+                  {competitor.level ? competitor.level.charAt(0).toUpperCase() + competitor.level.slice(1) : "No level specified."}
                 </p>
               )}
             </div>
@@ -329,5 +329,15 @@ export default function CompetitorBriefPage({
   )
 
   // Render the brief page as a portal to document.body to ensure it's above everything
-  return createPortal(briefPageContent, document.body)
+  // Wrap in a div with proper CSS class inheritance
+  return createPortal(
+    <div className="font-sans antialiased" style={{ 
+      '--background': '0 0% 100%',
+      '--foreground': '0 0% 9%',
+      '--popover': '0 0% 100%',
+      '--popover-foreground': '0 0% 9%',
+      '--border': '0 0% 90%'
+    } as React.CSSProperties}>{briefPageContent}</div>, 
+    document.body
+  )
 }

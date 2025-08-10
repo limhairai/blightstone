@@ -33,7 +33,7 @@ interface Creative {
   winningAdLink: string // "All Winning Ads or Best Performing Ad"
   briefLink: string // "Link to Brief"
   driveLink: string // "Google Drive link for creative files"
-  created_at: string // "Date when the creative was created"
+  createdAt: string // "Date when the creative was created"
   notes?: string // "Quick notes about the creative"
 }
 
@@ -221,7 +221,7 @@ export default function CreativeTrackerPage() {
       winningAdLink: "",
       briefLink: "",
       driveLink: "",
-      created_at: new Date().toISOString().split("T")[0],
+      createdAt: new Date().toISOString().split("T")[0],
       notes: "",
     })
   }
@@ -296,7 +296,7 @@ export default function CreativeTrackerPage() {
                   <Badge className={getStatusColor(creative.status)}>{creative.status.replace("-", " ")}</Badge>
                 </TableCell>
                 <TableCell>{creative.adConcept}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{creative.created_at}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{creative.createdAt}</TableCell>
                 <TableCell>
                   {creative.driveLink ? (
                     <Button 
