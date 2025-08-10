@@ -324,56 +324,51 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
           <Settings className="h-4 w-4 mr-3" />
           Settings
         </Button>
-        
-        <div className="mt-auto pt-4 border-t border-border space-y-2">
-          {isEditMode ? (
-            <>
-              <Button onClick={handleSave} className="w-full">
-                {isNewCreative ? "Create Creative" : "Save Changes"}
-              </Button>
-              <Button variant="outline" onClick={handleCancel} className="w-full">
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button onClick={handleEdit} className="w-full gap-2">
-              <Edit className="h-4 w-4" />
-              Edit Creative
-            </Button>
-          )}
-        </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-foreground">
-                  {creative.title || "Untitled Creative"}
-                  {isEditMode && <span className="text-red-500 ml-1">*</span>}
-                </h1>
-                <Badge className={getCategoryBadgeColor(creative.creativeCategory)}>
-                  {formatCategoryName(creative.creativeCategory)}
-                </Badge>
-              </div>
-            </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col bg-background">
+        {/* Header */}
+        <div className="h-16 border-b border-border flex items-center px-6 justify-between bg-card">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">Creative Intelligence</span>
+            <span className="font-medium">{isNewCreative ? "New Creative" : creative.title}</span>
+          </div>
+          <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={isEditMode ? "bg-accent text-accent-foreground" : ""}
             >
+              <Edit className="h-4 w-4 mr-2" />
+              {isEditMode ? "Done" : "Edit"}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full ml-2">
               <X className="h-5 w-5" />
+              <span className="sr-only">Close</span>
             </Button>
           </div>
+        </div>
 
-          {/* Section Content */}
-          <div className="space-y-6">
-            {renderSectionContent(activeSection)}
-          </div>
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {renderSectionContent(activeSection)}
+        </div>
+
+        {/* Footer */}
+        <div className="h-16 border-t border-border flex items-center px-6 justify-end gap-3 bg-card">
+          <p className="text-xs text-muted-foreground mr-auto">Creative Intelligence powered by Blightstone.</p>
+          {isEditMode && (
+            <>
+              <Button variant="outline" onClick={handleCancel}>
+                {isNewCreative ? "Cancel" : "Discard changes"}
+              </Button>
+              <Button onClick={handleSave} className="bg-black hover:bg-black/90 text-white">
+                {isNewCreative ? "Create Creative" : "Save changes"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
