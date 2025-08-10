@@ -1,1 +1,28 @@
-// Cache bust for Vercel build Wed Jun 11 06:18:53 CST 2025
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Blightstone Pure Black & White Theme */
+    --background: 0 0% 100%; /* Pure white background */
+    --foreground: 0 0% 9%; /* #161616 text */
+    --card: 0 0% 100%; /* Pure white cards */
+    --card-foreground: 0 0% 9%;
+    --popover: 0 0% 100%; /* Pure white popover */
+    --popover-foreground: 0 0% 9%;
+    --primary: 0 0% 9%; /* #161616 primary */
+    --primary-foreground: 0 0% 100%; /* Pure white text on dark gray */
+    --secondary: 0 0% 95%; /* Very light gray for subtle contrast */
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96%; /* Subtle gray for muted areas */
+    --muted-foreground: 0 0% 45%; /* Medium gray for muted text */
+    --accent: 0 0% 96%; /* Light gray accent for hovers */
+    --accent-foreground: 0 0% 9%; /* Dark text on light accent */
+    --destructive: 0 0% 20%; /* Dark gray for destructive */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%; /* Light gray borders */
+    --input: 0 0% 98%; /* Very light gray input backgrounds */
+    --ring: 0 0% 9%; /* Dark gray focus rings */
+  }
+}

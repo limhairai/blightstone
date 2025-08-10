@@ -99,7 +99,7 @@ export function ProjectSelector() {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="w-full justify-between px-3 py-2 h-auto hover:bg-[#F5F5F5]/10"
+          className="w-full justify-between px-3 py-2 h-auto hover:bg-[#F5F5F5]"
           disabled={componentIsLoading}
         >
           <div className="flex items-center gap-3 min-w-0 flex-1">

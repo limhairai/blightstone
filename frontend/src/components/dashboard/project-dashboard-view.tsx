@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { CheckSquare, Target, Users, Building2, Calendar, Clock, Plus, ArrowRight, Activity } from "lucide-react"
+import { CheckSquare, Target, Users, Building2, Calendar, Clock, Plus, ArrowRight, Activity, Trash2 } from "lucide-react"
 import { useProjectStore } from "../../lib/stores/project-store"
 import Link from "next/link"
 

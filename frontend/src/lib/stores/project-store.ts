@@ -58,68 +58,68 @@ export interface Task {
 export interface CustomerAvatar {
   id: string
   name: string
-  type: string
-  age: string
-  gender: string
-  location: string
-  struggles: string[]
-  characteristics: string[]
-  statusDesired: string[]
-  productHelp: string[]
-  beliefs: string[]
-  failedSolutions: string[]
-  awareness: string
-  sophistication: string
-  insecurities: string[]
+  age_gender_location: string
+  daily_struggles: string
+  desired_characteristics: string
+  desired_social_status: string
+  product_help_achieve_status: string
+  beliefs_to_overcome: string
+  failed_solutions: string
+  market_awareness: string
+  market_sophistication: string
+  insecurities: string
   mindset: string
-  painPoints: string[]
-  desires: string[]
-  objections: string[]
-  projectId: string
-  createdBy?: string
+  deeper_pain_points: string
+  hidden_specific_desires: string
+  objections: string
+  angle: string
+  domino_statement: string
+  notes?: string
+  project_id: string
+  created_by?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Competitor {
   id: string
   name: string
-  website: string
-  market: string
-  level: "Poor" | "Medium" | "High"
-  pricing: string
-  strengths: string[]
-  weaknesses: string[]
-  positioning: string
-  targetAudience: string
-  marketShare: string
+  website_url?: string
+  ad_library_link?: string
+  market?: string
+  offer_url?: string
+  traffic_volume?: string
+  level: "poor" | "medium" | "high"
   notes?: string
-  projectId: string
-  createdBy?: string
-  adLibraryLink?: string
-  offerUrl?: string
-  trafficVolume?: string
+  project_id: string
+  created_by?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface CreativeTracker {
   id: string
   batch: string
-  brand: string
-  status: "planned" | "in-progress" | "completed" | "paused"
-  launchDate: string
-  adConcept: string
-  adType: string
-  adVariable: string
-  desire: string
-  benefit: string
-  objections: string
-  persona: string
-  positioning: string
-  positioningHow: string
-  hookPattern: string
-  results: string
-  winningAds: string
-  briefLink: string
-  projectId: string
-  createdBy?: string
+  status: "draft" | "in-review" | "live" | "paused" | "completed"
+  launch_date?: string
+  ad_concept?: string
+  test_hypothesis?: string
+  ad_type?: string
+  ad_variable?: string
+  desire?: string
+  benefit?: string
+  objections?: string
+  persona?: string
+  hook_pattern?: string
+  results?: string
+  winning_ad_link?: string
+  brief_link?: string
+  drive_link?: string
+  notes?: string
+  project_id: string
+  created_by?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface Project {
