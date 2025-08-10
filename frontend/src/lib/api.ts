@@ -9,11 +9,19 @@ const supabase = createBrowserClient(
 // API base URL for our custom routes
 const API_BASE = '/api'
 
+// Helper function for authenticated API calls
+async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  return fetch(url, {
+    ...options,
+    credentials: 'include'
+  })
+}
+
 // Projects API
 export const projectsApi = {
   async getAll(): Promise<Project[]> {
     try {
-      const response = await fetch(`${API_BASE}/projects`)
+      const response = await fetchWithAuth(`${API_BASE}/projects`)
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Failed to fetch projects')
@@ -28,7 +36,7 @@ export const projectsApi = {
 
   async create(project: { name: string; description?: string; status?: string; user_id?: string; created_by?: string }): Promise<Project> {
     try {
-      const response = await fetch(`${API_BASE}/projects`, {
+      const response = await fetchWithAuth(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project)
@@ -47,7 +55,7 @@ export const projectsApi = {
 
   async delete(projectId: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/projects`, {
+      const response = await fetchWithAuth(`${API_BASE}/projects`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: projectId })
@@ -67,7 +75,7 @@ export const projectsApi = {
 export const tasksApi = {
   async getByProject(projectId: string): Promise<Task[]> {
     try {
-      const response = await fetch(`${API_BASE}/tasks?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/tasks?project_id=${projectId}`)
       if (!response.ok) throw new Error('Failed to fetch tasks')
       const data = await response.json()
       return data.tasks || []
@@ -79,7 +87,7 @@ export const tasksApi = {
 
   async create(task: Partial<Task>): Promise<Task> {
     try {
-      const response = await fetch(`${API_BASE}/tasks`, {
+      const response = await fetchWithAuth(`${API_BASE}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(task)
@@ -95,7 +103,7 @@ export const tasksApi = {
 
   async update(id: string, updates: Partial<Task>): Promise<Task> {
     try {
-      const response = await fetch(`${API_BASE}/tasks`, {
+      const response = await fetchWithAuth(`${API_BASE}/tasks`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates })
@@ -111,7 +119,7 @@ export const tasksApi = {
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/tasks?id=${id}`, {
+      const response = await fetchWithAuth(`${API_BASE}/tasks?id=${id}`, {
         method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete task')
@@ -126,7 +134,7 @@ export const tasksApi = {
 export const personasApi = {
   async getByProject(projectId: string) {
     try {
-      const response = await fetch(`${API_BASE}/personas?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/personas?project_id=${projectId}`)
       if (!response.ok) throw new Error('Failed to fetch personas')
       const data = await response.json()
       return data.personas || []
@@ -138,7 +146,7 @@ export const personasApi = {
 
   async create(persona: any) {
     try {
-      const response = await fetch(`${API_BASE}/personas`, {
+      const response = await fetchWithAuth(`${API_BASE}/personas`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(persona)
@@ -154,7 +162,7 @@ export const personasApi = {
 
   async update(id: string, persona: any) {
     try {
-      const response = await fetch(`${API_BASE}/personas`, {
+      const response = await fetchWithAuth(`${API_BASE}/personas`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...persona })
@@ -173,7 +181,7 @@ export const personasApi = {
 export const competitorsApi = {
   async getByProject(projectId: string) {
     try {
-      const response = await fetch(`${API_BASE}/competitors?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/competitors?project_id=${projectId}`)
       if (!response.ok) throw new Error('Failed to fetch competitors')
       const data = await response.json()
       return data.competitors || []
@@ -185,7 +193,7 @@ export const competitorsApi = {
 
   async create(competitor: any) {
     try {
-      const response = await fetch(`${API_BASE}/competitors`, {
+      const response = await fetchWithAuth(`${API_BASE}/competitors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(competitor)
@@ -201,7 +209,7 @@ export const competitorsApi = {
 
   async update(id: string, competitor: any) {
     try {
-      const response = await fetch(`${API_BASE}/competitors`, {
+      const response = await fetchWithAuth(`${API_BASE}/competitors`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...competitor })
@@ -220,7 +228,7 @@ export const competitorsApi = {
 export const creativesApi = {
   async getByProject(projectId: string) {
     try {
-      const response = await fetch(`${API_BASE}/creatives?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/creatives?project_id=${projectId}`)
       if (!response.ok) throw new Error('Failed to fetch creatives')
       const data = await response.json()
       return data.creatives || []
@@ -232,7 +240,7 @@ export const creativesApi = {
 
   async create(creative: any) {
     try {
-      const response = await fetch(`${API_BASE}/creatives`, {
+      const response = await fetchWithAuth(`${API_BASE}/creatives`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(creative)
@@ -248,7 +256,7 @@ export const creativesApi = {
 
   async update(id: string, creative: any) {
     try {
-      const response = await fetch(`${API_BASE}/creatives?id=${id}`, {
+      const response = await fetchWithAuth(`${API_BASE}/creatives?id=${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(creative)
@@ -264,7 +272,7 @@ export const creativesApi = {
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/creatives?id=${id}`, {
+      const response = await fetchWithAuth(`${API_BASE}/creatives?id=${id}`, {
         method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete creative')
@@ -279,7 +287,7 @@ export const creativesApi = {
 export const creativeIntelligenceApi = {
   async getByProject(projectId: string) {
     try {
-      const response = await fetch(`${API_BASE}/creative-intelligence?projectId=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence?projectId=${projectId}`)
       if (!response.ok) throw new Error('Failed to fetch creative intelligence')
       const data = await response.json()
       return data.creatives || []
@@ -291,7 +299,7 @@ export const creativeIntelligenceApi = {
 
   async create(creative: any) {
     try {
-      const response = await fetch(`${API_BASE}/creative-intelligence`, {
+      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(creative)
@@ -307,7 +315,7 @@ export const creativeIntelligenceApi = {
 
   async update(id: string, creative: any) {
     try {
-      const response = await fetch(`${API_BASE}/creative-intelligence`, {
+      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...creative })
@@ -323,7 +331,7 @@ export const creativeIntelligenceApi = {
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/creative-intelligence`, {
+      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
