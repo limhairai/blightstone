@@ -46,7 +46,9 @@ export default function CreativeIntelligencePage() {
         setCreatives(fetchedCreatives)
       } catch (err) {
         console.error('Failed to fetch creatives:', err)
-        setError('Failed to load creatives')
+        console.error('Current project ID:', currentProjectId)
+        console.error('Error details:', err)
+        setError(`Failed to load creatives: ${err instanceof Error ? err.message : 'Unknown error'}`)
       } finally {
         setLoading(false)
       }
