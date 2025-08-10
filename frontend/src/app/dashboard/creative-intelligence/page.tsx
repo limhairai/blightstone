@@ -207,7 +207,7 @@ export default function CreativeIntelligencePage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Button onClick={handleNewCreative} className="gap-2">
           <Plus className="h-4 w-4" />

@@ -83,11 +83,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID and title are required' }, { status: 400 })
     }
 
+    // Debug: Check user and project ownership
+    console.log('Creating creative for user:', user.id, user.email)
+    console.log('Project ID:', project_id)
+    
+    // Verify the project belongs to the user
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', project_id)
+      .single()
+    
+    if (projectError || !project) {
+      console.error('Project not found or error:', projectError)
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+    }
+    
+    if (project.user_id !== user.id) {
+      console.error('Project does not belong to user. Project user_id:', project.user_id, 'User ID:', user.id)
+      return NextResponse.json({ error: 'Project does not belong to user' }, { status: 403 })
+    }
+
     const { data: creative, error } = await supabase
       .from('creative_intelligence')
       .insert({
         project_id,
-        created_by: user.email,
+        created_by: user.email || user.id,
         title,
         platform: platform || 'facebook',
         image_url,
