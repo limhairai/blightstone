@@ -87,6 +87,15 @@ export async function POST(request: NextRequest) {
     console.log('Creating creative for user:', user.id, user.email)
     console.log('Project ID:', project_id)
     
+    // First, let's see what projects exist for this user
+    const { data: allProjects, error: allProjectsError } = await supabase
+      .from('projects')
+      .select('id, name, user_id')
+      .eq('user_id', user.id)
+    
+    console.log('All projects for user:', allProjects)
+    console.log('All projects error:', allProjectsError)
+    
     // Verify the project belongs to the user
     const { data: project, error: projectError } = await supabase
       .from('projects')
@@ -96,7 +105,25 @@ export async function POST(request: NextRequest) {
     
     if (projectError || !project) {
       console.error('Project not found or error:', projectError)
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      console.error('Trying to find project with ID:', project_id)
+      
+      // If no projects exist, let's check if any projects exist at all
+      const { data: anyProjects, error: anyProjectsError } = await supabase
+        .from('projects')
+        .select('id, name, user_id')
+        .limit(5)
+      
+      console.log('Any projects in database:', anyProjects)
+      console.log('Any projects error:', anyProjectsError)
+      
+      return NextResponse.json({ 
+        error: 'Project not found', 
+        debug: {
+          requested_project_id: project_id,
+          user_projects: allProjects,
+          any_projects: anyProjects
+        }
+      }, { status: 404 })
     }
     
     if (project.user_id !== user.id) {
