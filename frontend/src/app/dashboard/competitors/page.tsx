@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Eye, Edit3, ExternalLink } from "lucide-react"
+import { Plus, Eye, Edit3, ExternalLink, Trash2 } from "lucide-react"
 import { useProjectStore } from "@/lib/stores/project-store"
 import { competitorsApi } from "@/lib/api"
 // Lazy load the brief page for better performance
@@ -113,10 +113,7 @@ export default function CompetitorsPage() {
     }
   }
 
-  const handleDeleteCompetitor = (competitorId: string) => {
-    // TODO: Implement delete functionality in the store
-    setSelectedCompetitor(null)
-  }
+
 
   const handleNewCompetitorClick = () => {
     setSelectedCompetitor({
@@ -136,6 +133,20 @@ export default function CompetitorsPage() {
   const handleNotesEdit = (competitor: CompetitorBrief) => {
     setNotesEditingCompetitor(competitor)
     setTempNotes(competitor.notes || "")
+  }
+
+  const handleDeleteCompetitor = async (competitorId: string) => {
+    if (!confirm('Are you sure you want to delete this competitor? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await competitorsApi.delete(competitorId)
+      setCompetitors(prev => prev.filter(competitor => competitor.id !== competitorId))
+    } catch (error) {
+      console.error('Error deleting competitor:', error)
+      alert('Failed to delete competitor. Please try again.')
+    }
   }
 
   const handleNotesSave = () => {
@@ -231,23 +242,37 @@ export default function CompetitorsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    // Convert from store format to Competitor format for editing
-                    setSelectedCompetitor({
-                      id: competitor.id,
-                      name: competitor.name,
-                      website: competitor.website,
-                      adLibraryLink: competitor.adLibraryLink || "",
-                      market: competitor.market || 'USA',
-                      offerUrl: competitor.offerUrl || "",
-                      trafficVolume: competitor.trafficVolume || "",
-                      level: competitor.level || "Medium",
-                      projectId: competitor.projectId
-                    })
-                  }}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      // Convert from store format to Competitor format for editing
+                      setSelectedCompetitor({
+                        id: competitor.id,
+                        name: competitor.name,
+                        website: competitor.website,
+                        adLibraryLink: competitor.adLibraryLink || "",
+                        market: competitor.market || 'USA',
+                        offerUrl: competitor.offerUrl || "",
+                        trafficVolume: competitor.trafficVolume || "",
+                        level: competitor.level || "Medium",
+                        projectId: competitor.projectId
+                      })
+                    }}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteCompetitor(competitor.id)
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete competitor"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

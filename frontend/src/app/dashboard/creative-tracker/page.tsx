@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Eye, Edit3 } from "lucide-react"
+import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const CreativeBriefPage = React.lazy(() => import("@/components/creative/creative-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
@@ -231,6 +231,20 @@ export default function CreativeTrackerPage() {
     setTempNotes(creative.notes || "")
   }
 
+  const handleDeleteCreative = async (creativeId: string) => {
+    if (!confirm('Are you sure you want to delete this creative? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await creativesApi.delete(creativeId)
+      setCreatives(prev => prev.filter(creative => creative.id !== creativeId))
+    } catch (error) {
+      console.error('Error deleting creative:', error)
+      alert('Failed to delete creative. Please try again.')
+    }
+  }
+
   const handleNotesSave = () => {
     if (notesEditingCreative) {
       const updatedCreatives = creatives.map(creative => 
@@ -330,10 +344,24 @@ export default function CreativeTrackerPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm" onClick={() => setSelectedCreative(creative)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => setSelectedCreative(creative)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteCreative(creative.id)
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete creative"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
