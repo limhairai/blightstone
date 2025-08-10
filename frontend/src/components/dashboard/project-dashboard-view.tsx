@@ -13,7 +13,7 @@ interface Task {
   title: string
   status: "todo" | "in-progress" | "completed" | "blocked"
   priority: "low" | "medium" | "high" | "urgent"
-  due_date: string
+  dueDate: string
   assignee: string
 }
 
@@ -190,7 +190,7 @@ export function ProjectDashboardView() {
                   <div className="space-y-1">
                     <h4 className="font-medium text-foreground">{task.title}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Due {task.due_date} • {task.assignee || 'Unassigned'}
+                      Due {task.dueDate} • {task.assignee || 'Unassigned'}
                     </p>
                   </div>
                   <Badge 

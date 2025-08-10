@@ -128,10 +128,11 @@ export default function TasksPage() {
   const handleUpdateTask = async (updatedTask: Task) => {
     try {
       if (updatedTask.id === NEW_TASK_ID) {
-        // Creating a new task
+        // Creating a new task - remove the temporary ID
+        const { id, ...taskData } = updatedTask
         const newTask = await tasksApi.create({
-          ...updatedTask,
-          project_id: currentProjectId!
+          ...taskData,
+          projectId: currentProjectId!
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
@@ -195,10 +196,10 @@ export default function TasksPage() {
       status: "todo",
       priority: "medium",
       assignee: "You",
-      due_date: "",
-      created_at: new Date().toISOString().split("T")[0],
+      dueDate: "",
+      createdAt: new Date().toISOString().split("T")[0],
       category: "General",
-      project_id: currentProjectId || "",
+      projectId: currentProjectId || "",
       notes: "",
       attachments: [],
       links: [],
@@ -350,7 +351,7 @@ export default function TasksPage() {
                       <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
                     </TableCell>
                     <TableCell>{task.assignee}</TableCell>
-                    <TableCell>{task.due_date}</TableCell>
+                    <TableCell>{task.dueDate}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{task.category}</Badge>
                     </TableCell>
@@ -429,7 +430,7 @@ export default function TasksPage() {
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                <span>{task.due_date}</span>
+                                <span>{task.dueDate}</span>
                               </div>
                             </div>
                             <Badge variant="outline" className="text-xs w-fit">

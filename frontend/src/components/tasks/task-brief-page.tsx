@@ -173,12 +173,12 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                   {isEditMode ? (
                     <Input
                       type="date"
-                      value={editingTask?.due_date || ""}
-                      onChange={(e) => setEditingTask({ ...editingTask!, due_date: e.target.value })}
+                      value={editingTask?.dueDate || ""}
+                      onChange={(e) => setEditingTask({ ...editingTask!, dueDate: e.target.value })}
                       className="w-48"
                     />
                   ) : (
-                    <span className="text-muted-foreground">{task.due_date || "No due date"}</span>
+                    <span className="text-muted-foreground">{task.dueDate || "No due date"}</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between py-2 border-b">
@@ -256,7 +256,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                     <Clock className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium">Created</span>
                   </div>
-                  <span className="text-muted-foreground">{task.created_at}</span>
+                  <span className="text-muted-foreground">{task.createdAt}</span>
                 </div>
               </div>
             </div>
