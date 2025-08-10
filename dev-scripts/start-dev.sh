@@ -5,18 +5,20 @@
 
 echo "🚀 Starting Blightstone CRM Development Environment"
 echo "=================================================="
-echo "📊 Environment: DEVELOPMENT"
-echo "🗄️ Database: Remote Supabase (vddtsunsahhccmtamdcg.supabase.co)"
+echo "📊 Environment: DEVELOPMENT (Local)"
+echo "🗄️ Database: Local Supabase (127.0.0.1:54323)"
 echo "🌐 Frontend + API: http://localhost:3000"
 echo ""
 
 # Function to cleanup background processes on exit
 cleanup() {
     echo ""
-    echo "🛑 Shutting down development server..."
+    echo "🛑 Shutting down development servers..."
     kill $FRONTEND_PID 2>/dev/null
     wait $FRONTEND_PID 2>/dev/null
-    echo "✅ Development server stopped"
+    echo "🛑 Stopping local Supabase..."
+    supabase stop 2>/dev/null
+    echo "✅ Development servers stopped"
     exit 0
 }
 
@@ -38,6 +40,17 @@ if [ ! -d "frontend/node_modules" ]; then
     cd ..
 fi
 
+# Start local Supabase
+echo "🗄️ Starting Local Supabase..."
+supabase start
+if [ $? -ne 0 ]; then
+    echo "❌ Failed to start local Supabase"
+    echo "💡 Make sure you have Supabase CLI installed and supabase/config.toml exists"
+    exit 1
+fi
+
+echo ""
+
 # Start Next.js development server (includes API routes)
 echo "🎨 Starting Next.js Development Server (Frontend + API)..."
 cd frontend
@@ -53,11 +66,11 @@ echo "✅ Blightstone CRM development environment started successfully!"
 echo "=================================================="
 echo "🌐 Frontend:      http://localhost:3000"
 echo "🔧 API Routes:    http://localhost:3000/api/*"
-echo "🗄️ Database:      Remote Supabase"
-echo "📊 Supabase:      https://supabase.com/dashboard/project/vddtsunsahhccmtamdcg"
+echo "🗄️ Local DB:     http://127.0.0.1:54323"
+echo "📊 Supabase Studio: http://127.0.0.1:54323"
 echo ""
-echo "💡 Press Ctrl+C to stop the server"
-echo "🔄 Server will auto-reload on file changes"
+echo "💡 Press Ctrl+C to stop all servers"
+echo "🔄 Servers will auto-reload on file changes"
 echo ""
 
 # Keep script running
