@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createBrowserClient } from '@supabase/ssr'
-import { projectsApi, personasApi, competitorsApi, creativesApi, topAdsApi } from '@/lib/api'
+import { projectsApi, personasApi, competitorsApi, creativesApi } from '@/lib/api'
 
 // Performance optimization: Debounce function for search/filter operations
 export const debounce = <T extends (...args: any[]) => any>(
@@ -122,55 +122,53 @@ export interface CreativeTracker {
   updatedAt?: string
 }
 
-export interface TopAd {
+export interface CreativeIntelligence {
   id: string
   projectId: string
   createdBy: string
   createdAt: string
   updatedAt: string
   
-  // Basic Ad Info
-  adTitle: string
-  platform: "facebook" | "instagram" | "google" | "tiktok" | "youtube" | "linkedin" | "twitter" | "other"
-  campaignName?: string
-  adSetName?: string
+  // Basic Creative Info
+  title: string
+  platform: "facebook" // Facebook only for Phase 1
   
-  // Performance Metrics
-  spend?: number
-  revenue?: number
-  roas?: number // Return on Ad Spend
-  ctr?: number // Click Through Rate (%)
-  cpm?: number // Cost Per Mille
-  conversionRate?: number // Conversion Rate (%)
-  costPerConversion?: number
-  impressions?: number
-  clicks?: number
-  conversions?: number
+  // Creative Assets (direct upload)
+  imageUrl?: string // Uploaded image URL
+  videoUrl?: string // Uploaded video URL
+  creativeType: "image" | "video" | "carousel"
   
-  // Time Period
-  performanceStartDate?: string
-  performanceEndDate?: string
-  
-  // Creative Details
-  adCopy?: string
+  // Creative Content
   headline?: string
+  primaryCopy?: string // Main ad copy
+  hook?: string // Opening hook/first line
   callToAction?: string
-  creativeUrl?: string // Link to image/video
-  landingPageUrl?: string
   
-  // Strategy & Analysis
-  angle?: string // The hook/angle used
-  targetAudience?: string
-  placement?: string // Feed, Stories, etc.
-  objective?: string // Awareness, Conversion, etc.
+  // Creative Intelligence - The Core Value
+  concept?: string // The core concept/idea
+  angle?: string // Psychological angle (pain, aspiration, fear, etc.)
+  hookPattern?: string // Type of hook (problem/solution, curiosity, social proof, etc.)
+  visualStyle?: string // Visual approach (lifestyle, product demo, before/after, UGC, etc.)
+  targetEmotion?: string // What emotion does it trigger?
   
-  // Insights
-  notes?: string
-  whyItWorked?: string
-  keyInsights?: string
+  // Creative Categories for Organization
+  creativeCategory: "hook_library" | "winning_angles" | "concept_gold" | "script_templates" | "headline_formulas" | "visual_patterns"
+  
+  // Performance Context (optional, team discretion)
+  performanceNotes?: string // Why this worked, context
+  
+  // Systematic Thinking
+  psychologyTrigger?: string // What psychological principle does this use?
+  scalabilityNotes?: string // How can this concept be scaled/varied?
+  remixPotential?: string // How can this be combined with other concepts?
+  
+  // Metadata
+  tags?: string[] // Flexible tagging system
+  isTemplate: boolean // Is this a reusable template?
+  templateVariables?: string // What parts can be customized?
   
   // Status
-  status: "active" | "paused" | "archived"
+  status: "active" | "archived" | "template"
 }
 
 export interface Project {
@@ -195,7 +193,7 @@ interface ProjectStore {
   customerAvatars: CustomerAvatar[]
   competitors: Competitor[]
   creativeTrackers: CreativeTracker[]
-  topAds: TopAd[]
+  creativeIntelligence: CreativeIntelligence[]
   
   setCurrentProjectId: (id: string | null) => void
   getCurrentProject: () => Project | null
@@ -220,9 +218,9 @@ interface ProjectStore {
   getCreativeTrackersForProject: (projectId: string) => CreativeTracker[]
   addCreativeTracker: (tracker: CreativeTracker) => void
   
-  // Top Ads methods
-  getTopAdsForProject: (projectId: string) => TopAd[]
-  addTopAd: (topAd: TopAd) => void
+  // Creative Intelligence methods
+  getCreativeIntelligenceForProject: (projectId: string) => CreativeIntelligence[]
+  addCreativeIntelligence: (creative: CreativeIntelligence) => void
 }
 
 // Production ready - no mock data, will load from API
@@ -241,7 +239,7 @@ export const useProjectStore = create<ProjectStore>()(
       customerAvatars: [],
       competitors: [],
       creativeTrackers: [],
-      topAds: [],
+      creativeIntelligence: [],
       
       setCurrentProjectId: (id: string | null) => {
         set({ currentProjectId: id })
@@ -338,15 +336,15 @@ export const useProjectStore = create<ProjectStore>()(
         }))
       },
       
-      // Top Ads methods
-      getTopAdsForProject: (projectId: string) => {
-        const { topAds } = get()
-        return topAds.filter(topAd => topAd.projectId === projectId)
+      // Creative Intelligence methods
+      getCreativeIntelligenceForProject: (projectId: string) => {
+        const { creativeIntelligence } = get()
+        return creativeIntelligence.filter(creative => creative.projectId === projectId)
       },
       
-      addTopAd: (topAd: TopAd) => {
+      addCreativeIntelligence: (creative: CreativeIntelligence) => {
         set(state => ({
-          topAds: [...state.topAds, topAd]
+          creativeIntelligence: [...state.creativeIntelligence, creative]
         }))
       }
     }),

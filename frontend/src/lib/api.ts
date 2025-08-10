@@ -275,62 +275,62 @@ export const creativesApi = {
   }
 }
 
-// Top Ads API
-export const topAdsApi = {
+// Creative Intelligence API
+export const creativeIntelligenceApi = {
   async getByProject(projectId: string) {
     try {
-      const response = await fetch(`${API_BASE}/top-ads?projectId=${projectId}`)
-      if (!response.ok) throw new Error('Failed to fetch top ads')
+      const response = await fetch(`${API_BASE}/creative-intelligence?projectId=${projectId}`)
+      if (!response.ok) throw new Error('Failed to fetch creative intelligence')
       const data = await response.json()
-      return data.topAds || []
+      return data.creatives || []
     } catch (error) {
-      console.error('Error fetching top ads:', error)
+      console.error('Error fetching creative intelligence:', error)
       throw error
     }
   },
 
-  async create(topAd: any) {
+  async create(creative: any) {
     try {
-      const response = await fetch(`${API_BASE}/top-ads`, {
+      const response = await fetch(`${API_BASE}/creative-intelligence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(topAd)
+        body: JSON.stringify(creative)
       })
-      if (!response.ok) throw new Error('Failed to create top ad')
+      if (!response.ok) throw new Error('Failed to create creative')
       const data = await response.json()
-      return data.topAd
+      return data.creative
     } catch (error) {
-      console.error('Error creating top ad:', error)
+      console.error('Error creating creative:', error)
       throw error
     }
   },
 
-  async update(id: string, topAd: any) {
+  async update(id: string, creative: any) {
     try {
-      const response = await fetch(`${API_BASE}/top-ads`, {
+      const response = await fetch(`${API_BASE}/creative-intelligence`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, ...topAd })
+        body: JSON.stringify({ id, ...creative })
       })
-      if (!response.ok) throw new Error('Failed to update top ad')
+      if (!response.ok) throw new Error('Failed to update creative')
       const data = await response.json()
-      return data.topAd
+      return data.creative
     } catch (error) {
-      console.error('Error updating top ad:', error)
+      console.error('Error updating creative:', error)
       throw error
     }
   },
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/top-ads`, {
+      const response = await fetch(`${API_BASE}/creative-intelligence`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       })
-      if (!response.ok) throw new Error('Failed to delete top ad')
+      if (!response.ok) throw new Error('Failed to delete creative')
     } catch (error) {
-      console.error('Error deleting top ad:', error)
+      console.error('Error deleting creative:', error)
       throw error
     }
   }
