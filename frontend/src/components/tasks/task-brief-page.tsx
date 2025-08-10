@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -66,10 +67,17 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
 
   const handleSave = () => {
     if (editingTask) {
-      // If it's a new task, generate a real ID before saving
-      const taskToSave = isNewTask ? { ...editingTask, id: Date.now().toString() } : editingTask
-      onUpdateTask(taskToSave)
+      // Validate required fields
+      if (!editingTask.title?.trim()) {
+        toast.error("Task title is required")
+        return
+      }
+
+      // For new tasks, pass the task as-is (API will handle ID generation)
+      // For existing tasks, pass the edited task
+      onUpdateTask(editingTask)
       setIsEditMode(false)
+      toast.success(isNewTask ? "Task created successfully" : "Task updated successfully")
     }
   }
 
@@ -86,6 +94,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     if (!isNewTask && task.id) {
       // Only allow deleting existing tasks
       onDeleteTask(task.id)
+      toast.success("Task deleted successfully")
     }
     onClose() // Close the brief after deletion or if it was a new task
   }
@@ -133,7 +142,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
           <div className="space-y-4">
             {/* Task Title Section */}
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
-              <h2 className="text-lg font-semibold mb-3">Task Title</h2>
+              <h2 className="text-lg font-semibold mb-3">Task Title <span className="text-red-500">*</span></h2>
               {isEditMode ? (
                 <Input
                   value={editingTask?.title || ""}
