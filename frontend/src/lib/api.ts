@@ -174,6 +174,20 @@ export const personasApi = {
       console.error('Error updating persona:', error)
       throw error
     }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/personas`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      if (!response.ok) throw new Error('Failed to delete persona')
+    } catch (error) {
+      console.error('Error deleting persona:', error)
+      throw error
+    }
   }
 }
 
@@ -219,6 +233,20 @@ export const competitorsApi = {
       return data.competitor
     } catch (error) {
       console.error('Error updating competitor:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/competitors`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      if (!response.ok) throw new Error('Failed to delete competitor')
+    } catch (error) {
+      console.error('Error deleting competitor:', error)
       throw error
     }
   }
