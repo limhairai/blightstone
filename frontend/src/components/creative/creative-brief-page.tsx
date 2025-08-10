@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -88,8 +89,16 @@ export default function CreativeBriefPage({
 
   const handleSave = () => {
     if (editingCreative) {
-      const creativeToSave = isNewCreative ? { ...editingCreative, id: Date.now().toString() } : editingCreative
-      onUpdateCreative(creativeToSave)
+      // Validate required fields
+      if (!editingCreative.batch?.trim()) {
+        toast.error("Batch name is required")
+        return
+      }
+
+      // For new creatives, pass the creative as-is (API will handle ID generation)
+      // For existing creatives, pass the edited creative
+      onUpdateCreative(editingCreative)
+      toast.success(isNewCreative ? "Creative created successfully" : "Creative updated successfully")
       onClose()
     }
   }
@@ -188,7 +197,7 @@ export default function CreativeBriefPage({
             {/* Batch and Status */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
-                <h2 className="text-lg font-semibold mb-3">Batch</h2>
+                <h2 className="text-lg font-semibold mb-3">Batch <span className="text-red-500">*</span></h2>
                 {isEditMode ? (
                   <Input
                     value={editingCreative?.batch || ""}

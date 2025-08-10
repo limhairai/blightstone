@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -65,8 +66,16 @@ export default function CompetitorBriefPage({
 
   const handleSave = () => {
     if (editingCompetitor) {
-      const competitorToSave = isNewCompetitor ? { ...editingCompetitor, id: Date.now().toString() } : editingCompetitor
-      onUpdateCompetitor(competitorToSave)
+      // Validate required fields
+      if (!editingCompetitor.name?.trim()) {
+        toast.error("Competitor name is required")
+        return
+      }
+
+      // For new competitors, pass the competitor as-is (API will handle ID generation)
+      // For existing competitors, pass the edited competitor
+      onUpdateCompetitor(editingCompetitor)
+      toast.success(isNewCompetitor ? "Competitor created successfully" : "Competitor updated successfully")
       onClose() // Close the brief after saving
     }
   }
@@ -143,7 +152,7 @@ export default function CompetitorBriefPage({
           <div className="space-y-4">
             {/* Competitor Name */}
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
-              <h2 className="text-lg font-semibold mb-3">Competitor Name</h2>
+              <h2 className="text-lg font-semibold mb-3">Competitor Name <span className="text-red-500">*</span></h2>
               {isEditMode ? (
                 <Input
                   value={editingCompetitor?.name || ""}

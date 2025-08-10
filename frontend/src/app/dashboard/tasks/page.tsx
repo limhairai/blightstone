@@ -144,15 +144,8 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error updating task:', error)
-      // Fallback to local update for development
-      if (updatedTask.id === NEW_TASK_ID) {
-        const newTaskWithId = { ...updatedTask, id: Date.now().toString() }
-        setTasks([...tasks, newTaskWithId])
-        setSelectedTask(null)
-      } else {
-        setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)))
-        setSelectedTask(updatedTask)
-      }
+      // Show error to user instead of fallback
+      alert('Failed to save task. Please try again.')
     }
   }
 

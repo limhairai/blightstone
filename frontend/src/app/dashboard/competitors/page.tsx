@@ -42,7 +42,7 @@ export default function CompetitorsPage() {
     if (updatedCompetitor.id === "new-competitor-temp-id") {
       const newCompetitorWithId = { 
         ...updatedCompetitor, 
-        id: Date.now().toString(),
+        id: "", // Let API generate ID
         projectId: currentProjectId
       }
       

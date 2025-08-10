@@ -49,7 +49,7 @@ export default function PersonasPage() {
     
     // Convert from new Persona format to existing CustomerAvatar format for the store
     const avatarData: CustomerAvatar = {
-      id: updatedPersona.id === "new-persona-temp-id" ? Date.now().toString() : updatedPersona.id,
+      id: updatedPersona.id === "new-persona-temp-id" ? "" : updatedPersona.id, // Let API generate ID for new personas
       name: updatedPersona.name,
       type: "Customer Avatar",
       age: updatedPersona.ageGenderLocation.split(' ')[0] || "Unknown",

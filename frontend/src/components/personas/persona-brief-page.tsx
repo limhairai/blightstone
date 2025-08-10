@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -86,8 +87,16 @@ export default function PersonaBriefPage({
 
   const handleSave = () => {
     if (editingPersona) {
-      const personaToSave = isNewPersona ? { ...editingPersona, id: Date.now().toString() } : editingPersona
-      onUpdatePersona(personaToSave)
+      // Validate required fields
+      if (!editingPersona.name?.trim()) {
+        toast.error("Persona name is required")
+        return
+      }
+
+      // For new personas, pass the persona as-is (API will handle ID generation)
+      // For existing personas, pass the edited persona
+      onUpdatePersona(editingPersona)
+      toast.success(isNewPersona ? "Persona created successfully" : "Persona updated successfully")
       onClose()
     }
   }
@@ -148,7 +157,7 @@ export default function PersonaBriefPage({
           <div className="space-y-4">
             {/* Persona Name */}
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
-              <h2 className="text-lg font-semibold mb-3">Persona Name</h2>
+              <h2 className="text-lg font-semibold mb-3">Persona Name <span className="text-red-500">*</span></h2>
               {isEditMode ? (
                 <Input
                   value={editingPersona?.name || ""}
