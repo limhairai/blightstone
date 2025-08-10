@@ -13,50 +13,56 @@ export function ensurePortalStyles() {
   const style = document.createElement('style')
   style.id = 'portal-styles'
   style.textContent = `
-    /* Ensure all portaled components have access to CSS variables */
-    [data-radix-popper-content-wrapper] {
-      --background: 0 0% 100%;
-      --foreground: 0 0% 9%;
-      --card: 0 0% 100%;
-      --card-foreground: 0 0% 9%;
-      --popover: 0 0% 100%;
-      --popover-foreground: 0 0% 9%;
-      --primary: 0 0% 9%;
-      --primary-foreground: 0 0% 100%;
-      --secondary: 0 0% 95%;
-      --secondary-foreground: 0 0% 9%;
-      --muted: 0 0% 96%;
-      --muted-foreground: 0 0% 45%;
-      --accent: 0 0% 96%;
-      --accent-foreground: 0 0% 9%;
-      --destructive: 0 0% 20%;
-      --destructive-foreground: 0 0% 100%;
-      --border: 0 0% 90%;
-      --input: 0 0% 98%;
-      --ring: 0 0% 9%;
+    /* Target all Radix portals and their content */
+    [data-radix-portal],
+    [data-radix-popper-content-wrapper],
+    [data-radix-select-content],
+    [data-radix-dropdown-menu-content],
+    .radix-portal {
+      --background: 0 0% 100% !important;
+      --foreground: 0 0% 9% !important;
+      --card: 0 0% 100% !important;
+      --card-foreground: 0 0% 9% !important;
+      --popover: 0 0% 100% !important;
+      --popover-foreground: 0 0% 9% !important;
+      --primary: 0 0% 9% !important;
+      --primary-foreground: 0 0% 100% !important;
+      --secondary: 0 0% 95% !important;
+      --secondary-foreground: 0 0% 9% !important;
+      --muted: 0 0% 96% !important;
+      --muted-foreground: 0 0% 45% !important;
+      --accent: 0 0% 96% !important;
+      --accent-foreground: 0 0% 9% !important;
+      --destructive: 0 0% 20% !important;
+      --destructive-foreground: 0 0% 100% !important;
+      --border: 0 0% 90% !important;
+      --input: 0 0% 98% !important;
+      --ring: 0 0% 9% !important;
     }
 
-    /* Also target common portal containers */
+    /* Ensure all child elements also inherit these variables */
+    [data-radix-portal] *,
+    [data-radix-popper-content-wrapper] *,
+    [data-radix-select-content] *,
+    [data-radix-dropdown-menu-content] * {
+      --background: inherit;
+      --foreground: inherit;
+      --popover: inherit;
+      --popover-foreground: inherit;
+      --border: inherit;
+    }
+
+    /* Force visibility and proper styling for dropdown content */
+    [data-radix-select-content] {
+      background: hsl(var(--popover)) !important;
+      color: hsl(var(--popover-foreground)) !important;
+      border: 1px solid hsl(var(--border)) !important;
+      z-index: 99999 !important; /* Higher than brief page z-[9999] */
+    }
+
+    /* Also ensure other Radix portals have high z-index */
     [data-radix-portal] {
-      --background: 0 0% 100%;
-      --foreground: 0 0% 9%;
-      --card: 0 0% 100%;
-      --card-foreground: 0 0% 9%;
-      --popover: 0 0% 100%;
-      --popover-foreground: 0 0% 9%;
-      --primary: 0 0% 9%;
-      --primary-foreground: 0 0% 100%;
-      --secondary: 0 0% 95%;
-      --secondary-foreground: 0 0% 9%;
-      --muted: 0 0% 96%;
-      --muted-foreground: 0 0% 45%;
-      --accent: 0 0% 96%;
-      --accent-foreground: 0 0% 9%;
-      --destructive: 0 0% 20%;
-      --destructive-foreground: 0 0% 100%;
-      --border: 0 0% 90%;
-      --input: 0 0% 98%;
-      --ring: 0 0% 9%;
+      z-index: 99999 !important;
     }
   `
 
