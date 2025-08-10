@@ -563,5 +563,9 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   )
 
   // Render the brief page as a portal to document.body to ensure it's above everything
-  return createPortal(briefPageContent, document.body)
+  // Wrap in a div with proper CSS class inheritance
+  return createPortal(
+    <div className="font-sans antialiased">{briefPageContent}</div>, 
+    document.body
+  )
 }

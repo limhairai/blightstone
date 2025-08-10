@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { mapFieldsToDatabase, mapFieldsToFrontend, mapArrayToFrontend } from '@/lib/field-mapping'
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +29,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch competitors' }, { status: 500 })
     }
 
-    return NextResponse.json({ competitors })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseCompetitors = mapArrayToFrontend(competitors || [])
+    return NextResponse.json({ competitors: camelCaseCompetitors })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -45,6 +48,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    // Convert frontend camelCase to database snake_case
+    const dbData = mapFieldsToDatabase(body)
     const { 
       name,
       website_url,
@@ -55,7 +60,7 @@ export async function POST(request: NextRequest) {
       level,
       project_id,
       notes
-    } = body
+    } = dbData
 
     if (!name || !project_id) {
       return NextResponse.json({ error: 'Name and project_id are required' }, { status: 400 })
@@ -83,7 +88,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create competitor' }, { status: 500 })
     }
 
-    return NextResponse.json({ competitor })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseCompetitor = mapFieldsToFrontend(competitor)
+    return NextResponse.json({ competitor: camelCaseCompetitor })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

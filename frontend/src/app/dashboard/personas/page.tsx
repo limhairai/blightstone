@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Eye, Edit3 } from "lucide-react"
 import { useProjectStore, CustomerAvatar } from "@/lib/stores/project-store"
+import { personasApi } from "@/lib/api"
 // Lazy load the brief page for better performance
 const PersonaBriefPage = React.lazy(() => import("@/components/personas/persona-brief-page"))
 
@@ -37,43 +38,109 @@ interface Persona {
 }
 
 export default function PersonasPage() {
-  const { currentProjectId, getAvatarsForProject, addAvatar } = useProjectStore()
-  const projectAvatars = currentProjectId ? getAvatarsForProject(currentProjectId) : []
-
+  const { currentProjectId } = useProjectStore()
+  
+  const [personas, setPersonas] = useState<Persona[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null)
   const [notesEditingPersona, setNotesEditingPersona] = useState<Persona | null>(null)
   const [tempNotes, setTempNotes] = useState("")
 
-  const handleUpdatePersona = (updatedPersona: Persona) => {
-    if (!currentProjectId) return
-    
-    // Convert from new Persona format to existing CustomerAvatar format for the store
-    const avatarData: CustomerAvatar = {
-      id: updatedPersona.id === "new-persona-temp-id" ? "" : updatedPersona.id, // Let API generate ID for new personas
-      name: updatedPersona.name,
-      type: "Customer Avatar",
-      age: updatedPersona.ageGenderLocation.split(' ')[0] || "Unknown",
-      gender: updatedPersona.ageGenderLocation.split(' ')[1] || "Unknown",
-      location: updatedPersona.ageGenderLocation.split(' ').slice(2).join(' ') || "Unknown",
-      struggles: [updatedPersona.dailyStruggles],
-      characteristics: [updatedPersona.desiredCharacteristics],
-      statusDesired: [updatedPersona.desiredSocialStatus],
-      productHelp: [updatedPersona.productHelpAchieveStatus],
-      beliefs: [updatedPersona.beliefsToOvercome],
-      failedSolutions: [updatedPersona.failedSolutions],
-      awareness: updatedPersona.marketAwareness,
-      sophistication: updatedPersona.marketSophistication,
-      insecurities: [updatedPersona.insecurities],
-      mindset: updatedPersona.mindset,
-      painPoints: [updatedPersona.deeperPainPoints],
-      desires: [updatedPersona.hiddenSpecificDesires],
-      objections: [updatedPersona.objections],
-      projectId: currentProjectId,
-      createdBy: "You"
+  // Fetch personas from API
+  useEffect(() => {
+    if (!currentProjectId) {
+      setPersonas([])
+      return
     }
 
-    addAvatar(avatarData)
-    setSelectedPersona(null)
+    const fetchPersonas = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const fetchedPersonas = await personasApi.getByProject(currentProjectId)
+        // Convert API data to local Persona format
+        const convertedPersonas: Persona[] = fetchedPersonas.map((persona: any) => ({
+          id: persona.id,
+          name: persona.name,
+          ageGenderLocation: persona.ageGenderLocation || persona.age_gender_location || "",
+          dailyStruggles: persona.dailyStruggles || persona.daily_struggles || "",
+          desiredCharacteristics: persona.desiredCharacteristics || persona.desired_characteristics || "",
+          desiredSocialStatus: persona.desiredSocialStatus || persona.desired_social_status || "",
+          productHelpAchieveStatus: persona.productHelpAchieveStatus || persona.product_help_achieve_status || "",
+          beliefsToOvercome: persona.beliefsToOvercome || persona.beliefs_to_overcome || "",
+          failedSolutions: persona.failedSolutions || persona.failed_solutions || "",
+          marketAwareness: persona.marketAwareness || persona.market_awareness || "",
+          marketSophistication: persona.marketSophistication || persona.market_sophistication || "",
+          insecurities: persona.insecurities || "",
+          mindset: persona.mindset || "",
+          deeperPainPoints: persona.deeperPainPoints || persona.deeper_pain_points || "",
+          hiddenSpecificDesires: persona.hiddenSpecificDesires || persona.hidden_specific_desires || "",
+          objections: persona.objections || "",
+          angle: persona.angle || "",
+          dominoStatement: persona.dominoStatement || persona.domino_statement || "",
+          description: persona.description || "",
+          projectId: persona.projectId || persona.project_id || currentProjectId,
+          notes: persona.notes || ""
+        }))
+        setPersonas(convertedPersonas)
+      } catch (err) {
+        setError('Failed to fetch personas')
+        console.error('Error fetching personas:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPersonas()
+  }, [currentProjectId])
+
+  const handleUpdatePersona = async (updatedPersona: Persona) => {
+    if (!currentProjectId) return
+    
+    try {
+      if (updatedPersona.id === "new-persona-temp-id") {
+        // Creating a new persona
+        const { id, ...personaData } = updatedPersona
+        const newPersona = await personasApi.create({
+          ...personaData,
+          projectId: currentProjectId
+        })
+        // Convert back to local format and add to state
+        const convertedPersona: Persona = {
+          id: newPersona.id,
+          name: newPersona.name,
+          ageGenderLocation: newPersona.ageGenderLocation || "",
+          dailyStruggles: newPersona.dailyStruggles || "",
+          desiredCharacteristics: newPersona.desiredCharacteristics || "",
+          desiredSocialStatus: newPersona.desiredSocialStatus || "",
+          productHelpAchieveStatus: newPersona.productHelpAchieveStatus || "",
+          beliefsToOvercome: newPersona.beliefsToOvercome || "",
+          failedSolutions: newPersona.failedSolutions || "",
+          marketAwareness: newPersona.marketAwareness || "",
+          marketSophistication: newPersona.marketSophistication || "",
+          insecurities: newPersona.insecurities || "",
+          mindset: newPersona.mindset || "",
+          deeperPainPoints: newPersona.deeperPainPoints || "",
+          hiddenSpecificDesires: newPersona.hiddenSpecificDesires || "",
+          objections: newPersona.objections || "",
+          angle: newPersona.angle || "",
+          dominoStatement: newPersona.dominoStatement || "",
+          description: newPersona.description || "",
+          projectId: newPersona.projectId || currentProjectId,
+          notes: newPersona.notes || ""
+        }
+        setPersonas(prev => [...prev, convertedPersona])
+      } else {
+        // Updating existing persona
+        const updated = await personasApi.update(updatedPersona.id, updatedPersona)
+        setPersonas(prev => prev.map(persona => persona.id === updated.id ? { ...persona, ...updatedPersona } : persona))
+      }
+      setSelectedPersona(null)
+    } catch (error) {
+      console.error('Error updating persona:', error)
+      alert('Failed to save persona. Please try again.')
+    }
   }
 
   const handleDeletePersona = (personaId: string) => {
@@ -147,18 +214,18 @@ export default function PersonasPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {projectAvatars.map((avatar) => (
-              <TableRow key={avatar.id}>
-                <TableCell className="font-medium">{avatar.name}</TableCell>
-                <TableCell>{`${avatar.gender || "Unknown"} - ${avatar.age || "Unknown"} - ${avatar.location || "Unknown"}`}</TableCell>
+            {personas.map((persona) => (
+              <TableRow key={persona.id}>
+                <TableCell className="font-medium">{persona.name}</TableCell>
+                <TableCell>{persona.ageGenderLocation || "Unknown"}</TableCell>
                 <TableCell>
                   <span className="px-2 py-1 bg-muted rounded text-xs">
-                    {(avatar.awareness || "Problem Aware").replace(" Aware", "")}
+                    {(persona.marketAwareness || "Problem Aware").replace(" Aware", "")}
                   </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground italic">
                   {/* For now showing mindset as a placeholder for domino statement */}
-                  {avatar.mindset ? avatar.mindset.substring(0, 80) + "..." : "No domino statement defined"}
+                  {persona.dominoStatement ? persona.dominoStatement.substring(0, 80) + "..." : "No domino statement defined"}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
@@ -170,29 +237,7 @@ export default function PersonasPage() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleNotesEdit({
-                          id: avatar.id,
-                          name: avatar.name,
-                          ageGenderLocation: `${avatar.age} ${avatar.gender} ${avatar.location}`,
-                          dailyStruggles: avatar.struggles[0] || "",
-                          desiredCharacteristics: "",
-                          desiredSocialStatus: "",
-                          productHelpAchieveStatus: "",
-                          beliefsToOvercome: "",
-                          failedSolutions: "",
-                          marketAwareness: "",
-                          marketSophistication: "",
-                          insecurities: "",
-                          mindset: "",
-                          deeperPainPoints: avatar.painPoints[0] || "",
-                          hiddenSpecificDesires: avatar.desires[0] || "",
-                          objections: avatar.objections[0] || "",
-                          angle: "To be defined",
-                          dominoStatement: "To be defined",
-                          description: `${avatar.age} ${avatar.gender} ${avatar.location} - ${avatar.struggles[0] || ""}`,
-                          projectId: avatar.projectId,
-                          notes: ""
-                        })
+                        handleNotesEdit(persona)
                       }}
                       className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
                     >
@@ -202,29 +247,7 @@ export default function PersonasPage() {
                 </TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" onClick={() => {
-                    // Convert from CustomerAvatar to Persona format for editing
-                    setSelectedPersona({
-                      id: avatar.id,
-                      name: avatar.name,
-                      ageGenderLocation: `${avatar.age} ${avatar.gender} ${avatar.location}`,
-                      dailyStruggles: avatar.struggles[0] || "",
-                      desiredCharacteristics: "",
-                      desiredSocialStatus: "",
-                      productHelpAchieveStatus: "",
-                      beliefsToOvercome: "",
-                      failedSolutions: "",
-                      marketAwareness: "",
-                      marketSophistication: "",
-                      insecurities: "",
-                      mindset: "",
-                      deeperPainPoints: avatar.painPoints[0] || "",
-                      hiddenSpecificDesires: avatar.desires[0] || "",
-                      objections: avatar.objections[0] || "",
-                      angle: "To be defined",
-                      dominoStatement: "To be defined",
-                      description: `${avatar.age} ${avatar.gender} ${avatar.location} - ${avatar.struggles[0] || ""}`,
-                      projectId: avatar.projectId
-                    })
+                    setSelectedPersona(persona)
                   }}>
                     <Eye className="h-4 w-4 mr-2" />
                     View Details

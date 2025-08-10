@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { mapFieldsToDatabase, mapFieldsToFrontend, mapArrayToFrontend } from '@/lib/field-mapping'
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +29,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch creatives' }, { status: 500 })
     }
 
-    return NextResponse.json({ creatives })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseCreatives = mapArrayToFrontend(creatives || [])
+    return NextResponse.json({ creatives: camelCaseCreatives })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -45,6 +48,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    // Convert frontend camelCase to database snake_case
+    const dbData = mapFieldsToDatabase(body)
     const { 
       batch,
       status = 'draft',
@@ -64,7 +69,7 @@ export async function POST(request: NextRequest) {
       drive_link,
       project_id,
       notes
-    } = body
+    } = dbData
 
     if (!batch || !project_id) {
       return NextResponse.json({ error: 'Batch and project_id are required' }, { status: 400 })
@@ -101,7 +106,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create creative' }, { status: 500 })
     }
 
-    return NextResponse.json({ creative })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseCreative = mapFieldsToFrontend(creative)
+    return NextResponse.json({ creative: camelCaseCreative })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
