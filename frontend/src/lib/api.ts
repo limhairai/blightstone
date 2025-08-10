@@ -178,10 +178,8 @@ export const personasApi = {
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/personas`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+      const response = await fetchWithAuth(`${API_BASE}/personas?id=${id}`, {
+        method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete persona')
     } catch (error) {
@@ -239,10 +237,8 @@ export const competitorsApi = {
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/competitors`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+      const response = await fetchWithAuth(`${API_BASE}/competitors?id=${id}`, {
+        method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete competitor')
     } catch (error) {
@@ -359,10 +355,8 @@ export const creativeIntelligenceApi = {
 
   async delete(id: string): Promise<void> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id })
+      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence?id=${id}`, {
+        method: 'DELETE'
       })
       if (!response.ok) throw new Error('Failed to delete creative')
     } catch (error) {

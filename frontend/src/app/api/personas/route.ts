@@ -194,3 +194,60 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Persona ID is required' }, { status: 400 })
+    }
+
+    // First, verify the persona belongs to the user by checking the project
+    const { data: persona, error: fetchError } = await supabase
+      .from('personas')
+      .select('id, project_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !persona) {
+      return NextResponse.json({ error: 'Persona not found' }, { status: 404 })
+    }
+
+    // Verify the project belongs to the user
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', persona.project_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Delete the persona
+    const { error } = await supabase
+      .from('personas')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting persona:', error)
+      return NextResponse.json({ error: 'Failed to delete persona' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

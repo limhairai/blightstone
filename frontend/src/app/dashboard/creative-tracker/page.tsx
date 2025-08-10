@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const CreativeBriefPage = React.lazy(() => import("@/components/creative/creative-brief-page"))
@@ -149,6 +150,9 @@ export default function CreativeTrackerPage() {
   const [selectedCreative, setSelectedCreative] = useState<Creative | null>(null)
   const [notesEditingCreative, setNotesEditingCreative] = useState<Creative | null>(null)
   const [tempNotes, setTempNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [creativeToDelete, setCreativeToDelete] = useState<Creative | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const getStatusColor = (status: Creative["status"]) => {
     switch (status) {
@@ -191,16 +195,7 @@ export default function CreativeTrackerPage() {
     }
   }
 
-  const handleDeleteCreative = async (creativeId: string) => {
-    try {
-      await creativesApi.delete(creativeId)
-      setCreatives(creatives.filter((c) => c.id !== creativeId))
-      setSelectedCreative(null)
-    } catch (err) {
-      console.error('Error deleting creative:', err)
-      // You could add toast notification here
-    }
-  }
+
 
   const handleNewCreativeClick = () => {
     setSelectedCreative({
@@ -231,17 +226,27 @@ export default function CreativeTrackerPage() {
     setTempNotes(creative.notes || "")
   }
 
-  const handleDeleteCreative = async (creativeId: string) => {
-    if (!confirm('Are you sure you want to delete this creative? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteClick = (creative: Creative) => {
+    setCreativeToDelete(creative)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteCreative = async () => {
+    if (!creativeToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await creativesApi.delete(creativeId)
-      setCreatives(prev => prev.filter(creative => creative.id !== creativeId))
+      await creativesApi.delete(creativeToDelete.id)
+      setCreatives(prev => prev.filter(creative => creative.id !== creativeToDelete.id))
+      if (selectedCreative && selectedCreative.id === creativeToDelete.id) {
+        setSelectedCreative(null)
+      }
     } catch (error) {
       console.error('Error deleting creative:', error)
       alert('Failed to delete creative. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setCreativeToDelete(null)
     }
   }
 
@@ -354,7 +359,7 @@ export default function CreativeTrackerPage() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeleteCreative(creative.id)
+                        handleDeleteClick(creative)
                       }}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       title="Delete creative"
@@ -399,6 +404,16 @@ export default function CreativeTrackerPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Creative"
+        itemName={creativeToDelete?.adConcept || creativeToDelete?.batch}
+        onConfirm={handleDeleteCreative}
+        isLoading={isDeleting}
+      />
+
       {/* Creative Brief Page (Full-screen overlay) */}
       {selectedCreative && (
         <React.Suspense fallback={<div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">Loading...</div>}>
@@ -406,7 +421,10 @@ export default function CreativeTrackerPage() {
             creative={selectedCreative}
             onClose={() => setSelectedCreative(null)}
             onUpdateCreative={handleUpdateCreative}
-            onDeleteCreative={handleDeleteCreative}
+            onDeleteCreative={(creativeId: string) => {
+              const creative = creatives.find(c => c.id === creativeId)
+              if (creative) handleDeleteClick(creative)
+            }}
             NEW_CREATIVE_ID={NEW_CREATIVE_ID}
           />
         </React.Suspense>

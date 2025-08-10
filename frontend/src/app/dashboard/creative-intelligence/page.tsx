@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { Plus, Brain, Eye, ExternalLink, Edit3, Image, Video, FileText, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const CreativeIntelligenceBriefPage = React.lazy(() => import("@/components/creative-intelligence/creative-intelligence-brief-page"))
@@ -60,6 +61,9 @@ export default function CreativeIntelligencePage() {
   const [showBrief, setShowBrief] = useState(false)
   const [notesDialog, setNotesDialog] = useState<{ open: boolean; creative: CreativeIntelligence | null }>({ open: false, creative: null })
   const [notesText, setNotesText] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [creativeToDelete, setCreativeToDelete] = useState<CreativeIntelligence | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleNewCreative = () => {
     const newCreative: CreativeIntelligence = {
@@ -110,17 +114,28 @@ export default function CreativeIntelligencePage() {
     }
   }
 
-  const handleDeleteCreative = async (creativeId: string) => {
-    if (!confirm('Are you sure you want to delete this creative? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteClick = (creative: CreativeIntelligence) => {
+    setCreativeToDelete(creative)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteCreative = async () => {
+    if (!creativeToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await creativeIntelligenceApi.delete(creativeId)
-      setCreatives(prev => prev.filter(creative => creative.id !== creativeId))
+      await creativeIntelligenceApi.delete(creativeToDelete.id)
+      setCreatives(prev => prev.filter(creative => creative.id !== creativeToDelete.id))
+      if (selectedCreative && selectedCreative.id === creativeToDelete.id) {
+        setSelectedCreative(null)
+        setShowBrief(false)
+      }
     } catch (error) {
       console.error('Error deleting creative:', error)
       alert('Failed to delete creative. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setCreativeToDelete(null)
     }
   }
 
@@ -325,7 +340,7 @@ export default function CreativeIntelligencePage() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleDeleteCreative(creative.id)
+                            handleDeleteClick(creative)
                           }}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           title="Delete creative"
@@ -381,6 +396,16 @@ export default function CreativeIntelligencePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Creative"
+        itemName={creativeToDelete?.title}
+        onConfirm={handleDeleteCreative}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }

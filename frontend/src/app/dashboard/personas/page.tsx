@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
 import { useProjectStore, CustomerAvatar } from "@/lib/stores/project-store"
 import { personasApi } from "@/lib/api"
@@ -46,6 +47,9 @@ export default function PersonasPage() {
   const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null)
   const [notesEditingPersona, setNotesEditingPersona] = useState<Persona | null>(null)
   const [tempNotes, setTempNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch personas from API
   useEffect(() => {
@@ -143,10 +147,7 @@ export default function PersonasPage() {
     }
   }
 
-  const handleDeletePersona = (personaId: string) => {
-    // TODO: Implement delete functionality in the store
-    setSelectedPersona(null)
-  }
+
 
   const handleNewPersonaClick = () => {
     setSelectedPersona({
@@ -179,17 +180,27 @@ export default function PersonasPage() {
     setTempNotes(persona.notes || "")
   }
 
-  const handleDeletePersona = async (personaId: string) => {
-    if (!confirm('Are you sure you want to delete this persona? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteClick = (persona: Persona) => {
+    setPersonaToDelete(persona)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeletePersona = async () => {
+    if (!personaToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await personasApi.delete(personaId)
-      setPersonas(prev => prev.filter(persona => persona.id !== personaId))
+      await personasApi.delete(personaToDelete.id)
+      setPersonas(prev => prev.filter(persona => persona.id !== personaToDelete.id))
+      if (selectedPersona && selectedPersona.id === personaToDelete.id) {
+        setSelectedPersona(null)
+      }
     } catch (error) {
       console.error('Error deleting persona:', error)
       alert('Failed to delete persona. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setPersonaToDelete(null)
     }
   }
 
@@ -272,7 +283,7 @@ export default function PersonasPage() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeletePersona(persona.id)
+                        handleDeleteClick(persona)
                       }}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       title="Delete persona"
@@ -317,6 +328,16 @@ export default function PersonasPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Persona"
+        itemName={personaToDelete?.name}
+        onConfirm={handleDeletePersona}
+        isLoading={isDeleting}
+      />
+
       {/* Persona Brief Page (Full-screen overlay like Facebook Ads Manager) */}
       {selectedPersona && (
         <React.Suspense fallback={<div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">Loading...</div>}>
@@ -324,7 +345,10 @@ export default function PersonasPage() {
             persona={selectedPersona}
             onClose={() => setSelectedPersona(null)}
             onUpdatePersona={handleUpdatePersona}
-            onDeletePersona={handleDeletePersona}
+            onDeletePersona={(personaId: string) => {
+              const persona = personas.find(p => p.id === personaId)
+              if (persona) handleDeleteClick(persona)
+            }}
             NEW_PERSONA_ID="new-persona-temp-id"
           />
         </React.Suspense>

@@ -114,3 +114,136 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    // Convert frontend camelCase to database snake_case
+    const dbData = mapFieldsToDatabase(body)
+    const { 
+      id,
+      batch,
+      status,
+      launch_date,
+      ad_concept,
+      test_hypothesis,
+      ad_type,
+      ad_variable,
+      desire,
+      benefit,
+      objections,
+      persona,
+      hook_pattern,
+      results,
+      winning_ad_link,
+      brief_link,
+      drive_link,
+      notes
+    } = dbData
+
+    if (!id || !batch) {
+      return NextResponse.json({ error: 'ID and batch are required' }, { status: 400 })
+    }
+
+    const { data: creative, error } = await supabase
+      .from('creatives')
+      .update({
+        batch,
+        status,
+        launch_date: launch_date || null,
+        ad_concept,
+        test_hypothesis,
+        ad_type,
+        ad_variable,
+        desire,
+        benefit,
+        objections,
+        persona,
+        hook_pattern,
+        results,
+        winning_ad_link,
+        brief_link,
+        drive_link,
+        notes
+      })
+      .eq('id', id)
+      .eq('created_by', user.email) // Ensure user can only update their own creatives
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating creative:', error)
+      return NextResponse.json({ error: 'Failed to update creative' }, { status: 500 })
+    }
+
+    // Convert database snake_case to frontend camelCase
+    const camelCaseCreative = mapFieldsToFrontend(creative)
+    return NextResponse.json({ creative: camelCaseCreative })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Creative ID is required' }, { status: 400 })
+    }
+
+    // First, verify the creative belongs to the user by checking the project
+    const { data: creative, error: fetchError } = await supabase
+      .from('creatives')
+      .select('id, project_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !creative) {
+      return NextResponse.json({ error: 'Creative not found' }, { status: 404 })
+    }
+
+    // Verify the project belongs to the user
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', creative.project_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Delete the creative
+    const { error } = await supabase
+      .from('creatives')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting creative:', error)
+      return NextResponse.json({ error: 'Failed to delete creative' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

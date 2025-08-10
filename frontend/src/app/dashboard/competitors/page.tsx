@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { Plus, Eye, Edit3, ExternalLink, Trash2 } from "lucide-react"
 import { useProjectStore } from "@/lib/stores/project-store"
 import { competitorsApi } from "@/lib/api"
@@ -38,6 +39,9 @@ export default function CompetitorsPage() {
   const [selectedCompetitor, setSelectedCompetitor] = useState<CompetitorBrief | null>(null)
   const [notesEditingCompetitor, setNotesEditingCompetitor] = useState<CompetitorBrief | null>(null)
   const [tempNotes, setTempNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [competitorToDelete, setCompetitorToDelete] = useState<CompetitorBrief | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Fetch competitors from API
   useEffect(() => {
@@ -135,17 +139,27 @@ export default function CompetitorsPage() {
     setTempNotes(competitor.notes || "")
   }
 
-  const handleDeleteCompetitor = async (competitorId: string) => {
-    if (!confirm('Are you sure you want to delete this competitor? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteClick = (competitor: CompetitorBrief) => {
+    setCompetitorToDelete(competitor)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteCompetitor = async () => {
+    if (!competitorToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await competitorsApi.delete(competitorId)
-      setCompetitors(prev => prev.filter(competitor => competitor.id !== competitorId))
+      await competitorsApi.delete(competitorToDelete.id)
+      setCompetitors(prev => prev.filter(competitor => competitor.id !== competitorToDelete.id))
+      if (selectedCompetitor && selectedCompetitor.id === competitorToDelete.id) {
+        setSelectedCompetitor(null)
+      }
     } catch (error) {
       console.error('Error deleting competitor:', error)
       alert('Failed to delete competitor. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setCompetitorToDelete(null)
     }
   }
 
@@ -265,7 +279,7 @@ export default function CompetitorsPage() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleDeleteCompetitor(competitor.id)
+                        handleDeleteClick(competitor)
                       }}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       title="Delete competitor"
@@ -310,6 +324,16 @@ export default function CompetitorsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Competitor"
+        itemName={competitorToDelete?.name}
+        onConfirm={handleDeleteCompetitor}
+        isLoading={isDeleting}
+      />
+
       {/* Competitor Brief Page (Full-screen overlay like Facebook Ads Manager) */}
       {selectedCompetitor && (
         <React.Suspense fallback={<div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">Loading...</div>}>
@@ -317,7 +341,10 @@ export default function CompetitorsPage() {
             competitor={selectedCompetitor}
             onClose={() => setSelectedCompetitor(null)}
             onUpdateCompetitor={handleUpdateCompetitor}
-            onDeleteCompetitor={handleDeleteCompetitor}
+            onDeleteCompetitor={(competitorId: string) => {
+              const competitor = competitors.find(c => c.id === competitorId)
+              if (competitor) handleDeleteClick(competitor)
+            }}
             NEW_COMPETITOR_ID="new-competitor-temp-id"
           />
         </React.Suspense>

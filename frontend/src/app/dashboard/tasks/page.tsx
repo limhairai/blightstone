@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { Plus, User, Calendar, Filter, Edit3, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
@@ -69,6 +70,9 @@ export default function TasksPage() {
   const [filterPriority, setFilterPriority] = useState<string>("all")
   const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
   const [tempNotes, setTempNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
@@ -149,18 +153,7 @@ export default function TasksPage() {
     }
   }
 
-  const handleDeleteTask = async (taskId: string) => {
-    try {
-      await tasksApi.delete(taskId)
-      setTasks(prev => prev.filter(task => task.id !== taskId))
-      setSelectedTask(null)
-    } catch (error) {
-      console.error('Error deleting task:', error)
-      // Fallback to local delete for development
-      setTasks(tasks.filter((task) => task.id !== taskId))
-      setSelectedTask(null)
-    }
-  }
+
 
   const handleStatusChange = (taskId: string, newStatus: Task["status"]) => {
     setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
@@ -169,20 +162,27 @@ export default function TasksPage() {
     }
   }
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-      return
-    }
+  const handleDeleteClick = (task: Task) => {
+    setTaskToDelete(task)
+    setDeleteDialogOpen(true)
+  }
 
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return
+    
+    setIsDeleting(true)
     try {
-      await tasksApi.delete(taskId)
-      setTasks(prev => prev.filter(task => task.id !== taskId))
-      if (selectedTask && selectedTask.id === taskId) {
+      await tasksApi.delete(taskToDelete.id)
+      setTasks(prev => prev.filter(task => task.id !== taskToDelete.id))
+      if (selectedTask && selectedTask.id === taskToDelete.id) {
         setSelectedTask(null)
       }
     } catch (error) {
       console.error('Error deleting task:', error)
       alert('Failed to delete task. Please try again.')
+    } finally {
+      setIsDeleting(false)
+      setTaskToDelete(null)
     }
   }
 
@@ -388,10 +388,10 @@ export default function TasksPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteTask(task.id)
-                        }}
+                                              onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteClick(task)
+                      }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                         title="Delete task"
                       >
@@ -502,6 +502,16 @@ export default function TasksPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Task"
+        itemName={taskToDelete?.title}
+        onConfirm={handleDeleteTask}
+        isLoading={isDeleting}
+      />
+
       {/* Task Brief Page (Full-screen overlay) */}
       {selectedTask && (
         <React.Suspense fallback={<div className="fixed inset-0 z-[9999] bg-background flex items-center justify-center">Loading...</div>}>
@@ -509,7 +519,10 @@ export default function TasksPage() {
             task={selectedTask}
             onClose={() => setSelectedTask(null)}
             onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
+            onDeleteTask={(taskId: string) => {
+              const task = tasks.find(t => t.id === taskId)
+              if (task) handleDeleteClick(task)
+            }}
             NEW_TASK_ID={NEW_TASK_ID} // Pass the constant
           />
         </React.Suspense>

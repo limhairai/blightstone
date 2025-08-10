@@ -144,3 +144,60 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json({ error: 'Competitor ID is required' }, { status: 400 })
+    }
+
+    // First, verify the competitor belongs to the user by checking the project
+    const { data: competitor, error: fetchError } = await supabase
+      .from('competitors')
+      .select('id, project_id')
+      .eq('id', id)
+      .single()
+
+    if (fetchError || !competitor) {
+      return NextResponse.json({ error: 'Competitor not found' }, { status: 404 })
+    }
+
+    // Verify the project belongs to the user
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', competitor.project_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    // Delete the competitor
+    const { error } = await supabase
+      .from('competitors')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error deleting competitor:', error)
+      return NextResponse.json({ error: 'Failed to delete competitor' }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
