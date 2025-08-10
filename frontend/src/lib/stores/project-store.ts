@@ -45,11 +45,11 @@ export interface Task {
   status: "todo" | "in-progress" | "completed" | "blocked"
   priority: "low" | "medium" | "high" | "urgent"
   assignee: string
-  due_date: string
-  created_at: string
+  dueDate: string
+  createdAt: string
   category: string
-  project_id: string
-  created_by?: string
+  projectId: string
+  createdBy?: string
   notes?: string
   attachments?: TaskAttachment[]
   links?: TaskLink[]
@@ -58,68 +58,68 @@ export interface Task {
 export interface CustomerAvatar {
   id: string
   name: string
-  age_gender_location: string
-  daily_struggles: string
-  desired_characteristics: string
-  desired_social_status: string
-  product_help_achieve_status: string
-  beliefs_to_overcome: string
-  failed_solutions: string
-  market_awareness: string
-  market_sophistication: string
+  ageGenderLocation: string
+  dailyStruggles: string
+  desiredCharacteristics: string
+  desiredSocialStatus: string
+  productHelpAchieveStatus: string
+  beliefsToOvercome: string
+  failedSolutions: string
+  marketAwareness: string
+  marketSophistication: string
   insecurities: string
   mindset: string
-  deeper_pain_points: string
-  hidden_specific_desires: string
+  deeperPainPoints: string
+  hiddenSpecificDesires: string
   objections: string
   angle: string
-  domino_statement: string
+  dominoStatement: string
   notes?: string
-  project_id: string
-  created_by?: string
-  created_at?: string
-  updated_at?: string
+  projectId: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface Competitor {
   id: string
   name: string
-  website_url?: string
-  ad_library_link?: string
+  websiteUrl?: string
+  adLibraryLink?: string
   market?: string
-  offer_url?: string
-  traffic_volume?: string
+  offerUrl?: string
+  trafficVolume?: string
   level: "poor" | "medium" | "high"
   notes?: string
-  project_id: string
-  created_by?: string
-  created_at?: string
-  updated_at?: string
+  projectId: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface CreativeTracker {
   id: string
   batch: string
   status: "draft" | "in-review" | "live" | "paused" | "completed"
-  launch_date?: string
-  ad_concept?: string
-  test_hypothesis?: string
-  ad_type?: string
-  ad_variable?: string
+  launchDate?: string
+  adConcept?: string
+  testHypothesis?: string
+  adType?: string
+  adVariable?: string
   desire?: string
   benefit?: string
   objections?: string
   persona?: string
-  hook_pattern?: string
+  hookPattern?: string
   results?: string
-  winning_ad_link?: string
-  brief_link?: string
-  drive_link?: string
+  winningAdLink?: string
+  briefLink?: string
+  driveLink?: string
   notes?: string
-  project_id: string
-  created_by?: string
-  created_at?: string
-  updated_at?: string
+  projectId: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface Project {
@@ -127,15 +127,14 @@ export interface Project {
   name: string
   description?: string
   status: "active" | "paused" | "completed"
-  user_id?: string
-  created_by?: string
-  created_at?: string
-  updated_at?: string
+  userId?: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
   // Computed fields (not stored in DB)
   tasksCount?: number
   completedTasks?: number
-  createdAt?: string // Legacy field for compatibility
-  lastActivity?: string // Legacy field for compatibility
+  lastActivity?: string
 }
 
 interface ProjectStore {

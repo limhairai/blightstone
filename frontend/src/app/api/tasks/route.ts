@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { mapFieldsToDatabase, mapFieldsToFrontend, mapArrayToFrontend } from '@/lib/field-mapping'
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +29,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
     }
 
-    return NextResponse.json({ tasks })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseTasks = mapArrayToFrontend(tasks || [])
+    return NextResponse.json({ tasks: camelCaseTasks })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -45,6 +48,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    
+    // Convert frontend camelCase to database snake_case
+    const dbData = mapFieldsToDatabase(body)
+    
     const { 
       title, 
       description, 
@@ -57,10 +64,10 @@ export async function POST(request: NextRequest) {
       notes,
       attachments,
       links
-    } = body
+    } = dbData
 
     if (!title || !project_id) {
-      return NextResponse.json({ error: 'Title and project_id are required' }, { status: 400 })
+      return NextResponse.json({ error: 'Title and projectId are required' }, { status: 400 })
     }
 
     const { data: task, error } = await supabase
@@ -87,7 +94,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
     }
 
-    return NextResponse.json({ task })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseTask = mapFieldsToFrontend(task)
+    return NextResponse.json({ task: camelCaseTask })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -104,15 +113,18 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { id, ...updateData } = body
+    const { id, ...frontendUpdateData } = body
 
     if (!id) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 })
     }
 
+    // Convert frontend camelCase to database snake_case
+    const dbUpdateData = mapFieldsToDatabase(frontendUpdateData)
+
     const { data: task, error } = await supabase
       .from('tasks')
-      .update(updateData)
+      .update(dbUpdateData)
       .eq('id', id)
       .select()
       .single()
@@ -122,7 +134,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update task' }, { status: 500 })
     }
 
-    return NextResponse.json({ task })
+    // Convert database snake_case to frontend camelCase
+    const camelCaseTask = mapFieldsToFrontend(task)
+    return NextResponse.json({ task: camelCaseTask })
   } catch (error) {
     console.error('API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
