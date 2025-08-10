@@ -74,3 +74,50 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createSupabaseServerClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const body = await request.json()
+    const { id } = body
+
+    if (!id) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
+    // First, verify the project belongs to the user
+    const { data: project, error: fetchError } = await supabase
+      .from('projects')
+      .select('id, name, user_id, created_by')
+      .eq('id', id)
+      .eq('user_id', user.id) // Ensure user owns the project
+      .single()
+
+    if (fetchError || !project) {
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+    }
+
+    // Delete the project (cascade will delete related data)
+    const { error: deleteError } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id) // Double-check user ownership
+
+    if (deleteError) {
+      console.error('Error deleting project:', deleteError)
+      return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 })
+    }
+
+    return NextResponse.json({ message: 'Project deleted successfully', projectId: id })
+  } catch (error) {
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

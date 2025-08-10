@@ -43,6 +43,23 @@ export const projectsApi = {
       console.error('Error creating project:', error)
       throw error
     }
+  },
+
+  async delete(projectId: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/projects`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: projectId })
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete project')
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      throw error
+    }
   }
 }
 

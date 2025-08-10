@@ -6,7 +6,9 @@ import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { CheckSquare, Target, Users, Building2, Calendar, Clock, Plus, ArrowRight, Activity, Trash2 } from "lucide-react"
 import { useProjectStore } from "../../lib/stores/project-store"
+import { DeleteProjectDialog } from "../projects/delete-project-dialog"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface Task {
   id: string
@@ -18,12 +20,26 @@ interface Task {
 }
 
 export function ProjectDashboardView() {
-  const { getCurrentProject, currentProjectId, getTasksForProject, getAvatarsForProject, getCompetitorsForProject, getCreativeTrackersForProject } = useProjectStore()
+  const router = useRouter()
+  const { getCurrentProject, currentProjectId, getTasksForProject, getAvatarsForProject, getCompetitorsForProject, getCreativeTrackersForProject, setCurrentProjectId, loadProjects } = useProjectStore()
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  
   const currentProject = getCurrentProject()
   const projectTasks = currentProjectId ? getTasksForProject(currentProjectId) : []
   const projectAvatars = currentProjectId ? getAvatarsForProject(currentProjectId) : []
   const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
   const projectCreatives = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
+  
+  const handleProjectDeleted = async (projectId: string) => {
+    // Refresh projects list
+    await loadProjects()
+    
+    // If the deleted project was the current one, clear it and redirect
+    if (projectId === currentProjectId) {
+      setCurrentProjectId(null)
+      router.push('/dashboard')
+    }
+  }
   
   if (!currentProject) {
     return (
@@ -76,6 +92,17 @@ export function ProjectDashboardView() {
               </Badge>
             </div>
             <p className="text-muted-foreground max-w-2xl">{currentProject.description}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Project
+            </Button>
           </div>
         </div>
 
@@ -227,6 +254,14 @@ export function ProjectDashboardView() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete Project Dialog */}
+      <DeleteProjectDialog
+        project={currentProject ? { id: currentProject.id, name: currentProject.name } : null}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onProjectDeleted={handleProjectDeleted}
+      />
     </div>
   )
 }

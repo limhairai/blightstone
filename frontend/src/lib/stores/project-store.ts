@@ -145,7 +145,7 @@ interface ProjectStore {
   competitors: Competitor[]
   creativeTrackers: CreativeTracker[]
   
-  setCurrentProjectId: (id: string) => void
+  setCurrentProjectId: (id: string | null) => void
   getCurrentProject: () => Project | null
   addProject: (project: Project) => void
   loadProjects: () => Promise<void>
@@ -186,7 +186,7 @@ export const useProjectStore = create<ProjectStore>()(
       competitors: [],
       creativeTrackers: [],
       
-      setCurrentProjectId: (id: string) => {
+      setCurrentProjectId: (id: string | null) => {
         set({ currentProjectId: id })
       },
       
