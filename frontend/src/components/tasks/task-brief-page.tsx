@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { toast } from "sonner"
+import { ensurePortalStyles } from "@/lib/portal-styles"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -51,6 +52,8 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
 
   useEffect(() => {
     setMounted(true)
+    // Ensure portal styles are available for dropdowns
+    ensurePortalStyles()
     return () => setMounted(false)
   }, [])
 
@@ -563,15 +566,34 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   )
 
   // Render the brief page as a portal to document.body to ensure it's above everything
-  // Wrap in a div with proper CSS class inheritance
+  // Wrap in a div with complete CSS variable inheritance for dropdowns
   return createPortal(
-    <div className="font-sans antialiased" style={{ 
-      '--background': '0 0% 100%',
-      '--foreground': '0 0% 9%',
-      '--popover': '0 0% 100%',
-      '--popover-foreground': '0 0% 9%',
-      '--border': '0 0% 90%'
-    } as React.CSSProperties}>{briefPageContent}</div>, 
+    <div 
+      className="font-sans antialiased" 
+      style={{ 
+        '--background': '0 0% 100%',
+        '--foreground': '0 0% 9%',
+        '--card': '0 0% 100%',
+        '--card-foreground': '0 0% 9%',
+        '--popover': '0 0% 100%',
+        '--popover-foreground': '0 0% 9%',
+        '--primary': '0 0% 9%',
+        '--primary-foreground': '0 0% 100%',
+        '--secondary': '0 0% 95%',
+        '--secondary-foreground': '0 0% 9%',
+        '--muted': '0 0% 96%',
+        '--muted-foreground': '0 0% 45%',
+        '--accent': '0 0% 96%',
+        '--accent-foreground': '0 0% 9%',
+        '--destructive': '0 0% 20%',
+        '--destructive-foreground': '0 0% 100%',
+        '--border': '0 0% 90%',
+        '--input': '0 0% 98%',
+        '--ring': '0 0% 9%'
+      } as React.CSSProperties}
+    >
+      {briefPageContent}
+    </div>, 
     document.body
   )
 }
