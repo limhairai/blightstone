@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, Eye, Edit3 } from "lucide-react"
+import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
 import { useProjectStore, CustomerAvatar } from "@/lib/stores/project-store"
 import { personasApi } from "@/lib/api"
 // Lazy load the brief page for better performance
@@ -179,6 +179,20 @@ export default function PersonasPage() {
     setTempNotes(persona.notes || "")
   }
 
+  const handleDeletePersona = async (personaId: string) => {
+    if (!confirm('Are you sure you want to delete this persona? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await personasApi.delete(personaId)
+      setPersonas(prev => prev.filter(persona => persona.id !== personaId))
+    } catch (error) {
+      console.error('Error deleting persona:', error)
+      alert('Failed to delete persona. Please try again.')
+    }
+  }
+
   const handleNotesSave = () => {
     if (notesEditingPersona) {
       // For now, just update the local state since we don't have full CRUD operations
@@ -246,12 +260,26 @@ export default function PersonasPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm" onClick={() => {
-                    setSelectedPersona(persona)
-                  }}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Details
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => {
+                      setSelectedPersona(persona)
+                    }}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeletePersona(persona.id)
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Delete persona"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

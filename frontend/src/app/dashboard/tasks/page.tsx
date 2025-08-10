@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, User, Calendar, Filter, Edit3 } from "lucide-react"
+import { Plus, User, Calendar, Filter, Edit3, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
@@ -169,6 +169,23 @@ export default function TasksPage() {
     }
   }
 
+  const handleDeleteTask = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      await tasksApi.delete(taskId)
+      setTasks(prev => prev.filter(task => task.id !== taskId))
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(null)
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error)
+      alert('Failed to delete task. Please try again.')
+    }
+  }
+
   const filteredTasks = tasks.filter((task) => {
     if (filterStatus !== "all" && task.status !== filterStatus) return false
     if (filterPriority !== "all" && task.priority !== filterPriority) return false
@@ -303,6 +320,7 @@ export default function TasksPage() {
                   <TableHead>Due Date</TableHead>
                   <TableHead>Category</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -365,6 +383,20 @@ export default function TasksPage() {
                           <Edit3 className="h-3 w-3" />
                         </Button>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteTask(task.id)
+                        }}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete task"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
