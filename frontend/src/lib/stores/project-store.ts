@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createBrowserClient } from '@supabase/ssr'
-import { projectsApi, personasApi, competitorsApi, creativesApi } from '@/lib/api'
+import { projectsApi, personasApi, competitorsApi, creativesApi, topAdsApi } from '@/lib/api'
 
 // Performance optimization: Debounce function for search/filter operations
 export const debounce = <T extends (...args: any[]) => any>(
@@ -122,6 +122,57 @@ export interface CreativeTracker {
   updatedAt?: string
 }
 
+export interface TopAd {
+  id: string
+  projectId: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  
+  // Basic Ad Info
+  adTitle: string
+  platform: "facebook" | "instagram" | "google" | "tiktok" | "youtube" | "linkedin" | "twitter" | "other"
+  campaignName?: string
+  adSetName?: string
+  
+  // Performance Metrics
+  spend?: number
+  revenue?: number
+  roas?: number // Return on Ad Spend
+  ctr?: number // Click Through Rate (%)
+  cpm?: number // Cost Per Mille
+  conversionRate?: number // Conversion Rate (%)
+  costPerConversion?: number
+  impressions?: number
+  clicks?: number
+  conversions?: number
+  
+  // Time Period
+  performanceStartDate?: string
+  performanceEndDate?: string
+  
+  // Creative Details
+  adCopy?: string
+  headline?: string
+  callToAction?: string
+  creativeUrl?: string // Link to image/video
+  landingPageUrl?: string
+  
+  // Strategy & Analysis
+  angle?: string // The hook/angle used
+  targetAudience?: string
+  placement?: string // Feed, Stories, etc.
+  objective?: string // Awareness, Conversion, etc.
+  
+  // Insights
+  notes?: string
+  whyItWorked?: string
+  keyInsights?: string
+  
+  // Status
+  status: "active" | "paused" | "archived"
+}
+
 export interface Project {
   id: string
   name: string
@@ -144,6 +195,7 @@ interface ProjectStore {
   customerAvatars: CustomerAvatar[]
   competitors: Competitor[]
   creativeTrackers: CreativeTracker[]
+  topAds: TopAd[]
   
   setCurrentProjectId: (id: string | null) => void
   getCurrentProject: () => Project | null
@@ -167,6 +219,10 @@ interface ProjectStore {
   // Creative Tracker methods
   getCreativeTrackersForProject: (projectId: string) => CreativeTracker[]
   addCreativeTracker: (tracker: CreativeTracker) => void
+  
+  // Top Ads methods
+  getTopAdsForProject: (projectId: string) => TopAd[]
+  addTopAd: (topAd: TopAd) => void
 }
 
 // Production ready - no mock data, will load from API
@@ -185,6 +241,7 @@ export const useProjectStore = create<ProjectStore>()(
       customerAvatars: [],
       competitors: [],
       creativeTrackers: [],
+      topAds: [],
       
       setCurrentProjectId: (id: string | null) => {
         set({ currentProjectId: id })
@@ -278,6 +335,18 @@ export const useProjectStore = create<ProjectStore>()(
       addCreativeTracker: (tracker: CreativeTracker) => {
         set(state => ({
           creativeTrackers: [...state.creativeTrackers, tracker]
+        }))
+      },
+      
+      // Top Ads methods
+      getTopAdsForProject: (projectId: string) => {
+        const { topAds } = get()
+        return topAds.filter(topAd => topAd.projectId === projectId)
+      },
+      
+      addTopAd: (topAd: TopAd) => {
+        set(state => ({
+          topAds: [...state.topAds, topAd]
         }))
       }
     }),

@@ -274,3 +274,64 @@ export const creativesApi = {
     }
   }
 }
+
+// Top Ads API
+export const topAdsApi = {
+  async getByProject(projectId: string) {
+    try {
+      const response = await fetch(`${API_BASE}/top-ads?projectId=${projectId}`)
+      if (!response.ok) throw new Error('Failed to fetch top ads')
+      const data = await response.json()
+      return data.topAds || []
+    } catch (error) {
+      console.error('Error fetching top ads:', error)
+      throw error
+    }
+  },
+
+  async create(topAd: any) {
+    try {
+      const response = await fetch(`${API_BASE}/top-ads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(topAd)
+      })
+      if (!response.ok) throw new Error('Failed to create top ad')
+      const data = await response.json()
+      return data.topAd
+    } catch (error) {
+      console.error('Error creating top ad:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, topAd: any) {
+    try {
+      const response = await fetch(`${API_BASE}/top-ads`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...topAd })
+      })
+      if (!response.ok) throw new Error('Failed to update top ad')
+      const data = await response.json()
+      return data.topAd
+    } catch (error) {
+      console.error('Error updating top ad:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/top-ads`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      })
+      if (!response.ok) throw new Error('Failed to delete top ad')
+    } catch (error) {
+      console.error('Error deleting top ad:', error)
+      throw error
+    }
+  }
+}
