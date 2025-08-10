@@ -7,7 +7,7 @@ import { ensurePortalStyles } from "@/lib/portal-styles"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// Removed Select imports - using native HTML select elements
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -215,21 +215,18 @@ export default function CreativeBriefPage({
               <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
                 <h2 className="text-lg font-semibold mb-3">Status</h2>
                 {isEditMode ? (
-                  <Select
+                  <select
                     value={editingCreative?.status}
-                    onValueChange={(value) => setEditingCreative({ ...editingCreative!, status: value as Creative["status"] })}
+                    onChange={(e) => setEditingCreative({ ...editingCreative!, status: e.target.value as Creative["status"] })}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="in-review">In Review</SelectItem>
-                      <SelectItem value="live">Live</SelectItem>
-                      <SelectItem value="paused">Paused</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="">Select status</option>
+                    <option value="draft">Draft</option>
+                    <option value="in-review">In Review</option>
+                    <option value="live">Live</option>
+                    <option value="paused">Paused</option>
+                    <option value="completed">Completed</option>
+                  </select>
                 ) : (
                   <Badge className={getStatusColor(creative.status)}>
                     {creative.status.replace("-", " ")}

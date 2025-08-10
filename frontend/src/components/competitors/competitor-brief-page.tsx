@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { ensurePortalStyles } from "@/lib/portal-styles"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// Removed Select imports - using native HTML select elements
 import { Separator } from "@/components/ui/separator"
 import { X, Edit, List, Search, ChevronRight, Settings, Trash2, LinkIcon, BarChart, ExternalLink } from "lucide-react"
 
@@ -212,21 +212,16 @@ export default function CompetitorBriefPage({
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Level (Proficiency Judgement)</h2>
               {isEditMode ? (
-                <Select
+                <select
                   value={editingCompetitor?.level}
-                  onValueChange={(value) =>
-                    setEditingCompetitor({ ...editingCompetitor!, level: value as Competitor["level"] })
-                  }
+                  onChange={(e) => setEditingCompetitor({ ...editingCompetitor!, level: e.target.value as Competitor["level"] })}
+                  className="w-48 px-3 py-2 border border-input rounded-md bg-background text-foreground"
                 >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="poor">Poor</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="">Select level</option>
+                  <option value="poor">Poor</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
               ) : (
                 <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                   {competitor.level ? competitor.level.charAt(0).toUpperCase() + competitor.level.slice(1) : "No level specified."}

@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { ensurePortalStyles } from "@/lib/portal-styles"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// Removed Select imports - using native HTML select elements
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -232,21 +232,18 @@ export default function PersonaBriefPage({
               <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
                 <h2 className="text-lg font-semibold mb-3">Market Awareness</h2>
                 {isEditMode ? (
-                  <Select
+                  <select
                     value={editingPersona?.marketAwareness}
-                    onValueChange={(value) => setEditingPersona({ ...editingPersona!, marketAwareness: value })}
+                    onChange={(e) => setEditingPersona({ ...editingPersona!, marketAwareness: e.target.value })}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select awareness level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Unaware">Unaware</SelectItem>
-                      <SelectItem value="Problem Aware">Problem Aware</SelectItem>
-                      <SelectItem value="Solution Aware">Solution Aware</SelectItem>
-                      <SelectItem value="Product Aware">Product Aware</SelectItem>
-                      <SelectItem value="Most Aware">Most Aware</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="">Select awareness level</option>
+                    <option value="Unaware">Unaware</option>
+                    <option value="Problem Aware">Problem Aware</option>
+                    <option value="Solution Aware">Solution Aware</option>
+                    <option value="Product Aware">Product Aware</option>
+                    <option value="Most Aware">Most Aware</option>
+                  </select>
                 ) : (
                   <p className="text-foreground">{persona.marketAwareness || "Not specified"}</p>
                 )}
@@ -255,20 +252,17 @@ export default function PersonaBriefPage({
               <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
                 <h2 className="text-lg font-semibold mb-3">Market Sophistication</h2>
                 {isEditMode ? (
-                  <Select
+                  <select
                     value={editingPersona?.marketSophistication}
-                    onValueChange={(value) => setEditingPersona({ ...editingPersona!, marketSophistication: value })}
+                    onChange={(e) => setEditingPersona({ ...editingPersona!, marketSophistication: e.target.value })}
+                    className="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select sophistication level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                      <SelectItem value="Very High">Very High</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="">Select sophistication level</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                    <option value="Very High">Very High</option>
+                  </select>
                 ) : (
                   <p className="text-foreground">{persona.marketSophistication || "Not specified"}</p>
                 )}
