@@ -408,112 +408,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Organizations logic removed - using projects instead
       try {
-        // const response = await fetch('/api/organizations', {
-        //   headers: {
-        //     'Authorization': `Bearer ${session.access_token}`
-        //   }
-        // });
-        
-        // if (response.ok) {
-        //   const data = await response.json();
-        //   const organizations = data.organizations || [];
-          
-          // if (organizations.length > 0) {
-          //   // If we already have a current org ID and it's in the list, keep it
-          //   if (currentOrganizationId && organizations.find((o: any) => o.id === currentOrganizationId)) {
-          //     orgInitialized.current = true;
-          //     return;
-          //   }
-          //   
-          //   // If the profile organization is in the list, use it
-          //   // Note: profile.organization_id matches the database organization_id field
-          //   // but API returns organizations with id field (mapped from organization_id)
-          //   if (profile?.organization_id && organizations.find((o: any) => o.id === profile.organization_id)) {
-          //     const profileOrg = organizations.find((o: any) => o.id === profile.organization_id);
-          //     setOrganization(profileOrg!.id, profileOrg!.name);
-          //     orgInitialized.current = true;
-          //     return;
-          //   }
-          //   
-          //   // Otherwise, use the first available organization
-          //   const firstOrg = organizations[0];
-          //   setOrganization(firstOrg.id, firstOrg.name);
-          //   orgInitialized.current = true;
-          // } else {
-            
-            // Check for database inconsistency: profile has org_id but user has no accessible orgs
-            if (profile?.organization_id) {
-              console.error('🚨 Database inconsistency detected:');
-              console.error('   - Profile organization_id:', profile.organization_id);
-              console.error('   - Accessible organizations: 0');
-              console.error('   - This suggests missing organization_members entry');
-              console.error('   - Attempting automatic repair...');
-              
-                             // Attempt automatic repair by adding the user to their organization
-               try {
-                 
-                 const fixResponse = await fetch('/api/debug/fix-membership', {
-                   method: 'POST',
-                   headers: { 
-                     'Authorization': `Bearer ${session.access_token}`,
-                     'Content-Type': 'application/json'
-                   }
-                 });
-                 
-                 if (fixResponse.ok) {
-                   const fixResult = await fixResponse.json();
-                   
-                   if (fixResult.details.fixed_memberships > 0) {
-                     toast.success(
-                       `Fixed ${fixResult.details.fixed_memberships} organization memberships. Refreshing...`,
-                       { duration: 3000 }
-                     );
-                     
-                     // Clear organization data and reload after a short delay
-                     setTimeout(() => {
-                       localStorage.removeItem('organization-store');
-                       window.location.reload();
-                     }, 2000);
-                   } else {
-                     toast.error(
-                       'Unable to automatically fix account. Please contact support.',
-                       { duration: 10000 }
-                     );
-                   }
-                 } else {
-                   console.error('🔧 Fix endpoint failed:', fixResponse.status);
-                   toast.error(
-                     'Account setup incomplete. Please contact support or try logging out and back in.',
-                     { duration: 8000 }
-                   );
-                 }
-               } catch (repairError) {
-                 console.error('🔧 Failed to automatically repair organization membership:', repairError);
-                 
-                 // Show user-friendly toast about the issue
-                 toast.error(
-                   'Account setup incomplete. Please contact support or try logging out and back in.',
-                   { duration: 8000 }
-                 );
-               }
-            }
-            
-            // Clear any stale organization data when user has no access to any orgs
-            if (currentOrganizationId) {
-              clearOrganization();
-              // Force clear localStorage directly as well
-              localStorage.removeItem('currentOrganizationId');
-              localStorage.removeItem('currentOrganizationName');
-            }
-            orgInitialized.current = true;
-          }
-        } else {
-          console.error('🏢 Failed to fetch organizations:', response.status, response.statusText);
-          orgInitialized.current = true; // Mark as initialized even on error to prevent retries
-        }
+        // Skip organization initialization since we're using projects now
+        console.log('🏢 Skipping organization initialization - using projects instead');
+        orgInitialized.current = true;
       } catch (error) {
-        console.error('🏢 Error fetching organizations for initialization:', error);
-        orgInitialized.current = true; // Mark as initialized even on error to prevent retries
+        console.error('🏢 Error in initialization:', error);
+        orgInitialized.current = true;
       }
     };
 
