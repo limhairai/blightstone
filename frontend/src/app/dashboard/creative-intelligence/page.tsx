@@ -14,150 +14,117 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus, TrendingUp, Eye, ExternalLink, Edit3 } from "lucide-react"
+import { Plus, Brain, Eye, ExternalLink, Edit3, Image, Video, FileText } from "lucide-react"
 // Lazy load the brief page for better performance
-const TopAdBriefPage = React.lazy(() => import("@/components/top-ads/top-ad-brief-page"))
+const CreativeIntelligenceBriefPage = React.lazy(() => import("@/components/creative-intelligence/creative-intelligence-brief-page"))
 import { useProjectStore } from "@/lib/stores/project-store"
-import { topAdsApi } from "@/lib/api"
+import { creativeIntelligenceApi } from "@/lib/api"
 
 // Import interfaces from project store
-import { TopAd } from "@/lib/stores/project-store"
+import { CreativeIntelligence } from "@/lib/stores/project-store"
 
-// Define a constant for a new top ad's temporary ID
-const NEW_TOP_AD_ID = "new-top-ad-temp-id"
+// Define a constant for a new creative's temporary ID
+const NEW_CREATIVE_ID = "new-creative-temp-id"
 
-export default function TopAdsPage() {
+export default function CreativeIntelligencePage() {
   const { currentProjectId } = useProjectStore()
   
   // State for real data
-  const [topAds, setTopAds] = useState<TopAd[]>([])
+  const [creatives, setCreatives] = useState<CreativeIntelligence[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch top ads when project changes
+  // Fetch creatives when project changes
   useEffect(() => {
     if (!currentProjectId) return
     
-    const fetchTopAds = async () => {
+    const fetchCreatives = async () => {
       setLoading(true)
       setError(null)
       try {
-        const fetchedTopAds = await topAdsApi.getByProject(currentProjectId)
-        setTopAds(fetchedTopAds)
+        const fetchedCreatives = await creativeIntelligenceApi.getByProject(currentProjectId)
+        setCreatives(fetchedCreatives)
       } catch (err) {
-        console.error('Failed to fetch top ads:', err)
-        setError('Failed to load top ads')
+        console.error('Failed to fetch creatives:', err)
+        setError('Failed to load creatives')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchTopAds()
+    fetchCreatives()
   }, [currentProjectId])
   
   // UI State
-  const [selectedTopAd, setSelectedTopAd] = useState<TopAd | null>(null)
+  const [selectedCreative, setSelectedCreative] = useState<CreativeIntelligence | null>(null)
   const [showBrief, setShowBrief] = useState(false)
-  const [notesDialog, setNotesDialog] = useState<{ open: boolean; topAd: TopAd | null }>({ open: false, topAd: null })
+  const [notesDialog, setNotesDialog] = useState<{ open: boolean; creative: CreativeIntelligence | null }>({ open: false, creative: null })
   const [notesText, setNotesText] = useState("")
 
-  const handleNewTopAd = () => {
-    const newTopAd: TopAd = {
-      id: NEW_TOP_AD_ID,
+  const handleNewCreative = () => {
+    const newCreative: CreativeIntelligence = {
+      id: NEW_CREATIVE_ID,
       projectId: currentProjectId!,
       createdBy: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      adTitle: "",
+      title: "",
       platform: "facebook",
-      status: "active"
+      creativeType: "image",
+      isTemplate: false,
+      status: "active",
+      creativeCategory: "concept_gold"
     }
-    setSelectedTopAd(newTopAd)
+    setSelectedCreative(newCreative)
     setShowBrief(true)
   }
 
-  const handleViewTopAd = (topAd: TopAd) => {
-    setSelectedTopAd(topAd)
+  const handleViewCreative = (creative: CreativeIntelligence) => {
+    setSelectedCreative(creative)
     setShowBrief(true)
   }
 
-  const handleUpdateTopAd = async (updatedTopAd: TopAd) => {
+  const handleUpdateCreative = async (updatedCreative: CreativeIntelligence) => {
     if (!currentProjectId) return
     
     try {
-      if (updatedTopAd.id === NEW_TOP_AD_ID) {
-        // Creating a new top ad
-        const { id, ...topAdData } = updatedTopAd
-        const newTopAd = await topAdsApi.create({
-          ...topAdData,
+      if (updatedCreative.id === NEW_CREATIVE_ID) {
+        // Creating a new creative
+        const { id, ...creativeData } = updatedCreative
+        const newCreative = await creativeIntelligenceApi.create({
+          ...creativeData,
           projectId: currentProjectId
         })
-        // Convert back to local format and add to state
-        const convertedTopAd: TopAd = {
-          id: newTopAd.id,
-          projectId: newTopAd.projectId || currentProjectId,
-          createdBy: newTopAd.createdBy || "",
-          createdAt: newTopAd.createdAt || new Date().toISOString(),
-          updatedAt: newTopAd.updatedAt || new Date().toISOString(),
-          adTitle: newTopAd.adTitle || "",
-          platform: newTopAd.platform || "facebook",
-          campaignName: newTopAd.campaignName || "",
-          adSetName: newTopAd.adSetName || "",
-          spend: newTopAd.spend,
-          revenue: newTopAd.revenue,
-          roas: newTopAd.roas,
-          ctr: newTopAd.ctr,
-          cpm: newTopAd.cpm,
-          conversionRate: newTopAd.conversionRate,
-          costPerConversion: newTopAd.costPerConversion,
-          impressions: newTopAd.impressions,
-          clicks: newTopAd.clicks,
-          conversions: newTopAd.conversions,
-          performanceStartDate: newTopAd.performanceStartDate,
-          performanceEndDate: newTopAd.performanceEndDate,
-          adCopy: newTopAd.adCopy,
-          headline: newTopAd.headline,
-          callToAction: newTopAd.callToAction,
-          creativeUrl: newTopAd.creativeUrl,
-          landingPageUrl: newTopAd.landingPageUrl,
-          angle: newTopAd.angle,
-          targetAudience: newTopAd.targetAudience,
-          placement: newTopAd.placement,
-          objective: newTopAd.objective,
-          notes: newTopAd.notes,
-          whyItWorked: newTopAd.whyItWorked,
-          keyInsights: newTopAd.keyInsights,
-          status: newTopAd.status || "active"
-        }
-        setTopAds(prev => [...prev, convertedTopAd])
+        // Add to state
+        setCreatives(prev => [...prev, newCreative])
       } else {
-        // Updating existing top ad
-        const updated = await topAdsApi.update(updatedTopAd.id, updatedTopAd)
-        setTopAds(prev => prev.map(topAd => topAd.id === updated.id ? { ...topAd, ...updatedTopAd } : topAd))
+        // Updating existing creative
+        const updated = await creativeIntelligenceApi.update(updatedCreative.id, updatedCreative)
+        setCreatives(prev => prev.map(creative => creative.id === updated.id ? { ...creative, ...updatedCreative } : creative))
       }
-      setSelectedTopAd(null)
+      setSelectedCreative(null)
       setShowBrief(false)
     } catch (error) {
-      console.error('Error updating top ad:', error)
-      alert('Failed to save top ad. Please try again.')
+      console.error('Error updating creative:', error)
+      alert('Failed to save creative. Please try again.')
     }
   }
 
-  const handleNotesEdit = (topAd: TopAd) => {
-    setNotesDialog({ open: true, topAd })
-    setNotesText(topAd.notes || "")
+  const handleNotesEdit = (creative: CreativeIntelligence) => {
+    setNotesDialog({ open: true, creative })
+    setNotesText(creative.performanceNotes || "")
   }
 
   const handleNotesSave = async () => {
-    if (!notesDialog.topAd) return
+    if (!notesDialog.creative) return
     
     try {
-      const updatedTopAd = { ...notesDialog.topAd, notes: notesText }
-      await topAdsApi.update(notesDialog.topAd.id, updatedTopAd)
-      setTopAds(prev => prev.map(topAd => 
-        topAd.id === notesDialog.topAd!.id ? { ...topAd, notes: notesText } : topAd
+      const updatedCreative = { ...notesDialog.creative, performanceNotes: notesText }
+      await creativeIntelligenceApi.update(notesDialog.creative.id, updatedCreative)
+      setCreatives(prev => prev.map(creative => 
+        creative.id === notesDialog.creative!.id ? { ...creative, performanceNotes: notesText } : creative
       ))
-      setNotesDialog({ open: false, topAd: null })
+      setNotesDialog({ open: false, creative: null })
       setNotesText("")
     } catch (error) {
       console.error('Error updating notes:', error)
@@ -165,26 +132,24 @@ export default function TopAdsPage() {
     }
   }
 
-  const getPlatformBadgeColor = (platform: string) => {
+  const getCategoryBadgeColor = (category: string) => {
     const colors: Record<string, string> = {
-      facebook: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-      instagram: "bg-pink-100 text-pink-800 hover:bg-pink-200", 
-      google: "bg-green-100 text-green-800 hover:bg-green-200",
-      tiktok: "bg-black text-white hover:bg-gray-800",
-      youtube: "bg-red-100 text-red-800 hover:bg-red-200",
-      linkedin: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-      twitter: "bg-sky-100 text-sky-800 hover:bg-sky-200",
-      other: "bg-gray-100 text-gray-800 hover:bg-gray-200"
+      hook_library: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+      winning_angles: "bg-green-100 text-green-800 hover:bg-green-200", 
+      concept_gold: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200",
+      script_templates: "bg-purple-100 text-purple-800 hover:bg-purple-200",
+      headline_formulas: "bg-pink-100 text-pink-800 hover:bg-pink-200",
+      visual_patterns: "bg-indigo-100 text-indigo-800 hover:bg-indigo-200"
     }
-    return colors[platform] || colors.other
+    return colors[category] || colors.concept_gold
   }
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800 hover:bg-green-200"
-      case "paused":
-        return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+      case "template":
+        return "bg-blue-100 text-blue-800 hover:bg-blue-200"
       case "archived":
         return "bg-gray-100 text-gray-800 hover:bg-gray-200"
       default:
@@ -192,26 +157,28 @@ export default function TopAdsPage() {
     }
   }
 
-  const formatCurrency = (value?: number) => {
-    if (!value) return "-"
-    return `$${value.toLocaleString()}`
+  const getCreativeTypeIcon = (type: string) => {
+    switch (type) {
+      case "image":
+        return <Image className="h-4 w-4" />
+      case "video":
+        return <Video className="h-4 w-4" />
+      case "carousel":
+        return <FileText className="h-4 w-4" />
+      default:
+        return <Image className="h-4 w-4" />
+    }
   }
 
-  const formatPercentage = (value?: number) => {
-    if (!value) return "-"
-    return `${value.toFixed(2)}%`
-  }
-
-  const formatNumber = (value?: number) => {
-    if (!value) return "-"
-    return value.toLocaleString()
+  const formatCategoryName = (category: string) => {
+    return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
   if (!currentProjectId) {
     return (
       <div className="p-6">
         <div className="text-center text-muted-foreground">
-          Please select a project to view top ads.
+          Please select a project to view creative intelligence.
         </div>
       </div>
     )
@@ -221,7 +188,7 @@ export default function TopAdsPage() {
     return (
       <div className="p-6">
         <div className="text-center text-muted-foreground">
-          Loading top ads...
+          Loading creative intelligence...
         </div>
       </div>
     )
@@ -241,14 +208,17 @@ export default function TopAdsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Top Ads Tracker</h1>
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+            <Brain className="h-8 w-8" />
+            Creative Intelligence
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Track and analyze your highest-performing ads to identify winning patterns and angles.
+            Systematically capture and organize winning creative concepts, hooks, and angles to scale to 3000+ creatives per month.
           </p>
         </div>
-        <Button onClick={handleNewTopAd} className="gap-2">
+        <Button onClick={handleNewCreative} className="gap-2">
           <Plus className="h-4 w-4" />
-          New Top Ad
+          New Creative
         </Button>
       </div>
 
@@ -257,63 +227,64 @@ export default function TopAdsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Ad Title</TableHead>
-                <TableHead>Platform</TableHead>
-                <TableHead>ROAS</TableHead>
-                <TableHead>Spend</TableHead>
-                <TableHead>Revenue</TableHead>
-                <TableHead>CTR</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Hook Pattern</TableHead>
                 <TableHead>Angle</TableHead>
+                <TableHead>Psychology Trigger</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {topAds.length === 0 ? (
+              {creatives.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
-                    No top ads found. Create your first top ad to start tracking winning creatives.
+                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                    No creative intelligence found. Create your first creative to start building your intelligence library.
                   </TableCell>
                 </TableRow>
               ) : (
-                topAds.map((topAd) => (
+                creatives.map((creative) => (
                   <TableRow 
-                    key={topAd.id} 
+                    key={creative.id} 
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleViewTopAd(topAd)}
+                    onClick={() => handleViewCreative(creative)}
                   >
-                    <TableCell className="font-medium">{topAd.adTitle}</TableCell>
+                    <TableCell className="font-medium">{creative.title}</TableCell>
                     <TableCell>
-                      <Badge className={getPlatformBadgeColor(topAd.platform)}>
-                        {topAd.platform.charAt(0).toUpperCase() + topAd.platform.slice(1)}
+                      <div className="flex items-center gap-2">
+                        {getCreativeTypeIcon(creative.creativeType)}
+                        <span className="capitalize">{creative.creativeType}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getCategoryBadgeColor(creative.creativeCategory)}>
+                        {formatCategoryName(creative.creativeCategory)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-mono">
-                      {topAd.roas ? `${topAd.roas.toFixed(2)}x` : "-"}
-                    </TableCell>
-                    <TableCell className="font-mono">{formatCurrency(topAd.spend)}</TableCell>
-                    <TableCell className="font-mono">{formatCurrency(topAd.revenue)}</TableCell>
-                    <TableCell className="font-mono">{formatPercentage(topAd.ctr)}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{topAd.angle || "-"}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{creative.hookPattern || "-"}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{creative.angle || "-"}</TableCell>
+                    <TableCell className="max-w-[150px] truncate">{creative.psychologyTrigger || "-"}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusBadgeColor(topAd.status)}>
-                        {topAd.status.charAt(0).toUpperCase() + topAd.status.slice(1)}
+                      <Badge className={getStatusBadgeColor(creative.status)}>
+                        {creative.status.charAt(0).toUpperCase() + creative.status.slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell className="max-w-[150px] truncate">
-                      {topAd.notes ? (
+                      {creative.performanceNotes ? (
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleNotesEdit(topAd)
+                            handleNotesEdit(creative)
                           }}
                           className="h-6 px-2 text-xs"
                         >
                           <Edit3 className="h-3 w-3 mr-1" />
-                          {topAd.notes.slice(0, 20)}...
+                          {creative.performanceNotes.slice(0, 20)}...
                         </Button>
                       ) : (
                         <Button
@@ -321,7 +292,7 @@ export default function TopAdsPage() {
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation()
-                            handleNotesEdit(topAd)
+                            handleNotesEdit(creative)
                           }}
                           className="h-6 px-2 text-xs text-muted-foreground"
                         >
@@ -336,7 +307,7 @@ export default function TopAdsPage() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation()
-                          handleViewTopAd(topAd)
+                          handleViewCreative(creative)
                         }}
                       >
                         <Eye className="h-4 w-4" />
@@ -351,36 +322,36 @@ export default function TopAdsPage() {
       </Card>
 
       {/* Brief Dialog */}
-      {showBrief && selectedTopAd && (
+      {showBrief && selectedCreative && (
         <React.Suspense fallback={<div>Loading...</div>}>
-          <TopAdBriefPage
-            topAd={selectedTopAd}
+          <CreativeIntelligenceBriefPage
+            creative={selectedCreative}
             onClose={() => {
               setShowBrief(false)
-              setSelectedTopAd(null)
+              setSelectedCreative(null)
             }}
-            onUpdateTopAd={handleUpdateTopAd}
-            isNewTopAd={selectedTopAd.id === NEW_TOP_AD_ID}
+            onUpdateCreative={handleUpdateCreative}
+            isNewCreative={selectedCreative.id === NEW_CREATIVE_ID}
           />
         </React.Suspense>
       )}
 
       {/* Notes Edit Dialog */}
-      <Dialog open={notesDialog.open} onOpenChange={(open) => !open && setNotesDialog({ open: false, topAd: null })}>
+      <Dialog open={notesDialog.open} onOpenChange={(open) => !open && setNotesDialog({ open: false, creative: null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Notes</DialogTitle>
+            <DialogTitle>Edit Performance Notes</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <Textarea
               value={notesText}
               onChange={(e) => setNotesText(e.target.value)}
-              placeholder="Add your notes about this ad..."
+              placeholder="Add notes about why this creative worked, performance context, etc..."
               rows={4}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setNotesDialog({ open: false, topAd: null })}>
+            <Button variant="outline" onClick={() => setNotesDialog({ open: false, creative: null })}>
               Cancel
             </Button>
             <Button onClick={handleNotesSave}>
