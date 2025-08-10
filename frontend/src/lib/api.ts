@@ -287,18 +287,9 @@ export const creativesApi = {
 export const creativeIntelligenceApi = {
   async getByProject(projectId: string) {
     try {
-      console.log('Fetching creative intelligence for project:', projectId)
       const response = await fetchWithAuth(`${API_BASE}/creative-intelligence?projectId=${projectId}`)
-      console.log('API response status:', response.status)
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        console.error('API error response:', errorData)
-        throw new Error(`Failed to fetch creative intelligence: ${response.status} ${response.statusText}`)
-      }
-      
+      if (!response.ok) throw new Error('Failed to fetch creative intelligence')
       const data = await response.json()
-      console.log('API response data:', data)
       return data.creatives || []
     } catch (error) {
       console.error('Error fetching creative intelligence:', error)
