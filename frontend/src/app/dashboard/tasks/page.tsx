@@ -23,6 +23,7 @@ import { Plus, User, Calendar, Filter, Edit3, Trash2 } from "lucide-react"
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 
 import { tasksApi } from "@/lib/api"
+import { useProjectStore } from "@/lib/stores/project-store"
 
 // Import interfaces from project store
 import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
@@ -31,19 +32,26 @@ import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
 const NEW_TASK_ID = "new-task-temp-id"
 
 export default function TasksPage() {
+  // Project store
+  const { currentProjectId } = useProjectStore()
   
   // State for real data
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch all tasks for shared view
+  // Fetch tasks for current project
   useEffect(() => {
     const fetchTasks = async () => {
+      if (!currentProjectId) {
+        setTasks([])
+        return
+      }
+      
       setLoading(true)
       setError(null)
       try {
-        const fetchedTasks = await tasksApi.getAll()
+        const fetchedTasks = await tasksApi.getByProject(currentProjectId)
         setTasks(fetchedTasks)
       } catch (err) {
         setError('Failed to fetch tasks')
@@ -55,7 +63,7 @@ export default function TasksPage() {
     }
     
     fetchTasks()
-  }, []) // No project dependency - load once
+  }, [currentProjectId]) // Refetch when project changes
   
   // Production ready - using only real API data
 
@@ -132,7 +140,7 @@ export default function TasksPage() {
         const { id, ...taskData } = updatedTask
         const newTask = await tasksApi.create({
           ...taskData,
-          projectId: '00000000-0000-0000-0000-000000000001' // Use shared project UUID
+          projectId: currentProjectId // Use current project ID
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
@@ -205,7 +213,7 @@ export default function TasksPage() {
       dueDate: "",
       createdAt: new Date().toISOString().split("T")[0],
       category: "General",
-      projectId: "00000000-0000-0000-0000-000000000001",
+      projectId: currentProjectId || "",
       notes: "",
       attachments: [],
       links: [],
