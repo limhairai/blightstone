@@ -60,7 +60,7 @@ export default function CompetitorsPage() {
           offerUrl: competitor.offerUrl || competitor.offer_url || "",
           trafficVolume: competitor.trafficVolume || competitor.traffic_volume || "",
           level: (competitor.level || "medium") as "poor" | "medium" | "high",
-          projectId: competitor.projectId || competitor.project_id || "shared",
+          projectId: competitor.projectId || competitor.project_id || "00000000-0000-0000-0000-000000000001",
           notes: competitor.notes || ""
         }))
         setCompetitors(convertedCompetitors)
@@ -82,7 +82,7 @@ export default function CompetitorsPage() {
         const { id, ...competitorData } = updatedCompetitor
         const newCompetitor = await competitorsApi.create({
           ...competitorData,
-          projectId: "shared"
+          projectId: "00000000-0000-0000-0000-000000000001"
         })
         // Convert back to local format and add to state
         const convertedCompetitor: CompetitorBrief = {
@@ -94,7 +94,7 @@ export default function CompetitorsPage() {
           offerUrl: newCompetitor.offerUrl || newCompetitor.offer_url || "",
           trafficVolume: newCompetitor.trafficVolume || newCompetitor.traffic_volume || "",
           level: (newCompetitor.level || "medium") as "poor" | "medium" | "high",
-          projectId: newCompetitor.projectId || "shared",
+          projectId: newCompetitor.projectId || "00000000-0000-0000-0000-000000000001",
           notes: newCompetitor.notes || ""
         }
         setCompetitors(prev => [...prev, convertedCompetitor])
@@ -122,7 +122,7 @@ export default function CompetitorsPage() {
       offerUrl: "",
       trafficVolume: "",
       level: "medium", // Default level
-      projectId: "shared",
+      projectId: "00000000-0000-0000-0000-000000000001",
       notes: ""
     })
   }

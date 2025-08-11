@@ -79,7 +79,7 @@ export default function PersonasPage() {
           angle: persona.angle || "",
           dominoStatement: persona.dominoStatement || persona.domino_statement || "",
           description: persona.description || "",
-          projectId: persona.projectId || persona.project_id || "shared",
+          projectId: persona.projectId || persona.project_id || "00000000-0000-0000-0000-000000000001",
           notes: persona.notes || ""
         }))
         setPersonas(convertedPersonas)
@@ -101,7 +101,7 @@ export default function PersonasPage() {
         const { id, ...personaData } = updatedPersona
         const newPersona = await personasApi.create({
           ...personaData,
-          projectId: "shared"
+          projectId: "00000000-0000-0000-0000-000000000001"
         })
         // Convert back to local format and add to state
         const convertedPersona: Persona = {
@@ -124,7 +124,7 @@ export default function PersonasPage() {
           angle: newPersona.angle || "",
           dominoStatement: newPersona.dominoStatement || "",
           description: newPersona.description || "",
-          projectId: newPersona.projectId || "shared",
+          projectId: newPersona.projectId || "00000000-0000-0000-0000-000000000001",
           notes: newPersona.notes || ""
         }
         setPersonas(prev => [...prev, convertedPersona])
@@ -163,7 +163,7 @@ export default function PersonasPage() {
       angle: "To be defined",
       dominoStatement: "To be defined",
       description: "New persona",
-      projectId: "shared",
+      projectId: "00000000-0000-0000-0000-000000000001",
       notes: ""
     })
   }

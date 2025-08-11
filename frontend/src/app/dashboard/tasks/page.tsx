@@ -132,7 +132,7 @@ export default function TasksPage() {
         const { id, ...taskData } = updatedTask
         const newTask = await tasksApi.create({
           ...taskData,
-          projectId: 'shared' // Use shared project for all tasks
+          projectId: '00000000-0000-0000-0000-000000000001' // Use shared project UUID
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
@@ -205,7 +205,7 @@ export default function TasksPage() {
       dueDate: "",
       createdAt: new Date().toISOString().split("T")[0],
       category: "General",
-      projectId: "shared",
+      projectId: "00000000-0000-0000-0000-000000000001",
       notes: "",
       attachments: [],
       links: [],

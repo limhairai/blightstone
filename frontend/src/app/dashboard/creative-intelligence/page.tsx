@@ -66,7 +66,7 @@ export default function CreativeIntelligencePage() {
   const handleNewCreative = () => {
     const newCreative: CreativeIntelligence = {
       id: NEW_CREATIVE_ID,
-      projectId: "shared",
+      projectId: "00000000-0000-0000-0000-000000000001",
       createdBy: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -93,7 +93,7 @@ export default function CreativeIntelligencePage() {
         const { id, ...creativeData } = updatedCreative
         const newCreative = await creativeIntelligenceApi.create({
           ...creativeData,
-          projectId: "shared"
+          projectId: "00000000-0000-0000-0000-000000000001"
         })
         // Add to state
         setCreatives(prev => [...prev, newCreative])
