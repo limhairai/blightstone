@@ -76,22 +76,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID and title are required' }, { status: 400 })
     }
 
-    // Verify the project belongs to the user
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .select('user_id')
-      .eq('id', project_id)
-      .single()
-    
-    if (projectError || !project) {
-      console.error('Project not found:', projectError)
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
-    }
-    
-    if (project.user_id !== user.id) {
-      console.error('Project does not belong to user')
-      return NextResponse.json({ error: 'Project does not belong to user' }, { status: 403 })
-    }
+    // In shared system, no need to verify project ownership - all users can access shared data
 
     const { data: creative, error } = await supabase
       .from('creative_intelligence')
@@ -209,7 +194,7 @@ export async function PUT(request: NextRequest) {
         status: status || 'active'
       })
       .eq('id', id)
-      .eq('created_by', user.email) // Ensure user can only update their own creatives
+      // In shared system, all users can update all creatives
       .select()
       .single()
 
@@ -236,8 +221,9 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { id } = body
+    // Get ID from URL parameters (consistent with other delete endpoints)
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 })
@@ -247,7 +233,7 @@ export async function DELETE(request: NextRequest) {
       .from('creative_intelligence')
       .delete()
       .eq('id', id)
-      .eq('created_by', user.email) // Ensure user can only delete their own creatives
+      // In shared system, all users can delete all creatives
 
     if (error) {
       console.error('Error deleting creative:', error)
