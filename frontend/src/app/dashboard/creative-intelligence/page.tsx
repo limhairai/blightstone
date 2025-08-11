@@ -101,7 +101,7 @@ export default function CreativeIntelligencePage() {
         const { id, ...creativeData } = updatedCreative
         const newCreative = await creativeIntelligenceApi.create({
           ...creativeData,
-          projectId: currentProjectId
+          projectId: currentProjectId || undefined
         })
         // Add to state
         setCreatives(prev => [...prev, newCreative])

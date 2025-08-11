@@ -68,7 +68,7 @@ export default function CompetitorsPage() {
           offerUrl: competitor.offerUrl || competitor.offer_url || "",
           trafficVolume: competitor.trafficVolume || competitor.traffic_volume || "",
           level: (competitor.level || "medium") as "poor" | "medium" | "high",
-          projectId: competitor.projectId || competitor.project_id || currentProjectId,
+          projectId: competitor.projectId || competitor.project_id || currentProjectId || "",
           notes: competitor.notes || ""
         }))
         setCompetitors(convertedCompetitors)
@@ -90,7 +90,7 @@ export default function CompetitorsPage() {
         const { id, ...competitorData } = updatedCompetitor
         const newCompetitor = await competitorsApi.create({
           ...competitorData,
-          projectId: currentProjectId
+          projectId: currentProjectId || undefined
         })
         // Convert back to local format and add to state
         const convertedCompetitor: CompetitorBrief = {

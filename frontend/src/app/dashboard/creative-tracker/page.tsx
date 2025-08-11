@@ -180,7 +180,7 @@ export default function CreativeTrackerPage() {
         // Create new creative
         const newCreative = await creativesApi.create({
           ...updatedCreative,
-          projectId: currentProjectId
+          projectId: currentProjectId || undefined
         })
         setCreatives([...creatives, newCreative])
         setSelectedCreative(null)

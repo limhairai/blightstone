@@ -140,7 +140,7 @@ export default function TasksPage() {
         const { id, ...taskData } = updatedTask
         const newTask = await tasksApi.create({
           ...taskData,
-          projectId: currentProjectId // Use current project ID
+          projectId: currentProjectId || undefined // Use current project ID
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
