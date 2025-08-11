@@ -164,11 +164,31 @@ export default function CompetitorsPage() {
     }
   }
 
-  const handleNotesSave = () => {
-    if (notesEditingCompetitor) {
-      // For now, just update the local state since we don't have full CRUD operations
+  const handleNotesSave = async () => {
+    if (!notesEditingCompetitor) return
+    
+    try {
+      // Update the competitor via API with new notes
+      const updatedCompetitor = await competitorsApi.update(notesEditingCompetitor.id, {
+        ...notesEditingCompetitor,
+        notes: tempNotes
+      })
+      
+      // Update local state with the response from API
+      setCompetitors(competitors.map(competitor => 
+        competitor.id === notesEditingCompetitor.id ? updatedCompetitor : competitor
+      ))
+      
+      // Update selected competitor if it's the one being edited
+      if (selectedCompetitor && selectedCompetitor.id === notesEditingCompetitor.id) {
+        setSelectedCompetitor(updatedCompetitor)
+      }
+      
       setNotesEditingCompetitor(null)
       setTempNotes("")
+    } catch (error) {
+      console.error('Error saving competitor notes:', error)
+      alert('Failed to save notes. Please try again.')
     }
   }
 

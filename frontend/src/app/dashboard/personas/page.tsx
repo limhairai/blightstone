@@ -205,11 +205,31 @@ export default function PersonasPage() {
     }
   }
 
-  const handleNotesSave = () => {
-    if (notesEditingPersona) {
-      // For now, just update the local state since we don't have full CRUD operations
+  const handleNotesSave = async () => {
+    if (!notesEditingPersona) return
+    
+    try {
+      // Update the persona via API with new notes
+      const updatedPersona = await personasApi.update(notesEditingPersona.id, {
+        ...notesEditingPersona,
+        notes: tempNotes
+      })
+      
+      // Update local state with the response from API
+      setPersonas(personas.map(persona => 
+        persona.id === notesEditingPersona.id ? updatedPersona : persona
+      ))
+      
+      // Update selected persona if it's the one being edited
+      if (selectedPersona && selectedPersona.id === notesEditingPersona.id) {
+        setSelectedPersona(updatedPersona)
+      }
+      
       setNotesEditingPersona(null)
       setTempNotes("")
+    } catch (error) {
+      console.error('Error saving persona notes:', error)
+      alert('Failed to save notes. Please try again.')
     }
   }
 

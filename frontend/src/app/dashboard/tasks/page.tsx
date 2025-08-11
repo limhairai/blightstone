@@ -246,16 +246,31 @@ export default function TasksPage() {
     setTempNotes(task.notes || "")
   }
 
-  const handleNotesSave = () => {
-    if (notesEditingTask) {
-      const updatedTasks = tasks.map(task => 
-        task.id === notesEditingTask.id 
-          ? { ...task, notes: tempNotes }
-          : task
-      )
-      setTasks(updatedTasks)
+  const handleNotesSave = async () => {
+    if (!notesEditingTask) return
+    
+    try {
+      // Update the task via API with new notes
+      const updatedTask = await tasksApi.update(notesEditingTask.id, {
+        ...notesEditingTask,
+        notes: tempNotes
+      })
+      
+      // Update local state with the response from API
+      setTasks(tasks.map(task => 
+        task.id === notesEditingTask.id ? updatedTask : task
+      ))
+      
+      // Update selected task if it's the one being edited
+      if (selectedTask && selectedTask.id === notesEditingTask.id) {
+        setSelectedTask(updatedTask)
+      }
+      
       setNotesEditingTask(null)
       setTempNotes("")
+    } catch (error) {
+      console.error('Error saving notes:', error)
+      alert('Failed to save notes. Please try again.')
     }
   }
 

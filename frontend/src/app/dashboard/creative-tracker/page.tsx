@@ -251,16 +251,31 @@ export default function CreativeTrackerPage() {
     }
   }
 
-  const handleNotesSave = () => {
-    if (notesEditingCreative) {
-      const updatedCreatives = creatives.map(creative => 
-        creative.id === notesEditingCreative.id 
-          ? { ...creative, notes: tempNotes }
-          : creative
-      )
-      setCreatives(updatedCreatives)
+  const handleNotesSave = async () => {
+    if (!notesEditingCreative) return
+    
+    try {
+      // Update the creative via API with new notes
+      const updatedCreative = await creativesApi.update(notesEditingCreative.id, {
+        ...notesEditingCreative,
+        notes: tempNotes
+      })
+      
+      // Update local state with the response from API
+      setCreatives(creatives.map(creative => 
+        creative.id === notesEditingCreative.id ? updatedCreative : creative
+      ))
+      
+      // Update selected creative if it's the one being edited
+      if (selectedCreative && selectedCreative.id === notesEditingCreative.id) {
+        setSelectedCreative(updatedCreative)
+      }
+      
       setNotesEditingCreative(null)
       setTempNotes("")
+    } catch (error) {
+      console.error('Error saving creative notes:', error)
+      alert('Failed to save notes. Please try again.')
     }
   }
 
