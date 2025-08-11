@@ -70,12 +70,88 @@ export function ProjectSelector() {
     return total > 0 ? Math.round((completed / total) * 100) : 0
   }
 
-  if (!currentProject) {
+  // If no current project but there are projects available, show dropdown to select one
+  if (!currentProject && projects.length > 0) {
+    return (
+      <>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2 px-3 py-2 text-muted-foreground hover:text-foreground">
+              <FolderOpen className="h-4 w-4" />
+              <span>Select Project</span>
+              <ChevronDown className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-80">
+            <div className="flex items-center gap-2 px-3 py-2 border-b">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="border-0 px-0 focus-visible:ring-0 text-sm"
+              />
+            </div>
+            
+            <div className="max-h-64 overflow-y-auto">
+              {filteredProjects.map((project) => (
+                <DropdownMenuItem
+                  key={project.id}
+                  onClick={() => handleProjectSelect(project.id)}
+                  className="cursor-pointer px-3 py-3"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium">{project.name}</span>
+                        <Badge className={cn("text-xs", getStatusColor(project.status))}>
+                          {project.status}
+                        </Badge>
+                      </div>
+                      {project.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {project.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+              
+              {filteredProjects.length === 0 && (
+                <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                  No projects found
+                </div>
+              )}
+            </div>
+            
+            <Separator />
+            
+            <DropdownMenuItem
+              onClick={() => setIsCreateDialogOpen(true)}
+              className="cursor-pointer px-3 py-2 text-primary"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create New Project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <ProjectCreationDialog 
+          isOpen={isCreateDialogOpen}
+          onClose={() => setIsCreateDialogOpen(false)}
+        />
+      </>
+    )
+  }
+
+  // If no projects at all, show create button
+  if (!currentProject && projects.length === 0) {
     return (
       <>
         <div className="flex items-center gap-2 px-3 py-2 text-muted-foreground">
           <FolderOpen className="h-4 w-4" />
-          <span>No Project</span>
+          <span>No Projects</span>
           <Button 
             variant="ghost" 
             size="sm"
@@ -91,6 +167,11 @@ export function ProjectSelector() {
         />
       </>
     )
+  }
+
+  // If we reach here, we have a current project
+  if (!currentProject) {
+    return null // This shouldn't happen but keeps TypeScript happy
   }
 
   return (

@@ -21,7 +21,7 @@ interface Task {
 
 export function ProjectDashboardView() {
   const router = useRouter()
-  const { getCurrentProject, currentProjectId, getTasksForProject, getAvatarsForProject, getCompetitorsForProject, getCreativeTrackersForProject, setCurrentProjectId, loadProjects } = useProjectStore()
+  const { getCurrentProject, currentProjectId, getTasksForProject, getAvatarsForProject, getCompetitorsForProject, getCreativeTrackersForProject, setCurrentProjectId, removeProject } = useProjectStore()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   
   const currentProject = getCurrentProject()
@@ -31,14 +31,11 @@ export function ProjectDashboardView() {
   const projectCreatives = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
   
   const handleProjectDeleted = async (projectId: string) => {
-    // Refresh projects list
-    await loadProjects()
+    // Remove project from store (this also clears currentProjectId if it was the deleted project)
+    removeProject(projectId)
     
-    // If the deleted project was the current one, clear it and redirect
-    if (projectId === currentProjectId) {
-      setCurrentProjectId(null)
-      router.push('/dashboard')
-    }
+    // Redirect to dashboard to show project selector
+    router.push('/dashboard')
   }
   
   if (!currentProject) {

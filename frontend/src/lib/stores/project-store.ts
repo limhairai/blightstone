@@ -198,6 +198,7 @@ interface ProjectStore {
   setCurrentProjectId: (id: string | null) => void
   getCurrentProject: () => Project | null
   addProject: (project: Project) => void
+  removeProject: (projectId: string) => void
   loadProjects: () => Promise<void>
   getProjectWithDynamicCounts: (projectId: string) => Project | null
   
@@ -268,6 +269,14 @@ export const useProjectStore = create<ProjectStore>()(
       addProject: (project: Project) => {
         set(state => ({
           projects: [...state.projects, project]
+        }))
+      },
+      
+      removeProject: (projectId: string) => {
+        set(state => ({
+          projects: state.projects.filter(p => p.id !== projectId),
+          // Clear current project if it was the deleted one
+          currentProjectId: state.currentProjectId === projectId ? null : state.currentProjectId
         }))
       },
       
