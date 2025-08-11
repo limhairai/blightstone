@@ -28,7 +28,8 @@ enable_signup = true
 enable_confirmations = false
 
 [storage]
-enabled = false
+enabled = true
+file_size_limit = "50MiB"
 
 [inbucket]
 enabled = false

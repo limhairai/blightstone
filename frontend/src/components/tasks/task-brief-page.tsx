@@ -30,6 +30,7 @@ import {
   ExternalLink,
   Download,
 } from "lucide-react"
+import { FileUpload } from "@/components/ui/file-upload"
 
 // Import interfaces from project store
 import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
@@ -309,31 +310,23 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
           <div className="bg-card p-6 rounded-lg shadow-sm border border-border space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Attachments</h2>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => {
-                  // Simulate file upload for demo
+            </div>
+            
+            {/* File Upload Component */}
+            {isEditMode && (
+              <FileUpload
+                onUpload={(attachment) => {
                   if (editingTask) {
-                    const newAttachment: TaskAttachment = {
-                      id: Date.now().toString(),
-                      name: `document-${Date.now()}.pdf`,
-                      url: `/files/document-${Date.now()}.pdf`,
-                      type: "application/pdf",
-                      size: Math.floor(Math.random() * 1000000) + 100000,
-                      uploadedAt: new Date().toISOString()
-                    }
                     setEditingTask({
                       ...editingTask,
-                      attachments: [...(editingTask.attachments || []), newAttachment]
+                      attachments: [...(editingTask.attachments || []), attachment]
                     })
                   }
                 }}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload File
-              </Button>
-            </div>
+                maxSizeMB={10}
+                bucket="task-attachments"
+              />
+            )}
             
             {/* Existing Attachments */}
             {task.attachments && task.attachments.length > 0 ? (
@@ -376,7 +369,12 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
             ) : (
               <div className="bg-muted/30 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center text-muted-foreground border border-dashed border-muted-foreground/30">
                 <Paperclip className="h-8 w-8 mb-2" />
-                <p className="text-center text-sm">No attachments yet. Upload files to get started.</p>
+                <p className="text-center text-sm">
+                  {isEditMode 
+                    ? "No attachments yet. Use the upload area above to add files." 
+                    : "No attachments yet."
+                  }
+                </p>
               </div>
             )}
           </div>
