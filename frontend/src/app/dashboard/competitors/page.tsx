@@ -109,7 +109,7 @@ export default function CompetitorsPage() {
       } else {
         // Updating existing competitor
         const updated = await competitorsApi.update(updatedCompetitor.id, updatedCompetitor)
-        setCompetitors(prev => prev.map(competitor => competitor.id === updated.id ? { ...competitor, ...updatedCompetitor } : competitor))
+        setCompetitors(prev => prev.map(competitor => competitor.id === updated.id ? updated : competitor))
       }
       setSelectedCompetitor(null)
     } catch (error) {

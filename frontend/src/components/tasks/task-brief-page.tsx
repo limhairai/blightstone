@@ -243,10 +243,10 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                       className="w-48 px-3 py-2 border border-input rounded-md bg-background text-foreground"
                     >
                       <option value="">Select category</option>
+                      <option value="Product Page">Product Page</option>
+                      <option value="Creatives">Creatives</option>
+                      <option value="Facebook">Facebook</option>
                       <option value="Research">Research</option>
-                      <option value="Creative">Creative</option>
-                      <option value="Content">Content</option>
-                      <option value="Development">Development</option>
                       <option value="General">General</option>
                     </select>
                   ) : (

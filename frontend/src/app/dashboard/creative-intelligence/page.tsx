@@ -108,7 +108,7 @@ export default function CreativeIntelligencePage() {
       } else {
         // Updating existing creative
         const updated = await creativeIntelligenceApi.update(updatedCreative.id, updatedCreative)
-        setCreatives(prev => prev.map(creative => creative.id === updated.id ? { ...creative, ...updatedCreative } : creative))
+        setCreatives(prev => prev.map(creative => creative.id === updated.id ? updated : creative))
       }
       setSelectedCreative(null)
       setShowBrief(false)

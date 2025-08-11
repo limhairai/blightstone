@@ -139,7 +139,7 @@ export default function PersonasPage() {
       } else {
         // Updating existing persona
         const updated = await personasApi.update(updatedPersona.id, updatedPersona)
-        setPersonas(prev => prev.map(persona => persona.id === updated.id ? { ...persona, ...updatedPersona } : persona))
+        setPersonas(prev => prev.map(persona => persona.id === updated.id ? updated : persona))
       }
       setSelectedPersona(null)
     } catch (error) {
