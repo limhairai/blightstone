@@ -10,6 +10,7 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { Plus, Eye, Edit3, ExternalLink, Trash2 } from "lucide-react"
 
 import { competitorsApi } from "@/lib/api"
+import { useProjectStore } from "@/lib/stores/project-store"
 // Lazy load the brief page for better performance
 const CompetitorBriefPage = React.lazy(() => import("@/components/competitors/competitor-brief-page"))
 
@@ -31,6 +32,8 @@ interface CompetitorBrief {
 }
 
 export default function CompetitorsPage() {
+  // Project store
+  const { currentProjectId } = useProjectStore()
 
   
   const [competitors, setCompetitors] = useState<CompetitorBrief[]>([])
@@ -43,13 +46,18 @@ export default function CompetitorsPage() {
   const [competitorToDelete, setCompetitorToDelete] = useState<CompetitorBrief | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch all competitors for shared view
+  // Fetch competitors for current project
   useEffect(() => {
     const fetchCompetitors = async () => {
+      if (!currentProjectId) {
+        setCompetitors([])
+        return
+      }
+      
       setLoading(true)
       setError(null)
       try {
-        const fetchedCompetitors = await competitorsApi.getAll()
+        const fetchedCompetitors = await competitorsApi.getByProject(currentProjectId)
         // Convert API data to local CompetitorBrief format
         const convertedCompetitors: CompetitorBrief[] = fetchedCompetitors.map((competitor: any) => ({
           id: competitor.id,
@@ -60,7 +68,7 @@ export default function CompetitorsPage() {
           offerUrl: competitor.offerUrl || competitor.offer_url || "",
           trafficVolume: competitor.trafficVolume || competitor.traffic_volume || "",
           level: (competitor.level || "medium") as "poor" | "medium" | "high",
-          projectId: competitor.projectId || competitor.project_id || "00000000-0000-0000-0000-000000000001",
+          projectId: competitor.projectId || competitor.project_id || currentProjectId,
           notes: competitor.notes || ""
         }))
         setCompetitors(convertedCompetitors)
@@ -73,7 +81,7 @@ export default function CompetitorsPage() {
     }
 
     fetchCompetitors()
-  }, []) // No project dependency - load once
+  }, [currentProjectId]) // Refetch when project changes
 
   const handleUpdateCompetitor = async (updatedCompetitor: CompetitorBrief) => {
     try {
@@ -82,7 +90,7 @@ export default function CompetitorsPage() {
         const { id, ...competitorData } = updatedCompetitor
         const newCompetitor = await competitorsApi.create({
           ...competitorData,
-          projectId: "00000000-0000-0000-0000-000000000001"
+          projectId: currentProjectId
         })
         // Convert back to local format and add to state
         const convertedCompetitor: CompetitorBrief = {
@@ -122,7 +130,7 @@ export default function CompetitorsPage() {
       offerUrl: "",
       trafficVolume: "",
       level: "medium", // Default level
-      projectId: "00000000-0000-0000-0000-000000000001",
+      projectId: currentProjectId || "",
       notes: ""
     })
   }

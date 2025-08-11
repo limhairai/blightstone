@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // Get ALL projects for shared access - all authenticated users can see all projects
     const { data: projects, error } = await supabase
       .from('projects')
       .select('*')
-      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -91,16 +91,16 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // First, verify the project belongs to the user
+    // In shared system, all authenticated users can delete any project
+    // First, verify the project exists
     const { data: project, error: fetchError } = await supabase
       .from('projects')
-      .select('id, name, user_id, created_by')
+      .select('id, name')
       .eq('id', id)
-      .eq('user_id', user.id) // Ensure user owns the project
       .single()
 
     if (fetchError || !project) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 })
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
     // Delete the project (cascade will delete related data)
@@ -108,7 +108,6 @@ export async function DELETE(request: NextRequest) {
       .from('projects')
       .delete()
       .eq('id', id)
-      .eq('user_id', user.id) // Double-check user ownership
 
     if (deleteError) {
       console.error('Error deleting project:', deleteError)

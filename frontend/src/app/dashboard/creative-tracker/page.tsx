@@ -14,6 +14,7 @@ const CreativeBriefPage = React.lazy(() => import("@/components/creative/creativ
 
 import { useState, useEffect } from "react"
 import { creativesApi } from "@/lib/api"
+import { useProjectStore } from "@/lib/stores/project-store"
 
 // Define the interface for a Creative entry
 interface Creative {
@@ -62,6 +63,8 @@ interface Persona {
 const NEW_CREATIVE_ID = "new-creative-temp-id"
 
 export default function CreativeTrackerPage() {
+  // Project store
+  const { currentProjectId } = useProjectStore()
 
   
   // State for real data
@@ -69,13 +72,18 @@ export default function CreativeTrackerPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch all creatives for shared view
+  // Fetch creatives for current project
   useEffect(() => {
     const fetchCreatives = async () => {
+      if (!currentProjectId) {
+        setCreatives([])
+        return
+      }
+      
       setLoading(true)
       setError(null)
       try {
-        const fetchedCreatives = await creativesApi.getAll()
+        const fetchedCreatives = await creativesApi.getByProject(currentProjectId)
         setCreatives(fetchedCreatives)
       } catch (err) {
         setError('Failed to fetch creatives')
@@ -88,7 +96,7 @@ export default function CreativeTrackerPage() {
     }
     
     fetchCreatives()
-  }, []) // No project dependency - load once
+  }, [currentProjectId]) // Refetch when project changes
 
   // Production ready - using only real API data
 
@@ -172,7 +180,7 @@ export default function CreativeTrackerPage() {
         // Create new creative
         const newCreative = await creativesApi.create({
           ...updatedCreative,
-          projectId: "00000000-0000-0000-0000-000000000001"
+          projectId: currentProjectId
         })
         setCreatives([...creatives, newCreative])
         setSelectedCreative(null)

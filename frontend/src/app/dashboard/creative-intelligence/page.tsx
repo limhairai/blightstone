@@ -20,6 +20,7 @@ import { Plus, Brain, Eye, ExternalLink, Edit3, Image, Video, FileText, Trash2 }
 const CreativeIntelligenceBriefPage = React.lazy(() => import("@/components/creative-intelligence/creative-intelligence-brief-page"))
 
 import { creativeIntelligenceApi } from "@/lib/api"
+import { useProjectStore } from "@/lib/stores/project-store"
 
 // Import interfaces from project store
 import { CreativeIntelligence } from "@/lib/stores/project-store"
@@ -28,6 +29,8 @@ import { CreativeIntelligence } from "@/lib/stores/project-store"
 const NEW_CREATIVE_ID = "new-creative-temp-id"
 
 export default function CreativeIntelligencePage() {
+  // Project store
+  const { currentProjectId } = useProjectStore()
 
   
   // State for real data
@@ -35,13 +38,18 @@ export default function CreativeIntelligencePage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch all creatives for shared view
+  // Fetch creatives for current project
   useEffect(() => {
     const fetchCreatives = async () => {
+      if (!currentProjectId) {
+        setCreatives([])
+        return
+      }
+      
       setLoading(true)
       setError(null)
       try {
-        const fetchedCreatives = await creativeIntelligenceApi.getAll()
+        const fetchedCreatives = await creativeIntelligenceApi.getByProject(currentProjectId)
         setCreatives(fetchedCreatives)
       } catch (err) {
         console.error('Failed to fetch creatives:', err)
@@ -52,7 +60,7 @@ export default function CreativeIntelligencePage() {
     }
 
     fetchCreatives()
-  }, []) // No project dependency - load once
+  }, [currentProjectId]) // Refetch when project changes
   
   // UI State
   const [selectedCreative, setSelectedCreative] = useState<CreativeIntelligence | null>(null)
@@ -66,7 +74,7 @@ export default function CreativeIntelligencePage() {
   const handleNewCreative = () => {
     const newCreative: CreativeIntelligence = {
       id: NEW_CREATIVE_ID,
-      projectId: "00000000-0000-0000-0000-000000000001",
+      projectId: currentProjectId || "",
       createdBy: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -93,7 +101,7 @@ export default function CreativeIntelligencePage() {
         const { id, ...creativeData } = updatedCreative
         const newCreative = await creativeIntelligenceApi.create({
           ...creativeData,
-          projectId: "00000000-0000-0000-0000-000000000001"
+          projectId: currentProjectId
         })
         // Add to state
         setCreatives(prev => [...prev, newCreative])
