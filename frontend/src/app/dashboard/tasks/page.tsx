@@ -80,6 +80,7 @@ export default function TasksPage() {
 
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     setDraggedTask(task)
@@ -96,10 +97,10 @@ export default function TasksPage() {
     setDragOverColumn(null)
   }
 
-  const handleDrop = (e: React.DragEvent, columnStatus: Task["status"]) => {
+  const handleDrop = async (e: React.DragEvent, columnStatus: Task["status"]) => {
     e.preventDefault()
     if (draggedTask && draggedTask.status !== columnStatus) {
-      handleStatusChange(draggedTask.id, columnStatus)
+      await handleStatusChange(draggedTask.id, columnStatus)
     }
     setDraggedTask(null)
     setDragOverColumn(null)
@@ -159,10 +160,30 @@ export default function TasksPage() {
 
 
 
-  const handleStatusChange = (taskId: string, newStatus: Task["status"]) => {
-    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)))
-    if (selectedTask && selectedTask.id === taskId) {
-      setSelectedTask({ ...selectedTask, status: newStatus })
+  const handleStatusChange = async (taskId: string, newStatus: Task["status"]) => {
+    try {
+      // Find the task to update
+      const taskToUpdate = tasks.find(task => task.id === taskId)
+      if (!taskToUpdate) return
+
+      // Set loading state
+      setUpdatingTaskId(taskId)
+
+      // Update the task via API
+      const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, status: newStatus })
+      
+      // Update local state with the response from API
+      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(updatedTask)
+      }
+    } catch (error) {
+      console.error('Error updating task status:', error)
+      // Show error to user
+      alert('Failed to update task status. Please try again.')
+    } finally {
+      // Clear loading state
+      setUpdatingTaskId(null)
     }
   }
 
@@ -337,8 +358,9 @@ export default function TasksPage() {
                     <TableCell>
                       <Checkbox
                         checked={task.status === "completed"}
-                        onCheckedChange={(checked) => {
-                          handleStatusChange(task.id, checked ? "completed" : "todo")
+                        disabled={updatingTaskId === task.id}
+                        onCheckedChange={async (checked) => {
+                          await handleStatusChange(task.id, checked ? "completed" : "todo")
                         }}
                         onClick={(e) => e.stopPropagation()}
                       />
@@ -438,7 +460,7 @@ export default function TasksPage() {
                         key={task.id}
                         className={`cursor-pointer hover:shadow-md transition-all duration-200 ${
                           draggedTask?.id === task.id ? "opacity-50 rotate-2 scale-105" : ""
-                        }`}
+                        } ${updatingTaskId === task.id ? "opacity-75" : ""}`}
                         draggable
                         onDragStart={(e) => handleDragStart(e, task)}
                         onClick={() => setSelectedTask(task)}
