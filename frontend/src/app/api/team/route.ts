@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all users from auth.users and their profiles
+    // Get all users from profiles table
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select(`
