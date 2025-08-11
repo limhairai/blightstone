@@ -10,6 +10,7 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
 import { CustomerAvatar } from "@/lib/stores/project-store"
 import { personasApi } from "@/lib/api"
+import { useProjectStore } from "@/lib/stores/project-store"
 // Lazy load the brief page for better performance
 const PersonaBriefPage = React.lazy(() => import("@/components/personas/persona-brief-page"))
 
@@ -39,6 +40,8 @@ interface Persona {
 }
 
 export default function PersonasPage() {
+  // Project store
+  const { currentProjectId } = useProjectStore()
 
   
   const [personas, setPersonas] = useState<Persona[]>([])
@@ -54,10 +57,15 @@ export default function PersonasPage() {
   // Fetch all personas for shared view
   useEffect(() => {
     const fetchPersonas = async () => {
+      if (!currentProjectId) {
+        setPersonas([])
+        return
+      }
+      
       setLoading(true)
       setError(null)
       try {
-        const fetchedPersonas = await personasApi.getAll()
+        const fetchedPersonas = await personasApi.getByProject(currentProjectId)
         // Convert API data to local Persona format
         const convertedPersonas: Persona[] = fetchedPersonas.map((persona: any) => ({
           id: persona.id,
@@ -79,7 +87,7 @@ export default function PersonasPage() {
           angle: persona.angle || "",
           dominoStatement: persona.dominoStatement || persona.domino_statement || "",
           description: persona.description || "",
-          projectId: persona.projectId || persona.project_id || "00000000-0000-0000-0000-000000000001",
+          projectId: persona.projectId || persona.project_id || currentProjectId,
           notes: persona.notes || ""
         }))
         setPersonas(convertedPersonas)
@@ -92,7 +100,7 @@ export default function PersonasPage() {
     }
 
     fetchPersonas()
-  }, []) // No project dependency - load once
+  }, [currentProjectId]) // Refetch when project changes
 
   const handleUpdatePersona = async (updatedPersona: Persona) => {
     try {
@@ -101,7 +109,7 @@ export default function PersonasPage() {
         const { id, ...personaData } = updatedPersona
         const newPersona = await personasApi.create({
           ...personaData,
-          projectId: "00000000-0000-0000-0000-000000000001"
+          projectId: currentProjectId
         })
         // Convert back to local format and add to state
         const convertedPersona: Persona = {
@@ -163,7 +171,7 @@ export default function PersonasPage() {
       angle: "To be defined",
       dominoStatement: "To be defined",
       description: "New persona",
-      projectId: "00000000-0000-0000-0000-000000000001",
+      projectId: currentProjectId || "",
       notes: ""
     })
   }
