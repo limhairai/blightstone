@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
@@ -9,6 +9,7 @@ import { useProjectStore } from "../../lib/stores/project-store"
 import { DeleteProjectDialog } from "../projects/delete-project-dialog"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { tasksApi, personasApi, competitorsApi, creativesApi, creativeIntelligenceApi } from "@/lib/api"
 
 interface Task {
   id: string
@@ -21,14 +22,70 @@ interface Task {
 
 export function ProjectDashboardView() {
   const router = useRouter()
-  const { getCurrentProject, currentProjectId, getTasksForProject, getAvatarsForProject, getCompetitorsForProject, getCreativeTrackersForProject, setCurrentProjectId, removeProject } = useProjectStore()
+  const { getCurrentProject, currentProjectId, removeProject } = useProjectStore()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   
+  // Real-time data counts from API
+  const [projectCounts, setProjectCounts] = useState({
+    tasks: 0,
+    completedTasks: 0,
+    personas: 0,
+    competitors: 0,
+    creatives: 0,
+    creativeIntelligence: 0
+  })
+  const [recentTasks, setRecentTasks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  
   const currentProject = getCurrentProject()
-  const projectTasks = currentProjectId ? getTasksForProject(currentProjectId) : []
-  const projectAvatars = currentProjectId ? getAvatarsForProject(currentProjectId) : []
-  const projectCompetitors = currentProjectId ? getCompetitorsForProject(currentProjectId) : []
-  const projectCreatives = currentProjectId ? getCreativeTrackersForProject(currentProjectId) : []
+  
+  // Fetch real-time counts for the current project
+  useEffect(() => {
+    const fetchProjectCounts = async () => {
+      if (!currentProjectId) {
+        setProjectCounts({
+          tasks: 0,
+          completedTasks: 0,
+          personas: 0,
+          competitors: 0,
+          creatives: 0,
+          creativeIntelligence: 0
+        })
+        setRecentTasks([])
+        setLoading(false)
+        return
+      }
+      
+      setLoading(true)
+      try {
+        const [tasks, personas, competitors, creatives, creativeIntelligence] = await Promise.all([
+          tasksApi.getByProject(currentProjectId),
+          personasApi.getByProject(currentProjectId),
+          competitorsApi.getByProject(currentProjectId),
+          creativesApi.getByProject(currentProjectId),
+          creativeIntelligenceApi.getByProject(currentProjectId)
+        ])
+        
+        setProjectCounts({
+          tasks: tasks.length,
+          completedTasks: tasks.filter(t => t.status === 'completed').length,
+          personas: personas.length,
+          competitors: competitors.length,
+          creatives: creatives.length,
+          creativeIntelligence: creativeIntelligence.length
+        })
+        
+        // Store recent tasks for the recent activity section
+        setRecentTasks(tasks.slice(0, 3))
+      } catch (error) {
+        console.error('Error fetching project counts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchProjectCounts()
+  }, [currentProjectId])
   
   const handleProjectDeleted = async (projectId: string) => {
     // Remove project from store (this also clears currentProjectId if it was the deleted project)
@@ -126,9 +183,11 @@ export function ProjectDashboardView() {
                     <CheckSquare className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium text-foreground">Tasks</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{projectTasks.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? "..." : projectCounts.tasks}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    {projectTasks.filter(t => t.status === 'completed').length} completed
+                    {loading ? "..." : `${projectCounts.completedTasks} completed`}
                   </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -146,9 +205,11 @@ export function ProjectDashboardView() {
                     <Target className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium text-foreground">Creative Tracker</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{projectCreatives.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? "..." : projectCounts.creatives}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    {projectCreatives.filter(c => c.status === 'completed').length} completed campaigns
+                    Creative campaigns
                   </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -166,7 +227,9 @@ export function ProjectDashboardView() {
                     <Users className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium text-foreground">Personas</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{projectAvatars.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? "..." : projectCounts.personas}
+                  </p>
                   <p className="text-sm text-muted-foreground">Customer profiles</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -184,7 +247,9 @@ export function ProjectDashboardView() {
                     <Building2 className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium text-foreground">Competitors</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{projectCompetitors.length}</p>
+                  <p className="text-2xl font-bold text-foreground">
+                    {loading ? "..." : projectCounts.competitors}
+                  </p>
                   <p className="text-sm text-muted-foreground">Market analysis</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
@@ -195,7 +260,7 @@ export function ProjectDashboardView() {
       </div>
 
       {/* Recent Activity */}
-      {projectTasks.length > 0 && (
+      {recentTasks.length > 0 && (
         <Card className="border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -209,7 +274,7 @@ export function ProjectDashboardView() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {projectTasks.slice(0, 3).map((task) => (
+              {recentTasks.map((task) => (
                 <div key={task.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-[#F5F5F5] transition-colors">
                   <div className="space-y-1">
                     <h4 className="font-medium text-foreground">{task.title}</h4>
@@ -230,7 +295,7 @@ export function ProjectDashboardView() {
       )}
 
       {/* Empty State */}
-      {projectTasks.length === 0 && projectCreatives.length === 0 && projectAvatars.length === 0 && projectCompetitors.length === 0 && (
+              {!loading && projectCounts.tasks === 0 && projectCounts.creatives === 0 && projectCounts.personas === 0 && projectCounts.competitors === 0 && (
         <Card className="border-border">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
