@@ -21,7 +21,7 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { Plus, User, Calendar, Filter, Edit3, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
-import { useProjectStore } from "@/lib/stores/project-store"
+
 import { tasksApi } from "@/lib/api"
 
 // Import interfaces from project store
@@ -31,27 +31,23 @@ import { Task, TaskAttachment, TaskLink } from "@/lib/stores/project-store"
 const NEW_TASK_ID = "new-task-temp-id"
 
 export default function TasksPage() {
-  const { currentProjectId } = useProjectStore()
   
   // State for real data
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch tasks when project changes
+  // Fetch all tasks for shared view
   useEffect(() => {
-    if (!currentProjectId) return
-    
     const fetchTasks = async () => {
       setLoading(true)
       setError(null)
       try {
-        const fetchedTasks = await tasksApi.getByProject(currentProjectId)
+        const fetchedTasks = await tasksApi.getAll()
         setTasks(fetchedTasks)
       } catch (err) {
         setError('Failed to fetch tasks')
         console.error('Error fetching tasks:', err)
-        // Production: No fallback, show error to user
         setTasks([])
       } finally {
         setLoading(false)
@@ -59,7 +55,7 @@ export default function TasksPage() {
     }
     
     fetchTasks()
-  }, [currentProjectId])
+  }, []) // No project dependency - load once
   
   // Production ready - using only real API data
 
@@ -136,7 +132,7 @@ export default function TasksPage() {
         const { id, ...taskData } = updatedTask
         const newTask = await tasksApi.create({
           ...taskData,
-          projectId: currentProjectId!
+          projectId: 'shared' // Use shared project for all tasks
         })
         setTasks(prev => [...prev, newTask])
         setSelectedTask(null)
@@ -209,7 +205,7 @@ export default function TasksPage() {
       dueDate: "",
       createdAt: new Date().toISOString().split("T")[0],
       category: "General",
-      projectId: currentProjectId || "",
+      projectId: "shared",
       notes: "",
       attachments: [],
       links: [],

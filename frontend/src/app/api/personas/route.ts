@@ -11,17 +11,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('project_id')
-
-    if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
-    }
-
+    // Get ALL personas for shared view - no project filtering
     const { data: personas, error } = await supabase
       .from('personas')
       .select('*')
-      .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 
     if (error) {

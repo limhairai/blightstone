@@ -18,7 +18,7 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { Plus, Brain, Eye, ExternalLink, Edit3, Image, Video, FileText, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const CreativeIntelligenceBriefPage = React.lazy(() => import("@/components/creative-intelligence/creative-intelligence-brief-page"))
-import { useProjectStore } from "@/lib/stores/project-store"
+
 import { creativeIntelligenceApi } from "@/lib/api"
 
 // Import interfaces from project store
@@ -28,22 +28,20 @@ import { CreativeIntelligence } from "@/lib/stores/project-store"
 const NEW_CREATIVE_ID = "new-creative-temp-id"
 
 export default function CreativeIntelligencePage() {
-  const { currentProjectId } = useProjectStore()
+
   
   // State for real data
   const [creatives, setCreatives] = useState<CreativeIntelligence[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch creatives when project changes
+  // Fetch all creatives for shared view
   useEffect(() => {
-    if (!currentProjectId) return
-    
     const fetchCreatives = async () => {
       setLoading(true)
       setError(null)
       try {
-        const fetchedCreatives = await creativeIntelligenceApi.getByProject(currentProjectId)
+        const fetchedCreatives = await creativeIntelligenceApi.getAll()
         setCreatives(fetchedCreatives)
       } catch (err) {
         console.error('Failed to fetch creatives:', err)
@@ -54,7 +52,7 @@ export default function CreativeIntelligencePage() {
     }
 
     fetchCreatives()
-  }, [currentProjectId])
+  }, []) // No project dependency - load once
   
   // UI State
   const [selectedCreative, setSelectedCreative] = useState<CreativeIntelligence | null>(null)
@@ -68,7 +66,7 @@ export default function CreativeIntelligencePage() {
   const handleNewCreative = () => {
     const newCreative: CreativeIntelligence = {
       id: NEW_CREATIVE_ID,
-      projectId: currentProjectId!,
+      projectId: "shared",
       createdBy: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -89,15 +87,13 @@ export default function CreativeIntelligencePage() {
   }
 
   const handleUpdateCreative = async (updatedCreative: CreativeIntelligence) => {
-    if (!currentProjectId) return
-    
     try {
       if (updatedCreative.id === NEW_CREATIVE_ID) {
         // Creating a new creative
         const { id, ...creativeData } = updatedCreative
         const newCreative = await creativeIntelligenceApi.create({
           ...creativeData,
-          projectId: currentProjectId
+          projectId: "shared"
         })
         // Add to state
         setCreatives(prev => [...prev, newCreative])
@@ -204,15 +200,7 @@ export default function CreativeIntelligencePage() {
     return category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
-  if (!currentProjectId) {
-    return (
-      <div className="p-6">
-        <div className="text-center text-muted-foreground">
-          Please select a project to view creative intelligence.
-        </div>
-      </div>
-    )
-  }
+
 
   if (loading) {
     return (

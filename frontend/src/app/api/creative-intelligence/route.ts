@@ -11,17 +11,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('projectId')
-
-    if (!projectId) {
-      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
-    }
-
+    // Get ALL creative intelligence for shared view - no project filtering
     const { data: creativeIntelligence, error } = await supabase
       .from('creative_intelligence')
       .select('*')
-      .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 
     if (error) {

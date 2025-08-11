@@ -73,9 +73,9 @@ export const projectsApi = {
 
 // Tasks API
 export const tasksApi = {
-  async getByProject(projectId: string): Promise<Task[]> {
+  async getAll(): Promise<Task[]> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/tasks?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/tasks`)
       if (!response.ok) throw new Error('Failed to fetch tasks')
       const data = await response.json()
       return data.tasks || []
@@ -132,9 +132,9 @@ export const tasksApi = {
 
 // Personas API
 export const personasApi = {
-  async getByProject(projectId: string) {
+  async getAll() {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/personas?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/personas`)
       if (!response.ok) throw new Error('Failed to fetch personas')
       const data = await response.json()
       return data.personas || []
@@ -191,9 +191,9 @@ export const personasApi = {
 
 // Competitors API
 export const competitorsApi = {
-  async getByProject(projectId: string) {
+  async getAll() {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/competitors?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/competitors`)
       if (!response.ok) throw new Error('Failed to fetch competitors')
       const data = await response.json()
       return data.competitors || []
@@ -250,9 +250,9 @@ export const competitorsApi = {
 
 // Creatives API
 export const creativesApi = {
-  async getByProject(projectId: string) {
+  async getAll() {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/creatives?project_id=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/creatives`)
       if (!response.ok) throw new Error('Failed to fetch creatives')
       const data = await response.json()
       return data.creatives || []
@@ -309,9 +309,9 @@ export const creativesApi = {
 
 // Creative Intelligence API
 export const creativeIntelligenceApi = {
-  async getByProject(projectId: string) {
+  async getAll() {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence?projectId=${projectId}`)
+      const response = await fetchWithAuth(`${API_BASE}/creative-intelligence`)
       if (!response.ok) throw new Error('Failed to fetch creative intelligence')
       const data = await response.json()
       return data.creatives || []

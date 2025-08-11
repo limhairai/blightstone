@@ -11,7 +11,7 @@ import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-di
 import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
 // Lazy load the brief page for better performance
 const CreativeBriefPage = React.lazy(() => import("@/components/creative/creative-brief-page"))
-import { useProjectStore } from "@/lib/stores/project-store"
+
 import { useState, useEffect } from "react"
 import { creativesApi } from "@/lib/api"
 
@@ -62,25 +62,20 @@ interface Persona {
 const NEW_CREATIVE_ID = "new-creative-temp-id"
 
 export default function CreativeTrackerPage() {
-  const { currentProjectId } = useProjectStore()
+
   
   // State for real data
   const [creatives, setCreatives] = useState<Creative[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch real creatives from API
+  // Fetch all creatives for shared view
   useEffect(() => {
-    if (!currentProjectId) {
-      setCreatives([])
-      return
-    }
-
     const fetchCreatives = async () => {
       setLoading(true)
       setError(null)
       try {
-        const fetchedCreatives = await creativesApi.getByProject(currentProjectId)
+        const fetchedCreatives = await creativesApi.getAll()
         setCreatives(fetchedCreatives)
       } catch (err) {
         setError('Failed to fetch creatives')
@@ -93,7 +88,7 @@ export default function CreativeTrackerPage() {
     }
     
     fetchCreatives()
-  }, [currentProjectId])
+  }, []) // No project dependency - load once
 
   // Production ready - using only real API data
 
@@ -172,14 +167,12 @@ export default function CreativeTrackerPage() {
   }
 
   const handleUpdateCreative = async (updatedCreative: Creative) => {
-    if (!currentProjectId) return
-    
     try {
       if (updatedCreative.id === NEW_CREATIVE_ID) {
         // Create new creative
         const newCreative = await creativesApi.create({
           ...updatedCreative,
-          projectId: currentProjectId
+          projectId: "shared"
         })
         setCreatives([...creatives, newCreative])
         setSelectedCreative(null)

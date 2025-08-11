@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
-import { useProjectStore, CustomerAvatar } from "@/lib/stores/project-store"
+import { CustomerAvatar } from "@/lib/stores/project-store"
 import { personasApi } from "@/lib/api"
 // Lazy load the brief page for better performance
 const PersonaBriefPage = React.lazy(() => import("@/components/personas/persona-brief-page"))
@@ -39,7 +39,7 @@ interface Persona {
 }
 
 export default function PersonasPage() {
-  const { currentProjectId } = useProjectStore()
+
   
   const [personas, setPersonas] = useState<Persona[]>([])
   const [loading, setLoading] = useState(false)
@@ -51,18 +51,13 @@ export default function PersonasPage() {
   const [personaToDelete, setPersonaToDelete] = useState<Persona | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch personas from API
+  // Fetch all personas for shared view
   useEffect(() => {
-    if (!currentProjectId) {
-      setPersonas([])
-      return
-    }
-
     const fetchPersonas = async () => {
       setLoading(true)
       setError(null)
       try {
-        const fetchedPersonas = await personasApi.getByProject(currentProjectId)
+        const fetchedPersonas = await personasApi.getAll()
         // Convert API data to local Persona format
         const convertedPersonas: Persona[] = fetchedPersonas.map((persona: any) => ({
           id: persona.id,
@@ -84,7 +79,7 @@ export default function PersonasPage() {
           angle: persona.angle || "",
           dominoStatement: persona.dominoStatement || persona.domino_statement || "",
           description: persona.description || "",
-          projectId: persona.projectId || persona.project_id || currentProjectId,
+          projectId: persona.projectId || persona.project_id || "shared",
           notes: persona.notes || ""
         }))
         setPersonas(convertedPersonas)
@@ -97,18 +92,16 @@ export default function PersonasPage() {
     }
 
     fetchPersonas()
-  }, [currentProjectId])
+  }, []) // No project dependency - load once
 
   const handleUpdatePersona = async (updatedPersona: Persona) => {
-    if (!currentProjectId) return
-    
     try {
       if (updatedPersona.id === "new-persona-temp-id") {
         // Creating a new persona
         const { id, ...personaData } = updatedPersona
         const newPersona = await personasApi.create({
           ...personaData,
-          projectId: currentProjectId
+          projectId: "shared"
         })
         // Convert back to local format and add to state
         const convertedPersona: Persona = {
@@ -131,7 +124,7 @@ export default function PersonasPage() {
           angle: newPersona.angle || "",
           dominoStatement: newPersona.dominoStatement || "",
           description: newPersona.description || "",
-          projectId: newPersona.projectId || currentProjectId,
+          projectId: newPersona.projectId || "shared",
           notes: newPersona.notes || ""
         }
         setPersonas(prev => [...prev, convertedPersona])
@@ -170,7 +163,7 @@ export default function PersonasPage() {
       angle: "To be defined",
       dominoStatement: "To be defined",
       description: "New persona",
-      projectId: currentProjectId || "",
+      projectId: "shared",
       notes: ""
     })
   }
