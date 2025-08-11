@@ -13,6 +13,7 @@ import { cn } from "../../lib/utils"
 import { useAuth } from "../../contexts/AuthContext"
 import { useProjectStore, Project } from "../../lib/stores/project-store"
 import ProjectCreationDialog from "./project-creation-dialog"
+import { tasksApi } from "@/lib/api"
 
 export function ProjectSelector() {
   const { theme } = useTheme()
@@ -26,8 +27,56 @@ export function ProjectSelector() {
   const [hoveredProjectId, setHoveredProjectId] = useState<string | null>(null)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [projectTaskCounts, setProjectTaskCounts] = useState<Record<string, { total: number; completed: number }>>({})
+  const [loadingCounts, setLoadingCounts] = useState(false)
 
-  const currentProject = currentProjectId ? getProjectWithDynamicCounts(currentProjectId) : null
+  // Fetch task counts for all projects
+  const fetchTaskCounts = useCallback(async () => {
+    if (projects.length === 0) return
+    
+    setLoadingCounts(true)
+    try {
+      const counts: Record<string, { total: number; completed: number }> = {}
+      
+      // Fetch tasks for each project in parallel
+      await Promise.all(
+        projects.map(async (project) => {
+          try {
+            const tasks = await tasksApi.getByProject(project.id)
+            counts[project.id] = {
+              total: tasks.length,
+              completed: tasks.filter(task => task.status === 'completed').length
+            }
+          } catch (error) {
+            console.error(`Error fetching tasks for project ${project.id}:`, error)
+            counts[project.id] = { total: 0, completed: 0 }
+          }
+        })
+      )
+      
+      setProjectTaskCounts(counts)
+    } catch (error) {
+      console.error('Error fetching task counts:', error)
+    } finally {
+      setLoadingCounts(false)
+    }
+  }, [projects])
+
+  // Get current project with real-time task counts
+  const getCurrentProjectWithCounts = useCallback(() => {
+    if (!currentProjectId) return null
+    const project = projects.find(p => p.id === currentProjectId)
+    if (!project) return null
+    
+    const counts = projectTaskCounts[currentProjectId] || { total: 0, completed: 0 }
+    return {
+      ...project,
+      tasksCount: counts.total,
+      completedTasks: counts.completed
+    }
+  }, [currentProjectId, projects, projectTaskCounts])
+
+  const currentProject = getCurrentProjectWithCounts()
 
   // Load projects when component mounts and user is authenticated
   useEffect(() => {
@@ -35,6 +84,13 @@ export function ProjectSelector() {
       loadProjects()
     }
   }, [user, session, loadProjects])
+
+  // Fetch task counts when projects change
+  useEffect(() => {
+    if (projects.length > 0) {
+      fetchTaskCounts()
+    }
+  }, [projects, fetchTaskCounts])
 
   const filteredProjects = useMemo(() => {
     if (!searchQuery.trim()) return projects
@@ -176,7 +232,13 @@ export function ProjectSelector() {
 
   return (
     <>
-      <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
+      <DropdownMenu open={isDropdownOpen} onOpenChange={(open) => {
+        setIsDropdownOpen(open)
+        // Refresh task counts when dropdown opens
+        if (open && projects.length > 0) {
+          fetchTaskCounts()
+        }
+      }}>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
@@ -199,7 +261,7 @@ export function ProjectSelector() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground w-full">
                 <span>{getProgressPercentage(currentProject.completedTasks || 0, currentProject.tasksCount || 0)}% complete</span>
                 <span>•</span>
-                <span>{currentProject.completedTasks}/{currentProject.tasksCount} tasks</span>
+                <span>{loadingCounts ? "Loading..." : `${currentProject.completedTasks}/${currentProject.tasksCount} tasks`}</span>
               </div>
             </div>
           </div>
@@ -233,7 +295,12 @@ export function ProjectSelector() {
 
         <div className="max-h-60 overflow-y-auto">
           {filteredProjects.map((project) => {
-            const projectWithCounts = getProjectWithDynamicCounts(project.id) || project
+            const counts = projectTaskCounts[project.id] || { total: 0, completed: 0 }
+            const projectWithCounts = {
+              ...project,
+              tasksCount: counts.total,
+              completedTasks: counts.completed
+            }
             return (
             <DropdownMenuItem
               key={project.id}
