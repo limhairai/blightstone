@@ -6,7 +6,7 @@ import { AppShell } from '../layout/app-shell'
 import { Loader } from "./Loader"
 import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
-import { useAdminClientSeparation } from '../../hooks/useAdminClientSeparation'
+
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 
 
@@ -60,14 +60,11 @@ function isPublicOrAuthPage(pathname: string): boolean {
   return false;
 }
 
-function isAdminPage(pathname: string): boolean {
-  return pathname.startsWith("/admin");
-}
+
 
 function AppRouter({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, loading: authLoading } = useAuth();
-  const { isAdmin, loading: separationLoading } = useAdminClientSeparation();
   const [hasHydrated, setHasHydrated] = useState(false);
 
   // Initialize performance optimizations
@@ -79,7 +76,7 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   }, []);
 
   // While the authentication state is loading or before hydration, show a loader
-  if (authLoading || separationLoading || !hasHydrated) {
+  if (authLoading || !hasHydrated) {
     return <FullScreenLoader />;
   }
   
@@ -94,14 +91,7 @@ function AppRouter({ children }: { children: React.ReactNode }) {
   }
 
   // If the user is authenticated and on a protected page, wrap the content in the AppShell.
-  // The AppDataProvider is included to provide necessary data for the authenticated experience.
-  // Exception: Admin pages have their own layout and should not be wrapped in AppShell.
   if (isAuthenticated && isProtectedPage) {
-    if (pathname && isAdminPage(pathname)) {
-      // Admin pages handle their own layout and don't need AppShell
-      return <PageTransition>{children}</PageTransition>;
-    }
-    
     return (
         <AppShell>
           <PageTransition>{children}</PageTransition>

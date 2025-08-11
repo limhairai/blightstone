@@ -121,12 +121,7 @@ export function AppShell({ children }: AppShellProps) {
 
         {/* Main Content */}
         <div className="flex flex-col flex-1 overflow-hidden">
-          <Topbar 
-            hasNotifications={false} 
-            setupWidgetState={setupWidgetState}
-            onSetupWidgetStateChange={setSetupWidgetState}
-            showEmptyStateElements={true}
-          />
+          <Topbar />
           <main className={`flex-1 overflow-y-auto ${layoutTokens.padding.pageX} ${layoutTokens.padding.pageTop}`}>
             {/* Welcome overlay removed for internal CRM */}
             {children}

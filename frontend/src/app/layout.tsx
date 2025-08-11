@@ -7,7 +7,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react"
 import { SimpleProviders } from "../components/core/simple-providers";
 import { DynamicToaster } from "../components/ui/dynamic-toaster";
-import { initializeAdminPerformance } from "@/lib/admin-performance";
+
 
 import { CacheManagerInit } from "../components/core/cache-manager-init";
 
@@ -56,10 +56,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Initialize admin performance optimizations
-  if (typeof window !== 'undefined') {
-    initializeAdminPerformance();
-  }
+
 
   return (
     <html lang="en" suppressHydrationWarning>
