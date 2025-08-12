@@ -18,10 +18,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // Get tasks for specific project - all authenticated users can access any project
+    // Get tasks for specific project with child task relationships
     const { data: tasks, error } = await supabase
       .from('tasks')
-      .select('*')
+      .select(`
+        *,
+        child_tasks:tasks!parent_task_id(*)
+      `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })
 
@@ -62,6 +65,7 @@ export async function POST(request: NextRequest) {
       due_date, 
       category, 
       project_id,
+      parent_task_id,
       notes,
       attachments,
       links
@@ -82,6 +86,7 @@ export async function POST(request: NextRequest) {
         due_date: due_date || null, // Convert empty string to null
         category,
         project_id,
+        parent_task_id: parent_task_id || null,
         notes,
         attachments: attachments || [],
         links: links || [],

@@ -53,6 +53,12 @@ export interface Task {
   notes?: string
   attachments?: TaskAttachment[]
   links?: TaskLink[]
+  // Child task support
+  parentTaskId?: string
+  childTasks?: Task[]
+  childCount?: number
+  completedChildCount?: number
+  isParent?: boolean
 }
 
 export interface CustomerAvatar {

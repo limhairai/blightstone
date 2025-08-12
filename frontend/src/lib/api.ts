@@ -127,6 +127,35 @@ export const tasksApi = {
       console.error('Error deleting task:', error)
       throw error
     }
+  },
+
+  // Child task methods
+  async getChildren(parentId: string): Promise<Task[]> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`)
+      if (!response.ok) throw new Error('Failed to fetch child tasks')
+      const data = await response.json()
+      return data.childTasks || []
+    } catch (error) {
+      console.error('Error fetching child tasks:', error)
+      throw error
+    }
+  },
+
+  async createChild(parentId: string, childTask: Partial<Task>): Promise<Task> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(childTask)
+      })
+      if (!response.ok) throw new Error('Failed to create child task')
+      const data = await response.json()
+      return data.childTask
+    } catch (error) {
+      console.error('Error creating child task:', error)
+      throw error
+    }
   }
 }
 

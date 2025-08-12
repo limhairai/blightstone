@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 // Removed Select imports - using native HTML select elements
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { tasksApi } from "@/lib/api"
 import {
   X,
   Edit,
@@ -29,6 +30,7 @@ import {
   Upload,
   ExternalLink,
   Download,
+  CheckSquare,
 } from "lucide-react"
 import { FileUpload } from "@/components/ui/file-upload"
 
@@ -48,6 +50,12 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const [isEditMode, setIsEditMode] = useState(false)
   const [activeSection, setActiveSection] = useState("overview") // For left navigation
   const [mounted, setMounted] = useState(false)
+  
+  // Child tasks state
+  const [childTasks, setChildTasks] = useState<Task[]>([])
+  const [loadingChildTasks, setLoadingChildTasks] = useState(false)
+  const [newChildTaskTitle, setNewChildTaskTitle] = useState("")
+  const [creatingChildTask, setCreatingChildTask] = useState(false)
 
   const isNewTask = task?.id === NEW_TASK_ID
 
@@ -62,8 +70,26 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     if (task) {
       setEditingTask(task)
       setIsEditMode(isNewTask) // If it's a new task, start in edit mode
+      
+      // Load child tasks if this is an existing task
+      if (!isNewTask && task.id) {
+        loadChildTasks(task.id)
+      }
     }
   }, [task, isNewTask])
+
+  const loadChildTasks = async (taskId: string) => {
+    setLoadingChildTasks(true)
+    try {
+      const children = await tasksApi.getChildren(taskId)
+      setChildTasks(children)
+    } catch (error) {
+      console.error('Error loading child tasks:', error)
+      toast.error('Failed to load subtasks')
+    } finally {
+      setLoadingChildTasks(false)
+    }
+  }
 
   if (!task || !mounted) {
     return null // Should not happen if opened correctly
@@ -103,6 +129,50 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     onClose() // Close the brief after deletion or if it was a new task
   }
 
+  const handleCreateChildTask = async () => {
+    if (!newChildTaskTitle.trim() || !task.id || isNewTask) return
+    
+    setCreatingChildTask(true)
+    try {
+      const newChildTask = await tasksApi.createChild(task.id, {
+        title: newChildTaskTitle.trim(),
+        description: '',
+        status: 'todo',
+        priority: 'medium',
+        assignee: 'You',
+        category: task.category || 'General',
+        projectId: task.projectId
+      })
+      
+      setChildTasks(prev => [...prev, newChildTask])
+      setNewChildTaskTitle('')
+      toast.success('Subtask created successfully')
+    } catch (error) {
+      console.error('Error creating child task:', error)
+      toast.error('Failed to create subtask')
+    } finally {
+      setCreatingChildTask(false)
+    }
+  }
+
+  const handleChildTaskStatusChange = async (childTaskId: string, newStatus: Task["status"]) => {
+    try {
+      const childTask = childTasks.find(t => t.id === childTaskId)
+      if (!childTask) return
+
+      const updatedChildTask = await tasksApi.update(childTaskId, { ...childTask, status: newStatus })
+      setChildTasks(prev => prev.map(t => t.id === childTaskId ? updatedChildTask : t))
+      
+      // Reload child tasks to get updated counts
+      if (task.id) {
+        loadChildTasks(task.id)
+      }
+    } catch (error) {
+      console.error('Error updating child task:', error)
+      toast.error('Failed to update subtask')
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -134,6 +204,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const navItems = [
     { id: "overview", label: "Overview", icon: List },
     { id: "description", label: "Description", icon: FileText },
+    { id: "subtasks", label: "Subtasks", icon: CheckSquare },
     { id: "notes", label: "Notes", icon: StickyNote },
     { id: "attachments", label: "Attachments", icon: Paperclip },
     { id: "links", label: "Links", icon: LinkIcon },
@@ -280,6 +351,97 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
               <div className="bg-muted/30 rounded-lg p-4 min-h-[100px]">
                 <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                   {task.description || "No description provided."}
+                </p>
+              </div>
+            )}
+          </div>
+        )
+      case "subtasks":
+        return (
+          <div className="bg-card p-6 rounded-lg shadow-sm border border-border space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Subtasks</h2>
+              {!isNewTask && (
+                <Badge variant="outline" className="text-xs">
+                  {childTasks.filter(t => t.status === 'completed').length}/{childTasks.length} completed
+                </Badge>
+              )}
+            </div>
+            
+            {/* Add New Subtask */}
+            {!isNewTask && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Add a subtask..."
+                  value={newChildTaskTitle}
+                  onChange={(e) => setNewChildTaskTitle(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCreateChildTask()}
+                  disabled={creatingChildTask}
+                />
+                <Button
+                  onClick={handleCreateChildTask}
+                  disabled={!newChildTaskTitle.trim() || creatingChildTask}
+                  size="sm"
+                >
+                  {creatingChildTask ? "Adding..." : "Add"}
+                </Button>
+              </div>
+            )}
+            
+            {/* Child Tasks List */}
+            {isNewTask ? (
+              <div className="bg-muted/30 rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Save this task first to add subtasks
+                </p>
+              </div>
+            ) : loadingChildTasks ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse bg-muted/30 rounded-lg p-3 h-16" />
+                ))}
+              </div>
+            ) : childTasks.length > 0 ? (
+              <div className="space-y-2">
+                {childTasks.map((childTask) => (
+                  <div
+                    key={childTask.id}
+                    className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg border hover:bg-muted/30 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={childTask.status === 'completed'}
+                      onChange={(e) => handleChildTaskStatusChange(
+                        childTask.id, 
+                        e.target.checked ? 'completed' : 'todo'
+                      )}
+                      className="w-4 h-4 rounded border border-input"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-medium ${
+                        childTask.status === 'completed' 
+                          ? 'line-through text-muted-foreground' 
+                          : 'text-foreground'
+                      }`}>
+                        {childTask.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={getPriorityColor(childTask.priority)} variant="secondary">
+                          {childTask.priority}
+                        </Badge>
+                        <Badge className={getStatusColor(childTask.status)} variant="secondary">
+                          {childTask.status.replace('-', ' ')}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-4 text-center">
+                <CheckSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  No subtasks yet. Add one above to break down this task.
                 </p>
               </div>
             )}
