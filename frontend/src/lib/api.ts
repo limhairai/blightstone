@@ -130,15 +130,54 @@ export const tasksApi = {
   },
 
   // Child task methods
-  async getChildren(parentId: string): Promise<Task[]> {
+  async getChildren(parentId: string, projectId?: string): Promise<Task[]> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`)
-      if (!response.ok) throw new Error('Failed to fetch child tasks')
-      const data = await response.json()
-      return data.childTasks || []
+      console.log('Fetching child tasks for parent:', parentId)
+      
+      // First try the dedicated children route
+      try {
+        console.log('Trying dedicated route:', `${API_BASE}/tasks/${parentId}/children`)
+        const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`)
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Child tasks fetched via dedicated route')
+          return data.childTasks || []
+        }
+        
+        console.log('Dedicated route failed with status:', response.status)
+      } catch (routeError) {
+        console.log('Dedicated route error:', routeError)
+      }
+      
+      // Fallback: If we have projectId, get all tasks for the project and filter
+      if (projectId) {
+        console.log('Falling back to filtering from project tasks, projectId:', projectId)
+        
+        try {
+          const projectTasksResponse = await fetchWithAuth(`${API_BASE}/tasks?projectId=${projectId}`)
+          
+          if (projectTasksResponse.ok) {
+            const projectTasksData = await projectTasksResponse.json()
+            const allTasks = projectTasksData.tasks || []
+            
+            // Filter to find child tasks with this parent ID
+            const childTasks = allTasks.filter((task: Task) => task.parentTaskId === parentId)
+            console.log(`Found ${childTasks.length} child tasks via project fallback`)
+            
+            return childTasks
+          }
+        } catch (fallbackError) {
+          console.log('Project fallback failed:', fallbackError)
+        }
+      }
+      
+      console.log('No fallback available, returning empty array')
+      return []
     } catch (error) {
       console.error('Error fetching child tasks:', error)
-      throw error
+      // Don't throw error, return empty array to prevent UI from breaking
+      return []
     }
   },
 

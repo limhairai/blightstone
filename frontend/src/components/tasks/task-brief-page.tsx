@@ -81,7 +81,8 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const loadChildTasks = async (taskId: string) => {
     setLoadingChildTasks(true)
     try {
-      const children = await tasksApi.getChildren(taskId)
+      // Pass the project ID from the task for fallback functionality
+      const children = await tasksApi.getChildren(taskId, task?.projectId)
       setChildTasks(children)
     } catch (error) {
       console.error('Error loading child tasks:', error)
