@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { mapFieldsToDatabase, mapFieldsToFrontend, mapArrayToFrontend } from '@/lib/field-mapping'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // GET /api/tasks/[id]/children - Get child tasks for a parent task
 export async function GET(
   request: NextRequest,
@@ -17,8 +20,22 @@ export async function GET(
 
     const parentTaskId = params.id
     
+    console.log('GET /api/tasks/[id]/children - parentTaskId:', parentTaskId)
+    
     if (!parentTaskId) {
       return NextResponse.json({ error: 'Parent task ID is required' }, { status: 400 })
+    }
+
+    // Verify parent task exists
+    const { data: parentTask, error: parentError } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('id', parentTaskId)
+      .single()
+
+    if (parentError || !parentTask) {
+      console.log('Parent task not found:', parentError)
+      return NextResponse.json({ error: 'Parent task not found' }, { status: 404 })
     }
 
     // Get child tasks for the parent task
@@ -57,6 +74,9 @@ export async function POST(
 
     const parentTaskId = params.id
     const body = await request.json()
+    
+    console.log('POST /api/tasks/[id]/children - parentTaskId:', parentTaskId)
+    console.log('POST /api/tasks/[id]/children - body:', body)
     
     // Convert frontend camelCase to database snake_case
     const dbData = mapFieldsToDatabase(body)
