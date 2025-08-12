@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .from('tasks')
       .select(`
         *,
-        child_tasks:tasks!parent_task_id(*)
+        child_tasks:tasks!parent_task_id(id, title, status, priority, assignee, due_date, created_at)
       `)
       .eq('project_id', projectId)
       .order('created_at', { ascending: false })

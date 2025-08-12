@@ -39,7 +39,18 @@ export function objectToCamelCase<T extends Record<string, any>>(obj: T): Record
     // Special handling for competitor level field - convert back to title case
     if (key === 'level' && typeof value === 'string') {
       result[camelKey] = value.charAt(0).toUpperCase() + value.slice(1)
-    } else {
+    } 
+    // Handle nested arrays (like child_tasks)
+    else if (Array.isArray(value)) {
+      result[camelKey] = value.map(item => 
+        typeof item === 'object' && item !== null ? objectToCamelCase(item) : item
+      )
+    }
+    // Handle nested objects
+    else if (typeof value === 'object' && value !== null) {
+      result[camelKey] = objectToCamelCase(value)
+    }
+    else {
       result[camelKey] = value
     }
   }
@@ -92,6 +103,11 @@ export const FIELD_MAPPINGS = {
     winningAdLink: 'winning_ad_link',
     briefLink: 'brief_link',
     driveLink: 'drive_link',
+    // Child task fields
+    parentTaskId: 'parent_task_id',
+    childCount: 'child_count',
+    completedChildCount: 'completed_child_count',
+    childTasks: 'child_tasks',
   },
   // Database snake_case -> Frontend camelCase
   TO_FRONTEND: {
@@ -126,6 +142,11 @@ export const FIELD_MAPPINGS = {
     winning_ad_link: 'winningAdLink',
     brief_link: 'briefLink',
     drive_link: 'driveLink',
+    // Child task fields
+    parent_task_id: 'parentTaskId',
+    child_count: 'childCount',
+    completed_child_count: 'completedChildCount',
+    child_tasks: 'childTasks',
   }
 } as const
 
