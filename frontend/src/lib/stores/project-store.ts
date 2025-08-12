@@ -263,11 +263,13 @@ export const useProjectStore = create<ProjectStore>()(
         if (!project) return null
         
         const projectTasks = tasks.filter(task => task.projectId === projectId)
-        const completedTasks = projectTasks.filter(task => task.status === 'completed').length
+        // Filter out child tasks (subtasks) from the count
+        const parentTasks = projectTasks.filter(task => !task.parentTaskId)
+        const completedTasks = parentTasks.filter(task => task.status === 'completed').length
         
         return {
           ...project,
-          tasksCount: projectTasks.length,
+          tasksCount: parentTasks.length,
           completedTasks: completedTasks
         }
       },

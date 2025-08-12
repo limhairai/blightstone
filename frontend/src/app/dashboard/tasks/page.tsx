@@ -212,6 +212,9 @@ export default function TasksPage() {
   }
 
   const filteredTasks = tasks.filter((task) => {
+    // Hide child tasks from main list (they appear under their parent tasks)
+    if (task.parentTaskId) return false
+    
     if (filterStatus !== "all" && task.status !== filterStatus) return false
     if (filterPriority !== "all" && task.priority !== filterPriority) return false
     return true

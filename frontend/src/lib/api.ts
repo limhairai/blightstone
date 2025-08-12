@@ -144,14 +144,50 @@ export const tasksApi = {
 
   async createChild(parentId: string, childTask: Partial<Task>): Promise<Task> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`, {
+      console.log('Creating child task for parent:', parentId)
+      
+      // First try the dedicated children route
+      try {
+        console.log('Trying dedicated route:', `${API_BASE}/tasks/${parentId}/children`)
+        const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(childTask)
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Child task created via dedicated route')
+          return data.childTask
+        }
+        
+        console.log('Dedicated route failed with status:', response.status)
+      } catch (routeError) {
+        console.log('Dedicated route error:', routeError)
+      }
+      
+      // Fallback: Use main tasks route with parentTaskId
+      console.log('Falling back to main tasks route')
+      const response = await fetchWithAuth(`${API_BASE}/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(childTask)
+        body: JSON.stringify({
+          ...childTask,
+          parentTaskId: parentId
+        })
       })
-      if (!response.ok) throw new Error('Failed to create child task')
+      
+      console.log('Fallback response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Child task creation failed:', errorData)
+        throw new Error(`Failed to create child task: ${response.status}`)
+      }
+      
       const data = await response.json()
-      return data.childTask
+      console.log('Child task created via fallback route')
+      return data.task
     } catch (error) {
       console.error('Error creating child task:', error)
       throw error
