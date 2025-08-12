@@ -161,8 +161,11 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
       const childTask = childTasks.find(t => t.id === childTaskId)
       if (!childTask) return
 
+      console.log('Updating child task:', childTaskId, 'to status:', newStatus)
       const updatedChildTask = await tasksApi.update(childTaskId, { ...childTask, status: newStatus })
       setChildTasks(prev => prev.map(t => t.id === childTaskId ? updatedChildTask : t))
+      
+      toast.success('Subtask updated successfully')
       
       // Reload child tasks to get updated counts
       if (task.id) {
@@ -171,6 +174,23 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     } catch (error) {
       console.error('Error updating child task:', error)
       toast.error('Failed to update subtask')
+    }
+  }
+
+  const handleDeleteChildTask = async (childTaskId: string) => {
+    try {
+      console.log('Deleting child task:', childTaskId)
+      await tasksApi.delete(childTaskId)
+      setChildTasks(prev => prev.filter(t => t.id !== childTaskId))
+      toast.success('Subtask deleted successfully')
+      
+      // Reload child tasks to get updated counts
+      if (task.id) {
+        loadChildTasks(task.id)
+      }
+    } catch (error) {
+      console.error('Error deleting child task:', error)
+      toast.error('Failed to delete subtask')
     }
   }
 
@@ -407,7 +427,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                 {childTasks.map((childTask) => (
                   <div
                     key={childTask.id}
-                    className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg border hover:bg-muted/30 transition-colors"
+                    className="flex items-center gap-3 p-3 bg-muted/20 rounded-lg border hover:bg-muted/30 transition-colors group"
                   >
                     <input
                       type="checkbox"
@@ -435,6 +455,18 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                         </Badge>
                       </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteChildTask(childTask.id)
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                      title="Delete subtask"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
