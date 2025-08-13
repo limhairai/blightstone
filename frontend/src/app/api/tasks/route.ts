@@ -127,10 +127,15 @@ export async function PUT(request: NextRequest) {
 
     // Convert frontend camelCase to database snake_case
     const dbUpdateData = mapFieldsToDatabase(frontendUpdateData)
+    
+    // Remove virtual fields that don't exist in the database
+    const { child_tasks, child_count, completed_child_count, ...cleanUpdateData } = dbUpdateData
+
+    console.log('Updating task with data:', cleanUpdateData)
 
     const { data: task, error } = await supabase
       .from('tasks')
-      .update(dbUpdateData)
+      .update(cleanUpdateData)
       .eq('id', id)
       .select()
       .single()
