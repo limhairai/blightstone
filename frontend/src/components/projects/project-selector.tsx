@@ -42,12 +42,14 @@ export function ProjectSelector() {
       await Promise.all(
         projects.map(async (project) => {
           try {
-            const tasks = await tasksApi.getByProject(project.id)
-            // Filter out child tasks (subtasks) from the count
-            const parentTasks = tasks.filter(task => !task.parentTaskId)
+            // Get active tasks (API excludes completed and subtasks by default)
+            const activeTasks = await tasksApi.getByProject(project.id)
+            // Get completed tasks to show total completed count
+            const completedTasks = await tasksApi.getByProject(project.id, 'completed')
+            
             counts[project.id] = {
-              total: parentTasks.length,
-              completed: parentTasks.filter(task => task.status === 'completed').length
+              total: activeTasks.length,
+              completed: completedTasks.length
             }
           } catch (error) {
             console.error(`Error fetching tasks for project ${project.id}:`, error)

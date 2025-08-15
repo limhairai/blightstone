@@ -73,9 +73,13 @@ export const projectsApi = {
 
 // Tasks API
 export const tasksApi = {
-  async getByProject(projectId: string): Promise<Task[]> {
+  async getByProject(projectId: string, statusFilter?: string): Promise<Task[]> {
     try {
-      const response = await fetchWithAuth(`${API_BASE}/tasks?projectId=${projectId}`)
+      let url = `${API_BASE}/tasks?projectId=${projectId}`
+      if (statusFilter) {
+        url += `&status=${statusFilter}`
+      }
+      const response = await fetchWithAuth(url)
       if (!response.ok) throw new Error('Failed to fetch tasks')
       const data = await response.json()
       return data.tasks || []
@@ -130,14 +134,18 @@ export const tasksApi = {
   },
 
   // Child task methods
-  async getChildren(parentId: string, projectId?: string): Promise<Task[]> {
+  async getChildren(parentId: string, statusFilter?: string): Promise<Task[]> {
     try {
       console.log('Fetching child tasks for parent:', parentId)
       
       // First try the dedicated children route
       try {
-        console.log('Trying dedicated route:', `${API_BASE}/tasks/${parentId}/children`)
-        const response = await fetchWithAuth(`${API_BASE}/tasks/${parentId}/children`)
+        let url = `${API_BASE}/tasks/${parentId}/children`
+        if (statusFilter) {
+          url += `?status=${statusFilter}`
+        }
+        console.log('Trying dedicated route:', url)
+        const response = await fetchWithAuth(url)
         
         if (response.ok) {
           const data = await response.json()

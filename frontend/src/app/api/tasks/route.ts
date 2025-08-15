@@ -13,14 +13,14 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
+    const statusFilter = searchParams.get('status') // New: allow status filtering
     
     if (!projectId) {
       return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
     }
 
-    // Get tasks for specific project with child task relationships
-    // Only get parent tasks (exclude subtasks) and hide completed tasks
-    const { data: tasks, error } = await supabase
+    // Build query for tasks with child task relationships
+    let query = supabase
       .from('tasks')
       .select(`
         *,
@@ -28,8 +28,21 @@ export async function GET(request: NextRequest) {
       `)
       .eq('project_id', projectId)
       .is('parent_task_id', null) // Only parent tasks, no subtasks
-      .neq('status', 'completed') // Hide completed tasks
-      .order('created_at', { ascending: false })
+
+    // Apply status filter if provided, otherwise hide completed tasks by default
+    if (statusFilter) {
+      if (statusFilter === 'all') {
+        // Show all tasks including completed
+      } else {
+        // Filter by specific status
+        query = query.eq('status', statusFilter)
+      }
+    } else {
+      // Default: hide completed tasks
+      query = query.neq('status', 'completed')
+    }
+
+    const { data: tasks, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching tasks:', error)

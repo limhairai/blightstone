@@ -38,13 +38,29 @@ export async function GET(
       return NextResponse.json({ error: 'Parent task not found' }, { status: 404 })
     }
 
-    // Get child tasks for the parent task (exclude completed ones)
-    const { data: childTasks, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const statusFilter = searchParams.get('status')
+    
+    // Build query for child tasks
+    let childQuery = supabase
       .from('tasks')
       .select('*')
       .eq('parent_task_id', parentTaskId)
-      .neq('status', 'completed') // Hide completed child tasks
-      .order('created_at', { ascending: true }) // Child tasks in creation order
+    
+    // Apply status filter if provided, otherwise hide completed child tasks by default
+    if (statusFilter) {
+      if (statusFilter === 'all') {
+        // Show all child tasks including completed
+      } else {
+        // Filter by specific status
+        childQuery = childQuery.eq('status', statusFilter)
+      }
+    } else {
+      // Default: hide completed child tasks
+      childQuery = childQuery.neq('status', 'completed')
+    }
+
+    const { data: childTasks, error } = await childQuery.order('created_at', { ascending: true })
 
     if (error) {
       console.error('Error fetching child tasks:', error)

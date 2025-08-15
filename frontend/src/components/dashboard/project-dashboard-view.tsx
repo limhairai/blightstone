@@ -58,8 +58,9 @@ export function ProjectDashboardView() {
       
       setLoading(true)
       try {
-        const [tasks, personas, competitors, creatives, creativeIntelligence] = await Promise.all([
-          tasksApi.getByProject(currentProjectId),
+        const [activeTasks, completedTasks, personas, competitors, creatives, creativeIntelligence] = await Promise.all([
+          tasksApi.getByProject(currentProjectId), // Active tasks (default)
+          tasksApi.getByProject(currentProjectId, 'completed'), // Completed tasks
           personasApi.getByProject(currentProjectId),
           competitorsApi.getByProject(currentProjectId),
           creativesApi.getByProject(currentProjectId),
@@ -67,8 +68,8 @@ export function ProjectDashboardView() {
         ])
         
         setProjectCounts({
-          tasks: tasks.length,
-          completedTasks: tasks.filter(t => t.status === 'completed').length,
+          tasks: activeTasks.length,
+          completedTasks: completedTasks.length,
           personas: personas.length,
           competitors: competitors.length,
           creatives: creatives.length,
@@ -76,7 +77,7 @@ export function ProjectDashboardView() {
         })
         
         // Store recent tasks for the recent activity section
-        setRecentTasks(tasks.slice(0, 3))
+        setRecentTasks(activeTasks.slice(0, 3))
       } catch (error) {
         console.error('Error fetching project counts:', error)
       } finally {

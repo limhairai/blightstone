@@ -51,7 +51,9 @@ export default function TasksPage() {
       setLoading(true)
       setError(null)
       try {
-        const fetchedTasks = await tasksApi.getByProject(currentProjectId)
+        // Pass the status filter to the API
+        const statusFilterParam = filterStatus === "all" ? "all" : filterStatus
+        const fetchedTasks = await tasksApi.getByProject(currentProjectId, statusFilterParam)
         setTasks(fetchedTasks)
       } catch (err) {
         setError('Failed to fetch tasks')
@@ -63,7 +65,7 @@ export default function TasksPage() {
     }
     
     fetchTasks()
-  }, [currentProjectId]) // Refetch when project changes
+  }, [currentProjectId, filterStatus]) // Refetch when project or filter changes
   
   // Production ready - using only real API data
 
