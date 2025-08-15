@@ -158,29 +158,7 @@ export const tasksApi = {
         console.log('Dedicated route error:', routeError)
       }
       
-      // Fallback: If we have projectId, get all tasks for the project and filter
-      if (projectId) {
-        console.log('Falling back to filtering from project tasks, projectId:', projectId)
-        
-        try {
-          const projectTasksResponse = await fetchWithAuth(`${API_BASE}/tasks?projectId=${projectId}`)
-          
-          if (projectTasksResponse.ok) {
-            const projectTasksData = await projectTasksResponse.json()
-            const allTasks = projectTasksData.tasks || []
-            
-            // Filter to find child tasks with this parent ID
-            const childTasks = allTasks.filter((task: Task) => task.parentTaskId === parentId)
-            console.log(`Found ${childTasks.length} child tasks via project fallback`)
-            
-            return childTasks
-          }
-        } catch (fallbackError) {
-          console.log('Project fallback failed:', fallbackError)
-        }
-      }
-      
-      console.log('No fallback available, returning empty array')
+      console.log('Dedicated route failed, returning empty array')
       return []
     } catch (error) {
       console.error('Error fetching child tasks:', error)
