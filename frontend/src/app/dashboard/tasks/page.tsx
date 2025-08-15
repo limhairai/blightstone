@@ -65,8 +65,8 @@ export default function TasksPage() {
       setLoading(true)
       setError(null)
       try {
-        // Pass the active tab as status filter to the API
-        const statusFilterParam = activeTab === "all" ? "all" : activeTab
+        // In kanban view, fetch all tasks; in table view, filter by active tab
+        const statusFilterParam = viewMode === "kanban" ? "all" : (activeTab === "all" ? "all" : activeTab)
         const fetchedTasks = await tasksApi.getByProject(currentProjectId, statusFilterParam)
         setTasks(fetchedTasks)
       } catch (err) {
@@ -79,7 +79,7 @@ export default function TasksPage() {
     }
     
     fetchTasks()
-  }, [currentProjectId, activeTab]) // Refetch when project or active tab changes
+  }, [currentProjectId, activeTab, viewMode]) // Refetch when project, active tab, or view mode changes
   
   // Production ready - using only real API data
 
@@ -354,15 +354,17 @@ export default function TasksPage() {
         </Button>
       </div>
 
-      {/* Status Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="todo">To Do</TabsTrigger>
-          <TabsTrigger value="in-progress">In Progress</TabsTrigger>
-          <TabsTrigger value="completed">Completed</TabsTrigger>
-          <TabsTrigger value="all">All Tasks</TabsTrigger>
-        </TabsList>
-      </Tabs>
+      {/* Status Tabs - only show in table view */}
+      {viewMode === "table" && (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="todo">To Do</TabsTrigger>
+            <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="all">All Tasks</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
 
       {/* Removed Create Task Form - now handled by TaskBriefPage */}
 
