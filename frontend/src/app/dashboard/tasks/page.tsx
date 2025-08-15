@@ -18,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
-import { Plus, User, Calendar, Filter, Edit3, Trash2 } from "lucide-react"
+import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIcon } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 
@@ -42,7 +42,8 @@ export default function TasksPage() {
   
   // Filter states (need to be declared before useEffect that uses them)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [activeTab, setActiveTab] = useState<string>("todo") // Default to todo tab
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table") // Toggle between table and kanban
   const [filterPriority, setFilterPriority] = useState<string>("all")
   const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
   const [tempNotes, setTempNotes] = useState("")
@@ -64,8 +65,8 @@ export default function TasksPage() {
       setLoading(true)
       setError(null)
       try {
-        // Pass the status filter to the API
-        const statusFilterParam = filterStatus === "all" ? "all" : filterStatus
+        // Pass the active tab as status filter to the API
+        const statusFilterParam = activeTab === "all" ? "all" : activeTab
         const fetchedTasks = await tasksApi.getByProject(currentProjectId, statusFilterParam)
         setTasks(fetchedTasks)
       } catch (err) {
@@ -78,7 +79,7 @@ export default function TasksPage() {
     }
     
     fetchTasks()
-  }, [currentProjectId, filterStatus]) // Refetch when project or filter changes
+  }, [currentProjectId, activeTab]) // Refetch when project or active tab changes
   
   // Production ready - using only real API data
 
@@ -223,7 +224,7 @@ export default function TasksPage() {
     // Hide child tasks from main list (they appear under their parent tasks)
     if (task.parentTaskId) return false
     
-    if (filterStatus !== "all" && task.status !== filterStatus) return false
+    // Priority filter (status filtering is now handled by tabs/API)
     if (filterPriority !== "all" && task.priority !== filterPriority) return false
     return true
   })
@@ -309,25 +310,30 @@ export default function TasksPage() {
         </div>
       )}
       
-      {/* Header with New Task button and Filters */}
+      {/* Header with New Task button and View Toggle */}
       <div className="flex items-center justify-between">
-        {/* Filters */}
+        {/* View Toggle and Priority Filter */}
         <div className="flex gap-4 items-center">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <span className="text-sm font-medium">Filters:</span>
+          <div className="flex items-center gap-2 border rounded-lg p-1">
+            <Button
+              variant={viewMode === "table" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("table")}
+              className="h-8"
+            >
+              <TableIcon className="h-4 w-4 mr-1" />
+              Table
+            </Button>
+            <Button
+              variant={viewMode === "kanban" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("kanban")}
+              className="h-8"
+            >
+              <Columns className="h-4 w-4 mr-1" />
+              Kanban
+            </Button>
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="todo">To Do</SelectItem>
-              <SelectItem value="in-progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
           <Select value={filterPriority} onValueChange={setFilterPriority}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -348,17 +354,21 @@ export default function TasksPage() {
         </Button>
       </div>
 
+      {/* Status Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="todo">To Do</TabsTrigger>
+          <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+          <TabsTrigger value="completed">Completed</TabsTrigger>
+          <TabsTrigger value="all">All Tasks</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Removed Create Task Form - now handled by TaskBriefPage */}
 
-      {/* Tabs for different views */}
-      <Tabs defaultValue="table" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="table">Table View</TabsTrigger>
-          <TabsTrigger value="kanban">Kanban View</TabsTrigger>
-        </TabsList>
-
-        {/* Table View */}
-        <TabsContent value="table" className="space-y-4">
+      {/* Conditional rendering based on view mode */}
+      {viewMode === "table" && (
+        <div className="space-y-4">
           <Card>
             <Table>
               <TableHeader>
@@ -455,10 +465,12 @@ export default function TasksPage() {
               </TableBody>
             </Table>
           </Card>
-        </TabsContent>
+        </div>
+      )}
 
-        {/* Kanban View */}
-        <TabsContent value="kanban" className="space-y-4">
+      {/* Kanban View */}
+      {viewMode === "kanban" && (
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {kanbanColumns.map((column) => (
               <div
@@ -521,8 +533,8 @@ export default function TasksPage() {
               </div>
             ))}
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       {/* Notes Edit Dialog */}
       <Dialog open={!!notesEditingTask} onOpenChange={() => setNotesEditingTask(null)}>
