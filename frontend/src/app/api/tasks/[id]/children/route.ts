@@ -38,11 +38,12 @@ export async function GET(
       return NextResponse.json({ error: 'Parent task not found' }, { status: 404 })
     }
 
-    // Get child tasks for the parent task
+    // Get child tasks for the parent task (exclude completed ones)
     const { data: childTasks, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('parent_task_id', parentTaskId)
+      .neq('status', 'completed') // Hide completed child tasks
       .order('created_at', { ascending: true }) // Child tasks in creation order
 
     if (error) {

@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get tasks for specific project with child task relationships
+    // Only get parent tasks (exclude subtasks) and hide completed tasks
     const { data: tasks, error } = await supabase
       .from('tasks')
       .select(`
@@ -26,6 +27,8 @@ export async function GET(request: NextRequest) {
         child_tasks:tasks!parent_task_id(id, title, status, priority, assignee, due_date, created_at)
       `)
       .eq('project_id', projectId)
+      .is('parent_task_id', null) // Only parent tasks, no subtasks
+      .neq('status', 'completed') // Hide completed tasks
       .order('created_at', { ascending: false })
 
     if (error) {

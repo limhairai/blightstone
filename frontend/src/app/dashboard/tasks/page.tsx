@@ -172,10 +172,18 @@ export default function TasksPage() {
       // Update the task via API
       const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, status: newStatus })
       
-      // Update local state with the response from API
-      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
-      if (selectedTask && selectedTask.id === taskId) {
-        setSelectedTask(updatedTask)
+      // If task is marked as completed, remove it from the list (since API excludes completed tasks)
+      if (newStatus === 'completed') {
+        setTasks(tasks.filter(task => task.id !== taskId))
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(null) // Close the task brief if it was open
+        }
+      } else {
+        // Update local state with the response from API
+        setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+        if (selectedTask && selectedTask.id === taskId) {
+          setSelectedTask(updatedTask)
+        }
       }
     } catch (error) {
       console.error('Error updating task status:', error)

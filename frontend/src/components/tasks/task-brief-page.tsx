@@ -163,11 +163,17 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
 
       console.log('Updating child task:', childTaskId, 'to status:', newStatus)
       const updatedChildTask = await tasksApi.update(childTaskId, { ...childTask, status: newStatus })
-      setChildTasks(prev => prev.map(t => t.id === childTaskId ? updatedChildTask : t))
       
-      toast.success('Subtask updated successfully')
+      // If child task is marked as completed, remove it from the list (since completed tasks are hidden)
+      if (newStatus === 'completed') {
+        setChildTasks(prev => prev.filter(t => t.id !== childTaskId))
+        toast.success('Subtask completed and archived')
+      } else {
+        setChildTasks(prev => prev.map(t => t.id === childTaskId ? updatedChildTask : t))
+        toast.success('Subtask updated successfully')
+      }
       
-      // Reload child tasks to get updated counts
+      // Reload child tasks to get updated counts for the parent task
       if (task.id) {
         loadChildTasks(task.id)
       }
