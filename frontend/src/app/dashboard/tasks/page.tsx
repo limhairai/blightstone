@@ -40,6 +40,19 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
+  // Filter states (need to be declared before useEffect that uses them)
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>("all")
+  const [filterPriority, setFilterPriority] = useState<string>("all")
+  const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
+  const [tempNotes, setTempNotes] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
+  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
+  
   // Fetch tasks for current project
   useEffect(() => {
     const fetchTasks = async () => {
@@ -68,21 +81,6 @@ export default function TasksPage() {
   }, [currentProjectId, filterStatus]) // Refetch when project or filter changes
   
   // Production ready - using only real API data
-
-
-
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-  const [filterStatus, setFilterStatus] = useState<string>("all")
-  const [filterPriority, setFilterPriority] = useState<string>("all")
-  const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
-  const [tempNotes, setTempNotes] = useState("")
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
-  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
-  const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
     setDraggedTask(task)
