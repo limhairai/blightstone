@@ -250,7 +250,7 @@ export default function CreativeIntelligencePage() {
                 <TableHead>Hook Pattern</TableHead>
                 <TableHead>Angle</TableHead>
                 <TableHead>Psychology Trigger</TableHead>
-                <TableHead>Status</TableHead>
+
                 <TableHead>Notes</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
@@ -258,7 +258,7 @@ export default function CreativeIntelligencePage() {
             <TableBody>
               {creatives.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     No creative intelligence found. Create your first creative to start building your intelligence library.
                   </TableCell>
                 </TableRow>
@@ -284,11 +284,7 @@ export default function CreativeIntelligencePage() {
                     <TableCell className="max-w-[150px] truncate">{creative.hookPattern || "-"}</TableCell>
                     <TableCell className="max-w-[150px] truncate">{creative.angle || "-"}</TableCell>
                     <TableCell className="max-w-[150px] truncate">{creative.psychologyTrigger || "-"}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusBadgeColor(creative.status)}>
-                        {creative.status.charAt(0).toUpperCase() + creative.status.slice(1)}
-                      </Badge>
-                    </TableCell>
+
                     <TableCell className="max-w-[150px] truncate">
                       {creative.performanceNotes ? (
                         <Button

@@ -8,6 +8,7 @@ export interface CSPConfig {
   'script-src': string[]
   'style-src': string[]
   'img-src': string[]
+  'media-src': string[]
   'font-src': string[]
   'connect-src': string[]
   'frame-src': string[]
@@ -44,6 +45,12 @@ export const PRODUCTION_CSP: CSPConfig = {
     "https://images.unsplash.com",
     "https://avatars.githubusercontent.com",
     "https://lh3.googleusercontent.com"
+  ],
+  'media-src': [
+    "'self'",
+    "data:",
+    "blob:",
+    "https:"
   ],
   'font-src': [
     "'self'",
@@ -88,6 +95,25 @@ export const DEVELOPMENT_CSP: CSPConfig = {
     "https://cdn.jsdelivr.net",
     "https://unpkg.com",
     "https://vercel.live"
+  ],
+  'img-src': [
+    "'self'",
+    "data:",
+    "blob:",
+    "https:",
+    "http://localhost:*", // Local development
+    "http://127.0.0.1:*", // Local Supabase storage
+    "https://images.unsplash.com",
+    "https://avatars.githubusercontent.com",
+    "https://lh3.googleusercontent.com"
+  ],
+  'media-src': [
+    "'self'",
+    "data:",
+    "blob:",
+    "https:",
+    "http://localhost:*", // Local development
+    "http://127.0.0.1:*" // Local Supabase storage
   ],
   'connect-src': [
     "'self'",

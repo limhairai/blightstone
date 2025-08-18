@@ -95,14 +95,28 @@ export const FIELD_MAPPINGS = {
     offerUrl: 'offer_url',
     trafficVolume: 'traffic_volume',
     launchDate: 'launch_date',
-    adConcept: 'ad_concept',
-    testHypothesis: 'test_hypothesis',
-    adType: 'ad_type',
-    adVariable: 'ad_variable',
-    hookPattern: 'hook_pattern',
-    winningAdLink: 'winning_ad_link',
-    briefLink: 'brief_link',
-    driveLink: 'drive_link',
+      campaignConcept: 'campaign_concept',
+  batchNumber: 'batch_number',
+  campaignId: 'campaign_id',
+  
+  // File fields
+  originalName: 'original_name',
+  filePath: 'file_path',
+  fileSize: 'file_size',
+  mimeType: 'mime_type',
+  parentFolderId: 'parent_folder_id',
+  
+  // Folder fields
+  folderId: 'folder_id',
+  testHypothesis: 'test_hypothesis',
+  adType: 'ad_type',
+  adVariable: 'ad_variable',
+  hookPattern: 'hook_pattern',
+  winningAdLink: 'winning_ad_link',
+  briefLink: 'brief_link',
+  driveLink: 'drive_link',
+  // Ad account fields
+  businessManager: 'business_manager',
     // Child task fields
     parentTaskId: 'parent_task_id',
     childCount: 'child_count',
@@ -134,14 +148,28 @@ export const FIELD_MAPPINGS = {
     offer_url: 'offerUrl',
     traffic_volume: 'trafficVolume',
     launch_date: 'launchDate',
-    ad_concept: 'adConcept',
-    test_hypothesis: 'testHypothesis',
-    ad_type: 'adType',
-    ad_variable: 'adVariable',
-    hook_pattern: 'hookPattern',
-    winning_ad_link: 'winningAdLink',
-    brief_link: 'briefLink',
-    drive_link: 'driveLink',
+      campaign_concept: 'campaignConcept',
+  batch_number: 'batchNumber',
+  campaign_id: 'campaignId',
+  
+  // File fields
+  original_name: 'originalName',
+  file_path: 'filePath',
+  file_size: 'fileSize',
+  mime_type: 'mimeType',
+  parent_folder_id: 'parentFolderId',
+  
+  // Folder fields
+  folder_id: 'folderId',
+  test_hypothesis: 'testHypothesis',
+  ad_type: 'adType',
+  ad_variable: 'adVariable',
+  hook_pattern: 'hookPattern',
+  winning_ad_link: 'winningAdLink',
+  brief_link: 'briefLink',
+  drive_link: 'driveLink',
+  // Ad account fields
+  business_manager: 'businessManager',
     // Child task fields
     parent_task_id: 'parentTaskId',
     child_count: 'childCount',

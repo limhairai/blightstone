@@ -33,7 +33,9 @@ interface Creative {
   batch: string
   status: "draft" | "in-review" | "live" | "paused" | "completed"
   launchDate: string
-  adConcept: string
+  campaignConcept: string
+  batchNumber: number
+  campaignId: string
   testHypothesis: string
   adType: string
   adVariable: string
@@ -238,7 +240,7 @@ export default function CreativeBriefPage({
             {/* Ad Concept */}
             <div className="bg-card p-5 rounded-lg shadow-sm border border-border">
               <h2 className="text-lg font-semibold mb-3">Ad Concept</h2>
-              {renderField("Ad Concept", creative.adConcept, "adConcept", true)}
+              {renderField("Campaign Concept", creative.campaignConcept, "campaignConcept", true)}
             </div>
 
             {/* Test Hypothesis */}

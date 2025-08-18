@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Task, Project } from './stores/project-store'
+import type { Task, Project, AdAccount, Offer, File, Folder } from './stores/project-store'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -466,6 +466,333 @@ export const teamApi = {
       return data.teamMembers || []
     } catch (error) {
       console.error('Error fetching team members:', error)
+      throw error
+    }
+  }
+}
+
+// Ad Accounts API
+export const adAccountsApi = {
+  async getByProject(projectId: string): Promise<AdAccount[]> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/ad-accounts?projectId=${projectId}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch ad accounts')
+      }
+      const data = await response.json()
+      return data.adAccounts || []
+    } catch (error) {
+      console.error('Error fetching ad accounts:', error)
+      throw error
+    }
+  },
+
+  async create(adAccount: { name: string; businessManager: string; projectId: string }): Promise<AdAccount> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/ad-accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(adAccount)
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create ad account')
+      }
+      const data = await response.json()
+      return data.adAccount
+    } catch (error) {
+      console.error('Error creating ad account:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, adAccount: Partial<AdAccount>): Promise<AdAccount> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/ad-accounts`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...adAccount })
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update ad account')
+      }
+      const data = await response.json()
+      return data.adAccount
+    } catch (error) {
+      console.error('Error updating ad account:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/ad-accounts?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete ad account')
+      }
+    } catch (error) {
+      console.error('Error deleting ad account:', error)
+      throw error
+    }
+  }
+}
+
+// Offers API
+export const offersApi = {
+  async getByProject(projectId: string): Promise<Offer[]> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/offers?projectId=${projectId}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch offers')
+      }
+      const data = await response.json()
+      return data.offers || []
+    } catch (error) {
+      console.error('Error fetching offers:', error)
+      throw error
+    }
+  },
+
+  async create(offer: { name: string; price: string; url?: string; description?: string; projectId: string }): Promise<Offer> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offer)
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create offer')
+      }
+      const data = await response.json()
+      return data.offer
+    } catch (error) {
+      console.error('Error creating offer:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, offer: Partial<Offer>): Promise<Offer> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/offers`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...offer })
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update offer')
+      }
+      const data = await response.json()
+      return data.offer
+    } catch (error) {
+      console.error('Error updating offer:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/offers?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete offer')
+      }
+    } catch (error) {
+      console.error('Error deleting offer:', error)
+      throw error
+    }
+  }
+}
+
+// Files API
+export const filesApi = {
+  async getAll(filters?: {
+    projectId?: string
+    offerId?: string
+    adAccountId?: string
+    category?: string
+  }): Promise<File[]> {
+    try {
+      const params = new URLSearchParams()
+      if (filters?.projectId) params.append('project_id', filters.projectId)
+      if (filters?.offerId) params.append('offer_id', filters.offerId)
+      if (filters?.adAccountId) params.append('ad_account_id', filters.adAccountId)
+      if (filters?.category) params.append('category', filters.category)
+      
+      const url = `${API_BASE}/files${params.toString() ? `?${params.toString()}` : ''}`
+      const response = await fetchWithAuth(url)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch files')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching files:', error)
+      throw error
+    }
+  },
+
+  async upload(formData: FormData): Promise<File> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/files/upload`, {
+        method: 'POST',
+        body: formData // Don't set Content-Type, let browser set it for multipart/form-data
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to upload file')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, updates: Partial<File>): Promise<File> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/files`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, ...updates })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update file')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating file:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/files?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete file')
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error)
+      throw error
+    }
+  },
+
+  async getSignedUrl(filePath: string): Promise<string> {
+    try {
+      console.log('Getting signed URL for path:', filePath)
+      
+      // This would typically be a separate endpoint, but for now we can use Supabase directly
+      const { data, error } = await supabase.storage
+        .from('files')
+        .createSignedUrl(filePath, 3600) // 1 hour expiry
+      
+      if (error) {
+        console.error('Supabase storage error:', error)
+        throw error
+      }
+      
+      console.log('Signed URL data:', data)
+      return data?.signedUrl || ''
+    } catch (error) {
+      console.error('Error getting signed URL:', error)
+      throw error
+    }
+  }
+}
+
+// Folders API
+export const foldersApi = {
+  async getAll(projectId: string): Promise<Folder[]> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/folders?project_id=${projectId}`)
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch folders')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching folders:', error)
+      throw error
+    }
+  },
+
+  async create(folderData: Omit<Folder, 'id' | 'createdAt' | 'updatedAt'>): Promise<Folder> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/folders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(folderData)
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create folder')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error creating folder:', error)
+      throw error
+    }
+  },
+
+  async update(id: string, updates: Partial<Folder>): Promise<Folder> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/folders`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ id, ...updates })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update folder')
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating folder:', error)
+      throw error
+    }
+  },
+
+  async delete(id: string): Promise<void> {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/folders?id=${id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete folder')
+      }
+    } catch (error) {
+      console.error('Error deleting folder:', error)
       throw error
     }
   }

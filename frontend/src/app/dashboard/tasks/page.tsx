@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
+import { InlineStatusDropdown, TASK_STATUS_OPTIONS } from "@/components/ui/inline-status-dropdown"
 import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIcon } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
@@ -418,9 +419,13 @@ export default function TasksPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(task.status)} variant="secondary">
-                        {task.status.replace("-", " ")}
-                      </Badge>
+                      <InlineStatusDropdown
+                        currentStatus={task.status}
+                        statusOptions={TASK_STATUS_OPTIONS}
+                        onStatusChange={(newStatus) => handleStatusChange(task.id, newStatus as Task["status"])}
+                        isUpdating={updatingTaskId === task.id}
+                        size="sm"
+                      />
                     </TableCell>
                     <TableCell>
                       <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>

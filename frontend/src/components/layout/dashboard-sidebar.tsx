@@ -7,7 +7,7 @@ import { Button } from "../ui/button"
 import { ProjectSelector } from "../projects/project-selector"
 import { BlightstoneLogo } from "../core/BlightstoneLogo"
 import { cn } from "../../lib/utils"
-import { Home, Building2, Wallet, Receipt, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe, FolderOpen, BarChart3, CheckSquare, Brain, UserCheck } from "lucide-react"
+import { Home, Building2, Wallet, Receipt, ChevronDown, Menu, CreditCard, Users, Target, MessageSquare, FileText, Globe, FolderOpen, BarChart3, CheckSquare, Brain, UserCheck, Monitor, Tag, HardDrive } from "lucide-react"
 import { useOrganizationStore } from '@/lib/stores/organization-store'
 import { useCurrentOrganization } from '@/lib/swr-config'
 import { useAuth } from '@/contexts/AuthContext'
@@ -22,7 +22,7 @@ interface SidebarItem {
 
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
-  const [expandedItems, setExpandedItems] = useState<string[]>([]) // No expanded items needed for flat navigation
+  const [expandedItems, setExpandedItems] = useState<string[]>(['Trackers', 'Tools']) // Open sub-groups by default
   const pathname = usePathname()
   const router = useRouter()
   
@@ -78,10 +78,25 @@ export function DashboardSidebar() {
   const sidebarItems: SidebarItem[] = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
-    { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target },
-    { name: "Creative Intelligence", href: "/dashboard/creative-intelligence", icon: Brain },
-    { name: "Personas", href: "/dashboard/personas", icon: Users },
-    { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 },
+    { name: "Drive", href: "/dashboard/drive", icon: HardDrive },
+    { 
+      name: "Trackers", 
+      icon: BarChart3,
+      subItems: [
+        { name: "Offers", href: "/dashboard/offers", icon: Tag },
+        { name: "Ad Accounts", href: "/dashboard/ad-accounts", icon: Monitor },
+        { name: "Creative Tracker", href: "/dashboard/creative-tracker", icon: Target }
+      ]
+    },
+    { 
+      name: "Tools", 
+      icon: Brain,
+      subItems: [
+        { name: "Creative Intelligence", href: "/dashboard/creative-intelligence", icon: Brain },
+        { name: "Personas", href: "/dashboard/personas", icon: Users },
+        { name: "Competitor Analysis", href: "/dashboard/competitors", icon: Building2 }
+      ]
+    },
     { name: "Team", href: "/dashboard/team", icon: UserCheck },
   ]
 

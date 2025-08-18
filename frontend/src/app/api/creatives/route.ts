@@ -132,7 +132,9 @@ export async function PUT(request: NextRequest) {
       batch,
       status,
       launch_date,
-      ad_concept,
+      campaign_concept,
+      batch_number,
+      campaign_id,
       test_hypothesis,
       ad_type,
       ad_variable,
@@ -145,7 +147,9 @@ export async function PUT(request: NextRequest) {
       winning_ad_link,
       brief_link,
       drive_link,
-      notes
+      notes,
+      ad_account_id,
+      offer_id
     } = dbData
 
     if (!id || !batch) {
@@ -158,7 +162,9 @@ export async function PUT(request: NextRequest) {
         batch,
         status,
         launch_date: launch_date || null,
-        ad_concept,
+        campaign_concept,
+        batch_number: batch_number || 1,
+        campaign_id,
         test_hypothesis,
         ad_type,
         ad_variable,
@@ -171,7 +177,9 @@ export async function PUT(request: NextRequest) {
         winning_ad_link,
         brief_link,
         drive_link,
-        notes
+        notes,
+        ad_account_id: ad_account_id || null,
+        offer_id: offer_id || null
       })
       .eq('id', id)
       .eq('created_by', user.email) // Ensure user can only update their own creatives

@@ -7,14 +7,20 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
-import { Plus, Eye, Edit3, Trash2 } from "lucide-react"
+import { InlineStatusDropdown, CREATIVE_STATUS_OPTIONS } from "@/components/ui/inline-status-dropdown"
+import { InlineDatePicker } from "@/components/ui/inline-date-picker"
+import { InlineAdAccountDropdown } from "@/components/ui/inline-ad-account-dropdown"
+import { InlineOfferDropdown } from "@/components/ui/inline-offer-dropdown"
+import { Plus, Eye, Edit3, Trash2, Copy } from "lucide-react"
+import { toast } from "sonner"
 // Lazy load the brief page for better performance
 const CreativeBriefPage = React.lazy(() => import("@/components/creative/creative-brief-page"))
 
 import { useState, useEffect } from "react"
-import { creativesApi } from "@/lib/api"
-import { useProjectStore } from "@/lib/stores/project-store"
+import { creativesApi, adAccountsApi, offersApi } from "@/lib/api"
+import { useProjectStore, AdAccount, Offer } from "@/lib/stores/project-store"
 
 // Define the interface for a Creative entry
 interface Creative {
@@ -22,7 +28,9 @@ interface Creative {
   batch: string
   status: "draft" | "in-review" | "live" | "paused" | "completed"
   launchDate: string // YYYY-MM-DD
-  adConcept: string
+  campaignConcept: string
+  batchNumber: number
+  campaignId: string
   testHypothesis: string // "What are you creating/testing and what gives you the confidence this test will improve overall performance?"
   adType: string
   adVariable: string // "What was iterated"
@@ -37,6 +45,8 @@ interface Creative {
   driveLink: string // "Google Drive link for creative files"
   createdAt: string // "Date when the creative was created"
   notes?: string // "Quick notes about the creative"
+  adAccountId?: string // "Ad account where this creative is deployed"
+  offerId?: string // "Offer associated with this creative"
 }
 
 // Define the interface for a Persona entry (re-used from persona-page.tsx)
@@ -66,36 +76,86 @@ export default function CreativeTrackerPage() {
   // Project store
   const { currentProjectId } = useProjectStore()
 
+  // Campaign ID generation function
+  const generateCampaignId = (creative: Creative, adAccounts: AdAccount[], offers: Offer[]) => {
+    // Check if we have the minimum required data
+    if (!creative.campaignConcept || !creative.adAccountId || !creative.offerId) {
+      return ''
+    }
+    
+    const adAccount = adAccounts.find(acc => acc.id === creative.adAccountId)
+    const offer = offers.find(off => off.id === creative.offerId)
+    
+    if (!adAccount || !offer) return ''
+    
+    const adAccountName = adAccount.name.substring(0, 8).replace(/[^a-zA-Z0-9]/g, '')
+    const offerName = offer.name.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '')
+    const concept = creative.campaignConcept.substring(0, 15).replace(/[^a-zA-Z0-9]/g, '')
+    const batchNum = (creative.batchNumber || 1).toString().padStart(2, '0')
+    const today = new Date()
+    const date = (today.getMonth() + 1).toString().padStart(2, '0') + today.getDate().toString().padStart(2, '0')
+    
+    return `${adAccountName} - ${offerName} - ${concept} - ${batchNum} - ${date}`
+  }
+
+  // Copy campaign ID to clipboard
+  const copyCampaignId = async (creative: Creative) => {
+    const campaignId = generateCampaignId(creative, adAccounts, offers)
+    if (!campaignId) {
+      toast.error('Please select an ad account, offer, and add a campaign concept first')
+      return
+    }
+    
+    try {
+      await navigator.clipboard.writeText(campaignId)
+      toast.success('Campaign ID copied to clipboard!')
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      toast.error('Failed to copy to clipboard')
+    }
+  }
+
   
   // State for real data
   const [creatives, setCreatives] = useState<Creative[]>([])
+  const [adAccounts, setAdAccounts] = useState<AdAccount[]>([])
+  const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Fetch creatives for current project
+  // Fetch creatives and ad accounts for current project
   useEffect(() => {
-    const fetchCreatives = async () => {
+    const fetchData = async () => {
       if (!currentProjectId) {
         setCreatives([])
+        setAdAccounts([])
+        setOffers([])
         return
       }
       
       setLoading(true)
       setError(null)
       try {
-        const fetchedCreatives = await creativesApi.getByProject(currentProjectId)
+        const [fetchedCreatives, fetchedAdAccounts, fetchedOffers] = await Promise.all([
+          creativesApi.getByProject(currentProjectId),
+          adAccountsApi.getByProject(currentProjectId),
+          offersApi.getByProject(currentProjectId)
+        ])
         setCreatives(fetchedCreatives)
+        setAdAccounts(fetchedAdAccounts)
+        setOffers(fetchedOffers)
       } catch (err) {
-        setError('Failed to fetch creatives')
-        console.error('Error fetching creatives:', err)
-        // Production: No fallback, show error to user
+        setError('Failed to fetch data')
+        console.error('Error fetching data:', err)
         setCreatives([])
+        setAdAccounts([])
+        setOffers([])
       } finally {
         setLoading(false)
       }
     }
     
-    fetchCreatives()
+    fetchData()
   }, [currentProjectId]) // Refetch when project changes
 
   // Production ready - using only real API data
@@ -153,6 +213,11 @@ export default function CreativeTrackerPage() {
   const [selectedCreative, setSelectedCreative] = useState<Creative | null>(null)
   const [notesEditingCreative, setNotesEditingCreative] = useState<Creative | null>(null)
   const [tempNotes, setTempNotes] = useState("")
+  
+  // Campaign concept editing state
+  const [conceptEditingCreative, setConceptEditingCreative] = useState<Creative | null>(null)
+  const [tempConcept, setTempConcept] = useState("")
+  
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [creativeToDelete, setCreativeToDelete] = useState<Creative | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -196,6 +261,102 @@ export default function CreativeTrackerPage() {
     }
   }
 
+  const handleStatusChange = async (creativeId: string, newStatus: Creative["status"]) => {
+    try {
+      // Find the creative to update
+      const creativeToUpdate = creatives.find(creative => creative.id === creativeId)
+      if (!creativeToUpdate) return
+
+      // Update the creative via API
+      const updatedCreative = await creativesApi.update(creativeId, { ...creativeToUpdate, status: newStatus })
+      
+      // Update local state
+      setCreatives(creatives.map(creative => 
+        creative.id === creativeId ? updatedCreative : creative
+      ))
+
+      // Update selected creative if it's the one being updated
+      if (selectedCreative && selectedCreative.id === creativeId) {
+        setSelectedCreative(updatedCreative)
+      }
+    } catch (error) {
+      console.error('Error updating creative status:', error)
+      toast.error('Failed to update status. Please try again.')
+    }
+  }
+
+  const handleLaunchDateChange = async (creativeId: string, newLaunchDate: string | null) => {
+    try {
+      // Find the creative to update
+      const creativeToUpdate = creatives.find(creative => creative.id === creativeId)
+      if (!creativeToUpdate) return
+
+      // Update the creative via API
+      const updatedCreative = await creativesApi.update(creativeId, { ...creativeToUpdate, launchDate: newLaunchDate || "" })
+      
+      // Update local state
+      setCreatives(creatives.map(creative => 
+        creative.id === creativeId ? updatedCreative : creative
+      ))
+
+      // Update selected creative if it's the one being updated
+      if (selectedCreative && selectedCreative.id === creativeId) {
+        setSelectedCreative(updatedCreative)
+      }
+    } catch (error) {
+      console.error('Error updating creative launch date:', error)
+      toast.error('Failed to update launch date. Please try again.')
+    }
+  }
+
+  const handleAdAccountChange = async (creativeId: string, newAdAccountId: string | null) => {
+    try {
+      // Find the creative to update
+      const creativeToUpdate = creatives.find(creative => creative.id === creativeId)
+      if (!creativeToUpdate) return
+
+      // Update the creative via API
+      const updatedCreative = await creativesApi.update(creativeId, { ...creativeToUpdate, adAccountId: newAdAccountId })
+      
+      // Update local state
+      setCreatives(creatives.map(creative => 
+        creative.id === creativeId ? updatedCreative : creative
+      ))
+
+      // Update selected creative if it's the one being updated
+      if (selectedCreative && selectedCreative.id === creativeId) {
+        setSelectedCreative(updatedCreative)
+      }
+    } catch (error) {
+      console.error('Error updating creative ad account:', error)
+      toast.error('Failed to update ad account. Please try again.')
+    }
+  }
+
+  const handleOfferChange = async (creativeId: string, newOfferId: string | null) => {
+    try {
+      // Find the creative to update
+      const creativeToUpdate = creatives.find(creative => creative.id === creativeId)
+      if (!creativeToUpdate) return
+
+      // Update the creative via API
+      const updatedCreative = await creativesApi.update(creativeId, { ...creativeToUpdate, offerId: newOfferId })
+      
+      // Update local state
+      setCreatives(creatives.map(creative => 
+        creative.id === creativeId ? updatedCreative : creative
+      ))
+
+      // Update selected creative if it's the one being updated
+      if (selectedCreative && selectedCreative.id === creativeId) {
+        setSelectedCreative(updatedCreative)
+      }
+    } catch (error) {
+      console.error('Error updating creative offer:', error)
+      toast.error('Failed to update offer. Please try again.')
+    }
+  }
+
 
 
   const handleNewCreativeClick = () => {
@@ -204,7 +365,9 @@ export default function CreativeTrackerPage() {
       batch: "",
       status: "draft",
       launchDate: "",
-      adConcept: "",
+      campaignConcept: "",
+      batchNumber: 1,
+      campaignId: "",
       testHypothesis: "",
       adType: "",
       adVariable: "",
@@ -227,6 +390,11 @@ export default function CreativeTrackerPage() {
     setTempNotes(creative.notes || "")
   }
 
+  const handleConceptEdit = (creative: Creative) => {
+    setConceptEditingCreative(creative)
+    setTempConcept(creative.campaignConcept || "")
+  }
+
   const handleDeleteClick = (creative: Creative) => {
     setCreativeToDelete(creative)
     setDeleteDialogOpen(true)
@@ -244,7 +412,7 @@ export default function CreativeTrackerPage() {
       }
     } catch (error) {
       console.error('Error deleting creative:', error)
-      alert('Failed to delete creative. Please try again.')
+      toast.error('Failed to delete creative. Please try again.')
     } finally {
       setIsDeleting(false)
       setCreativeToDelete(null)
@@ -273,15 +441,50 @@ export default function CreativeTrackerPage() {
       
       setNotesEditingCreative(null)
       setTempNotes("")
+      toast.success('Notes saved successfully!')
     } catch (error) {
       console.error('Error saving creative notes:', error)
-      alert('Failed to save notes. Please try again.')
+      toast.error('Failed to save notes. Please try again.')
     }
   }
 
   const handleNotesCancel = () => {
     setNotesEditingCreative(null)
     setTempNotes("")
+  }
+
+  const handleConceptSave = async () => {
+    if (!conceptEditingCreative) return
+    
+    try {
+      // Update the creative via API with new campaign concept
+      const updatedCreative = await creativesApi.update(conceptEditingCreative.id, {
+        ...conceptEditingCreative,
+        campaignConcept: tempConcept
+      })
+      
+      // Update local state with the response from API
+      setCreatives(creatives.map(creative => 
+        creative.id === conceptEditingCreative.id ? updatedCreative : creative
+      ))
+      
+      // Update selected creative if it's the one being edited
+      if (selectedCreative && selectedCreative.id === conceptEditingCreative.id) {
+        setSelectedCreative(updatedCreative)
+      }
+      
+      setConceptEditingCreative(null)
+      setTempConcept("")
+      toast.success('Campaign concept saved successfully!')
+    } catch (error) {
+      console.error('Error saving campaign concept:', error)
+      toast.error('Failed to save campaign concept. Please try again.')
+    }
+  }
+
+  const handleConceptCancel = () => {
+    setConceptEditingCreative(null)
+    setTempConcept("")
   }
 
   return (
@@ -298,8 +501,10 @@ export default function CreativeTrackerPage() {
             <TableRow>
               <TableHead>Batch #</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Ad Concept (Inspo)</TableHead>
-              <TableHead>Created Date</TableHead>
+              <TableHead>Campaign Concept</TableHead>
+              <TableHead>Launch Date</TableHead>
+              <TableHead>Ad Account</TableHead>
+              <TableHead>Offer</TableHead>
               <TableHead>Drive Link</TableHead>
               <TableHead>Notes</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
@@ -308,19 +513,19 @@ export default function CreativeTrackerPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={9} className="text-center py-8">
                   Loading creatives...
                 </TableCell>
               </TableRow>
             ) : error ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-red-500">
+                <TableCell colSpan={9} className="text-center py-8 text-red-500">
                   {error}
                 </TableCell>
               </TableRow>
             ) : creatives.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   No creatives found. Create your first creative to get started.
                 </TableCell>
               </TableRow>
@@ -328,10 +533,54 @@ export default function CreativeTrackerPage() {
               <TableRow key={creative.id}>
                 <TableCell className="font-medium">{creative.batch}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(creative.status)}>{creative.status.replace("-", " ")}</Badge>
+                  <InlineStatusDropdown
+                    currentStatus={creative.status}
+                    statusOptions={CREATIVE_STATUS_OPTIONS}
+                    onStatusChange={(newStatus) => handleStatusChange(creative.id, newStatus as Creative["status"])}
+                    size="sm"
+                  />
                 </TableCell>
-                <TableCell>{creative.adConcept}</TableCell>
-                <TableCell className="text-sm text-muted-foreground">{creative.createdAt}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <div className="max-w-32 truncate text-sm">
+                      {creative.campaignConcept || "No concept"}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleConceptEdit(creative)
+                      }}
+                      className="h-6 w-6 p-0 opacity-60 hover:opacity-100"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <InlineDatePicker
+                    currentDate={creative.launchDate}
+                    onDateChange={(newDate) => handleLaunchDateChange(creative.id, newDate)}
+                    placeholder="Set launch date"
+                    size="sm"
+                  />
+                </TableCell>
+                <TableCell>
+                  <InlineAdAccountDropdown
+                    currentAdAccountId={creative.adAccountId}
+                    adAccounts={adAccounts}
+                    onAdAccountChange={(adAccountId) => handleAdAccountChange(creative.id, adAccountId)}
+                    size="sm"
+                  />
+                </TableCell>
+                <TableCell>
+                  <InlineOfferDropdown
+                    value={creative.offerId}
+                    offers={offers}
+                    onChange={(offerId) => handleOfferChange(creative.id, offerId)}
+                  />
+                </TableCell>
                 <TableCell>
                   {creative.driveLink ? (
                     <Button 
@@ -366,6 +615,15 @@ export default function CreativeTrackerPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => copyCampaignId(creative)}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      title="Copy campaign ID"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => setSelectedCreative(creative)}>
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
@@ -399,7 +657,7 @@ export default function CreativeTrackerPage() {
           <div className="space-y-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">
-                Creative: <span className="font-medium">{notesEditingCreative?.adConcept}</span>
+                Creative: <span className="font-medium">{notesEditingCreative?.campaignConcept}</span>
               </p>
               <Textarea
                 value={tempNotes}
@@ -420,12 +678,45 @@ export default function CreativeTrackerPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Campaign Concept Editing Dialog */}
+      <Dialog open={!!conceptEditingCreative} onOpenChange={() => setConceptEditingCreative(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Campaign Concept</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">
+                Creative: <span className="font-medium">{conceptEditingCreative?.batch}</span>
+              </p>
+              <Input
+                value={tempConcept}
+                onChange={(e) => setTempConcept(e.target.value)}
+                placeholder="Enter campaign concept (e.g., PainTest, ScaleWin, RNR)"
+                maxLength={50}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Keep it short and descriptive for Facebook campaign names
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2">
+            <Button variant="outline" onClick={handleConceptCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleConceptSave}>
+              Save Concept
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmationDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Delete Creative"
-        itemName={creativeToDelete?.adConcept || creativeToDelete?.batch}
+        itemName={creativeToDelete?.campaignConcept || creativeToDelete?.batch}
         onConfirm={handleDeleteCreative}
         isLoading={isDeleting}
       />

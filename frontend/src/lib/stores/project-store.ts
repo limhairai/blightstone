@@ -128,6 +128,58 @@ export interface CreativeTracker {
   updatedAt?: string
 }
 
+export interface AdAccount {
+  id: string
+  name: string
+  businessManager: string
+  projectId: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Offer {
+  id: string
+  name: string
+  price: string
+  url?: string
+  description?: string
+  projectId: string
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface File {
+  id: string
+  name: string
+  originalName: string
+  filePath: string
+  fileSize: number
+  mimeType: string
+  projectId: string
+  folderId?: string
+  offerId?: string
+  adAccountId?: string
+  category: 'creative' | 'document' | 'image' | 'video' | 'general'
+  tags?: string[]
+  description?: string
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+  signedUrl?: string // For temporary access
+}
+
+export interface Folder {
+  id: string
+  name: string
+  projectId: string
+  parentFolderId?: string | null
+  createdBy: string
+  createdAt: string
+  updatedAt: string
+}
+
 export interface CreativeIntelligence {
   id: string
   projectId: string

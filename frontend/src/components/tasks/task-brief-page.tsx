@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge"
 // Removed Select imports - using native HTML select elements
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import { tasksApi } from "@/lib/api"
 import {
   X,
@@ -56,6 +58,10 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const [loadingChildTasks, setLoadingChildTasks] = useState(false)
   const [newChildTaskTitle, setNewChildTaskTitle] = useState("")
   const [creatingChildTask, setCreatingChildTask] = useState(false)
+
+  // Link dialog state
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [linkFormData, setLinkFormData] = useState({ title: "", url: "" })
 
   const isNewTask = task?.id === NEW_TASK_ID
 
@@ -154,6 +160,35 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     } finally {
       setCreatingChildTask(false)
     }
+  }
+
+  const handleAddLink = () => {
+    setLinkFormData({ title: "", url: "" })
+    setLinkDialogOpen(true)
+  }
+
+  const handleSaveLink = () => {
+    if (!linkFormData.title.trim() || !linkFormData.url.trim() || !editingTask) {
+      toast.error('Please fill in both title and URL')
+      return
+    }
+
+    const newLink: TaskLink = {
+      id: Date.now().toString(),
+      title: linkFormData.title.trim(),
+      url: linkFormData.url.trim(),
+      description: "",
+      addedAt: new Date().toISOString()
+    }
+
+    setEditingTask({
+      ...editingTask,
+      links: [...(editingTask.links || []), newLink]
+    })
+
+    setLinkDialogOpen(false)
+    setLinkFormData({ title: "", url: "" })
+    toast.success('Link added successfully!')
   }
 
   const handleChildTaskStatusChange = async (childTaskId: string, newStatus: Task["status"]) => {
@@ -588,24 +623,7 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => {
-                  // Simulate adding a link for demo
-                  const url = prompt("Enter URL:")
-                  const title = prompt("Enter link title:")
-                  if (url && title && editingTask) {
-                    const newLink: TaskLink = {
-                      id: Date.now().toString(),
-                      title,
-                      url,
-                      description: "",
-                      addedAt: new Date().toISOString()
-                    }
-                    setEditingTask({
-                      ...editingTask,
-                      links: [...(editingTask.links || []), newLink]
-                    })
-                  }
-                }}
+                onClick={handleAddLink}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Add Link
@@ -781,6 +799,44 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
       } as React.CSSProperties}
     >
       {briefPageContent}
+      
+      {/* Add Link Dialog */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="link-title">Title</Label>
+              <Input
+                id="link-title"
+                placeholder="Enter link title"
+                value={linkFormData.title}
+                onChange={(e) => setLinkFormData(prev => ({ ...prev, title: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="link-url">URL</Label>
+              <Input
+                id="link-url"
+                type="url"
+                placeholder="https://example.com"
+                value={linkFormData.url}
+                onChange={(e) => setLinkFormData(prev => ({ ...prev, url: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveLink}>
+              Add Link
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>, 
     document.body
   )
