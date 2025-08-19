@@ -96,7 +96,10 @@ export const tasksApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(task)
       })
-      if (!response.ok) throw new Error('Failed to create task')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create task')
+      }
       const data = await response.json()
       return data.task
     } catch (error) {
@@ -112,7 +115,10 @@ export const tasksApi = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updates })
       })
-      if (!response.ok) throw new Error('Failed to update task')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update task')
+      }
       const data = await response.json()
       return data.task
     } catch (error) {
@@ -136,29 +142,22 @@ export const tasksApi = {
   // Child task methods
   async getChildren(parentId: string, statusFilter?: string): Promise<Task[]> {
     try {
-      console.log('Fetching child tasks for parent:', parentId)
-      
-      // First try the dedicated children route
+      // Try the dedicated children route
       try {
         let url = `${API_BASE}/tasks/${parentId}/children`
         if (statusFilter) {
           url += `?status=${statusFilter}`
         }
-        console.log('Trying dedicated route:', url)
         const response = await fetchWithAuth(url)
         
         if (response.ok) {
           const data = await response.json()
-          console.log('Child tasks fetched via dedicated route')
           return data.childTasks || []
         }
-        
-        console.log('Dedicated route failed with status:', response.status)
       } catch (routeError) {
-        console.log('Dedicated route error:', routeError)
+        // Silently handle route errors
       }
       
-      console.log('Dedicated route failed, returning empty array')
       return []
     } catch (error) {
       console.error('Error fetching child tasks:', error)

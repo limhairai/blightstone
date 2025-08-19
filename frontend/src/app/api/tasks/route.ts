@@ -87,8 +87,16 @@ export async function POST(request: NextRequest) {
       links
     } = dbData
 
-    if (!title || !project_id) {
-      return NextResponse.json({ error: 'Title and projectId are required' }, { status: 400 })
+    if (!title?.trim()) {
+      return NextResponse.json({ error: 'Task title is required and cannot be empty' }, { status: 400 })
+    }
+    
+    if (!project_id) {
+      return NextResponse.json({ error: 'Project ID is required' }, { status: 400 })
+    }
+
+    if (title.length > 255) {
+      return NextResponse.json({ error: 'Task title is too long (maximum 255 characters)' }, { status: 400 })
     }
 
     const { data: task, error } = await supabase
@@ -141,13 +149,23 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Task ID is required' }, { status: 400 })
     }
 
+    // Validate title if it's being updated
+    if (frontendUpdateData.title !== undefined) {
+      if (!frontendUpdateData.title?.trim()) {
+        return NextResponse.json({ error: 'Task title is required and cannot be empty' }, { status: 400 })
+      }
+      if (frontendUpdateData.title.length > 255) {
+        return NextResponse.json({ error: 'Task title is too long (maximum 255 characters)' }, { status: 400 })
+      }
+    }
+
     // Convert frontend camelCase to database snake_case
     const dbUpdateData = mapFieldsToDatabase(frontendUpdateData)
     
     // Remove virtual fields that don't exist in the database
     const { child_tasks, child_count, completed_child_count, ...cleanUpdateData } = dbUpdateData
 
-    console.log('Updating task with data:', cleanUpdateData)
+
 
     const { data: task, error } = await supabase
       .from('tasks')

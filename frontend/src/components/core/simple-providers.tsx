@@ -6,6 +6,7 @@ import { AppShell } from '../layout/app-shell'
 import { Loader } from "./Loader"
 import { useRouter, usePathname } from "next/navigation"
 import React, { useEffect, useState, createContext, useContext } from "react"
+import { useActivityTracker } from "../../hooks/useActivityTracker"
 
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 
@@ -69,6 +70,12 @@ function AppRouter({ children }: { children: React.ReactNode }) {
 
   // Initialize performance optimizations
   useInstantPerformance()
+
+  // Track user activity for authenticated users
+  useActivityTracker({
+    enabled: !!user,
+    updateInterval: 5 * 60 * 1000 // Update every 5 minutes
+  })
 
   // Track hydration to prevent SSR/client mismatches
   useEffect(() => {

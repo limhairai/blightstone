@@ -50,6 +50,29 @@ export default function TeamPage() {
     })
   }
 
+  const formatLastActive = (dateString: string) => {
+    if (!dateString) return 'Never'
+    
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMs = now.getTime() - date.getTime()
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60))
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    const diffInDays = Math.floor(diffInHours / 24)
+    
+    if (diffInMinutes < 1) return 'Just now'
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    if (diffInDays < 7) return `${diffInDays}d ago`
+    
+    // For older than a week, show the date
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: diffInDays > 365 ? 'numeric' : undefined
+    })
+  }
+
   const getInitials = (name: string) => {
     if (!name) return '?'
     return name
@@ -138,10 +161,10 @@ export default function TeamPage() {
                     {member.lastActive ? (
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{formatDate(member.lastActive)}</span>
+                        <span>{formatLastActive(member.lastActive)}</span>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground/50">-</span>
+                      <span className="text-muted-foreground/50">Never</span>
                     )}
                   </TableCell>
                 </TableRow>

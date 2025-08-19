@@ -106,7 +106,13 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
     if (editingTask) {
       // Validate required fields
       if (!editingTask.title?.trim()) {
-        toast.error("Task title is required")
+        toast.error("Task title is required. Please enter a title before saving.")
+        return
+      }
+
+      // Additional validation for better UX
+      if (editingTask.title.length > 255) {
+        toast.error("Task title is too long. Please keep it under 255 characters.")
         return
       }
 
@@ -284,8 +290,11 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                 <Input
                   value={editingTask?.title || ""}
                   onChange={(e) => setEditingTask({ ...editingTask!, title: e.target.value })}
-                  className="text-xl font-bold"
-                  placeholder="Enter task title"
+                  className={`text-xl font-bold ${
+                    !editingTask?.title?.trim() ? 'border-red-300 focus:border-red-500' : ''
+                  }`}
+                  placeholder="Enter task title (required)"
+                  required
                 />
               ) : (
                 <h3 className="text-xl font-bold">{task.title || "No Title"}</h3>

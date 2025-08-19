@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
         email,
         is_superuser,
         created_at,
-        updated_at
+        updated_at,
+        last_active
       `)
       .order('created_at', { ascending: false })
 
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       email: profile.email || '',
       isAdmin: profile.is_superuser || false,
       joinedAt: profile.created_at,
-      lastActive: profile.updated_at
+      lastActive: profile.last_active || profile.updated_at
     })) || []
 
     return NextResponse.json({ teamMembers })

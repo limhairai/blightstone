@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { toast } from "sonner"
 import {
   Table,
   TableBody,
@@ -114,7 +115,7 @@ export default function CreativeIntelligencePage() {
       setShowBrief(false)
     } catch (error) {
       console.error('Error updating creative:', error)
-      alert('Failed to save creative. Please try again.')
+      toast.error('Failed to save creative. Please try again.')
     }
   }
 
@@ -136,7 +137,7 @@ export default function CreativeIntelligencePage() {
       }
     } catch (error) {
       console.error('Error deleting creative:', error)
-      alert('Failed to delete creative. Please try again.')
+      toast.error('Failed to delete creative. Please try again.')
     } finally {
       setIsDeleting(false)
       setCreativeToDelete(null)
@@ -161,7 +162,7 @@ export default function CreativeIntelligencePage() {
       setNotesText("")
     } catch (error) {
       console.error('Error updating notes:', error)
-      alert('Failed to update notes. Please try again.')
+      toast.error('Failed to update notes. Please try again.')
     }
   }
 

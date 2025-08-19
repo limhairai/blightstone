@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -144,7 +145,7 @@ export default function PersonasPage() {
       setSelectedPersona(null)
     } catch (error) {
       console.error('Error updating persona:', error)
-      alert('Failed to save persona. Please try again.')
+      toast.error('Failed to save persona. Please try again.')
     }
   }
 
@@ -198,7 +199,7 @@ export default function PersonasPage() {
       }
     } catch (error) {
       console.error('Error deleting persona:', error)
-      alert('Failed to delete persona. Please try again.')
+      toast.error('Failed to delete persona. Please try again.')
     } finally {
       setIsDeleting(false)
       setPersonaToDelete(null)
@@ -229,7 +230,7 @@ export default function PersonasPage() {
       setTempNotes("")
     } catch (error) {
       console.error('Error saving persona notes:', error)
-      alert('Failed to save notes. Please try again.')
+      toast.error('Failed to save notes. Please try again.')
     }
   }
 

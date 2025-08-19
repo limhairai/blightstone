@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { toast } from "sonner"
 import {
   Table,
   TableBody,
@@ -13,13 +14,14 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
-import { InlineStatusDropdown, TASK_STATUS_OPTIONS } from "@/components/ui/inline-status-dropdown"
-import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIcon } from "lucide-react"
+import { InlineStatusDropdown, TASK_STATUS_OPTIONS, TASK_PRIORITY_OPTIONS } from "@/components/ui/inline-status-dropdown"
+import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIcon, Search } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 
@@ -46,6 +48,7 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<string>("todo") // Default to todo tab
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table") // Toggle between table and kanban
   const [filterPriority, setFilterPriority] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState<string>("")
   const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
   const [tempNotes, setTempNotes] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -155,8 +158,12 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error updating task:', error)
-      // Show error to user instead of fallback
-      alert('Failed to save task. Please try again.')
+      // Show specific error message based on the error type
+      if (error instanceof Error) {
+        toast.error(`Failed to save task: ${error.message}`)
+      } else {
+        toast.error('Failed to save task. Please check all required fields and try again.')
+      }
     }
   }
 
@@ -189,8 +196,33 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error updating task status:', error)
-      // Show error to user
-      alert('Failed to update task status. Please try again.')
+      toast.error('Failed to update task status. Please try again.')
+    } finally {
+      // Clear loading state
+      setUpdatingTaskId(null)
+    }
+  }
+
+  const handlePriorityChange = async (taskId: string, newPriority: Task["priority"]) => {
+    try {
+      // Find the task to update
+      const taskToUpdate = tasks.find(task => task.id === taskId)
+      if (!taskToUpdate) return
+
+      // Set loading state
+      setUpdatingTaskId(taskId)
+
+      // Update the task via API
+      const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, priority: newPriority })
+      
+      // Update local state with the response from API
+      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(updatedTask)
+      }
+    } catch (error) {
+      console.error('Error updating task priority:', error)
+      toast.error('Failed to update task priority. Please try again.')
     } finally {
       // Clear loading state
       setUpdatingTaskId(null)
@@ -214,7 +246,7 @@ export default function TasksPage() {
       }
     } catch (error) {
       console.error('Error deleting task:', error)
-      alert('Failed to delete task. Please try again.')
+      toast.error('Failed to delete task. Please try again.')
     } finally {
       setIsDeleting(false)
       setTaskToDelete(null)
@@ -227,6 +259,20 @@ export default function TasksPage() {
     
     // Priority filter (status filtering is now handled by tabs/API)
     if (filterPriority !== "all" && task.priority !== filterPriority) return false
+    
+    // Search filter - check title, description, and assignee
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim()
+      const matchesTitle = task.title.toLowerCase().includes(query)
+      const matchesDescription = task.description.toLowerCase().includes(query)
+      const matchesAssignee = task.assignee.toLowerCase().includes(query)
+      const matchesCategory = task.category.toLowerCase().includes(query)
+      
+      if (!matchesTitle && !matchesDescription && !matchesAssignee && !matchesCategory) {
+        return false
+      }
+    }
+    
     return true
   })
 
@@ -283,7 +329,7 @@ export default function TasksPage() {
       setTempNotes("")
     } catch (error) {
       console.error('Error saving notes:', error)
-      alert('Failed to save notes. Please try again.')
+      toast.error('Failed to save notes. Please try again.')
     }
   }
 
@@ -348,11 +394,22 @@ export default function TasksPage() {
             </SelectContent>
           </Select>
         </div>
-        {/* New Task Button */}
-        <Button onClick={handleNewTaskClick} className="bg-black hover:bg-black/90 text-white">
-          <Plus className="h-4 w-4 mr-2" />
-          New Task
-        </Button>
+        {/* Search and New Task Button */}
+        <div className="flex gap-3 items-center">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search tasks..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-64"
+            />
+          </div>
+          <Button onClick={handleNewTaskClick} className="bg-black hover:bg-black/90 text-white">
+            <Plus className="h-4 w-4 mr-2" />
+            New Task
+          </Button>
+        </div>
       </div>
 
       {/* Status Tabs - only show in table view */}
@@ -418,7 +475,7 @@ export default function TasksPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <InlineStatusDropdown
                         currentStatus={task.status}
                         statusOptions={TASK_STATUS_OPTIONS}
@@ -427,8 +484,14 @@ export default function TasksPage() {
                         size="sm"
                       />
                     </TableCell>
-                    <TableCell>
-                      <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <InlineStatusDropdown
+                        currentStatus={task.priority}
+                        statusOptions={TASK_PRIORITY_OPTIONS}
+                        onStatusChange={(newPriority) => handlePriorityChange(task.id, newPriority as Task["priority"])}
+                        isUpdating={updatingTaskId === task.id}
+                        size="sm"
+                      />
                     </TableCell>
                     <TableCell>{task.assignee}</TableCell>
                     <TableCell>{task.dueDate}</TableCell>
@@ -514,9 +577,15 @@ export default function TasksPage() {
                           <div className="space-y-3">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className="font-medium text-sm leading-tight">{task.title}</h4>
-                              <Badge className={getPriorityColor(task.priority)} variant="secondary">
-                                {task.priority}
-                              </Badge>
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <InlineStatusDropdown
+                                  currentStatus={task.priority}
+                                  statusOptions={TASK_PRIORITY_OPTIONS}
+                                  onStatusChange={(newPriority) => handlePriorityChange(task.id, newPriority as Task["priority"])}
+                                  isUpdating={updatingTaskId === task.id}
+                                  size="sm"
+                                />
+                              </div>
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">

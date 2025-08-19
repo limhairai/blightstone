@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
@@ -114,7 +115,7 @@ export default function CompetitorsPage() {
       setSelectedCompetitor(null)
     } catch (error) {
       console.error('Error updating competitor:', error)
-      alert('Failed to save competitor. Please try again.')
+      toast.error('Failed to save competitor. Please try again.')
     }
   }
 
@@ -157,7 +158,7 @@ export default function CompetitorsPage() {
       }
     } catch (error) {
       console.error('Error deleting competitor:', error)
-      alert('Failed to delete competitor. Please try again.')
+      toast.error('Failed to delete competitor. Please try again.')
     } finally {
       setIsDeleting(false)
       setCompetitorToDelete(null)
@@ -188,7 +189,7 @@ export default function CompetitorsPage() {
       setTempNotes("")
     } catch (error) {
       console.error('Error saving competitor notes:', error)
-      alert('Failed to save notes. Please try again.')
+      toast.error('Failed to save notes. Please try again.')
     }
   }
 
