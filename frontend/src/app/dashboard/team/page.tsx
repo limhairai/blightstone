@@ -106,7 +106,10 @@ export default function TeamPage() {
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editingName.trim() })
+        body: JSON.stringify({ 
+          name: editingName.trim(),
+          userId: memberId // Pass the target user ID to update
+        })
       })
 
       if (!response.ok) {

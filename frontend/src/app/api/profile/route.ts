@@ -39,11 +39,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name } = body
+    const { name, userId } = body
 
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
+
+    // For internal CRM, allow updating any user's profile
+    // Use the provided userId or default to current user
+    const targetUserId = userId || user.id
 
     // Update user profile
     const { data: profile, error } = await supabase
@@ -52,7 +56,7 @@ export async function PUT(request: NextRequest) {
         name: name.trim(),
         updated_at: new Date().toISOString()
       })
-      .eq('profile_id', user.id)
+      .eq('profile_id', targetUserId)
       .select()
       .single()
 
