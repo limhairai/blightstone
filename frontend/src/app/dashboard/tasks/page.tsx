@@ -275,6 +275,32 @@ export default function TasksPage() {
     }
   }
 
+  const handleCategoryChange = async (taskId: string, newCategory: string) => {
+    try {
+      // Find the task to update
+      const taskToUpdate = tasks.find(task => task.id === taskId)
+      if (!taskToUpdate) return
+
+      // Set loading state
+      setUpdatingTaskId(taskId)
+
+      // Update the task via API
+      const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, category: newCategory })
+      
+      // Update local state with the response from API
+      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(updatedTask)
+      }
+    } catch (error) {
+      console.error('Error updating task category:', error)
+      toast.error('Failed to update task category. Please try again.')
+    } finally {
+      // Clear loading state
+      setUpdatingTaskId(null)
+    }
+  }
+
   const handleDeleteClick = (task: Task) => {
     setTaskToDelete(task)
     setDeleteDialogOpen(true)
@@ -323,23 +349,44 @@ export default function TasksPage() {
   })
 
   // Create assignee options from team members with fallback
+  const teamMemberNames = new Set(teamMembers.map(member => member.name))
+  const taskAssignees = Array.from(new Set(tasks.map(task => task.assignee)))
+  
   const assigneeOptions = [
-    // Add current assignees that might not be in team members list
-    ...Array.from(new Set(tasks.map(task => task.assignee))).map(assignee => ({
-      value: assignee,
-      label: assignee,
-      color: "bg-gray-100 text-gray-800 border-gray-200"
-    })),
-    // Add team members
+    // Add team members first (these are the current, up-to-date names)
     ...teamMembers.map(member => ({
       value: member.name,
       label: member.name,
       color: "bg-blue-100 text-blue-800 border-blue-200"
-    }))
-  ].filter((option, index, self) => 
-    // Remove duplicates based on value
-    index === self.findIndex(o => o.value === option.value)
-  )
+    })),
+    // Add task assignees that are NOT in team members (legacy/old names)
+    ...taskAssignees
+      .filter(assignee => !teamMemberNames.has(assignee))
+      .map(assignee => ({
+        value: assignee,
+        label: `${assignee} (legacy)`,
+        color: "bg-gray-100 text-gray-600 border-gray-300"
+      }))
+  ]
+
+  // Create category options from existing task categories
+  const taskCategories = Array.from(new Set(tasks.map(task => task.category)))
+  const categoryOptions = [
+    // Common categories first
+    { value: "General", label: "General", color: "bg-gray-100 text-gray-800 border-gray-200" },
+    { value: "Marketing", label: "Marketing", color: "bg-purple-100 text-purple-800 border-purple-200" },
+    { value: "Development", label: "Development", color: "bg-green-100 text-green-800 border-green-200" },
+    { value: "Design", label: "Design", color: "bg-pink-100 text-pink-800 border-pink-200" },
+    { value: "Research", label: "Research", color: "bg-blue-100 text-blue-800 border-blue-200" },
+    // Add any existing categories that aren't in the common list
+    ...taskCategories
+      .filter(category => !["General", "Marketing", "Development", "Design", "Research"].includes(category))
+      .map(category => ({
+        value: category,
+        label: category,
+        color: "bg-orange-100 text-orange-800 border-orange-200"
+      }))
+  ]
 
   const kanbanColumns = [
     { id: "todo", title: "To Do", status: "todo" as const },
@@ -568,8 +615,14 @@ export default function TasksPage() {
                       />
                     </TableCell>
                     <TableCell>{task.dueDate}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{task.category}</Badge>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <InlineStatusDropdown
+                        currentStatus={task.category}
+                        statusOptions={categoryOptions}
+                        onStatusChange={(newCategory) => handleCategoryChange(task.id, newCategory)}
+                        isUpdating={updatingTaskId === task.id}
+                        size="sm"
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -677,9 +730,15 @@ export default function TasksPage() {
                                 <span>{task.dueDate}</span>
                               </div>
                             </div>
-                            <Badge variant="outline" className="text-xs w-fit">
-                              {task.category}
-                            </Badge>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <InlineStatusDropdown
+                                currentStatus={task.category}
+                                statusOptions={categoryOptions}
+                                onStatusChange={(newCategory) => handleCategoryChange(task.id, newCategory)}
+                                isUpdating={updatingTaskId === task.id}
+                                size="sm"
+                              />
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
