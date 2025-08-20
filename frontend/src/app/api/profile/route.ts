@@ -1,92 +1,69 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Force dynamic rendering for this route
-export const dynamic = 'force-dynamic'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { NextRequest, NextResponse } from 'next/server'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const supabase = createSupabaseServerClient()
     
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Fetch user profile
+    // Get user profile
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('profile_id', user.id)
-      .single();
+      .single()
 
     if (error) {
-      console.error('Error fetching user profile:', error);
-      return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 });
+      console.error('Error fetching profile:', error)
+      return NextResponse.json({ error: 'Failed to fetch profile' }, { status: 500 })
     }
 
-    const response = NextResponse.json({ profile });
-    
-    // **PERFORMANCE**: Add caching headers
-    response.headers.set('Cache-Control', 'private, max-age=300, s-maxage=300'); // Cache for 5 minutes
-    response.headers.set('Vary', 'Authorization');
-    
-    return response;
-
+    return NextResponse.json({ profile })
   } catch (error) {
-    console.error('Error in profile API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user } } = await supabase.auth.getUser(token);
+    const supabase = createSupabaseServerClient()
     
+    const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json();
-    const { name, avatar_url } = body;
+    const body = await request.json()
+    const { name } = body
+
+    if (!name?.trim()) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    }
 
     // Update user profile
-    const { data: updatedProfile, error } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
-      .update({
-        name,
-        avatar_url,
+      .update({ 
+        name: name.trim(),
         updated_at: new Date().toISOString()
       })
       .eq('profile_id', user.id)
       .select()
-      .single();
+      .single()
 
     if (error) {
-      console.error('Error updating user profile:', error);
-      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+      console.error('Error updating profile:', error)
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
     }
 
-    return NextResponse.json({ profile: updatedProfile });
-
+    return NextResponse.json({ profile })
   } catch (error) {
-    console.error('Error in profile update API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
-} 
+}

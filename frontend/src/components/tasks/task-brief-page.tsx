@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { tasksApi } from "@/lib/api"
+import { tasksApi, teamApi } from "@/lib/api"
 import {
   X,
   Edit,
@@ -59,6 +59,10 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
   const [newChildTaskTitle, setNewChildTaskTitle] = useState("")
   const [creatingChildTask, setCreatingChildTask] = useState(false)
 
+  // Team members state
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
+
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false)
   const [linkFormData, setLinkFormData] = useState({ title: "", url: "" })
@@ -83,6 +87,24 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
       }
     }
   }, [task, isNewTask])
+
+  // Load team members for assignee dropdown
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      setLoadingTeamMembers(true)
+      try {
+        const members = await teamApi.getAll()
+        setTeamMembers(members)
+      } catch (error) {
+        console.error('Error loading team members:', error)
+        toast.error('Failed to load team members')
+      } finally {
+        setLoadingTeamMembers(false)
+      }
+    }
+
+    fetchTeamMembers()
+  }, [])
 
   const loadChildTasks = async (taskId: string) => {
     setLoadingChildTasks(true)
@@ -310,12 +332,19 @@ export default function TaskBriefPage({ task, onClose, onUpdateTask, onDeleteTas
                     <span className="font-medium">Assignee</span>
                   </div>
                   {isEditMode ? (
-                    <Input
+                    <select
                       value={editingTask?.assignee || ""}
                       onChange={(e) => setEditingTask({ ...editingTask!, assignee: e.target.value })}
-                      className="w-48"
-                      placeholder="Assignee"
-                    />
+                      className="w-48 px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                      disabled={loadingTeamMembers}
+                    >
+                      <option value="">Select assignee</option>
+                      {teamMembers.map((member) => (
+                        <option key={member.id} value={member.name}>
+                          {member.name} ({member.email})
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <span className="text-muted-foreground">{task.assignee || "Unassigned"}</span>
                   )}

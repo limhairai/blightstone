@@ -25,7 +25,7 @@ import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIco
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 
-import { tasksApi } from "@/lib/api"
+import { tasksApi, teamApi } from "@/lib/api"
 import { useProjectStore } from "@/lib/stores/project-store"
 
 // Import interfaces from project store
@@ -42,6 +42,8 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
+  const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
   
   // Filter states (need to be declared before useEffect that uses them)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -58,6 +60,24 @@ export default function TasksPage() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null)
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
   
+  // Fetch team members
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      setLoadingTeamMembers(true)
+      try {
+        const members = await teamApi.getAll()
+        setTeamMembers(members)
+      } catch (error) {
+        console.error('Error fetching team members:', error)
+        toast.error('Failed to fetch team members')
+      } finally {
+        setLoadingTeamMembers(false)
+      }
+    }
+    
+    fetchTeamMembers()
+  }, [])
+
   // Fetch tasks for current project
   useEffect(() => {
     const fetchTasks = async () => {
@@ -229,6 +249,32 @@ export default function TasksPage() {
     }
   }
 
+  const handleAssigneeChange = async (taskId: string, newAssignee: string) => {
+    try {
+      // Find the task to update
+      const taskToUpdate = tasks.find(task => task.id === taskId)
+      if (!taskToUpdate) return
+
+      // Set loading state
+      setUpdatingTaskId(taskId)
+
+      // Update the task via API
+      const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, assignee: newAssignee })
+      
+      // Update local state with the response from API
+      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(updatedTask)
+      }
+    } catch (error) {
+      console.error('Error updating task assignee:', error)
+      toast.error('Failed to update task assignee. Please try again.')
+    } finally {
+      // Clear loading state
+      setUpdatingTaskId(null)
+    }
+  }
+
   const handleDeleteClick = (task: Task) => {
     setTaskToDelete(task)
     setDeleteDialogOpen(true)
@@ -275,6 +321,25 @@ export default function TasksPage() {
     
     return true
   })
+
+  // Create assignee options from team members with fallback
+  const assigneeOptions = [
+    // Add current assignees that might not be in team members list
+    ...Array.from(new Set(tasks.map(task => task.assignee))).map(assignee => ({
+      value: assignee,
+      label: assignee,
+      color: "bg-gray-100 text-gray-800 border-gray-200"
+    })),
+    // Add team members
+    ...teamMembers.map(member => ({
+      value: member.name,
+      label: member.name,
+      color: "bg-blue-100 text-blue-800 border-blue-200"
+    }))
+  ].filter((option, index, self) => 
+    // Remove duplicates based on value
+    index === self.findIndex(o => o.value === option.value)
+  )
 
   const kanbanColumns = [
     { id: "todo", title: "To Do", status: "todo" as const },
@@ -493,7 +558,15 @@ export default function TasksPage() {
                         size="sm"
                       />
                     </TableCell>
-                    <TableCell>{task.assignee}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <InlineStatusDropdown
+                        currentStatus={task.assignee}
+                        statusOptions={assigneeOptions}
+                        onStatusChange={(newAssignee) => handleAssigneeChange(task.id, newAssignee)}
+                        isUpdating={updatingTaskId === task.id}
+                        size="sm"
+                      />
+                    </TableCell>
                     <TableCell>{task.dueDate}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{task.category}</Badge>
@@ -589,9 +662,15 @@ export default function TasksPage() {
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                 <User className="h-3 w-3" />
-                                <span>{task.assignee}</span>
+                                <InlineStatusDropdown
+                                  currentStatus={task.assignee}
+                                  statusOptions={assigneeOptions}
+                                  onStatusChange={(newAssignee) => handleAssigneeChange(task.id, newAssignee)}
+                                  isUpdating={updatingTaskId === task.id}
+                                  size="sm"
+                                />
                               </div>
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />

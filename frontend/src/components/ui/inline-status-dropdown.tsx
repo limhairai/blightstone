@@ -76,7 +76,9 @@ export function InlineStatusDropdown({
 }: InlineStatusDropdownProps) {
   const [open, setOpen] = React.useState(false)
   
-  const currentOption = statusOptions.find(option => option.value === currentStatus) || statusOptions[0]
+  const currentOption = statusOptions.find(option => option.value === currentStatus) || 
+    statusOptions[0] || 
+    { value: currentStatus, label: currentStatus, color: "bg-gray-100 text-gray-800 border-gray-200" }
   
   const handleStatusSelect = async (newStatus: string) => {
     if (newStatus === currentStatus || disabled || isUpdating) return

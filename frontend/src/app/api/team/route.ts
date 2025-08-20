@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get all users from profiles table
+    // Get all users from profiles table with auth user data
     const { data: profiles, error } = await supabase
       .from('profiles')
       .select(`
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     // Format the data for frontend
     const teamMembers = profiles?.map(profile => ({
       id: profile.profile_id,
-      name: profile.name || 'Unknown',
+      name: profile.name || profile.email?.split('@')[0] || 'Unknown',
       email: profile.email || '',
       isAdmin: profile.is_superuser || false,
       joinedAt: profile.created_at,

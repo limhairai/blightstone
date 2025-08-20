@@ -219,6 +219,24 @@ export const tasksApi = {
   }
 }
 
+// Team API
+export const teamApi = {
+  async getAll() {
+    try {
+      const response = await fetchWithAuth(`${API_BASE}/team`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch team members')
+      }
+      const data = await response.json()
+      return data.teamMembers || []
+    } catch (error) {
+      console.error('Error fetching team members:', error)
+      throw error
+    }
+  }
+}
+
 // Personas API
 export const personasApi = {
   async getByProject(projectId: string) {
@@ -450,21 +468,6 @@ export const creativeIntelligenceApi = {
       if (!response.ok) throw new Error('Failed to delete creative')
     } catch (error) {
       console.error('Error deleting creative:', error)
-      throw error
-    }
-  }
-}
-
-// Team API
-export const teamApi = {
-  async getAll() {
-    try {
-      const response = await fetchWithAuth(`${API_BASE}/team`)
-      if (!response.ok) throw new Error('Failed to fetch team members')
-      const data = await response.json()
-      return data.teamMembers || []
-    } catch (error) {
-      console.error('Error fetching team members:', error)
       throw error
     }
   }
