@@ -42,7 +42,7 @@ export interface Task {
   id: string
   title: string
   description: string
-  status: "todo" | "in-progress" | "completed" | "blocked"
+  status: "todo" | "in-progress" | "to-launch" | "completed" | "blocked"
   priority: "low" | "medium" | "high" | "urgent"
   assignee: string
   dueDate: string
