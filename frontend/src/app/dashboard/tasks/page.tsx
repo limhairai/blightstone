@@ -51,6 +51,8 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table") // Toggle between table and kanban
   const [filterPriority, setFilterPriority] = useState<string>("all")
   const [searchQuery, setSearchQuery] = useState<string>("")
+  const [sortBy, setSortBy] = useState<string>("latest")
+  const [filterAssignee, setFilterAssignee] = useState<string>("all")
   const [notesEditingTask, setNotesEditingTask] = useState<Task | null>(null)
   const [tempNotes, setTempNotes] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -325,28 +327,54 @@ export default function TasksPage() {
     }
   }
 
-  const filteredTasks = tasks.filter((task) => {
-    // Hide child tasks from main list (they appear under their parent tasks)
-    if (task.parentTaskId) return false
-    
-    // Priority filter (status filtering is now handled by tabs/API)
-    if (filterPriority !== "all" && task.priority !== filterPriority) return false
-    
-    // Search filter - check title, description, and assignee
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim()
-      const matchesTitle = task.title.toLowerCase().includes(query)
-      const matchesDescription = task.description.toLowerCase().includes(query)
-      const matchesAssignee = task.assignee.toLowerCase().includes(query)
-      const matchesCategory = task.category.toLowerCase().includes(query)
+  const filteredAndSortedTasks = tasks
+    .filter((task) => {
+      // Hide child tasks from main list (they appear under their parent tasks)
+      if (task.parentTaskId) return false
       
-      if (!matchesTitle && !matchesDescription && !matchesAssignee && !matchesCategory) {
-        return false
+      // Priority filter (status filtering is now handled by tabs/API)
+      if (filterPriority !== "all" && task.priority !== filterPriority) return false
+      
+      // Assignee filter
+      if (filterAssignee !== "all" && task.assignee !== filterAssignee) return false
+      
+      // Search filter - check title, description, and assignee
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim()
+        const matchesTitle = task.title.toLowerCase().includes(query)
+        const matchesDescription = task.description.toLowerCase().includes(query)
+        const matchesAssignee = task.assignee.toLowerCase().includes(query)
+        const matchesCategory = task.category.toLowerCase().includes(query)
+        
+        if (!matchesTitle && !matchesDescription && !matchesAssignee && !matchesCategory) {
+          return false
+        }
       }
-    }
-    
-    return true
-  })
+      
+      return true
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "latest":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        case "oldest":
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        case "priority":
+          const priorityOrder = { "urgent": 4, "high": 3, "medium": 2, "low": 1 }
+          return (priorityOrder[b.priority as keyof typeof priorityOrder] || 0) - (priorityOrder[a.priority as keyof typeof priorityOrder] || 0)
+        case "assignee":
+          return a.assignee.localeCompare(b.assignee)
+        case "dueDate":
+          if (!a.dueDate && !b.dueDate) return 0
+          if (!a.dueDate) return 1
+          if (!b.dueDate) return -1
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        case "title":
+          return a.title.localeCompare(b.title)
+        default:
+          return 0
+      }
+    })
 
   // Create assignee options from team members with fallback
   const teamMemberNames = new Set(teamMembers.map(member => member.name))
@@ -391,6 +419,7 @@ export default function TasksPage() {
   const kanbanColumns = [
     { id: "todo", title: "To Do", status: "todo" as const },
     { id: "in-progress", title: "In Progress", status: "in-progress" as const },
+    { id: "to-launch", title: "To Launch", status: "to-launch" as const },
     { id: "completed", title: "Completed", status: "completed" as const },
   ]
 
@@ -505,6 +534,30 @@ export default function TasksPage() {
               <SelectItem value="low">Low</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filterAssignee} onValueChange={setFilterAssignee}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Assignees</SelectItem>
+              {teamMembers.map(member => (
+                <SelectItem key={member.id} value={member.name}>{member.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-32">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="latest">Latest</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="priority">Priority</SelectItem>
+              <SelectItem value="assignee">Assignee</SelectItem>
+              <SelectItem value="dueDate">Due Date</SelectItem>
+              <SelectItem value="title">Title A-Z</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         {/* Search and New Task Button */}
         <div className="flex gap-3 items-center">
@@ -527,9 +580,10 @@ export default function TasksPage() {
       {/* Status Tabs - only show in table view */}
       {viewMode === "table" && (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="todo">To Do</TabsTrigger>
             <TabsTrigger value="in-progress">In Progress</TabsTrigger>
+            <TabsTrigger value="to-launch">To Launch</TabsTrigger>
             <TabsTrigger value="completed">Completed</TabsTrigger>
             <TabsTrigger value="all">All Tasks</TabsTrigger>
           </TabsList>
@@ -557,7 +611,7 @@ export default function TasksPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTasks.map((task) => (
+                {filteredAndSortedTasks.map((task) => (
                   <TableRow
                     key={task.id}
                     className="cursor-pointer hover:bg-muted/50"
@@ -683,11 +737,11 @@ export default function TasksPage() {
                     {column.title}
                   </h3>
                   <Badge variant="secondary" className="text-xs">
-                    {filteredTasks.filter((task) => task.status === column.status).length}
+                    {filteredAndSortedTasks.filter((task) => task.status === column.status).length}
                   </Badge>
                 </div>
                 <div className="space-y-3">
-                  {filteredTasks
+                  {filteredAndSortedTasks
                     .filter((task) => task.status === column.status)
                     .map((task) => (
                       <Card

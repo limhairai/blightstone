@@ -24,6 +24,7 @@ export interface StatusOption {
 export const TASK_STATUS_OPTIONS: StatusOption[] = [
   { value: "todo", label: "To Do", color: "bg-gray-100 text-gray-800 border-gray-200" },
   { value: "in-progress", label: "In Progress", color: "bg-blue-100 text-blue-800 border-blue-200" },
+  { value: "to-launch", label: "To Launch", color: "bg-purple-100 text-purple-800 border-purple-200" },
   { value: "completed", label: "Completed", color: "bg-green-100 text-green-800 border-green-200" }
 ]
 
