@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useMemo, useCallback } from "react"
 import { toast } from "sonner"
 import {
   Table,
@@ -21,7 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea"
 import { DeleteConfirmationDialog } from "@/components/ui/delete-confirmation-dialog"
 import { InlineStatusDropdown, TASK_STATUS_OPTIONS, TASK_PRIORITY_OPTIONS } from "@/components/ui/inline-status-dropdown"
-import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIcon, Search } from "lucide-react"
+import { Plus, User, Calendar, Filter, Edit3, Trash2, Columns, Table as TableIcon, Search, RefreshCw } from "lucide-react"
 // Lazy load the brief page for better performance
 const TaskBriefPage = React.lazy(() => import("@/components/tasks/task-brief-page"))
 
@@ -39,11 +39,12 @@ export default function TasksPage() {
   const { currentProjectId } = useProjectStore()
   
   // State for real data
-  const [tasks, setTasks] = useState<Task[]>([])
+  const [allTasks, setAllTasks] = useState<Task[]>([]) // Cache all tasks
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [loadingTeamMembers, setLoadingTeamMembers] = useState(false)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
   
   // Filter states (need to be declared before useEffect that uses them)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
@@ -80,32 +81,84 @@ export default function TasksPage() {
     fetchTeamMembers()
   }, [])
 
-  // Fetch tasks for current project
+  // Fetch all tasks for current project (predictive loading)
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchAllTasks = async () => {
       if (!currentProjectId) {
-        setTasks([])
+        setAllTasks([])
+        setInitialLoadComplete(false)
         return
       }
       
       setLoading(true)
       setError(null)
       try {
-        // In kanban view, fetch all tasks; in table view, filter by active tab
-        const statusFilterParam = viewMode === "kanban" ? "all" : (activeTab === "all" ? "all" : activeTab)
-        const fetchedTasks = await tasksApi.getByProject(currentProjectId, statusFilterParam)
-        setTasks(fetchedTasks)
+        // Always fetch ALL tasks for caching and instant tab switching
+        const fetchedTasks = await tasksApi.getByProject(currentProjectId, "all")
+        setAllTasks(fetchedTasks)
+        setInitialLoadComplete(true)
       } catch (err) {
         setError('Failed to fetch tasks')
         console.error('Error fetching tasks:', err)
-        setTasks([])
+        setAllTasks([])
+        setInitialLoadComplete(false)
       } finally {
         setLoading(false)
       }
     }
     
-    fetchTasks()
-  }, [currentProjectId, activeTab, viewMode]) // Refetch when project, active tab, or view mode changes
+    fetchAllTasks()
+  }, [currentProjectId]) // Only refetch when project changes, not tabs
+  
+  // Compute filtered tasks based on active tab (instant switching)
+  const tasks = useMemo(() => {
+    if (!initialLoadComplete) return []
+    
+    if (viewMode === "kanban" || activeTab === "all") {
+      return allTasks
+    }
+    
+    // Filter by active tab status
+    return allTasks.filter(task => task.status === activeTab)
+  }, [allTasks, activeTab, viewMode, initialLoadComplete])
+  
+  // Manual refresh function with user feedback
+  const handleManualRefresh = useCallback(async () => {
+    if (!currentProjectId || loading) return
+    
+    setLoading(true)
+    try {
+      const fetchedTasks = await tasksApi.getByProject(currentProjectId, "all")
+      setAllTasks(fetchedTasks)
+      toast.success('Tasks refreshed successfully')
+    } catch (err) {
+      console.error('Manual refresh failed:', err)
+      toast.error('Failed to refresh tasks')
+    } finally {
+      setLoading(false)
+    }
+  }, [currentProjectId, loading])
+
+  // Background refresh function to keep data current
+  const refreshTasks = useCallback(async () => {
+    if (!currentProjectId || loading) return
+    
+    try {
+      const fetchedTasks = await tasksApi.getByProject(currentProjectId, "all")
+      setAllTasks(fetchedTasks)
+    } catch (err) {
+      console.error('Background refresh failed:', err)
+      // Don't show error toast for background refresh failures
+    }
+  }, [currentProjectId, loading])
+  
+  // Periodic background refresh every 30 seconds
+  useEffect(() => {
+    if (!initialLoadComplete) return
+    
+    const interval = setInterval(refreshTasks, 30000)
+    return () => clearInterval(interval)
+  }, [refreshTasks, initialLoadComplete])
   
   // Production ready - using only real API data
 
@@ -170,12 +223,12 @@ export default function TasksPage() {
           ...taskData,
           projectId: currentProjectId || undefined // Use current project ID
         })
-        setTasks(prev => [...prev, newTask])
+        setAllTasks(prev => [...prev, newTask])
         setSelectedTask(null)
       } else {
         // Updating existing task
         const updated = await tasksApi.update(updatedTask.id, updatedTask)
-        setTasks(prev => prev.map(task => task.id === updated.id ? updated : task))
+        setAllTasks(prev => prev.map(task => task.id === updated.id ? updated : task))
         setSelectedTask(updated)
       }
     } catch (error) {
@@ -194,7 +247,7 @@ export default function TasksPage() {
   const handleStatusChange = async (taskId: string, newStatus: Task["status"]) => {
     try {
       // Find the task to update
-      const taskToUpdate = tasks.find(task => task.id === taskId)
+      const taskToUpdate = allTasks.find(task => task.id === taskId)
       if (!taskToUpdate) return
 
       // Set loading state
@@ -203,18 +256,10 @@ export default function TasksPage() {
       // Update the task via API
       const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, status: newStatus })
       
-      // If task is marked as completed, remove it from the list (since API excludes completed tasks)
-      if (newStatus === 'completed') {
-        setTasks(tasks.filter(task => task.id !== taskId))
-        if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(null) // Close the task brief if it was open
-        }
-      } else {
-        // Update local state with the response from API
-        setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
-        if (selectedTask && selectedTask.id === taskId) {
-          setSelectedTask(updatedTask)
-        }
+      // Update local cache with the response from API (keep completed tasks in cache)
+      setAllTasks(allTasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      if (selectedTask && selectedTask.id === taskId) {
+        setSelectedTask(updatedTask)
       }
     } catch (error) {
       console.error('Error updating task status:', error)
@@ -228,7 +273,7 @@ export default function TasksPage() {
   const handlePriorityChange = async (taskId: string, newPriority: Task["priority"]) => {
     try {
       // Find the task to update
-      const taskToUpdate = tasks.find(task => task.id === taskId)
+      const taskToUpdate = allTasks.find(task => task.id === taskId)
       if (!taskToUpdate) return
 
       // Set loading state
@@ -238,7 +283,7 @@ export default function TasksPage() {
       const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, priority: newPriority })
       
       // Update local state with the response from API
-      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      setAllTasks(allTasks.map((task) => (task.id === taskId ? updatedTask : task)))
       if (selectedTask && selectedTask.id === taskId) {
         setSelectedTask(updatedTask)
       }
@@ -254,7 +299,7 @@ export default function TasksPage() {
   const handleAssigneeChange = async (taskId: string, newAssignee: string) => {
     try {
       // Find the task to update
-      const taskToUpdate = tasks.find(task => task.id === taskId)
+      const taskToUpdate = allTasks.find(task => task.id === taskId)
       if (!taskToUpdate) return
 
       // Set loading state
@@ -264,7 +309,7 @@ export default function TasksPage() {
       const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, assignee: newAssignee })
       
       // Update local state with the response from API
-      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      setAllTasks(allTasks.map((task) => (task.id === taskId ? updatedTask : task)))
       if (selectedTask && selectedTask.id === taskId) {
         setSelectedTask(updatedTask)
       }
@@ -280,7 +325,7 @@ export default function TasksPage() {
   const handleCategoryChange = async (taskId: string, newCategory: string) => {
     try {
       // Find the task to update
-      const taskToUpdate = tasks.find(task => task.id === taskId)
+      const taskToUpdate = allTasks.find(task => task.id === taskId)
       if (!taskToUpdate) return
 
       // Set loading state
@@ -290,7 +335,7 @@ export default function TasksPage() {
       const updatedTask = await tasksApi.update(taskId, { ...taskToUpdate, category: newCategory })
       
       // Update local state with the response from API
-      setTasks(tasks.map((task) => (task.id === taskId ? updatedTask : task)))
+      setAllTasks(allTasks.map((task) => (task.id === taskId ? updatedTask : task)))
       if (selectedTask && selectedTask.id === taskId) {
         setSelectedTask(updatedTask)
       }
@@ -314,7 +359,7 @@ export default function TasksPage() {
     setIsDeleting(true)
     try {
       await tasksApi.delete(taskToDelete.id)
-      setTasks(prev => prev.filter(task => task.id !== taskToDelete.id))
+              setAllTasks(prev => prev.filter(task => task.id !== taskToDelete.id))
       if (selectedTask && selectedTask.id === taskToDelete.id) {
         setSelectedTask(null)
       }
@@ -456,8 +501,8 @@ export default function TasksPage() {
         notes: tempNotes
       })
       
-      // Update local state with the response from API
-      setTasks(tasks.map(task => 
+      // Update local cache with the response from API
+      setAllTasks(allTasks.map(task => 
         task.id === notesEditingTask.id ? updatedTask : task
       ))
       
@@ -570,6 +615,15 @@ export default function TasksPage() {
               className="pl-9 w-64"
             />
           </div>
+          <Button 
+            onClick={handleManualRefresh} 
+            variant="outline" 
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Button onClick={handleNewTaskClick} className="bg-black hover:bg-black/90 text-white">
             <Plus className="h-4 w-4 mr-2" />
             New Task

@@ -29,6 +29,7 @@ import { useProjectStore } from "@/lib/stores/project-store"
 import { File, Folder as FolderType } from "@/lib/stores/project-store"
 import { FileThumbnail } from "@/components/ui/file-thumbnail"
 import { FilePreviewModal } from "@/components/ui/file-preview-modal"
+import { MultiFileUpload } from "@/components/ui/multi-file-upload"
 
 const CATEGORY_OPTIONS = [
   { value: 'creative', label: 'Creative' },
@@ -48,25 +49,18 @@ const CATEGORY_ICONS = {
 
 export default function DrivePage() {
   const { currentProjectId } = useProjectStore()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // State
   const [files, setFiles] = useState<File[]>([])
   const [folders, setFolders] = useState<FolderType[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
   const [currentFolderPath, setCurrentFolderPath] = useState<FolderType[]>([]) // Breadcrumb path
   
-  // Upload dialog state
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<globalThis.File | null>(null)
-  const [uploadFormData, setUploadFormData] = useState({
-    category: 'creative',
-    folderId: 'none',
-    description: '',
-    tags: ''
-  })
+  // Multi-file upload dialog state
+  const [multiUploadDialogOpen, setMultiUploadDialogOpen] = useState(false)
+  
+
   
   // Edit dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -125,76 +119,14 @@ export default function DrivePage() {
     loadData()
   }, [currentProjectId])
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      setUploadFormData(prev => ({
-        ...prev,
-        folderId: selectedFolder || 'none'
-      }))
-      setUploadDialogOpen(true)
-    }
+  const handleUploadClick = () => {
+    setMultiUploadDialogOpen(true)
   }
 
-  const handleUpload = async () => {
-    if (!selectedFile || !currentProjectId) return
-
-    try {
-      setUploading(true)
-      const formData = new FormData()
-      formData.append('file', selectedFile)
-      formData.append('project_id', currentProjectId)
-      formData.append('category', uploadFormData.category)
-      formData.append('description', uploadFormData.description)
-      formData.append('tags', uploadFormData.tags)
-      formData.append('created_by', 'current-user@example.com') // TODO: Get from auth context
-      
-      // Add folder_id if specified
-      if (uploadFormData.folderId && uploadFormData.folderId !== 'none') {
-        console.log('Adding folder_id to upload:', uploadFormData.folderId)
-        formData.append('folder_id', uploadFormData.folderId)
-      } else {
-        console.log('No folder selected, uploading to unorganized files')
-      }
-      
-      const newFile = await filesApi.upload(formData)
-      console.log('Upload API response:', newFile)
-      console.log('File validation:', {
-        hasId: !!newFile?.id,
-        hasOriginalName: !!newFile?.originalName,
-        hasFilePath: !!newFile?.filePath,
-        fullObject: newFile
-      })
-      
-      // Only add to UI if upload was successful and file has proper data
-      if (newFile && newFile.id && newFile.originalName && newFile.filePath) {
-        setFiles(prev => [newFile, ...prev])
-        toast.success('File uploaded successfully!')
-      } else {
-        console.error('Upload validation failed:', {
-          newFile,
-          hasId: !!newFile?.id,
-          hasOriginalName: !!newFile?.originalName, 
-          hasFilePath: !!newFile?.filePath
-        })
-        toast.error('Upload failed - invalid file data')
-      }
-      
-      setUploadDialogOpen(false)
-      setSelectedFile(null)
-      setUploadFormData({
-        category: 'creative',
-        folderId: 'none',
-        description: '',
-        tags: ''
-      })
-    } catch (error) {
-      console.error('Error uploading file:', error)
-      toast.error('Failed to upload file')
-    } finally {
-      setUploading(false)
-    }
+  const handleUploadComplete = (uploadedFiles: any[]) => {
+    // Reload data to get the latest files from server
+    loadData()
+    setMultiUploadDialogOpen(false)
   }
 
   const handleEdit = (file: File) => {
@@ -422,14 +354,7 @@ export default function DrivePage() {
     // Folder view
     return (
       <div className="min-h-screen bg-white">
-        {/* Single file input for all upload buttons */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          className="hidden"
-          onChange={handleFileSelect}
-          accept="*/*"
-        />
+
 
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-4">
@@ -482,9 +407,9 @@ export default function DrivePage() {
                 <FolderPlus className="h-4 w-4 mr-2" />
                 New Folder
               </Button>
-              <Button onClick={() => fileInputRef.current?.click()}>
+              <Button onClick={handleUploadClick}>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload
+                Upload Files
               </Button>
             </div>
           </div>
@@ -502,7 +427,7 @@ export default function DrivePage() {
                   <FolderPlus className="h-4 w-4 mr-2" />
                   Create Folder
                 </Button>
-                <Button onClick={() => fileInputRef.current?.click()}>
+                <Button onClick={handleUploadClick}>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload Files
                 </Button>
@@ -570,9 +495,19 @@ export default function DrivePage() {
               <Button onClick={handleCreateFolder} disabled={isCreatingFolder}>
                 {isCreatingFolder ? "Creating..." : "Create Folder"}
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                      </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Multi-File Upload Dialog */}
+      <MultiFileUpload
+        isOpen={multiUploadDialogOpen}
+        onClose={() => setMultiUploadDialogOpen(false)}
+        onUploadComplete={handleUploadComplete}
+        projectId={currentProjectId || ''}
+        currentFolderId={selectedFolder}
+        folders={folders}
+      />
       </div>
     )
   }
@@ -580,14 +515,7 @@ export default function DrivePage() {
   // File view inside folder
   return (
     <div className="min-h-screen bg-white">
-      {/* Single file input for all upload buttons */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileSelect}
-        accept="*/*"
-      />
+
 
       {/* Header */}
       <div className="border-b border-gray-200 px-6 py-4">
@@ -619,9 +547,9 @@ export default function DrivePage() {
               <FolderPlus className="h-4 w-4 mr-2" />
               New Folder
             </Button>
-            <Button onClick={() => fileInputRef.current?.click()}>
+            <Button onClick={handleUploadClick}>
               <Upload className="h-4 w-4 mr-2" />
-              Upload
+              Upload Files
             </Button>
           </div>
         </div>
@@ -639,9 +567,9 @@ export default function DrivePage() {
                 <FolderPlus className="h-4 w-4 mr-2" />
                 Create Folder
               </Button>
-              <Button onClick={() => fileInputRef.current?.click()}>
+              <Button onClick={handleUploadClick}>
                 <Upload className="h-4 w-4 mr-2" />
-                Upload File
+                Upload Files
               </Button>
             </div>
           </div>
@@ -729,100 +657,15 @@ export default function DrivePage() {
         )}
       </div>
 
-      {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Upload File</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Selected File</Label>
-              <div className="p-2 bg-gray-50 rounded-md border">
-                <p className="text-sm text-gray-900 break-all" title={selectedFile?.name}>
-                  {selectedFile?.name}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="category" className="text-sm font-medium">Category</Label>
-              <Select value={uploadFormData.category} onValueChange={(value) => 
-                setUploadFormData(prev => ({ ...prev, category: value }))
-              }>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORY_OPTIONS.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="folder" className="text-sm font-medium">Folder</Label>
-              <Select value={uploadFormData.folderId} onValueChange={(value) => 
-                setUploadFormData(prev => ({ ...prev, folderId: value }))
-              }>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select folder" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No folder (unorganized)</SelectItem>
-                  {folders.map(folder => {
-                    // Build folder display name with hierarchy
-                    const path = buildFolderPath(folder.id)
-                    const displayName = path.map(f => f.name).join(' > ')
-                    return (
-                      <SelectItem key={folder.id} value={folder.id}>
-                        {displayName}
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description" className="text-sm font-medium">Description (optional)</Label>
-              <Input
-                id="description"
-                value={uploadFormData.description}
-                onChange={(e) => setUploadFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="File description"
-                className="w-full"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="tags" className="text-sm font-medium">Tags (optional)</Label>
-              <Input
-                id="tags"
-                value={uploadFormData.tags}
-                onChange={(e) => setUploadFormData(prev => ({ ...prev, tags: e.target.value }))}
-                placeholder="tag1, tag2, tag3"
-                className="w-full"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter className="flex gap-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)} className="flex-1">
-              Cancel
-            </Button>
-            <Button onClick={handleUpload} disabled={uploading} className="flex-1">
-              {uploading ? "Uploading..." : "Upload"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Multi-File Upload Dialog */}
+      <MultiFileUpload
+        isOpen={multiUploadDialogOpen}
+        onClose={() => setMultiUploadDialogOpen(false)}
+        onUploadComplete={handleUploadComplete}
+        projectId={currentProjectId || ''}
+        currentFolderId={selectedFolder}
+        folders={folders}
+      />
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
