@@ -50,10 +50,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    console.log('Creative Intelligence POST - Received body:', JSON.stringify(body, null, 2))
     // Convert frontend camelCase to database snake_case
     const dbData = mapFieldsToDatabase(body)
-    console.log('Creative Intelligence POST - Mapped to DB:', JSON.stringify(dbData, null, 2))
     
     const { 
       project_id,
@@ -143,10 +141,8 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    console.log('Creative Intelligence PUT - Received body:', JSON.stringify(body, null, 2))
     // Convert frontend camelCase to database snake_case
     const dbData = mapFieldsToDatabase(body)
-    console.log('Creative Intelligence PUT - Mapped to DB:', JSON.stringify(dbData, null, 2))
     const { 
       id,
       title,
