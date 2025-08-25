@@ -218,7 +218,7 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
                   {isEditMode ? (
                     <MediaUpload
                       value={editingCreative?.imageUrl || undefined}
-                      onChange={(url) => setEditingCreative({ ...editingCreative!, imageUrl: url })}
+                      onChange={(url) => setEditingCreative({ ...editingCreative!, imageUrl: url || undefined })}
                       accept="image/*"
                       maxSize={20}
                       placeholder="Upload image or paste URL"
@@ -254,7 +254,7 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
                   {isEditMode ? (
                     <MediaUpload
                       value={editingCreative?.videoUrl || undefined}
-                      onChange={(url) => setEditingCreative({ ...editingCreative!, videoUrl: url })}
+                      onChange={(url) => setEditingCreative({ ...editingCreative!, videoUrl: url || undefined })}
                       accept="video/*"
                       maxSize={100}
                       placeholder="Upload video or paste URL"
