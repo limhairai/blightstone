@@ -50,6 +50,8 @@ interface Creative {
   driveLink: string
   createdAt: string
   notes?: string
+  adAccountId?: string
+  offerId?: string
 }
 
 interface CreativeBriefPageProps {

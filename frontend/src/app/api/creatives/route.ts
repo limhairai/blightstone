@@ -69,7 +69,9 @@ export async function POST(request: NextRequest) {
       brief_link,
       drive_link,
       project_id,
-      notes
+      notes,
+      ad_account_id,
+      offer_id
     } = dbData
 
     if (!batch || !project_id) {
@@ -97,6 +99,8 @@ export async function POST(request: NextRequest) {
         drive_link,
         project_id,
         notes,
+        ad_account_id: ad_account_id || null,
+        offer_id: offer_id || null,
         created_by: user.email
       })
       .select()

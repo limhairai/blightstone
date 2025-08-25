@@ -115,6 +115,8 @@ export const FIELD_MAPPINGS = {
   winningAdLink: 'winning_ad_link',
   briefLink: 'brief_link',
   driveLink: 'drive_link',
+  adAccountId: 'ad_account_id',
+  offerId: 'offer_id',
   // Ad account fields
   businessManager: 'business_manager',
     // Child task fields
@@ -168,6 +170,8 @@ export const FIELD_MAPPINGS = {
   winning_ad_link: 'winningAdLink',
   brief_link: 'briefLink',
   drive_link: 'driveLink',
+  ad_account_id: 'adAccountId',
+  offer_id: 'offerId',
   // Ad account fields
   business_manager: 'businessManager',
     // Child task fields
