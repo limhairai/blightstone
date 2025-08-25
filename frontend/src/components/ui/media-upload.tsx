@@ -120,52 +120,130 @@ export function MediaUpload({
 
   const MediaPreview = ({ url }: { url: string }) => {
     const [videoPlaying, setVideoPlaying] = useState(false)
+    const [showImageModal, setShowImageModal] = useState(false)
     const mediaType = getMediaType(url)
 
     if (mediaType === 'image') {
       return (
-        <div className="relative group">
-          <img
-            src={url}
-            alt="Uploaded media"
-            className="w-full h-48 object-cover rounded-lg"
-          />
-          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => window.open(url, '_blank')}
-              className="gap-2"
-            >
-              <ExternalLink className="h-4 w-4" />
-              View Full Size
-            </Button>
+        <>
+          <div className="relative group cursor-pointer" onClick={() => setShowImageModal(true)}>
+            <img
+              src={url}
+              alt="Uploaded media"
+              className="w-full h-48 object-cover rounded-lg transition-transform hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setShowImageModal(true)
+                }}
+                className="gap-2"
+              >
+                <Image className="h-4 w-4" />
+                View Full Size
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  window.open(url, '_blank')
+                }}
+                className="gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Open
+              </Button>
+            </div>
           </div>
-        </div>
+          
+          {/* Full Size Image Modal */}
+          {showImageModal && (
+            <div 
+              className="fixed inset-0 z-[9999] bg-black bg-opacity-90 flex items-center justify-center p-4"
+              onClick={() => setShowImageModal(false)}
+            >
+              <div className="relative max-w-[95vw] max-h-[95vh]">
+                <img
+                  src={url}
+                  alt="Full size view"
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowImageModal(false)}
+                  className="absolute top-4 right-4 gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Close
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open(url, '_blank')}
+                  className="absolute top-4 left-4 gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Download
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )
     }
 
     if (mediaType === 'video') {
       return (
-        <div className="relative">
+        <div className="relative group">
           <video
             src={url}
-            className="w-full h-48 object-cover rounded-lg"
+            className="w-full h-48 object-cover rounded-lg cursor-pointer"
             controls={videoPlaying}
             muted
             loop
             onClick={() => setVideoPlaying(!videoPlaying)}
+            onPlay={() => setVideoPlaying(true)}
+            onPause={() => setVideoPlaying(false)}
           />
           {!videoPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-lg">
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-lg group-hover:bg-opacity-50 transition-all">
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setVideoPlaying(true)}
+                  className="gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Play
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open(url, '_blank')}
+                  className="gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Open Full
+                </Button>
+              </div>
+            </div>
+          )}
+          {videoPlaying && (
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={() => setVideoPlaying(true)}
-                className="gap-2"
+                onClick={() => window.open(url, '_blank')}
+                className="gap-1"
               >
-                <Play className="h-4 w-4" />
-                Play
+                <ExternalLink className="h-3 w-3" />
               </Button>
             </div>
           )}

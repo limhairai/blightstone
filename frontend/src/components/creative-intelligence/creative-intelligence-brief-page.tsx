@@ -228,11 +228,19 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
                   ) : (
                     creative.imageUrl ? (
                       <div className="space-y-2">
-                        <img
-                          src={creative.imageUrl}
-                          alt="Creative"
-                          className="w-full max-h-48 object-cover rounded-lg"
-                        />
+                        <div className="relative group cursor-pointer" onClick={() => window.open(creative.imageUrl, '_blank')}>
+                          <img
+                            src={creative.imageUrl}
+                            alt="Creative"
+                            className="w-full max-h-48 object-cover rounded-lg transition-transform hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                            <Badge variant="secondary" className="gap-1">
+                              <Image className="h-3 w-3" />
+                              Click to view full size
+                            </Badge>
+                          </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">Creative image attached</p>
                       </div>
                     ) : (
@@ -256,12 +264,26 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
                   ) : (
                     creative.videoUrl ? (
                       <div className="space-y-2">
-                        <video
-                          src={creative.videoUrl}
-                          className="w-full max-h-48 object-cover rounded-lg"
-                          controls
-                          muted
-                        />
+                        <div className="relative group">
+                          <video
+                            src={creative.videoUrl}
+                            className="w-full max-h-48 object-cover rounded-lg cursor-pointer"
+                            controls
+                            muted
+                            preload="metadata"
+                          />
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => window.open(creative.videoUrl, '_blank')}
+                              className="gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              Full Screen
+                            </Button>
+                          </div>
+                        </div>
                         <p className="text-xs text-muted-foreground">Creative video attached</p>
                       </div>
                     ) : (
