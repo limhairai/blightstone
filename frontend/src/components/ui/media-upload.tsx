@@ -104,6 +104,7 @@ export function MediaUpload({
     onChange(null)
     setUrlInput("")
     setShowUrlInput(false)
+    toast.success("Media removed")
   }
 
   const getMediaType = (url: string) => {
