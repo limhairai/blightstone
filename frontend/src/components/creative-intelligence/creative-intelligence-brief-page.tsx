@@ -25,7 +25,8 @@ import {
   LinkIcon,
   BarChart,
   Search,
-  Settings
+  Settings,
+  ExternalLink
 } from "lucide-react"
 
 // Import the CreativeIntelligence interface from the store
