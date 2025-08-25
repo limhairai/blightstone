@@ -186,7 +186,6 @@ export async function PUT(request: NextRequest) {
         offer_id: offer_id || null
       })
       .eq('id', id)
-      .eq('created_by', user.email) // Ensure user can only update their own creatives
       .select()
       .single()
 
