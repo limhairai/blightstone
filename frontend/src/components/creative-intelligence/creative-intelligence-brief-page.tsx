@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { MediaUpload } from "@/components/ui/media-upload"
 import {
   X,
   Edit,
@@ -28,7 +29,8 @@ import {
 } from "lucide-react"
 
 // Import the CreativeIntelligence interface from the store
-import { CreativeIntelligence } from "@/lib/stores/project-store"
+import { CreativeIntelligence, useProjectStore } from "@/lib/stores/project-store"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface CreativeIntelligenceBriefPageProps {
   creative: CreativeIntelligence
@@ -42,6 +44,10 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
   const [isEditMode, setIsEditMode] = useState(isNewCreative)
   const [editingCreative, setEditingCreative] = useState<CreativeIntelligence | null>(null)
   const [activeSection, setActiveSection] = useState("overview") // For left navigation
+  
+  // Get project and auth context for media uploads
+  const { currentProjectId } = useProjectStore()
+  const { user } = useAuth()
 
   useEffect(() => {
     setMounted(true)
@@ -206,42 +212,61 @@ export default function CreativeIntelligenceBriefPage({ creative, onClose, onUpd
                 {renderField("Call to Action", creative.callToAction, "callToAction")}
               </div>
               <div className="space-y-4">
-                <div className="bg-muted/30 rounded-lg p-4 min-h-[80px] space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Image URL</h3>
+                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Creative Image</h3>
                   {isEditMode ? (
-                    <>
-                      <Input
-                        value={editingCreative?.imageUrl || ""}
-                        onChange={(e) => setEditingCreative({ ...editingCreative!, imageUrl: e.target.value })}
-                        placeholder="Upload or paste image URL"
-                        className="w-full"
-                      />
-                      <Button variant="outline" size="sm" className="mt-2 gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload Image
-                      </Button>
-                    </>
+                    <MediaUpload
+                      value={editingCreative?.imageUrl || undefined}
+                      onChange={(url) => setEditingCreative({ ...editingCreative!, imageUrl: url || undefined })}
+                      accept="image/*"
+                      maxSize={20}
+                      placeholder="Upload image or paste URL"
+                      projectId={currentProjectId || undefined}
+                      category="creative-intelligence-images"
+                      createdBy={user?.email || undefined}
+                    />
                   ) : (
-                    <p className="text-foreground">{creative.imageUrl || "No image URL specified."}</p>
+                    creative.imageUrl ? (
+                      <div className="space-y-2">
+                        <img
+                          src={creative.imageUrl}
+                          alt="Creative"
+                          className="w-full max-h-48 object-cover rounded-lg"
+                        />
+                        <p className="text-xs text-muted-foreground">Creative image attached</p>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No image specified.</p>
+                    )
                   )}
                 </div>
-                <div className="bg-muted/30 rounded-lg p-4 min-h-[80px] space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Video URL</h3>
+                <div className="bg-muted/30 rounded-lg p-4 space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Creative Video</h3>
                   {isEditMode ? (
-                    <>
-                      <Input
-                        value={editingCreative?.videoUrl || ""}
-                        onChange={(e) => setEditingCreative({ ...editingCreative!, videoUrl: e.target.value })}
-                        placeholder="Upload or paste video URL"
-                        className="w-full"
-                      />
-                      <Button variant="outline" size="sm" className="mt-2 gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload Video
-                      </Button>
-                    </>
+                    <MediaUpload
+                      value={editingCreative?.videoUrl || undefined}
+                      onChange={(url) => setEditingCreative({ ...editingCreative!, videoUrl: url || undefined })}
+                      accept="video/*"
+                      maxSize={100}
+                      placeholder="Upload video or paste URL"
+                      projectId={currentProjectId || undefined}
+                      category="creative-intelligence-videos"
+                      createdBy={user?.email || undefined}
+                    />
                   ) : (
-                    <p className="text-foreground">{creative.videoUrl || "No video URL specified."}</p>
+                    creative.videoUrl ? (
+                      <div className="space-y-2">
+                        <video
+                          src={creative.videoUrl}
+                          className="w-full max-h-48 object-cover rounded-lg"
+                          controls
+                          muted
+                        />
+                        <p className="text-xs text-muted-foreground">Creative video attached</p>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No video specified.</p>
+                    )
                   )}
                 </div>
               </div>
