@@ -127,7 +127,9 @@ export function ProjectSelector() {
   }
 
   const getProgressPercentage = (completed: number, total: number) => {
-    return total > 0 ? Math.round((completed / total) * 100) : 0
+    if (total <= 0) return 0
+    const percentage = Math.round((completed / total) * 100)
+    return Math.min(percentage, 100) // Cap at 100%
   }
 
   // If no current project but there are projects available, show dropdown to select one

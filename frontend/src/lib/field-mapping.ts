@@ -172,6 +172,21 @@ export const FIELD_MAPPINGS = {
   drive_link: 'driveLink',
   ad_account_id: 'adAccountId',
   offer_id: 'offerId',
+  // Creative Intelligence fields
+  image_url: 'imageUrl',
+  video_url: 'videoUrl',
+  creative_type: 'creativeType',
+  primary_copy: 'primaryCopy',
+  call_to_action: 'callToAction',
+  visual_style: 'visualStyle',
+  target_emotion: 'targetEmotion',
+  creative_category: 'creativeCategory',
+  performance_notes: 'performanceNotes',
+  psychology_trigger: 'psychologyTrigger',
+  scalability_notes: 'scalabilityNotes',
+  remix_potential: 'remixPotential',
+  is_template: 'isTemplate',
+  template_variables: 'templateVariables',
   // Ad account fields
   business_manager: 'businessManager',
     // Child task fields
