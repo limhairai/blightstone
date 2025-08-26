@@ -6,6 +6,15 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   
+
+  
+  // Configure server actions body size limit
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb', // Increase server actions body size limit
+    },
+  },
+  
   // Disable problematic features for now
   eslint: {
     ignoreDuringBuilds: true,

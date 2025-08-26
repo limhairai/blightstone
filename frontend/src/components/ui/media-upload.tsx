@@ -71,7 +71,19 @@ export function MediaUpload({
         })
 
         if (!response.ok) {
-          throw new Error('Upload failed')
+          let errorMessage = 'Upload failed'
+          try {
+            // Try to parse JSON error response
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch {
+            // If JSON parsing fails, use response status text
+            errorMessage = response.statusText || errorMessage
+            if (response.status === 413) {
+              errorMessage = 'File too large. Please choose a smaller file (max 50MB).'
+            }
+          }
+          throw new Error(errorMessage)
         }
 
         const data = await response.json()
